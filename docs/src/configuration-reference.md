@@ -510,7 +510,8 @@ Default `tool_overrides` entries:
 | `persist_profile` | bool | `true` | Persist Chrome user profile (cookies, auth, local storage) across sessions. |
 | `profile_dir` | optional string | `null` | Custom path for persistent Chrome profile directory. Implies `persist_profile = true`. |
 | `container_host` | string | `"127.0.0.1"` | Hostname/IP to connect to the browser container from the host. Use `"host.docker.internal"` when Moltis runs inside Docker. |
-| `browserless_api_version` | enum: `"v1"`, `"v2"` | `"v1"` | Browserless container protocol for environment settings, launch options, and WebSocket paths. Must match `sandbox_image`; see [Browser Automation](browser-automation.md#browserless-v2-setup-checklist) for the complete v2 setup. |
+| `browserless_api_version` | enum: `"v1"`, `"v2"` | `"v1"` | Browserless API compatibility mode for websocket endpoints. |
+| `screenshot_each_step` | bool | `false` | Opt-in: auto-capture a screenshot after each state-changing action (navigate, click, type, scroll, …) — on both success and failure — and attach it to that action's result, enabling a per-step screenshot timeline in chat clients. Ignored by renderless browsers. |
 
 ---
 
