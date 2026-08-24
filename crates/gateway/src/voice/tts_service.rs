@@ -137,8 +137,10 @@ impl LiveTtsService {
     }
 
     /// List all providers with their configuration status.
-    fn list_providers() -> Vec<(TtsProviderId, bool)> {
-        let config = Self::load_config();
+    /// Provider eligibility derived from an already-loaded TTS config.
+    ///
+    /// Kept pure so default-state tests can assert without ambient env/config.
+    fn configured_providers(config: &TtsConfig) -> Vec<(TtsProviderId, bool)> {
         vec![
             (
                 TtsProviderId::ElevenLabs,
@@ -150,20 +152,36 @@ impl LiveTtsService {
             ),
             (TtsProviderId::Google, config.google.api_key.is_some()),
             (TtsProviderId::Piper, config.piper.model_path.is_some()),
-            (TtsProviderId::Coqui, true), // Always available if server running
+            // Match CoquiTts::is_configured(): default localhost:5002 alone is
+            // not enough — require a non-default endpoint or explicit model so
+            // auto-select does not pick an unconfigured Coqui (#1114).
+            (
+                TtsProviderId::Coqui,
+                CoquiTts::new(&config.coqui).is_configured(),
+            ),
         ]
+    }
+
+    fn list_providers() -> Vec<(TtsProviderId, bool)> {
+        Self::configured_providers(&Self::load_config())
     }
 
     /// Resolve the active provider: explicit config value, or first configured.
     fn resolve_provider(config_provider: Option<TtsProviderId>) -> Option<TtsProviderId> {
+        Self::resolve_provider_from(config_provider, &Self::list_providers())
+    }
+
+    fn resolve_provider_from(
+        config_provider: Option<TtsProviderId>,
+        providers: &[(TtsProviderId, bool)],
+    ) -> Option<TtsProviderId> {
         if let Some(id) = config_provider {
             return Some(id);
         }
-        // Auto-select: first configured provider
-        Self::list_providers()
-            .into_iter()
+        providers
+            .iter()
             .find(|(_, configured)| *configured)
-            .map(|(id, _)| id)
+            .map(|(id, _)| *id)
     }
 
     /// Parse provider from JSON params, falling back to config/auto-select.
@@ -536,12 +554,26 @@ mod tests {
 
     #[test]
     fn test_live_tts_resolve_provider_handles_explicit_and_auto_selection() {
+        // Pure helpers: no ambient config/env involvement (#1114 Greptile P1).
+        let providers = LiveTtsService::configured_providers(&TtsConfig::default());
         assert_eq!(
-            LiveTtsService::resolve_provider(Some(TtsProviderId::OpenAi)),
+            LiveTtsService::resolve_provider_from(Some(TtsProviderId::OpenAi), &providers),
             Some(TtsProviderId::OpenAi)
         );
-        // None means auto-select — returns first configured.
-        assert!(LiveTtsService::resolve_provider(None).is_some());
+        // Default TTS config has no API keys / local models, and default Coqui
+        // is not considered configured, so auto-select must return None.
+        assert_eq!(
+            LiveTtsService::resolve_provider_from(None, &providers),
+            None
+        );
+        let coqui = providers
+            .iter()
+            .find(|(id, _)| *id == TtsProviderId::Coqui)
+            .expect("coqui listed");
+        assert!(
+            !coqui.1,
+            "default Coqui endpoint must not count as configured"
+        );
     }
 
     #[tokio::test]
@@ -553,9 +585,9 @@ mod tests {
         assert!(status.get("enabled").is_some());
         assert!(status.get("configured").is_some());
         assert!(status.get("provider").is_some());
-        // Coqui is always considered "configured" (local service)
-        // so configured will be true even with no API keys
-        assert_eq!(status["configured"], true);
+        // Do not assert configured==false here: status() reloads ambient
+        // config/env. Default-state eligibility is covered by the pure helper
+        // test above (Greptile P1).
     }
 
     #[tokio::test]
