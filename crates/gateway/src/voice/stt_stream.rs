@@ -187,7 +187,8 @@ pub fn create_streaming_provider(
         | SttProviderId::VoxtralLocal
         | SttProviderId::WhisperLocal
         | SttProviderId::WhisperCli
-        | SttProviderId::SherpaOnnx => None,
+        | SttProviderId::SherpaOnnx
+        | SttProviderId::Gemini => None,
     }
 }
 
