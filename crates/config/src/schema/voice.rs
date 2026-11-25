@@ -657,6 +657,8 @@ pub struct VoiceGeminiSttConfig {
     pub api_key: Option<Secret<String>>,
     /// Model to use (e.g., "gemini-3.5-transcribe").
     pub model: Option<String>,
+    /// Live API model for live transcription (e.g., "gemini-3.5-transcribe-live").
+    pub realtime_model: Option<String>,
     /// BCP-47 language hint (e.g., "fr-FR"). Auto-detected when unset.
     pub language: Option<String>,
 }
@@ -667,6 +669,7 @@ impl Default for VoiceGeminiSttConfig {
             enabled: true,
             api_key: None,
             model: None,
+            realtime_model: None,
             language: None,
         }
     }

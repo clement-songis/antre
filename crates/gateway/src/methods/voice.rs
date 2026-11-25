@@ -246,7 +246,7 @@ impl VoiceProviderId {
                 hint: None,
             },
             Self::Gemini => VoiceProviderMeta {
-                description: "Gemini's dedicated transcription model, 85+ languages auto-detected",
+                description: "Gemini's dedicated transcription model, 85+ languages auto-detected, live through the Live API",
                 key_placeholder: Some("API key"),
                 key_url: Some("https://aistudio.google.com/apikey"),
                 key_url_label: Some("aistudio.google.com"),
@@ -902,6 +902,18 @@ fn enrich_voice_provider(
                 None,
             ),
         ),
+        VoiceProviderId::Gemini => (
+            serde_json::json!({
+                "modelChoices": ["gemini-3.5-transcribe"],
+                "realtimeModelChoices": ["gemini-3.5-transcribe-live"],
+                "customModel": true,
+            }),
+            serde_json::json!({
+                "model": config.voice.stt.gemini.model,
+                "realtimeModel": config.voice.stt.gemini.realtime_model,
+            }),
+            format_voice_summary(None, config.voice.stt.gemini.model.clone()),
+        ),
         _ => (serde_json::json!({}), serde_json::json!({}), None),
     };
 
@@ -1122,6 +1134,14 @@ pub(super) fn apply_voice_provider_settings(
             }
             if let Some(model) = get_nullable_string("realtimeModel") {
                 cfg.voice.stt.whisper.realtime_model = model;
+            }
+        },
+        "gemini" => {
+            if let Some(model) = get_nullable_string("model") {
+                cfg.voice.stt.gemini.model = model;
+            }
+            if let Some(model) = get_nullable_string("realtimeModel") {
+                cfg.voice.stt.gemini.realtime_model = model;
             }
         },
         "elevenlabs" => {

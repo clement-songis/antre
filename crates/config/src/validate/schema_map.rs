@@ -864,6 +864,7 @@ pub(super) fn build_schema_map() -> KnownKeys {
                                 ("enabled", Leaf),
                                 ("api_key", Leaf),
                                 ("model", Leaf),
+                                ("realtime_model", Leaf),
                                 ("language", Leaf),
                             ])),
                         ),

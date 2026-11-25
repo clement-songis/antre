@@ -102,6 +102,9 @@ max_stream_seconds = 120
 
 [voice.stt.whisper]
 realtime_model = "gpt-live-transcribe"
+
+[voice.stt.gemini]
+realtime_model = "gemini-3.5-transcribe-live"
 "#;
     let result = validate_toml_str(toml);
     let unknown: Vec<_> = result
