@@ -1,13 +1,8 @@
 //! Inbound Signal voice-note transcription.
 
-use {
-    async_trait::async_trait,
-    moltis_channels::{ChannelEventSink, InboundMediaDownloader, InboundMediaSource},
-    serde::Deserialize,
-    serde_json::Value,
-};
+use moltis_channels::{ChannelEventSink, InboundMediaDownloader, InboundMediaSource};
 
-use crate::{client::SignalClient, config::SignalAccountConfig};
+use crate::attachments::SignalAttachment;
 
 /// Matches the upload cap of the common hosted STT APIs (OpenAI Whisper).
 pub(crate) const MAX_VOICE_NOTE_BYTES: usize = 25 * 1024 * 1024;
@@ -21,16 +16,6 @@ pub(crate) const VOICE_REPLY_DOWNLOAD_FAILED: &str =
 pub(crate) const VOICE_REPLY_TOO_LARGE: &str = "Your voice message is too long for me to transcribe. Could you send a shorter one or type it out?";
 pub(crate) const VOICE_REPLY_STT_SETUP_HINT: &str =
     "I can't understand voice, you did not configure it, please visit Settings -> Voice";
-
-/// Attachment entry from a signal-cli `dataMessage.attachments` array.
-#[derive(Debug, Clone, Default, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct SignalAttachment {
-    pub id: Option<String>,
-    pub content_type: Option<String>,
-    pub filename: Option<String>,
-    pub size: Option<u64>,
-}
 
 impl SignalAttachment {
     /// Short STT format name for audio attachments, `None` for anything else.
@@ -77,19 +62,6 @@ impl SignalAttachment {
             _ => None,
         }
     }
-}
-
-pub(crate) fn parse_attachments(data_message: &Value) -> Vec<SignalAttachment> {
-    data_message
-        .get("attachments")
-        .and_then(Value::as_array)
-        .map(|items| {
-            items
-                .iter()
-                .filter_map(|item| serde_json::from_value(item.clone()).ok())
-                .collect()
-        })
-        .unwrap_or_default()
 }
 
 /// A voice note ready to be downloaded and transcribed.
@@ -209,39 +181,6 @@ pub(crate) async fn transcribe_voice_note(
             tracing::warn!(account_id, error = %e, "Signal voice transcription failed");
             fallback(VOICE_REPLY_TRANSCRIPTION_FAILED, audio)
         },
-    }
-}
-
-/// Fetches attachments for one conversation through the signal-cli daemon.
-pub(crate) struct SignalAttachmentDownloader<'a> {
-    pub client: &'a SignalClient,
-    pub config: &'a SignalAccountConfig,
-    pub chat_id: &'a str,
-}
-
-#[async_trait]
-impl InboundMediaDownloader for SignalAttachmentDownloader<'_> {
-    async fn download_media(
-        &self,
-        source: &InboundMediaSource,
-        max_bytes: usize,
-    ) -> moltis_channels::Result<Vec<u8>> {
-        match source {
-            InboundMediaSource::AttachmentId { id } => {
-                self.client
-                    .get_attachment(
-                        &self.config.http_url,
-                        self.config.account(),
-                        id,
-                        self.chat_id,
-                        max_bytes,
-                    )
-                    .await
-            },
-            _ => Err(moltis_channels::Error::invalid_input(
-                "Signal downloader received unsupported media source",
-            )),
-        }
     }
 }
 

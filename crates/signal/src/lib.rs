@@ -1,5 +1,6 @@
 //! Signal channel integration backed by an external `signal-cli` HTTP daemon.
 
+mod attachments;
 pub mod client;
 pub mod config;
 pub mod inbound;

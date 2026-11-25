@@ -8,7 +8,9 @@ image          = { workspace = true }
 mime_guess     = { workspace = true }
 moltis-common  = { workspace = true }
 moltis-metrics = { optional = true, workspace = true }
+pdf-extract    = { workspace = true }
 reqwest        = { workspace = true }
+tempfile       = { workspace = true }
 thiserror      = { workspace = true }
 tokio          = { workspace = true }
 tracing        = { workspace = true }

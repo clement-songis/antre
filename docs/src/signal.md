@@ -95,8 +95,24 @@ In groups, the usual `group_policy` and `mention_mode` rules apply before any
 download. A voice note cannot carry a mention, so with `mention_mode =
 "mention"` it is ignored unless it has a caption that mentions the account.
 
+## Images and Documents
+
+Other attachments from approved senders are downloaded the same way and handed
+to the agent with the message text:
+
+- **Images** (JPEG, PNG, GIF, WebP, up to 20 MB) are resized for the model and
+  sent as image input, so a vision-capable model can see them.
+- **Documents** (any other type, up to 25 MB) are saved to the session media
+  directory and the agent receives their name, type and local path. Text-like
+  files (plain text, Markdown, CSV, JSON, XML, YAML, TOML, HTML) and PDFs also
+  have their text inlined in the message, truncated to about 24,000
+  characters.
+
+A message can carry several attachments, including a voice note. An attachment
+that is too large, cannot be downloaded, or cannot be saved is never dropped
+silently: the agent receives a note such as `[Document - download failed]` and
+can tell the sender.
+
 ## Current Limits
 
-Outbound media uses the text fallback. Inbound attachments other than voice
-notes (images, documents) are surfaced to the agent as an attachment
-placeholder until attachment ingestion is added.
+Outbound media uses the text fallback: replies are sent as text only.

@@ -1,4 +1,9 @@
-use super::*;
+use {
+    super::*,
+    moltis_media::documents::{
+        MAX_INLINE_DOCUMENT_BYTES, MAX_INLINE_DOCUMENT_CHARS, should_inline_document_text,
+    },
+};
 
 #[test]
 fn voice_messages_are_marked_with_voice_message_kind() {

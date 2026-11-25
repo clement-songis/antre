@@ -341,6 +341,23 @@ pub struct ChannelDocumentFile {
     pub size_bytes: Option<u64>,
 }
 
+impl ChannelDocumentFile {
+    /// Describe a document saved with `ChannelEventSink::save_channel_attachment`.
+    #[must_use]
+    pub fn from_saved(saved: &SavedChannelFile, file_name: Option<&str>, media_type: &str) -> Self {
+        Self {
+            display_name: file_name
+                .map(str::trim)
+                .filter(|name| !name.is_empty())
+                .unwrap_or(&saved.filename)
+                .to_string(),
+            stored_filename: saved.filename.clone(),
+            mime_type: media_type.to_string(),
+            size_bytes: None,
+        }
+    }
+}
+
 /// Metadata for an inbound channel file saved to session media.
 #[derive(Debug, Clone)]
 pub struct SavedChannelFile {

@@ -11,14 +11,12 @@ moltis-channels   = { workspace = true }
 moltis-common     = { workspace = true }
 moltis-media      = { workspace = true }
 moltis-metrics    = { optional = true, workspace = true }
-pdf-extract       = { workspace = true }
 rand              = { workspace = true }
 reqwest           = { workspace = true }
 secrecy           = { workspace = true }
 serde             = { workspace = true }
 serde_json        = { workspace = true }
 teloxide          = { workspace = true }
-tempfile          = { workspace = true }
 thiserror         = { workspace = true }
 tokio             = { workspace = true }
 tokio-util        = { workspace = true }
@@ -29,9 +27,10 @@ default = []
 metrics = ["dep:moltis-metrics"]
 
 [dev-dependencies]
-axum   = { workspace = true }
-rstest = { workspace = true }
-tokio  = { workspace = true }
+axum     = { workspace = true }
+rstest   = { workspace = true }
+tempfile = { workspace = true }
+tokio    = { workspace = true }
 
 [lints]
 workspace = true
