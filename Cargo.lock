@@ -8945,6 +8945,7 @@ dependencies = [
  "tempfile",
  "thiserror 2.0.18",
  "tokio",
+ "tokio-tungstenite 0.26.2",
  "tracing",
  "urlencoding",
  "which 7.0.3",

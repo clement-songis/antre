@@ -716,6 +716,11 @@ loopback_http = true                # Plain HTTP on loopback binds: http://local
 # [voice.stt]
 # enabled = true
 # providers = []                        # UI allowlist (empty = show all)
+# streaming = true                      # Live transcription when the provider supports it
+# max_stream_seconds = 300              # Hard cap per live transcription stream
+
+# [voice.stt.whisper]
+# realtime_model = "gpt-live-transcribe"  # OpenAI Realtime API model for live transcription
 
 # [voice.stt.whisper_local]
 # endpoint = "http://localhost:8080"    # OpenAI-compatible transcription server

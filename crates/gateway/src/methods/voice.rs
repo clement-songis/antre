@@ -208,12 +208,12 @@ impl VoiceProviderId {
             },
             // STT Cloud
             Self::Whisper => VoiceProviderMeta {
-                description: "OpenAI clip transcription. Realtime voice models require the Realtime API.",
+                description: "OpenAI transcription, live through the Realtime API when available.",
                 key_placeholder: Some("sk-..."),
                 key_url: Some("https://platform.openai.com/api-keys"),
                 key_url_label: Some("platform.openai.com/api-keys"),
                 hint: Some(
-                    "gpt-realtime-2, gpt-realtime-translate, and gpt-realtime-whisper are Realtime API models. Moltis currently records a clip and uses OpenAI's transcription endpoint for this provider.",
+                    "Live transcription uses the Realtime model (default gpt-live-transcribe). The model above transcribes clips and is the fallback when the live stream fails.",
                 ),
             },
             Self::Groq => VoiceProviderMeta {
@@ -792,12 +792,13 @@ fn enrich_voice_provider(
             serde_json::json!({
                 "baseUrl": true,
                 "modelChoices": ["whisper-1", "gpt-4o-transcribe", "gpt-4o-mini-transcribe"],
-                "realtimeModelChoices": ["gpt-realtime-2", "gpt-realtime-translate", "gpt-realtime-whisper"],
+                "realtimeModelChoices": ["gpt-live-transcribe", "gpt-realtime-whisper", "gpt-4o-transcribe", "gpt-4o-mini-transcribe"],
                 "customModel": true,
             }),
             serde_json::json!({
                 "baseUrl": whisper_base_url(config),
                 "model": config.voice.stt.whisper.model,
+                "realtimeModel": config.voice.stt.whisper.realtime_model,
             }),
             format_voice_summary(None, config.voice.stt.whisper.model.clone()),
         ),
@@ -1089,6 +1090,9 @@ pub(super) fn apply_voice_provider_settings(
             }
             if let Some(model) = get_nullable_string("model") {
                 cfg.voice.stt.whisper.model = model;
+            }
+            if let Some(model) = get_nullable_string("realtimeModel") {
+                cfg.voice.stt.whisper.realtime_model = model;
             }
         },
         "elevenlabs" => {
@@ -1384,7 +1388,12 @@ mod tests {
             &serde_json::json!({
                 "baseUrl": "http://127.0.0.1:8001/v1",
                 "model": "gpt-4o-mini-transcribe",
+                "realtimeModel": "gpt-realtime-whisper",
             }),
+        );
+        assert_eq!(
+            config.voice.stt.whisper.realtime_model.as_deref(),
+            Some("gpt-realtime-whisper")
         );
 
         assert_eq!(
@@ -1453,9 +1462,10 @@ mod tests {
         assert_eq!(
             whisper["capabilities"]["realtimeModelChoices"],
             serde_json::json!([
-                "gpt-realtime-2",
-                "gpt-realtime-translate",
-                "gpt-realtime-whisper"
+                "gpt-live-transcribe",
+                "gpt-realtime-whisper",
+                "gpt-4o-transcribe",
+                "gpt-4o-mini-transcribe"
             ])
         );
     }

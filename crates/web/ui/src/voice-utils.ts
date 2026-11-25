@@ -33,6 +33,7 @@ export function toggleVoiceProvider(providerId: string, enabled: boolean, type: 
 interface SaveVoiceKeyOptions {
 	voice?: string;
 	model?: string;
+	realtimeModel?: string;
 	languageCode?: string;
 	baseUrl?: string;
 }
@@ -46,6 +47,7 @@ interface VoiceKeyPayload {
 	voice?: string;
 	voiceId?: string;
 	model?: string;
+	realtimeModel?: string;
 	languageCode?: string;
 	baseUrl?: string;
 }
@@ -57,6 +59,7 @@ export function saveVoiceKey(providerId: string, apiKey: string, opts?: SaveVoic
 		payload.voiceId = opts.voice;
 	}
 	if (typeof opts?.model === "string") payload.model = opts.model;
+	if (typeof opts?.realtimeModel === "string") payload.realtimeModel = opts.realtimeModel;
 	if (opts?.languageCode) payload.languageCode = opts.languageCode;
 	if (typeof opts?.baseUrl === "string") payload.baseUrl = opts.baseUrl;
 	return sendRpc("voice.config.save_key", payload);
@@ -65,6 +68,7 @@ export function saveVoiceKey(providerId: string, apiKey: string, opts?: SaveVoic
 interface SaveVoiceSettingsOptions {
 	voice?: string;
 	model?: string;
+	realtimeModel?: string;
 	languageCode?: string;
 	baseUrl?: string;
 }
@@ -77,6 +81,7 @@ interface VoiceSettingsPayload {
 	voice?: string;
 	voiceId?: string;
 	model?: string;
+	realtimeModel?: string;
 	languageCode?: string;
 	baseUrl?: string;
 }
@@ -88,6 +93,7 @@ export function saveVoiceSettings(providerId: string, opts?: SaveVoiceSettingsOp
 		payload.voiceId = opts.voice;
 	}
 	if (typeof opts?.model === "string") payload.model = opts.model;
+	if (typeof opts?.realtimeModel === "string") payload.realtimeModel = opts.realtimeModel;
 	if (opts?.languageCode) payload.languageCode = opts.languageCode;
 	if (typeof opts?.baseUrl === "string") payload.baseUrl = opts.baseUrl;
 	return sendRpc("voice.config.save_settings", payload);

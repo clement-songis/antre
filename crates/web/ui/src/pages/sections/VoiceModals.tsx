@@ -54,7 +54,14 @@ export interface VoiceProviderData {
 		modelChoices?: string[];
 		realtimeModelChoices?: string[];
 	};
-	settings?: { baseUrl?: string; voiceId?: string; voice?: string; model?: string; languageCode?: string };
+	settings?: {
+		baseUrl?: string;
+		voiceId?: string;
+		voice?: string;
+		model?: string;
+		realtimeModel?: string;
+		languageCode?: string;
+	};
 }
 
 export interface VoiceTesting {
@@ -464,6 +471,7 @@ export function AddVoiceProviderModal({
 	const [baseUrlValue, setBaseUrlValue] = useState("");
 	const [voiceValue, setVoiceValue] = useState("");
 	const [modelValue, setModelValue] = useState("");
+	const [realtimeModelValue, setRealtimeModelValue] = useState("");
 	const [languageCodeValue, setLanguageCodeValue] = useState("");
 	const [elevenlabsCatalog, setElevenlabsCatalog] = useState<ElevenlabsCatalog>({
 		voices: [],
@@ -493,6 +501,7 @@ export function AddVoiceProviderModal({
 		setBaseUrlValue("");
 		setVoiceValue("");
 		setModelValue("");
+		setRealtimeModelValue("");
 		setLanguageCodeValue("");
 		setError("");
 	}
@@ -505,8 +514,16 @@ export function AddVoiceProviderModal({
 		const hasBaseUrl = supportsBaseUrl && (trimmedBaseUrl.length > 0 || hadBaseUrl);
 		const hadModel = typeof providerMeta?.settings?.model === "string" && providerMeta.settings.model.trim().length > 0;
 		const hasModelSetting = supportsModelSettings && (modelValue.trim().length > 0 || hadModel);
+		const hadRealtimeModel =
+			typeof providerMeta?.settings?.realtimeModel === "string" &&
+			providerMeta.settings.realtimeModel.trim().length > 0;
+		const hasRealtimeModelSetting =
+			realtimeModelChoices.length > 0 && (realtimeModelValue.trim().length > 0 || hadRealtimeModel);
 		const hasSettings =
-			(supportsTtsVoiceSettings && (voiceValue.trim() || languageCodeValue.trim())) || hasModelSetting || hasBaseUrl;
+			(supportsTtsVoiceSettings && (voiceValue.trim() || languageCodeValue.trim())) ||
+			hasModelSetting ||
+			hasRealtimeModelSetting ||
+			hasBaseUrl;
 		if (!(hasApiKey || hasSettings)) {
 			setError("Provide an API key, base URL, or at least one provider setting.");
 			return;
@@ -518,6 +535,7 @@ export function AddVoiceProviderModal({
 			baseUrl: hasBaseUrl ? trimmedBaseUrl : undefined,
 			voice: supportsTtsVoiceSettings ? voiceValue.trim() || undefined : undefined,
 			model: hasModelSetting ? modelValue.trim() : undefined,
+			realtimeModel: hasRealtimeModelSetting ? realtimeModelValue.trim() : undefined,
 			languageCode: supportsTtsVoiceSettings ? languageCodeValue.trim() || undefined : undefined,
 		};
 		const req = hasApiKey
@@ -547,6 +565,7 @@ export function AddVoiceProviderModal({
 		setBaseUrlValue("");
 		setVoiceValue("");
 		setModelValue("");
+		setRealtimeModelValue("");
 		setLanguageCodeValue("");
 		setError("");
 	}
@@ -557,6 +576,7 @@ export function AddVoiceProviderModal({
 		setBaseUrlValue(settings.baseUrl || "");
 		setVoiceValue(settings.voiceId || settings.voice || "");
 		setModelValue(settings.model || "");
+		setRealtimeModelValue(settings.realtimeModel || "");
 		setLanguageCodeValue(settings.languageCode || "");
 	}, [selectedProvider, voiceSelectedProviderData.value]);
 
@@ -725,10 +745,25 @@ export function AddVoiceProviderModal({
 									</datalist>
 								) : null}
 								{realtimeModelChoices.length > 0 ? (
-									<div className="rounded border border-[var(--border)] bg-[var(--surface2)] px-3 py-2 text-xs text-[var(--muted)]">
-										OpenAI Realtime models: {realtimeModelChoices.join(", ")}. These use the Realtime API, not this
-										record-and-transcribe provider.
-									</div>
+									<>
+										<label className="text-xs text-[var(--muted)]" htmlFor="voice-realtime-model">
+											Realtime model (live transcription)
+										</label>
+										<input
+											id="voice-realtime-model"
+											type="text"
+											className="provider-key-input w-full"
+											value={realtimeModelValue}
+											onInput={(e: Event) => setRealtimeModelValue(targetValue(e))}
+											list="voice-realtime-model-options"
+											placeholder={`${realtimeModelChoices[0]} (default)`}
+										/>
+										<datalist id="voice-realtime-model-options">
+											{realtimeModelChoices.map((model) => (
+												<option key={model} value={model} />
+											))}
+										</datalist>
+									</>
 								) : null}
 							</div>
 						) : null}

@@ -14,6 +14,7 @@ import { t } from "./i18n";
 import { bumpSessionCount, seedSessionPreviewFromUserText, setSessionReplying } from "./sessions";
 import * as S from "./state";
 import { sessionStore } from "./stores/session-store";
+import { LiveTranscription } from "./voice/live-transcription";
 
 // ── Shared state ─────────────────────────────────────────────
 let micBtn: HTMLButtonElement | null = null;
@@ -25,6 +26,8 @@ let isRecording = false;
 let isStarting = false;
 let recordingCancelled = false;
 let transcribingEl: HTMLElement | null = null;
+let streamingAvailable = false;
+let livePending: Promise<LiveTranscription | null> | null = null;
 
 // ── PTT state ────────────────────────────────────────────────
 let pttKey = localStorage.getItem("moltis_ptt_key") || "F13";
@@ -78,6 +81,8 @@ interface VoiceProvidersStatus {
 
 interface SttStatus {
 	provider?: string;
+	configured?: boolean;
+	streaming?: { available?: boolean };
 }
 
 interface SttProviderInfo {
@@ -118,14 +123,17 @@ async function checkSttStatus(): Promise<void> {
 		updateVadButton();
 		return;
 	}
-	const providersRes = await sendRpc<VoiceProvidersStatus>("voice.providers.all", {});
+	const [providersRes, statusRes] = await Promise.all([
+		sendRpc<VoiceProvidersStatus>("voice.providers.all", {}),
+		sendRpc<SttStatus>("stt.status", {}),
+	]);
 	if (providersRes?.ok && providersRes.payload) {
 		const sttProviders = Array.isArray(providersRes.payload.stt) ? providersRes.payload.stt : [];
 		sttConfigured = sttProviders.some((provider) => provider.enabled === true && provider.available === true);
 	} else {
-		const res = await sendRpc<{ configured?: boolean }>("stt.status", {});
-		sttConfigured = res?.ok && res.payload?.configured === true;
+		sttConfigured = statusRes?.ok === true && statusRes.payload?.configured === true;
 	}
+	streamingAvailable = statusRes?.ok === true && statusRes.payload?.streaming?.available === true;
 	if (!sttConfigured && vadActive) stopVad();
 	updateMicButton();
 	updateVadButton();
@@ -267,6 +275,11 @@ async function startRecording(opts?: StartRecordingOpts): Promise<void> {
 		};
 
 		mediaRecorder.start(250);
+		// Conversation mode keeps its recorder running between utterances, so it
+		// stays on clip transcription rather than streaming silence.
+		if (!fromVad && streamingAvailable) {
+			livePending = LiveTranscription.start(stream, { onText: showLiveText });
+		}
 	} catch (err) {
 		isStarting = false;
 		isRecording = false;
@@ -320,6 +333,42 @@ function cancelRecording(): void {
 }
 
 // ── Transcription UI helpers ─────────────────────────────────
+
+function showLiveText(settled: string, pending: string): void {
+	if (!transcribingEl && S.chatMsgBox) {
+		transcribingEl = createTranscribingIndicator("", false);
+		transcribingEl.setAttribute("role", "status");
+		transcribingEl.setAttribute("aria-live", "polite");
+		(S.chatMsgBox as HTMLElement).appendChild(transcribingEl);
+	}
+	const text = transcribingEl?.querySelector(".voice-transcribing-text");
+	if (!text) return;
+	text.textContent = "";
+	if (settled) text.append(settled);
+	if (pending) {
+		const pendingEl = document.createElement("span");
+		pendingEl.className = "text-[var(--muted)]";
+		pendingEl.textContent = settled ? ` ${pending}` : pending;
+		text.append(pendingEl);
+	}
+	smartScrollToBottom();
+}
+
+function cancelLiveTranscription(live: Promise<LiveTranscription | null> | null): void {
+	live?.then((session) => session?.cancel()).catch(() => undefined);
+}
+
+/** Final live transcript, or `null` when the clip must be transcribed instead. */
+async function finishLiveTranscription(live: Promise<LiveTranscription | null>): Promise<string | null> {
+	const session = await live;
+	if (!session) return null;
+	const result = await session.stop();
+	if (!result.ok) {
+		console.warn("[voice] live transcription failed, transcribing the clip:", result.error);
+		return null;
+	}
+	return result.text || null;
+}
 
 function createTranscribingIndicator(message: string, isError: boolean): HTMLElement {
 	const el = document.createElement("div");
@@ -459,15 +508,71 @@ interface TranscriptionUploadResponse {
 	error?: string;
 }
 
+async function isUsableClip(blob: Blob): Promise<boolean> {
+	// Skip tiny blobs that are just WebM headers with no real audio
+	if (blob.size < 2000) {
+		console.debug("[voice] skipping tiny blob:", blob.size, "bytes");
+		return false;
+	}
+	// Validate EBML header (WebM magic bytes: 1A 45 DF A3)
+	const headerBytes = new Uint8Array(await blob.slice(0, 4).arrayBuffer());
+	if (headerBytes[0] !== 0x1a || headerBytes[1] !== 0x45 || headerBytes[2] !== 0xdf || headerBytes[3] !== 0xa3) {
+		console.warn("[voice] corrupt WebM blob (bad EBML header), discarding. size:", blob.size);
+		return false;
+	}
+	return true;
+}
+
+async function uploadClip(
+	blob: Blob,
+	transcribe: boolean,
+	providerInfo: SttProviderInfo | null,
+): Promise<TranscriptionUploadResponse> {
+	const abortCtrl = new AbortController();
+	const fetchTimeout = setTimeout(() => abortCtrl.abort(), 15000);
+	try {
+		const query = new URLSearchParams();
+		if (transcribe) query.set("transcribe", "true");
+		if (transcribe && providerInfo?.id) query.set("provider", providerInfo.id);
+		const resp = await fetch(`/api/sessions/${encodeURIComponent(S.activeSessionKey)}/upload?${query.toString()}`, {
+			method: "POST",
+			headers: { "Content-Type": blob.type || "audio/webm" },
+			body: blob,
+			signal: abortCtrl.signal,
+		});
+		return await resp.json();
+	} finally {
+		clearTimeout(fetchTimeout);
+	}
+}
+
+/** Send a live transcript, attaching the recorded clip when it can be stored. */
+async function sendLiveTranscript(text: string, blob: Blob, providerInfo: SttProviderInfo | null): Promise<void> {
+	let audioFilename: string | null = null;
+	if (await isUsableClip(blob)) {
+		try {
+			const res = await uploadClip(blob, false, providerInfo);
+			if (res.ok && typeof res.filename === "string" && res.filename.trim()) audioFilename = res.filename.trim();
+		} catch (err) {
+			console.warn("[voice] storing the voice clip failed, sending the text only:", err);
+		}
+	}
+	cleanupTranscribingState();
+	sendTranscribedMessage(text, audioFilename, providerInfo);
+}
+
 async function transcribeAudio(): Promise<void> {
+	const live = livePending;
+	livePending = null;
 	if (recordingCancelled || audioChunks.length === 0) {
 		recordingCancelled = false;
+		cancelLiveTranscription(live);
 		cleanupTranscribingState();
 		return;
 	}
 	recordingCancelled = false;
 
-	if (S.chatMsgBox) {
+	if (S.chatMsgBox && !transcribingEl) {
 		transcribingEl = createTranscribingIndicator(t("chat:voiceTranscribingMessage"), false);
 		(S.chatMsgBox as HTMLElement).appendChild(transcribingEl);
 		smartScrollToBottom();
@@ -478,37 +583,18 @@ async function transcribeAudio(): Promise<void> {
 		audioChunks = [];
 		const providerInfo = await resolveSttProviderInfo();
 
-		// Skip tiny blobs that are just WebM headers with no real audio
-		if (blob.size < 2000) {
-			console.debug("[voice] skipping tiny blob:", blob.size, "bytes");
+		const liveText = live ? await finishLiveTranscription(live) : null;
+		if (liveText) {
+			await sendLiveTranscript(liveText, blob, providerInfo);
+			return;
+		}
+
+		if (!(await isUsableClip(blob))) {
 			cleanupTranscribingState();
 			return;
 		}
 
-		// Validate EBML header (WebM magic bytes: 1A 45 DF A3)
-		const headerBytes = new Uint8Array(await blob.slice(0, 4).arrayBuffer());
-		if (headerBytes[0] !== 0x1a || headerBytes[1] !== 0x45 || headerBytes[2] !== 0xdf || headerBytes[3] !== 0xa3) {
-			console.warn("[voice] corrupt WebM blob (bad EBML header), discarding. size:", blob.size);
-			cleanupTranscribingState();
-			return;
-		}
-
-		const abortCtrl = new AbortController();
-		const fetchTimeout = setTimeout(() => abortCtrl.abort(), 15000);
-		let res: TranscriptionUploadResponse;
-		try {
-			const query = new URLSearchParams({ transcribe: "true" });
-			if (providerInfo?.id) query.set("provider", providerInfo.id);
-			const resp = await fetch(`/api/sessions/${encodeURIComponent(S.activeSessionKey)}/upload?${query.toString()}`, {
-				method: "POST",
-				headers: { "Content-Type": blob.type || "audio/webm" },
-				body: blob,
-				signal: abortCtrl.signal,
-			});
-			res = await resp.json();
-		} finally {
-			clearTimeout(fetchTimeout);
-		}
+		const res = await uploadClip(blob, true, providerInfo);
 
 		micBtn?.classList.remove("transcribing");
 		if (micBtn) micBtn.title = t("chat:micTooltip");
@@ -983,6 +1069,8 @@ export function initVadButton(btn: HTMLButtonElement | null): void {
 
 /** Teardown voice input module. */
 export function teardownVoiceInput(): void {
+	cancelLiveTranscription(livePending);
+	livePending = null;
 	if (vadActive) stopVad();
 	if (isRecording && mediaRecorder) {
 		mediaRecorder.stop();

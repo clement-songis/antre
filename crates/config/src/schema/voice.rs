@@ -232,6 +232,10 @@ pub struct VoiceSttConfig {
     pub provider: Option<VoiceSttProvider>,
     /// Provider IDs to list in the UI. Empty means list all.
     pub providers: Vec<String>,
+    /// Stream audio for live transcription when the active provider supports it.
+    pub streaming: bool,
+    /// Hard cap on one live transcription stream, in seconds.
+    pub max_stream_seconds: u64,
     /// Whisper (OpenAI) settings.
     pub whisper: VoiceWhisperConfig,
     /// Groq (Whisper-compatible) settings.
@@ -260,6 +264,8 @@ impl Default for VoiceSttConfig {
             enabled: true,
             provider: None,
             providers: Vec::new(),
+            streaming: true,
+            max_stream_seconds: 300,
             whisper: VoiceWhisperConfig::default(),
             groq: VoiceGroqSttConfig::default(),
             deepgram: VoiceDeepgramConfig::default(),
@@ -471,6 +477,9 @@ pub struct VoiceWhisperConfig {
     pub base_url: Option<String>,
     /// Model to use (whisper-1, gpt-4o-transcribe, gpt-4o-mini-transcribe).
     pub model: Option<String>,
+    /// Realtime API transcription model for live transcription
+    /// (gpt-live-transcribe, gpt-realtime-whisper, gpt-4o-transcribe).
+    pub realtime_model: Option<String>,
     /// Language hint (ISO 639-1 code).
     pub language: Option<String>,
 }
@@ -482,6 +491,7 @@ impl Default for VoiceWhisperConfig {
             api_key: None,
             base_url: None,
             model: None,
+            realtime_model: None,
             language: None,
         }
     }

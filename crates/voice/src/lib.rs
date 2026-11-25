@@ -18,6 +18,10 @@ pub use {
     stt::{
         DeepgramStt, ElevenLabsStt, GoogleStt, GroqStt, MistralStt, SherpaOnnxStt, SttProvider,
         TranscribeRequest, Transcript, VoxtralLocalStt, WhisperCliStt, WhisperLocalStt, WhisperStt,
+        streaming::{
+            MockStreamingStt, OPENAI_DEFAULT_REALTIME_MODEL, OpenAiRealtimeStt, StreamingSttEvent,
+            StreamingSttInput, StreamingSttProvider, StreamingSttRequest, StreamingSttSession,
+        },
     },
     tts::{
         AudioFormat, AudioOutput, CoquiTts, ElevenLabsTts, GoogleTts, OpenAiTts, PiperTts,

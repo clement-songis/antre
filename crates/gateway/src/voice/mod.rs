@@ -6,6 +6,8 @@
 #[cfg(feature = "voice")]
 mod stt_service;
 #[cfg(feature = "voice")]
+pub mod stt_stream;
+#[cfg(feature = "voice")]
 mod tts_service;
 
 #[cfg(feature = "voice")]

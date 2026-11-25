@@ -1,4 +1,4 @@
-mod auth;
+pub(crate) mod auth;
 mod handlers;
 mod pty;
 mod tmux;

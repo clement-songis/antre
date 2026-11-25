@@ -9,6 +9,7 @@ mod mistral;
 pub mod mock;
 mod openai_compat;
 mod sherpa_onnx;
+pub mod streaming;
 mod voxtral_local;
 mod whisper;
 mod whisper_cli;

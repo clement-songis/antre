@@ -898,6 +898,17 @@ pub(super) fn check_semantic_warnings(config: &MoltisConfig, diagnostics: &mut V
         }
     }
 
+    if config.voice.stt.streaming && config.voice.stt.max_stream_seconds == 0 {
+        diagnostics.push(Diagnostic {
+            severity: Severity::Warning,
+            category: "invalid-value",
+            path: "voice.stt.max_stream_seconds".into(),
+            message: "max_stream_seconds = 0 closes every live transcription stream at once; \
+                      set a positive value or streaming = false"
+                .into(),
+        });
+    }
+
     // Unknown hook event names
     let valid_hook_events = [
         "BeforeAgentStart",
