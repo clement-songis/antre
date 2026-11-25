@@ -16,7 +16,17 @@ use {
     serde_json::Value,
 };
 
-use crate::{client::SignalClient, config::SignalAccountConfig};
+use crate::{
+    client::SignalClient,
+    config::SignalAccountConfig,
+    voice::{
+        SignalAttachmentDownloader, VoiceOutcome, find_voice_note, parse_attachments,
+        transcribe_voice_note,
+    },
+};
+
+pub(crate) const ATTACHMENT_PLACEHOLDER: &str =
+    "[Signal attachment received. Attachment ingestion is not enabled in this build.]";
 
 const OTP_CHALLENGE_PREFIX: &str =
     "This Signal sender is not approved yet. Reply with this PIN to approve access:";
@@ -161,23 +171,66 @@ pub async fn handle_event(
         })
         .await;
 
+    let attachments = parse_attachments(data_message);
+    let mut voice_audio = None;
+    let body = if let Some(voice) = find_voice_note(&attachments) {
+        let downloader = SignalAttachmentDownloader {
+            client,
+            config: &cfg,
+            chat_id: &chat_id,
+        };
+        match transcribe_voice_note(&voice, &text, &downloader, event_sink.as_ref(), account_id)
+            .await
+        {
+            VoiceOutcome::Dispatch { body, audio } => {
+                voice_audio = audio;
+                body
+            },
+            VoiceOutcome::Reply(reply) => {
+                if let Err(e) = send_direct_text(client, &cfg, &chat_id, reply).await {
+                    tracing::warn!(
+                        account_id,
+                        chat_id,
+                        "failed to send Signal voice fallback reply: {e}"
+                    );
+                }
+                return;
+            },
+        }
+    } else if text.is_empty() && !attachments.is_empty() {
+        ATTACHMENT_PLACEHOLDER.to_string()
+    } else {
+        text
+    };
+
+    let audio_filename = match &voice_audio {
+        Some(audio) => {
+            let stamp = reply_to.message_id.as_deref().unwrap_or("unknown");
+            let filename = format!("voice-signal-{stamp}.{}", audio.format);
+            event_sink
+                .save_channel_voice(&audio.data, &filename, &reply_to)
+                .await
+        },
+        None => None,
+    };
+    let message_kind = if voice_audio.is_some() {
+        ChannelMessageKind::Voice
+    } else {
+        ChannelMessageKind::Text
+    };
+
     let meta = ChannelMessageMeta {
         channel_type: ChannelType::Signal,
         sender_name,
         username: sender_uuid,
         sender_id: Some(sender.clone()),
-        message_kind: Some(ChannelMessageKind::Text),
+        message_kind: Some(message_kind),
         model: cfg.model.clone(),
         agent_id: cfg.agent_id.clone(),
-        audio_filename: None,
+        audio_filename,
         documents: None,
     };
 
-    let body = if text.is_empty() && data_message.get("attachments").is_some() {
-        "[Signal attachment received. Attachment ingestion is not enabled in this build.]"
-    } else {
-        text.as_str()
-    };
     let display_body = if is_group {
         match (group_name.as_deref(), group_id.as_deref()) {
             (Some(name), _) => format!("[Signal group: {name}]\n{body}"),
@@ -626,3 +679,7 @@ mod tests {
         assert_eq!(crate::inbound::utf16_to_utf8_offset(s, 3), Some(5)); // 'b'
     }
 }
+
+#[cfg(test)]
+#[path = "inbound_voice_tests.rs"]
+mod voice_tests;

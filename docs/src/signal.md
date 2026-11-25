@@ -70,8 +70,33 @@ list. It is included by default.
 | `otp_cooldown_secs` | no | `300` | Cooldown after 3 failed OTP attempts |
 | `text_chunk_limit` | no | `4000` | Maximum UTF-8 bytes per outbound text chunk |
 
+## Voice Notes
+
+Voice notes from approved senders are transcribed with the speech-to-text
+provider configured under **Settings -> Voice** (`[voice.stt]`), then sent to
+the agent as the user message. Any text sent with the note is kept as a
+caption above the transcript. The audio is also saved to the session media so
+it can be played back from the web UI.
+
+Moltis fetches the audio from the daemon with signal-cli's `getAttachment`
+JSON-RPC method, so the daemon does not need to share a filesystem with
+Moltis. Audio is recognized from the attachment content type (AAC/M4A, Ogg
+Opus, MP3, WAV, WebM), falling back to the file extension.
+
+The sender always gets an answer:
+
+- No STT provider configured: a reply pointing to **Settings -> Voice**.
+- Voice note larger than 25 MB, download failure, transcription failure, or
+  empty transcript: a short reply asking to try again or type the message.
+- When a caption was sent with the note, the caption is forwarded to the agent
+  instead of the error reply.
+
+In groups, the usual `group_policy` and `mention_mode` rules apply before any
+download. A voice note cannot carry a mention, so with `mention_mode =
+"mention"` it is ignored unless it has a caption that mentions the account.
+
 ## Current Limits
 
-Signal support currently handles text DMs and group text messages. Outbound
-media uses the text fallback, and inbound attachments are surfaced as an
-attachment placeholder until attachment ingestion is added.
+Outbound media uses the text fallback. Inbound attachments other than voice
+notes (images, documents) are surfaced to the agent as an attachment
+placeholder until attachment ingestion is added.

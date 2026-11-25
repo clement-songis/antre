@@ -1,6 +1,7 @@
 //! HTTP JSON-RPC client for signal-cli daemon mode.
 
 use {
+    base64::{Engine as _, engine::general_purpose::STANDARD as BASE64},
     reqwest::{Client, Response},
     serde::{Deserialize, Serialize, de::DeserializeOwned},
     serde_json::{Value, json},
@@ -105,6 +106,32 @@ impl SignalClient {
         self.rpc(base_url, method, params).await
     }
 
+    /// Fetch an inbound attachment through signal-cli's `getAttachment` RPC.
+    ///
+    /// `chat_id` is the conversation the attachment arrived in: a sender
+    /// identifier for DMs or `group:<id>` for groups.
+    pub async fn get_attachment(
+        &self,
+        base_url: &str,
+        account: Option<&str>,
+        attachment_id: &str,
+        chat_id: &str,
+        max_bytes: usize,
+    ) -> moltis_channels::Result<Vec<u8>> {
+        let mut params = json!({ "id": attachment_id });
+        if let Some(obj) = params.as_object_mut() {
+            match chat_id.strip_prefix("group:") {
+                Some(group_id) => obj.insert("groupId".to_string(), json!(group_id)),
+                None => obj.insert("recipient".to_string(), json!(chat_id)),
+            };
+            if let Some(account) = account {
+                obj.insert("account".to_string(), json!(account));
+            }
+        }
+        let result = self.rpc_value(base_url, "getAttachment", params).await?;
+        decode_attachment_payload(&result, max_bytes)
+    }
+
     pub async fn rpc<T>(
         &self,
         base_url: &str,
@@ -164,5 +191,64 @@ impl SignalClient {
                 "signal-cli RPC {method} returned no result"
             ))
         })
+    }
+}
+
+/// Decode the base64 payload returned by `getAttachment`, either
+/// `{"data": "<base64>"}` or a bare base64 string, enforcing `max_bytes`.
+pub(crate) fn decode_attachment_payload(
+    result: &Value,
+    max_bytes: usize,
+) -> moltis_channels::Result<Vec<u8>> {
+    let encoded = result
+        .get("data")
+        .and_then(Value::as_str)
+        .or_else(|| result.as_str())
+        .ok_or_else(|| {
+            moltis_channels::Error::invalid_input("signal-cli getAttachment returned no data")
+        })?;
+    // Reject before decoding: base64 inflates the payload by 4/3.
+    if encoded.len() / 4 * 3 > max_bytes.saturating_add(3) {
+        return Err(moltis_channels::Error::invalid_input(format!(
+            "Signal attachment exceeds {max_bytes} bytes"
+        )));
+    }
+    let bytes = BASE64
+        .decode(encoded.trim())
+        .map_err(|e| moltis_channels::Error::external("signal-cli attachment base64", e))?;
+    if bytes.len() > max_bytes {
+        return Err(moltis_channels::Error::invalid_input(format!(
+            "Signal attachment exceeds {max_bytes} bytes"
+        )));
+    }
+    Ok(bytes)
+}
+
+#[cfg(test)]
+mod tests {
+    use {
+        super::decode_attachment_payload,
+        base64::{Engine as _, engine::general_purpose::STANDARD as BASE64},
+        serde_json::json,
+    };
+
+    #[test]
+    fn decodes_data_object_and_bare_string() {
+        let encoded = BASE64.encode(b"voice-bytes");
+        let from_object = decode_attachment_payload(&json!({ "data": encoded }), 1024);
+        assert_eq!(from_object.ok(), Some(b"voice-bytes".to_vec()));
+        let from_string = decode_attachment_payload(&json!(encoded), 1024);
+        assert_eq!(from_string.ok(), Some(b"voice-bytes".to_vec()));
+    }
+
+    #[test]
+    fn rejects_missing_data_invalid_base64_and_oversize() {
+        assert!(decode_attachment_payload(&json!({}), 1024).is_err());
+        assert!(decode_attachment_payload(&json!({ "data": "%%%" }), 1024).is_err());
+        let encoded = BASE64.encode(vec![0_u8; 64]);
+        assert!(decode_attachment_payload(&json!({ "data": encoded }), 63).is_err());
+        assert!(decode_attachment_payload(&json!({ "data": encoded }), 64).is_ok());
+        let huge = BASE64.encode(vec![0_u8; 4096]);
+        assert!(decode_attachment_payload(&json!({ "data": huge }), 16).is_err());
     }
 }

@@ -251,7 +251,7 @@ impl ChannelType {
                     supports_streaming: false,
                     supports_interactive: false,
                     supports_threads: false,
-                    supports_voice_ingest: false,
+                    supports_voice_ingest: true,
                     supports_pairing: false,
                     supports_otp: true,
                     supports_reactions: false,
