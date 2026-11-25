@@ -17,16 +17,11 @@ use {
 };
 
 use crate::{
+    attachments::{SignalAttachmentDownloader, ingest_attachments, parse_attachments},
     client::SignalClient,
     config::SignalAccountConfig,
-    voice::{
-        SignalAttachmentDownloader, VoiceOutcome, find_voice_note, parse_attachments,
-        transcribe_voice_note,
-    },
+    voice::{VoiceOutcome, find_voice_note, transcribe_voice_note},
 };
-
-pub(crate) const ATTACHMENT_PLACEHOLDER: &str =
-    "[Signal attachment received. Attachment ingestion is not enabled in this build.]";
 
 const OTP_CHALLENGE_PREFIX: &str =
     "This Signal sender is not approved yet. Reply with this PIN to approve access:";
@@ -172,19 +167,36 @@ pub async fn handle_event(
         .await;
 
     let attachments = parse_attachments(data_message);
+    let downloader = SignalAttachmentDownloader {
+        client,
+        config: &cfg,
+        chat_id: &chat_id,
+    };
+    let voice = find_voice_note(&attachments);
+    let other_attachments: Vec<_> = attachments
+        .iter()
+        .filter(|attachment| {
+            voice
+                .as_ref()
+                .is_none_or(|voice| attachment.id.as_deref() != Some(voice.attachment_id.as_str()))
+        })
+        .collect();
+
     let mut voice_audio = None;
-    let body = if let Some(voice) = find_voice_note(&attachments) {
-        let downloader = SignalAttachmentDownloader {
-            client,
-            config: &cfg,
-            chat_id: &chat_id,
-        };
-        match transcribe_voice_note(&voice, &text, &downloader, event_sink.as_ref(), account_id)
-            .await
+    let mut caption = text;
+    if let Some(voice) = &voice {
+        match transcribe_voice_note(
+            voice,
+            &caption,
+            &downloader,
+            event_sink.as_ref(),
+            account_id,
+        )
+        .await
         {
             VoiceOutcome::Dispatch { body, audio } => {
                 voice_audio = audio;
-                body
+                caption = body;
             },
             VoiceOutcome::Reply(reply) => {
                 if let Err(e) = send_direct_text(client, &cfg, &chat_id, reply).await {
@@ -194,14 +206,26 @@ pub async fn handle_event(
                         "failed to send Signal voice fallback reply: {e}"
                     );
                 }
-                return;
+                if other_attachments.is_empty() {
+                    return;
+                }
             },
         }
-    } else if text.is_empty() && !attachments.is_empty() {
-        ATTACHMENT_PLACEHOLDER.to_string()
-    } else {
-        text
-    };
+    }
+
+    let media = ingest_attachments(
+        &other_attachments,
+        &downloader,
+        event_sink.as_ref(),
+        &reply_to,
+        account_id,
+    )
+    .await;
+    let body = std::iter::once(caption.trim().to_string())
+        .chain(media.sections)
+        .filter(|section| !section.is_empty())
+        .collect::<Vec<_>>()
+        .join("\n\n");
 
     let audio_filename = match &voice_audio {
         Some(audio) => {
@@ -215,6 +239,10 @@ pub async fn handle_event(
     };
     let message_kind = if voice_audio.is_some() {
         ChannelMessageKind::Voice
+    } else if !media.images.is_empty() {
+        ChannelMessageKind::Photo
+    } else if !media.documents.is_empty() {
+        ChannelMessageKind::Document
     } else {
         ChannelMessageKind::Text
     };
@@ -228,7 +256,7 @@ pub async fn handle_event(
         model: cfg.model.clone(),
         agent_id: cfg.agent_id.clone(),
         audio_filename,
-        documents: None,
+        documents: (!media.documents.is_empty()).then_some(media.documents),
     };
 
     let display_body = if is_group {
@@ -241,9 +269,15 @@ pub async fn handle_event(
         body.to_string()
     };
 
-    event_sink
-        .dispatch_to_chat(&display_body, reply_to, meta)
-        .await;
+    if media.images.is_empty() {
+        event_sink
+            .dispatch_to_chat(&display_body, reply_to, meta)
+            .await;
+    } else {
+        event_sink
+            .dispatch_to_chat_with_attachments(&display_body, media.images, reply_to, meta)
+            .await;
+    }
 }
 
 fn extract_envelope(raw: &Value) -> Option<&Value> {
@@ -681,5 +715,5 @@ mod tests {
 }
 
 #[cfg(test)]
-#[path = "inbound_voice_tests.rs"]
-mod voice_tests;
+#[path = "inbound_media_tests.rs"]
+mod media_tests;

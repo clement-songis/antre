@@ -10,8 +10,8 @@ use {
 
 use {
     moltis_channels::{
-        ChannelAttachment, ChannelDocumentFile, ChannelEventSink, ChannelMessageKind,
-        ChannelReplyTarget, SavedChannelFile,
+        ChannelAttachment, ChannelEventSink, ChannelMessageKind, ChannelReplyTarget,
+        SavedChannelFile,
     },
     moltis_common::types::ChatType,
 };
@@ -159,192 +159,11 @@ pub(super) fn extract_document_file(msg: &Message) -> Option<DocumentFileInfo> {
     }
 }
 
-pub(super) const MAX_INLINE_DOCUMENT_BYTES: usize = 64 * 1024;
-pub(super) const MAX_INLINE_DOCUMENT_CHARS: usize = 24_000;
-
-pub(super) fn format_document_label(file_name: Option<&str>, media_type: &str) -> String {
-    match file_name {
-        Some(name) if !name.trim().is_empty() => format!("[Document: {name} ({media_type})]"),
-        _ => format!("[Document: {media_type}]"),
-    }
-}
-
-pub(super) fn sanitize_document_filename(name: &str) -> String {
-    let sanitized: String = name
-        .chars()
-        .filter(|c| c.is_ascii_alphanumeric() || *c == '-' || *c == '_' || *c == '.')
-        .collect();
-    sanitized.trim_start_matches('.').to_string()
-}
-
-pub(super) fn build_saved_document_filename(
-    file_name: Option<&str>,
-    media_type: &str,
-    file_id: &str,
-) -> String {
-    let ext = moltis_media::mime::extension_for_mime(media_type);
-    let file_id_prefix: String = sanitize_document_filename(file_id)
-        .chars()
-        .take(16)
-        .collect();
-
-    let base_name = file_name
-        .map(str::trim)
-        .filter(|name| !name.is_empty())
-        .map(sanitize_document_filename)
-        .filter(|name| !name.is_empty())
-        .map(|name| {
-            if name.contains('.') {
-                name
-            } else {
-                format!("{name}.{ext}")
-            }
-        })
-        .unwrap_or_else(|| format!("document.{ext}"));
-
-    if file_id_prefix.is_empty() {
-        base_name
-    } else {
-        format!("{file_id_prefix}_{base_name}")
-    }
-}
-
-pub(super) fn channel_document_file(
-    saved: &SavedChannelFile,
-    file_name: Option<&str>,
-    media_type: &str,
-) -> ChannelDocumentFile {
-    ChannelDocumentFile {
-        display_name: file_name
-            .map(str::trim)
-            .filter(|name| !name.is_empty())
-            .unwrap_or(&saved.filename)
-            .to_string(),
-        stored_filename: saved.filename.clone(),
-        mime_type: media_type.to_string(),
-        size_bytes: None,
-    }
-}
-
-pub(super) fn build_document_body(
-    caption: &str,
-    doc_label: &str,
-    extracted_text: Option<&str>,
-) -> String {
-    let mut sections = Vec::new();
-    if !caption.is_empty() {
-        sections.push(caption.to_string());
-    }
-    sections.push(doc_label.to_string());
-    if let Some(text) = extracted_text
-        .map(str::trim)
-        .filter(|text| !text.is_empty())
-    {
-        sections.push(text.to_string());
-    }
-    sections.join("\n\n")
-}
-
-pub(super) fn normalize_media_type(media_type: &str) -> String {
-    media_type
-        .split(';')
-        .next()
-        .unwrap_or(media_type)
-        .trim()
-        .to_ascii_lowercase()
-}
-
-pub(super) fn should_inline_document_text(media_type: &str) -> bool {
-    matches!(
-        media_type,
-        "text/html"
-            | "text/plain"
-            | "text/markdown"
-            | "text/x-markdown"
-            | "text/xml"
-            | "text/csv"
-            | "text/x-toml"
-            | "text/x-yaml"
-            | "application/json"
-            | "application/xml"
-            // mime_guess returns text/x-toml and text/x-yaml for the inference
-            // path; the application/* variants cover cases where Telegram (or
-            // another source) sends these MIME types directly.
-            | "application/toml"
-            | "application/yaml"
-            | "application/x-yaml"
-    ) || media_type.ends_with("+json")
-        || media_type.ends_with("+xml")
-}
-
-pub(super) fn is_pdf_document_type(media_type: &str) -> bool {
-    media_type == "application/pdf"
-}
-
-pub(super) fn is_supported_document_type(media_type: &str) -> bool {
-    media_type.starts_with("image/")
-        || should_inline_document_text(media_type)
-        || is_pdf_document_type(media_type)
-}
-
-pub(super) fn truncate_inline_document_text(text: &str) -> Option<String> {
-    let trimmed = text.trim();
-    if trimmed.is_empty() {
-        return None;
-    }
-
-    let mut truncated = false;
-    let mut text =
-        if let Some((byte_idx, _)) = trimmed.char_indices().nth(MAX_INLINE_DOCUMENT_CHARS) {
-            truncated = true;
-            trimmed[..byte_idx].to_string()
-        } else {
-            trimmed.to_string()
-        };
-
-    if truncated {
-        text.push_str("\n\n[Document content truncated]");
-    }
-
-    Some(text)
-}
-
-pub(super) fn extract_text_document_content(data: &[u8], media_type: &str) -> Option<String> {
-    if data.is_empty() || !should_inline_document_text(media_type) {
-        return None;
-    }
-
-    let byte_truncated = data.len() > MAX_INLINE_DOCUMENT_BYTES;
-    let bounded = if byte_truncated {
-        let slice = &data[..MAX_INLINE_DOCUMENT_BYTES];
-        match std::str::from_utf8(slice) {
-            Ok(_) => slice,
-            Err(e) => &slice[..e.valid_up_to()],
-        }
-    } else {
-        data
-    };
-
-    let lossy = String::from_utf8_lossy(bounded);
-    let mut text = truncate_inline_document_text(&lossy)?;
-    if byte_truncated && !text.contains("[Document content truncated]") {
-        text.push_str("\n\n[Document content truncated]");
-    }
-    Some(text)
-}
-
-pub(super) async fn extract_pdf_document_content(data: Vec<u8>) -> Option<String> {
-    let extracted = tokio::task::spawn_blocking(move || {
-        use std::io::Write as _;
-
-        let mut file = tempfile::Builder::new().suffix(".pdf").tempfile().ok()?;
-        file.write_all(&data).ok()?;
-        pdf_extract::extract_text(file.path()).ok()
-    })
-    .await
-    .ok()??;
-    truncate_inline_document_text(&extracted)
-}
+pub(super) use moltis_media::documents::{
+    build_document_body, build_saved_document_filename, extract_pdf_document_content,
+    extract_text_document_content, format_document_label, is_pdf_document_type,
+    is_supported_document_type, normalize_media_type,
+};
 
 pub(super) async fn save_inbound_document(
     event_sink: Option<&Arc<dyn ChannelEventSink>>,

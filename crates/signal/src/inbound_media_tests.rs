@@ -1,4 +1,4 @@
-//! End-to-end voice-note handling against a fake signal-cli HTTP daemon.
+//! End-to-end voice-note and attachment handling against a fake signal-cli HTTP daemon.
 
 use std::sync::{Arc, Mutex, RwLock};
 
@@ -6,8 +6,8 @@ use {
     async_trait::async_trait,
     base64::{Engine as _, engine::general_purpose::STANDARD as BASE64},
     moltis_channels::{
-        ChannelEvent, ChannelEventSink, ChannelMessageKind, ChannelMessageMeta, ChannelReplyTarget,
-        Result, gating::DmPolicy, otp::OtpState,
+        ChannelAttachment, ChannelEvent, ChannelEventSink, ChannelMessageKind, ChannelMessageMeta,
+        ChannelReplyTarget, Result, SavedChannelFile, gating::DmPolicy, otp::OtpState,
     },
     serde_json::{Value, json},
     tokio::{
@@ -19,7 +19,7 @@ use {
 use crate::{
     client::SignalClient,
     config::SignalAccountConfig,
-    inbound::{ATTACHMENT_PLACEHOLDER, handle_event},
+    inbound::handle_event,
     voice::{VOICE_REPLY_STT_SETUP_HINT, VOICE_REPLY_TRANSCRIPTION_FAILED},
 };
 
@@ -103,6 +103,8 @@ struct RecordingSink {
     stt_available: bool,
     transcript: Option<&'static str>,
     dispatched: Mutex<Vec<(String, ChannelMessageMeta)>>,
+    dispatched_images: Mutex<Vec<ChannelAttachment>>,
+    saved_files: Mutex<Vec<String>>,
     saved_voice: Mutex<Vec<(Vec<u8>, String)>>,
     transcribed: Mutex<Vec<(Vec<u8>, String)>>,
 }
@@ -123,6 +125,20 @@ impl ChannelEventSink for RecordingSink {
             .push((text.to_string(), meta));
     }
 
+    async fn dispatch_to_chat_with_attachments(
+        &self,
+        text: &str,
+        attachments: Vec<ChannelAttachment>,
+        reply_to: ChannelReplyTarget,
+        meta: ChannelMessageMeta,
+    ) {
+        self.dispatched_images
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .extend(attachments);
+        self.dispatch_to_chat(text, reply_to, meta).await;
+    }
+
     async fn dispatch_command(
         &self,
         _command: &str,
@@ -133,6 +149,23 @@ impl ChannelEventSink for RecordingSink {
     }
 
     async fn request_disable_account(&self, _channel_type: &str, _account_id: &str, _reason: &str) {
+    }
+
+    async fn save_channel_attachment(
+        &self,
+        _file_data: &[u8],
+        filename: &str,
+        _reply_to: &ChannelReplyTarget,
+    ) -> Option<SavedChannelFile> {
+        self.saved_files
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .push(filename.to_string());
+        Some(SavedChannelFile {
+            filename: filename.to_string(),
+            media_ref: format!("media/main/{filename}"),
+            absolute_path: format!("/tmp/media/{filename}"),
+        })
     }
 
     async fn save_channel_voice(
@@ -174,6 +207,10 @@ fn config(http_url: String) -> Arc<RwLock<SignalAccountConfig>> {
 }
 
 fn voice_event(attachments: Value) -> Value {
+    message_event(Value::Null, attachments)
+}
+
+fn message_event(message: Value, attachments: Value) -> Value {
     json!({
         "method": "receive",
         "params": {
@@ -181,18 +218,22 @@ fn voice_event(attachments: Value) -> Value {
                 "sourceNumber": SENDER,
                 "sourceName": "Alice",
                 "timestamp": 1700000000000_i64,
-                "dataMessage": { "message": null, "attachments": attachments }
+                "dataMessage": { "message": message, "attachments": attachments }
             }
         }
     })
 }
 
 async fn run(sink: Arc<RecordingSink>, attachments: Value) -> Vec<(String, Value)> {
+    run_event(sink, voice_event(attachments)).await
+}
+
+async fn run_event(sink: Arc<RecordingSink>, event: Value) -> Vec<(String, Value)> {
     let (url, calls) = spawn_fake_daemon().await;
     let event_sink: Arc<dyn ChannelEventSink> = sink;
     let otp = Arc::new(Mutex::new(OtpState::new(300)));
     handle_event(
-        &voice_event(attachments),
+        &event,
         &SignalClient::new(),
         &config(url),
         &otp,
@@ -290,21 +331,66 @@ async fn failed_transcription_replies_to_sender() {
 }
 
 #[tokio::test]
-async fn non_audio_attachment_keeps_placeholder() {
+async fn image_and_document_reach_the_agent_with_caption() {
     let sink = Arc::new(RecordingSink {
         stt_available: true,
-        transcript: Some("unused"),
         ..Default::default()
     });
-    let attachments = json!([{ "contentType": "image/jpeg", "id": "img-1", "size": 10 }]);
-    let calls = run(Arc::clone(&sink), attachments).await;
+    let attachments = json!([
+        { "contentType": "image/png", "id": "img-1", "filename": "shot.png", "size": 10 },
+        { "contentType": "text/plain", "id": "doc-1", "filename": "notes.txt", "size": 14 }
+    ]);
+    let calls = run_event(
+        Arc::clone(&sink),
+        message_event(json!("look at these"), attachments),
+    )
+    .await;
 
-    assert!(calls.iter().all(|(method, _)| method != "getAttachment"));
+    let downloaded: Vec<_> = calls
+        .iter()
+        .filter(|(method, _)| method == "getAttachment")
+        .filter_map(|(_, params)| params.get("id").and_then(Value::as_str))
+        .collect();
+    assert_eq!(downloaded.len(), 2);
+    assert!(sent_messages(&calls).is_empty());
+
+    let images = sink
+        .dispatched_images
+        .lock()
+        .unwrap_or_else(|e| e.into_inner());
+    assert_eq!(images.len(), 1);
+    assert_eq!(images[0].media_type, "image/png");
+    let saved = sink.saved_files.lock().unwrap_or_else(|e| e.into_inner());
+    assert_eq!(*saved, vec!["doc-1_notes.txt".to_string()]);
+
     let dispatched = sink.dispatched.lock().unwrap_or_else(|e| e.into_inner());
     assert_eq!(dispatched.len(), 1);
-    assert_eq!(dispatched[0].0, ATTACHMENT_PLACEHOLDER);
+    assert_eq!(
+        dispatched[0].0,
+        "look at these\n\n[Document: notes.txt (text/plain)]\n\nfake-m4a-bytes"
+    );
+    let meta = &dispatched[0].1;
+    assert!(matches!(meta.message_kind, Some(ChannelMessageKind::Photo)));
+    let documents = meta.documents.as_deref().unwrap_or_default();
+    assert_eq!(documents.len(), 1);
+    assert_eq!(documents[0].stored_filename, "doc-1_notes.txt");
+}
+
+#[tokio::test]
+async fn failed_voice_note_still_delivers_other_attachments() {
+    let sink = Arc::new(RecordingSink::default());
+    let attachments = json!([
+        { "contentType": "audio/aac", "id": "att-42", "size": 10 },
+        { "contentType": "application/zip", "id": "zip-1", "filename": "a.zip", "size": 10 }
+    ]);
+    let calls = run(Arc::clone(&sink), attachments).await;
+
+    assert_eq!(sent_messages(&calls), vec![VOICE_REPLY_STT_SETUP_HINT]);
+    let dispatched = sink.dispatched.lock().unwrap_or_else(|e| e.into_inner());
+    assert_eq!(dispatched.len(), 1);
+    assert_eq!(dispatched[0].0, "[Document: a.zip (application/zip)]");
     assert!(matches!(
         dispatched[0].1.message_kind,
-        Some(ChannelMessageKind::Text)
+        Some(ChannelMessageKind::Document)
     ));
 }

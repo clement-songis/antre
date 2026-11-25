@@ -9,7 +9,10 @@ use {
     serde_json::json,
 };
 
-use super::*;
+use {
+    super::*,
+    crate::attachments::{SignalAttachment, parse_attachments},
+};
 
 enum Transcription {
     Text(&'static str),
