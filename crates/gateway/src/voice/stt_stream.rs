@@ -19,12 +19,12 @@ use {
 };
 
 use moltis_voice::{
-    OpenAiRealtimeStt, StreamingSttEvent, StreamingSttInput, StreamingSttProvider,
+    GeminiLiveStt, OpenAiRealtimeStt, StreamingSttEvent, StreamingSttInput, StreamingSttProvider,
     StreamingSttRequest, SttProviderId,
 };
 
 use super::{
-    load_voice_config, resolve_openai_key, resolve_openai_whisper_base_url,
+    load_voice_config, resolve_gemini_key, resolve_openai_key, resolve_openai_whisper_base_url,
     stt_service::LiveSttService,
 };
 
@@ -179,6 +179,17 @@ pub fn create_streaming_provider(
                 .is_configured()
                 .then(|| Arc::new(provider) as Arc<dyn StreamingSttProvider>)
         },
+        SttProviderId::Gemini => {
+            let gemini = &cfg.voice.stt.gemini;
+            if !gemini.enabled {
+                return None;
+            }
+            let provider =
+                GeminiLiveStt::new(resolve_gemini_key(cfg), gemini.realtime_model.clone());
+            provider
+                .is_configured()
+                .then(|| Arc::new(provider) as Arc<dyn StreamingSttProvider>)
+        },
         SttProviderId::Groq
         | SttProviderId::Deepgram
         | SttProviderId::Google
@@ -187,8 +198,7 @@ pub fn create_streaming_provider(
         | SttProviderId::VoxtralLocal
         | SttProviderId::WhisperLocal
         | SttProviderId::WhisperCli
-        | SttProviderId::SherpaOnnx
-        | SttProviderId::Gemini => None,
+        | SttProviderId::SherpaOnnx => None,
     }
 }
 

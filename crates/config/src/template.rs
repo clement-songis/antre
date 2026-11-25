@@ -730,6 +730,7 @@ loopback_http = true                # Plain HTTP on loopback binds: http://local
 # [voice.stt.gemini]
 # api_key = "..."                       # Or GEMINI_API_KEY / GOOGLE_API_KEY / providers.gemini
 # model = "gemini-3.5-transcribe"       # Gemini's dedicated transcription model
+# realtime_model = "gemini-3.5-transcribe-live"  # Live API model for live transcription
 # language = "fr-FR"                    # Optional BCP-47 hint, auto-detected when unset
 
 # ══════════════════════════════════════════════════════════════════════════════

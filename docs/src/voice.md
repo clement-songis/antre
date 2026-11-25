@@ -454,6 +454,7 @@ language = "en"
 # configured as an LLM provider. Google AI Studio key, not Google Cloud.
 # api_key = "..."
 model = "gemini-3.5-transcribe"  # default
+# realtime_model = "gemini-3.5-transcribe-live"  # Live transcription model (Live API)
 # language = "fr-FR"  # Optional BCP-47 hint; omit to auto-detect
 
 # Local providers - no API key, requires server or binary
@@ -485,12 +486,18 @@ the recorded audio attached.
 | Provider | Live model setting | Default |
 |----------|--------------------|---------|
 | OpenAI (`whisper`) | `voice.stt.whisper.realtime_model` | `gpt-live-transcribe` |
+| Google Gemini (`gemini`) | `voice.stt.gemini.realtime_model` | `gemini-3.5-transcribe-live` |
 
 `realtime_model` is separate from `model`: `model` transcribes clips and is
 the fallback, `realtime_model` is used for the live stream. OpenAI also
 accepts `gpt-realtime-whisper`, `gpt-4o-transcribe` and
 `gpt-4o-mini-transcribe` here. Set it from Settings > Voice or in
 `moltis.toml`.
+
+Gemini segments speech into utterances with its own voice activity
+detection and auto-detects the language, so `language` and `prompt` are not
+sent on the live stream. Its API key is sent in the `x-goog-api-key` header,
+never in the URL.
 
 How it works:
 
@@ -749,7 +756,7 @@ src/
     ├── cli_utils.rs    # Shared utilities for CLI providers
     ├── whisper_cli.rs  # whisper.cpp CLI wrapper
     ├── sherpa_onnx.rs  # sherpa-onnx CLI wrapper
-    └── streaming/      # StreamingSttProvider trait, OpenAI Realtime client
+    └── streaming/      # StreamingSttProvider trait, OpenAI Realtime and Gemini Live clients
 ```
 
 ### Key Traits

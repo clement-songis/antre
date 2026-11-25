@@ -210,3 +210,41 @@ async fn detect_voice_providers_marks_whisper_available_when_base_url_configured
         ])
     );
 }
+
+#[test]
+fn apply_voice_provider_settings_stores_gemini_models() {
+    let mut config = moltis_config::MoltisConfig::default();
+    apply_voice_provider_settings(
+        &mut config,
+        "gemini",
+        &serde_json::json!({
+            "model": "gemini-3.5-transcribe",
+            "realtimeModel": "gemini-3.5-transcribe-live",
+        }),
+    );
+    assert_eq!(
+        config.voice.stt.gemini.model.as_deref(),
+        Some("gemini-3.5-transcribe")
+    );
+    assert_eq!(
+        config.voice.stt.gemini.realtime_model.as_deref(),
+        Some("gemini-3.5-transcribe-live")
+    );
+
+    apply_voice_provider_settings(
+        &mut config,
+        "gemini",
+        &serde_json::json!({ "realtimeModel": "" }),
+    );
+    assert_eq!(config.voice.stt.gemini.realtime_model, None);
+
+    let gemini = enrich_voice_provider(test_voice_provider(VoiceProviderId::Gemini), &config);
+    assert_eq!(
+        gemini.capabilities["realtimeModelChoices"],
+        serde_json::json!(["gemini-3.5-transcribe-live"])
+    );
+    assert_eq!(
+        gemini.settings["model"],
+        serde_json::json!("gemini-3.5-transcribe")
+    );
+}

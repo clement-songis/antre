@@ -21,8 +21,9 @@ pub use {
         SttProvider, TranscribeRequest, Transcript, VoxtralLocalStt, WhisperCliStt,
         WhisperLocalStt, WhisperStt,
         streaming::{
-            MockStreamingStt, OPENAI_DEFAULT_REALTIME_MODEL, OpenAiRealtimeStt, StreamingSttEvent,
-            StreamingSttInput, StreamingSttProvider, StreamingSttRequest, StreamingSttSession,
+            GEMINI_DEFAULT_REALTIME_MODEL, GeminiLiveStt, MockStreamingStt,
+            OPENAI_DEFAULT_REALTIME_MODEL, OpenAiRealtimeStt, StreamingSttEvent, StreamingSttInput,
+            StreamingSttProvider, StreamingSttRequest, StreamingSttSession,
         },
     },
     tts::{
