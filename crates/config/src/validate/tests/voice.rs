@@ -60,6 +60,40 @@ providers = ["elevenlabs", "whisper-cli", "sherpa-onnx"]
 }
 
 #[test]
+fn gemini_stt_section_is_known() {
+    let toml = r#"
+[voice.stt]
+provider = "gemini"
+providers = ["gemini"]
+
+[voice.stt.gemini]
+enabled = true
+model = "gemini-3.5-transcribe"
+language = "fr-FR"
+"#;
+    let result = validate_toml_str(toml);
+    let gemini_diagnostics: Vec<_> = result
+        .diagnostics
+        .iter()
+        .filter(|d| d.path.starts_with("voice.stt"))
+        .collect();
+    assert!(
+        gemini_diagnostics.is_empty(),
+        "gemini STT config should validate cleanly: {gemini_diagnostics:?}"
+    );
+
+    let config: MoltisConfig = toml::from_str(toml).unwrap();
+    assert_eq!(
+        config.voice.stt.provider,
+        Some(crate::schema::VoiceSttProvider::Gemini)
+    );
+    assert_eq!(
+        config.voice.stt.gemini.model.as_deref(),
+        Some("gemini-3.5-transcribe")
+    );
+}
+
+#[test]
 fn voice_stt_streaming_fields_are_known() {
     let toml = r#"
 [voice.stt]
