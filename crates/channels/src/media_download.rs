@@ -12,6 +12,9 @@ use crate::Result;
 pub enum InboundMediaSource {
     /// Download media bytes from a remote URL.
     RemoteUrl { url: String },
+    /// Download an attachment addressed by the channel's own identifier
+    /// (for example a signal-cli attachment ID).
+    AttachmentId { id: String },
 }
 
 /// Fetches inbound media payloads for a channel-specific media source.

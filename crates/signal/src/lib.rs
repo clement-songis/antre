@@ -7,5 +7,6 @@ pub mod outbound;
 pub mod plugin;
 pub mod sse;
 pub mod state;
+mod voice;
 
 pub use plugin::SignalPlugin;
