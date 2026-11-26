@@ -8,19 +8,25 @@ use crate::openai::{
 /// Known Anthropic Claude models (model_id, display_name).
 /// Current models listed first, then legacy models.
 pub(crate) const ANTHROPIC_MODELS: &[(&str, &str)] = &[
-    // Anthropic currently documents Claude 4.6 using alias IDs rather than
-    // dated snapshot IDs. Register the documented aliases instead of
-    // inventing snapshot suffixes that the API rejects.
-    ("claude-opus-4-6", "Claude Opus 4.6"),
+    // Snapshot of GET /v1/models (2026-11-26), newest first, in API order.
+    // Anthropic documents current generations using alias IDs rather than
+    // dated snapshot IDs; keep the aliases instead of inventing snapshot
+    // suffixes that the API rejects.
+    ("claude-fable-5-2", "Claude Fable 5.2"),
+    ("claude-haiku-5-5", "Claude Haiku 5.5"),
+    ("claude-sonnet-5-5", "Claude Sonnet 5.5"),
+    ("claude-opus-5-5", "Claude Opus 5.5"),
+    ("claude-fable-5-1", "Claude Fable 5.1"),
+    ("claude-opus-5", "Claude Opus 5"),
+    ("claude-sonnet-5", "Claude Sonnet 5"),
+    ("claude-fable-5", "Claude Fable 5"),
+    ("claude-opus-4-8", "Claude Opus 4.8"),
+    ("claude-opus-4-7", "Claude Opus 4.7"),
     ("claude-sonnet-4-6", "Claude Sonnet 4.6"),
+    ("claude-opus-4-6", "Claude Opus 4.6"),
     ("claude-opus-4-5-20251101", "Claude Opus 4.5"),
-    ("claude-sonnet-4-5-20250929", "Claude Sonnet 4.5"),
     ("claude-haiku-4-5-20251001", "Claude Haiku 4.5"),
-    ("claude-opus-4-1-20250805", "Claude Opus 4.1"),
-    ("claude-sonnet-4-20250514", "Claude Sonnet 4"),
-    ("claude-opus-4-20250514", "Claude Opus 4"),
-    ("claude-3-7-sonnet-20250219", "Claude 3.7 Sonnet"),
-    ("claude-3-haiku-20240307", "Claude 3 Haiku"),
+    ("claude-sonnet-4-5-20250929", "Claude Sonnet 4.5"),
 ];
 
 /// Known Mistral models.
