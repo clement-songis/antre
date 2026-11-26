@@ -209,9 +209,21 @@ interface SessionItemProps {
 	keyMap: KeyMap;
 	nowMs: number;
 	refreshing: boolean;
+	/** Number of sessions nested under this one, at any depth. */
+	descendantCount: number;
+	expanded: boolean;
 }
 
-function SessionItem({ session, activeKey, depth, keyMap, nowMs, refreshing }: SessionItemProps): VNode {
+function SessionItem({
+	session,
+	activeKey,
+	depth,
+	keyMap,
+	nowMs,
+	refreshing,
+	descendantCount,
+	expanded,
+}: SessionItemProps): VNode {
 	const isBranch = depth > 0;
 	const active = session.key === activeKey;
 	// Read per-session signals — auto-subscribes for re-render.
@@ -255,10 +267,32 @@ function SessionItem({ session, activeKey, depth, keyMap, nowMs, refreshing }: S
 		}
 	}
 
+	function onToggle(event: MouseEvent): void {
+		// The toggle sits inside the session link: keep the click from opening it.
+		event.preventDefault();
+		event.stopPropagation();
+		sessionStore.toggleSessionExpanded(session.key);
+	}
+
 	return (
 		<a href={href} className={className} data-session-key={session.key} style={style} onClick={onClick}>
 			<div className="session-info">
 				<div className="session-label">
+					{descendantCount > 0 && (
+						<button
+							type="button"
+							className="session-toggle"
+							aria-expanded={expanded}
+							aria-label={expanded ? "Collapse sub-sessions" : "Expand sub-sessions"}
+							title={`${descendantCount} sub-session${descendantCount === 1 ? "" : "s"}`}
+							onClick={onToggle}
+						>
+							<span className="session-toggle-chevron" aria-hidden="true">
+								{"\u203A"}
+							</span>
+							<span className="session-toggle-count">{descendantCount}</span>
+						</button>
+					)}
 					<SessionIcon session={session} isBranch={isBranch} />
 					<span data-label-text>{session.label || session.key}</span>
 					{showAgentBadge && (
@@ -290,6 +324,7 @@ export function SessionList(): VNode {
 	const filterId = projectStore.projectFilterId.value;
 	const tab = sessionStore.sessionListTab.value;
 	const showArchived = sessionStore.showArchivedSessions.value;
+	const expandedKeys = sessionStore.expandedSessionKeys.value;
 	const [nowMs, setNowMs] = useState(Date.now);
 
 	// Spinner animation via setInterval
@@ -341,8 +376,31 @@ export function SessionList(): VNode {
 	});
 	const roots = filtered.filter((s) => !(s.parentSessionKey && keyMap[s.parentSessionKey]));
 
+	// Keep the active session reachable: its ancestors stay open even when collapsed.
+	const activeAncestors = new Set<string>();
+	for (let parent = keyMap[activeKey]?.parentSessionKey; parent && keyMap[parent]; ) {
+		if (activeAncestors.has(parent)) break;
+		activeAncestors.add(parent);
+		parent = keyMap[parent].parentSessionKey;
+	}
+
+	const descendantCounts: Record<string, number> = {};
+	function countDescendants(key: string, seen: Set<string>): number {
+		if (descendantCounts[key] !== undefined) return descendantCounts[key];
+		let count = 0;
+		for (const child of childrenMap[key] || []) {
+			if (seen.has(child.key)) continue;
+			seen.add(child.key);
+			count += 1 + countDescendants(child.key, seen);
+		}
+		descendantCounts[key] = count;
+		return count;
+	}
+
 	function renderTree(session: Session, depth: number): VNode {
 		const children = childrenMap[session.key] || [];
+		const descendantCount = countDescendants(session.key, new Set([session.key]));
+		const expanded = expandedKeys.has(session.key) || activeAncestors.has(session.key);
 		return (
 			<>
 				<SessionItem
@@ -353,8 +411,10 @@ export function SessionList(): VNode {
 					keyMap={keyMap}
 					nowMs={nowMs}
 					refreshing={session.key === refreshingKey}
+					descendantCount={descendantCount}
+					expanded={expanded}
 				/>
-				{children.map((child) => renderTree(child, depth + 1))}
+				{expanded && children.map((child) => renderTree(child, depth + 1))}
 			</>
 		);
 	}

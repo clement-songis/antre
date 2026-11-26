@@ -959,6 +959,52 @@ test.describe("Session management", () => {
 		await expect(panel).toBeHidden();
 	});
 
+	test("sub-sessions are collapsed under their parent and can be expanded", async ({ page }) => {
+		const pageErrors = await navigateAndWait(page, "/");
+		await waitForWsConnected(page);
+
+		await createSession(page);
+		const parentKey = await page.evaluate(() => window.__moltis_stores?.sessionStore?.activeSessionKey?.value);
+		const forkBtn = page.locator('button[title="Fork session"]');
+		await expect(forkBtn).toBeVisible({ timeout: 10_000 });
+		await forkBtn.click();
+		await expect
+			.poll(() => page.evaluate(() => window.__moltis_stores?.sessionStore?.activeSessionKey?.value), {
+				timeout: 10_000,
+			})
+			.not.toBe(parentKey);
+		const childKey = await page.evaluate(() => window.__moltis_stores?.sessionStore?.activeSessionKey?.value);
+
+		const parentRow = page.locator(`#sessionList .session-item[data-session-key="${parentKey}"]`);
+		const childRow = page.locator(`#sessionList .session-item[data-session-key="${childKey}"]`);
+		const toggle = parentRow.locator(".session-toggle");
+
+		// The active fork keeps its parent open even though nothing was expanded.
+		await expect(childRow).toBeVisible();
+		await expect(toggle).toHaveAttribute("aria-expanded", "true");
+		await expect(toggle).toContainText("1");
+
+		// Away from the fork, the parent folds back to its default collapsed state.
+		await page.locator('#sessionList .session-item[data-session-key="main"]').click();
+		await expect(childRow).toHaveCount(0);
+		await expect(toggle).toHaveAttribute("aria-expanded", "false");
+
+		// Expanding does not open the parent session, and survives a reload.
+		await toggle.click();
+		await expect(childRow).toBeVisible();
+		await expect
+			.poll(() => page.evaluate(() => window.__moltis_stores?.sessionStore?.activeSessionKey?.value))
+			.toBe("main");
+		await page.reload();
+		await waitForWsConnected(page);
+		await expect(childRow).toBeVisible({ timeout: 10_000 });
+
+		await parentRow.locator(".session-toggle").click();
+		await expect(childRow).toHaveCount(0);
+
+		expect(pageErrors).toEqual([]);
+	});
+
 	test("deleting unmodified fork skips confirmation dialog", async ({ page }) => {
 		const pageErrors = await navigateAndWait(page, "/");
 		await waitForWsConnected(page);
