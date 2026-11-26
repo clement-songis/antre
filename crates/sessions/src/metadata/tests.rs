@@ -1027,3 +1027,37 @@ fn test_agent_id_serde_compat() {
     assert!(meta.get("main").unwrap().agent_id.is_none());
     assert!(meta.get("main").unwrap().mode_id.is_none());
 }
+
+#[tokio::test]
+async fn test_sqlite_import_entry_keeps_imported_state() {
+    let pool = sqlite_pool().await;
+    let meta = SqliteSessionMetadata::new(pool);
+
+    let entry: SessionEntry = serde_json::from_value(serde_json::json!({
+        "id": "legacy-id",
+        "key": "oc:cyberclaw:s1",
+        "label": "Telegram: Alice",
+        "model": "gpt-5",
+        "created_at": 1_700_000_000_000_u64,
+        "updated_at": 1_700_000_500_000_u64,
+        "message_count": 12,
+        "last_seen_message_count": 12,
+        "archived": true,
+        "preview": "hello there",
+        "agent_id": "cyberclaw",
+    }))
+    .unwrap();
+
+    meta.import_entry(&entry).await.unwrap();
+
+    let stored = meta.get("oc:cyberclaw:s1").await.unwrap();
+    assert_eq!(stored.label.as_deref(), Some("Telegram: Alice"));
+    assert_eq!(stored.model.as_deref(), Some("gpt-5"));
+    assert!(stored.archived);
+    assert_eq!(stored.agent_id.as_deref(), Some("cyberclaw"));
+    assert_eq!(stored.preview.as_deref(), Some("hello there"));
+    assert_eq!(stored.created_at, 1_700_000_000_000);
+    assert_eq!(stored.updated_at, 1_700_000_500_000);
+    assert_eq!(stored.message_count, 12);
+    assert_eq!(stored.last_seen_message_count, 12);
+}
