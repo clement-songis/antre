@@ -8404,6 +8404,7 @@ dependencies = [
  "moltis-oauth",
  "moltis-sessions",
  "notify-debouncer-full",
+ "rusqlite",
  "secrecy 0.8.0",
  "serde",
  "serde_json",
@@ -8415,6 +8416,7 @@ dependencies = [
  "toml 0.8.23",
  "tracing",
  "walkdir",
+ "zstd",
 ]
 
 [[package]]

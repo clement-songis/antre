@@ -275,13 +275,21 @@ fn scan_agents(home: &Path) -> (Vec<String>, usize, bool) {
         if let Some(name) = agent_dir.file_name().and_then(|n| n.to_str()) {
             agent_ids.push(name.to_string());
 
-            // Count sessions
+            // Count sessions: SQLite windows, plus JSONL files not migrated into SQLite
+            let sqlite_session_ids = crate::sessions::sqlite::agent_session_ids(&agent_dir);
+            session_count += sqlite_session_ids.len();
             if let Some(sessions_dir) = resolve_agent_sessions_dir(&agent_dir)
                 && let Ok(session_entries) = std::fs::read_dir(&sessions_dir)
             {
                 session_count += session_entries
                     .flatten()
-                    .filter(|e| e.path().extension().is_some_and(|ext| ext == "jsonl"))
+                    .map(|e| e.path())
+                    .filter(|path| path.extension().is_some_and(|ext| ext == "jsonl"))
+                    .filter(|path| {
+                        path.file_stem()
+                            .and_then(|stem| stem.to_str())
+                            .is_none_or(|stem| !sqlite_session_ids.contains(stem))
+                    })
                     .count();
             }
 

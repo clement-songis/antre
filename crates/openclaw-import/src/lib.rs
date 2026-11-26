@@ -6,7 +6,7 @@
 //! - Skills (SKILL.md format)
 //! - Memory (MEMORY.md and daily logs)
 //! - Telegram, Discord, and Signal channel configuration
-//! - Chat sessions (JSONL format)
+//! - Chat sessions (SQLite agent databases and JSONL files)
 
 pub mod agents;
 pub mod channels;
