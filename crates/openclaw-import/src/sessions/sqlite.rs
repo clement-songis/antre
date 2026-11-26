@@ -291,6 +291,18 @@ struct Window {
 
 impl Window {
     fn label(&self, conversation_key: &str) -> String {
+        // A title set on the session (renamed by the user, or generated) is
+        // free text: it must not go through the sender-name cleanup, which
+        // rejects any ':' and cuts at " (".
+        let title = self
+            .node_label
+            .as_deref()
+            .or(self.display_name.as_deref())
+            .map(str::trim)
+            .filter(|title| !title.is_empty());
+        if let Some(label) = title.and_then(|title| titled_session_label(conversation_key, title)) {
+            return label;
+        }
         let origin = OpenClawSessionOrigin {
             label: self
                 .origin
@@ -302,6 +314,18 @@ impl Window {
             chat_type: self.origin.as_ref().and_then(|o| o.chat_type.clone()),
         };
         build_session_label(conversation_key, Some(&origin))
+    }
+}
+
+/// Label of a session that has a title, or `None` for the kinds whose label
+/// does not come from it (the main session, Telegram and Signal chats).
+fn titled_session_label(logical_key: &str, title: &str) -> Option<String> {
+    let parts: Vec<&str> = logical_key.split(':').collect();
+    match parts.as_slice() {
+        ["agent", _, "main"] => None,
+        ["agent", _, "telegram" | "signal", ..] => None,
+        ["agent", _, "cron", ..] => Some(format!("Cron: {title}")),
+        _ => Some(format!("OpenClaw: {title}")),
     }
 }
 
