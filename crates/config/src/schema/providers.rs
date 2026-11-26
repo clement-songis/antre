@@ -143,6 +143,9 @@ pub enum WireApi {
     ChatCompletions,
     /// OpenAI Responses API format (`/responses`).
     Responses,
+    /// Anthropic Messages API format (`/v1/messages`). For `custom-*`
+    /// providers backed by an Anthropic-compatible endpoint.
+    Anthropic,
 }
 
 /// Prompt cache retention policy for providers that support client-controlled

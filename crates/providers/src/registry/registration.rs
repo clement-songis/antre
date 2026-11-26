@@ -344,6 +344,32 @@ impl ProviderRegistry {
             if !name.starts_with("custom-") || !entry.enabled {
                 continue;
             }
+            if matches!(entry.wire_api, moltis_config::WireApi::Anthropic) {
+                let Some(models) = fetched.get(name.as_str()) else {
+                    continue;
+                };
+                if let Some(api_key) = entry
+                    .api_key
+                    .as_ref()
+                    .filter(|key| !key.expose_secret().is_empty())
+                {
+                    let base_url = entry
+                        .base_url
+                        .clone()
+                        .filter(|url| !url.trim().is_empty())
+                        .unwrap_or_else(|| "https://api.anthropic.com".into());
+                    added += self.replace_anthropic_catalog(
+                        models.clone(),
+                        api_key,
+                        &base_url,
+                        name,
+                        None,
+                        entry.cache_retention,
+                        extract_cw_overrides(&entry.model_overrides),
+                    );
+                }
+                continue;
+            }
             let Some(models) = fetched.get(name.as_str()) else {
                 continue;
             };
@@ -1089,6 +1115,44 @@ impl ProviderRegistry {
     ) {
         for (name, entry) in &config.providers {
             if !name.starts_with("custom-") || !entry.enabled {
+                continue;
+            }
+
+            if matches!(entry.wire_api, moltis_config::WireApi::Anthropic) {
+                if let Some(api_key) = entry
+                    .api_key
+                    .as_ref()
+                    .filter(|key| !key.expose_secret().is_empty())
+                {
+                    let base_url = entry
+                        .base_url
+                        .clone()
+                        .filter(|url| !url.trim().is_empty())
+                        .unwrap_or_else(|| "https://api.anthropic.com".into());
+                    let preferred = configured_models_for_provider(config, name);
+                    let discovered = if should_fetch_models(config, name) {
+                        prefetched.get(name.as_str()).cloned().unwrap_or_default()
+                    } else {
+                        Vec::new()
+                    };
+                    let models = merge_preferred_and_discovered_models(preferred, discovered);
+                    if models.is_empty() {
+                        tracing::debug!(
+                            provider = %name,
+                            "custom anthropic provider has no models — skipping registration"
+                        );
+                        continue;
+                    }
+                    self.register_anthropic_catalog(
+                        models,
+                        api_key,
+                        &base_url,
+                        name,
+                        None,
+                        entry.cache_retention,
+                        extract_cw_overrides(&entry.model_overrides),
+                    );
+                }
                 continue;
             }
 

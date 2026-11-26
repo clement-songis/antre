@@ -497,7 +497,10 @@ impl LlmProvider for OpenAiProvider {
     async fn probe(&self) -> anyhow::Result<()> {
         match self.wire_api {
             WireApi::Responses => self.probe_responses().await,
-            WireApi::ChatCompletions => self.probe_chat_completions().await,
+            // Anthropic is routed to AnthropicProvider at registration; an
+            // OpenAiProvider never legitimately carries it, so fall back to
+            // the chat-completions behavior instead of panicking.
+            WireApi::Anthropic | WireApi::ChatCompletions => self.probe_chat_completions().await,
         }
     }
 
@@ -542,15 +545,18 @@ impl LlmProvider for OpenAiProvider {
                     true,
                 )
             },
-            (WireApi::ChatCompletions, ProviderStreamTransport::Sse) => {
+            // Anthropic is routed to AnthropicProvider at registration and
+            // never legitimately reaches this provider; treat it like Chat
+            // Completions rather than panicking on a config mistake.
+            (WireApi::Anthropic | WireApi::ChatCompletions, ProviderStreamTransport::Sse) => {
                 self.stream_with_tools_sse(messages, tools, options)
             },
-            (WireApi::ChatCompletions, ProviderStreamTransport::Websocket) => {
+            (WireApi::Anthropic | WireApi::ChatCompletions, ProviderStreamTransport::Websocket) => {
                 // WebSocket always uses Responses wire format; SSE fallback
                 // uses Chat Completions SSE.
                 self.stream_with_tools_websocket(messages, tools, false, options, false)
             },
-            (WireApi::ChatCompletions, ProviderStreamTransport::Auto) => {
+            (WireApi::Anthropic | WireApi::ChatCompletions, ProviderStreamTransport::Auto) => {
                 self.stream_with_tools_websocket(messages, tools, true, options, false)
             },
         }

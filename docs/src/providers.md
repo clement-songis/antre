@@ -53,6 +53,26 @@ base_url = "https://my-service.example.com/v1"
 models = ["my-model"]
 ```
 
+### Custom Anthropic endpoints (`wire_api = "anthropic"`)
+
+A `custom-*` provider can speak the Anthropic Messages API instead of the
+OpenAI format, for Anthropic-compatible endpoints (Anthropic itself, MiniMax,
+proxies, …). Each instance appears in the model selector as
+`custom-<name>::<model>`:
+
+```toml
+[providers.custom-minimax]
+wire_api = "anthropic"
+api_key = "${MINIMAX_API_KEY}"
+base_url = "https://api.minimax.io/anthropic"
+models = ["MiniMax-M3.1-Flash", "MiniMax-M3"]
+```
+
+`base_url` defaults to `https://api.anthropic.com`; the provider appends
+`/v1/messages` and `/v1/models`, so keep the endpoint's root path. Configured
+`models` are preferred; without them the catalog is discovered from the
+endpoint.
+
 ## Configuration
 
 ### Via Web UI (Recommended)
