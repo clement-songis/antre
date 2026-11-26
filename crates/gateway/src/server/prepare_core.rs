@@ -621,24 +621,8 @@ pub async fn prepare_gateway_core_with_profile(
         if let Ok(old_meta) = SessionMetadata::load(metadata_json_path.clone()) {
             let sqlite_meta = SqliteSessionMetadata::new(db_pool.clone());
             for entry in old_meta.list() {
-                if let Err(e) = sqlite_meta.upsert(&entry.key, entry.label.clone()).await {
+                if let Err(e) = sqlite_meta.import_entry(&entry).await {
                     tracing::warn!("failed to migrate session {}: {e}", entry.key);
-                }
-                if entry.model.is_some() {
-                    sqlite_meta.set_model(&entry.key, entry.model.clone()).await;
-                }
-                sqlite_meta.touch(&entry.key, entry.message_count).await;
-                if entry.project_id.is_some() {
-                    sqlite_meta
-                        .set_project_id(&entry.key, entry.project_id.clone())
-                        .await;
-                }
-                if entry.mode_id.is_some()
-                    && let Err(e) = sqlite_meta
-                        .set_mode_id(&entry.key, entry.mode_id.as_deref())
-                        .await
-                {
-                    tracing::warn!("failed to migrate session mode for {}: {e}", entry.key);
                 }
             }
         }
