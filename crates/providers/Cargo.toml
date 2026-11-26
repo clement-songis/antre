@@ -7,6 +7,7 @@ version.workspace    = true
 [features]
 default = [
   "metrics",
+  "provider-anthropic-oauth",
   "provider-async-openai",
   "provider-genai",
   "provider-github-copilot",
@@ -26,6 +27,7 @@ local-llm-cuda = ["llama-cpp-2/cuda", "local-llm"]
 local-llm-metal = ["llama-cpp-2/metal", "local-llm"]
 local-llm-vulkan = ["llama-cpp-2/vulkan", "local-llm"]
 metrics = ["dep:moltis-metrics"]
+provider-anthropic-oauth = ["dep:moltis-oauth"]
 provider-async-openai = ["dep:async-openai"]
 provider-genai = ["dep:genai"]
 provider-github-copilot = ["dep:moltis-oauth"]

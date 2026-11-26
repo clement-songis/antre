@@ -293,6 +293,7 @@ async fn explicit_strict_tools_overrides_fireworks_kimi_default() -> anyhow::Res
     }
     Ok(())
 }
+
 fn capture_anthropic_request() -> anyhow::Result<(String, mpsc::Receiver<anyhow::Result<Value>>)> {
     let listener = TcpListener::bind("127.0.0.1:0").context("bind test server")?;
     let base_url = format!("http://{}", listener.local_addr().context("local addr")?);
@@ -347,6 +348,54 @@ fn capture_anthropic_request() -> anyhow::Result<(String, mpsc::Receiver<anyhow:
         let _ = tx.send(result);
     });
     Ok((base_url, rx))
+}
+
+#[tokio::test]
+async fn custom_anthropic_provider_registers_with_setup_token() -> anyhow::Result<()> {
+    let (base_url, body_rx) = capture_anthropic_request()?;
+    let mut config = ProvidersConfig::default();
+    config
+        .providers
+        .insert("custom-anthropic-healabs".into(), ProviderEntry {
+            wire_api: moltis_config::WireApi::Anthropic,
+            setup_token: Some(Secret::new("sk-ant-oat01-healabs".into())),
+            base_url: Some(base_url),
+            models: vec!["claude-opus-5-5".into()],
+            ..ProviderEntry::default()
+        });
+
+    let registry = ProviderRegistry::from_config_with_prefetched(
+        &config,
+        &HashMap::new(),
+        &HashMap::new(),
+        HashMap::new(),
+    );
+    let provider = registry
+        .get("custom-anthropic-healabs::claude-opus-5-5")
+        .context("custom anthropic model is registered under its instance name")?;
+    let response = provider
+        .complete(&[ChatMessage::user("ping")], &[])
+        .await
+        .context("completion succeeds")?;
+    assert_eq!(response.text.as_deref(), Some("ok"));
+
+    let body = body_rx.recv().context("captured request")??;
+    // Setup-tokens authenticate with the Claude Code identity blocks.
+    let system = body["system"]
+        .as_array()
+        .context("identity system blocks")?;
+    assert_eq!(system.len(), 2);
+    assert!(
+        system[0]["text"]
+            .as_str()
+            .unwrap_or_default()
+            .starts_with("x-anthropic-billing-header:")
+    );
+    assert_eq!(
+        system[1]["text"].as_str().unwrap_or_default(),
+        "You are Claude Code, Anthropic's official CLI for Claude."
+    );
+    Ok(())
 }
 
 #[tokio::test]

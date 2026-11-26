@@ -1064,6 +1064,21 @@ fn wire_api_serde_roundtrip() {
 }
 
 #[test]
+fn provider_entry_wire_api_anthropic_from_toml() {
+    let toml_str = r#"
+[providers.custom-anthropic-backup]
+enabled = true
+wire_api = "anthropic"
+setup_token = "sk-ant-oat01-backup"
+models = ["claude-opus-5-5"]
+"#;
+    let config: MoltisConfig = toml::from_str(toml_str).unwrap();
+    let entry = config.providers.get("custom-anthropic-backup").unwrap();
+    assert_eq!(entry.wire_api, WireApi::Anthropic);
+    assert!(entry.setup_token.is_some());
+}
+
+#[test]
 fn wire_api_default_is_chat_completions() {
     assert_eq!(WireApi::default(), WireApi::ChatCompletions);
 }

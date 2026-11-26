@@ -86,8 +86,7 @@ impl ProviderRegistry {
         // ── Anthropic builtin ─────────────────────────────────────────
         if fetched.contains_key("anthropic")
             && config.is_enabled("anthropic")
-            && let Some(key) =
-                resolve_api_key(config, "anthropic", "ANTHROPIC_API_KEY", env_overrides)
+            && let Some(auth) = resolve_anthropic_auth(config, env_overrides)
         {
             let base_url = config
                 .get("anthropic")
@@ -108,7 +107,7 @@ impl ProviderRegistry {
 
             added += self.replace_anthropic_catalog(
                 models,
-                &key,
+                &auth,
                 &base_url,
                 &provider_label,
                 alias,
@@ -348,11 +347,7 @@ impl ProviderRegistry {
                 let Some(models) = fetched.get(name.as_str()) else {
                     continue;
                 };
-                if let Some(api_key) = entry
-                    .api_key
-                    .as_ref()
-                    .filter(|key| !key.expose_secret().is_empty())
-                {
+                if let Some(auth) = resolve_custom_anthropic_auth(entry) {
                     let base_url = entry
                         .base_url
                         .clone()
@@ -360,7 +355,7 @@ impl ProviderRegistry {
                         .unwrap_or_else(|| "https://api.anthropic.com".into());
                     added += self.replace_anthropic_catalog(
                         models.clone(),
-                        api_key,
+                        &auth,
                         &base_url,
                         name,
                         None,
@@ -821,8 +816,7 @@ impl ProviderRegistry {
     ) {
         // Anthropic — register all known Claude models when API key is available.
         if config.is_enabled("anthropic")
-            && let Some(key) =
-                resolve_api_key(config, "anthropic", "ANTHROPIC_API_KEY", env_overrides)
+            && let Some(auth) = resolve_anthropic_auth(config, env_overrides)
         {
             let base_url = config
                 .get("anthropic")
@@ -844,7 +838,7 @@ impl ProviderRegistry {
                 .unwrap_or_default();
             self.register_anthropic_catalog(
                 models,
-                &key,
+                &auth,
                 &base_url,
                 &provider_label,
                 alias,
@@ -1119,11 +1113,7 @@ impl ProviderRegistry {
             }
 
             if matches!(entry.wire_api, moltis_config::WireApi::Anthropic) {
-                if let Some(api_key) = entry
-                    .api_key
-                    .as_ref()
-                    .filter(|key| !key.expose_secret().is_empty())
-                {
+                if let Some(auth) = resolve_custom_anthropic_auth(entry) {
                     let base_url = entry
                         .base_url
                         .clone()
@@ -1145,7 +1135,7 @@ impl ProviderRegistry {
                     }
                     self.register_anthropic_catalog(
                         models,
-                        api_key,
+                        &auth,
                         &base_url,
                         name,
                         None,

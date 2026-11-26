@@ -131,7 +131,7 @@ fn apply_thinking_injects_budget_for_high_effort() {
     let provider = AnthropicProvider {
         context_window_global: std::collections::HashMap::new(),
         context_window_provider: std::collections::HashMap::new(),
-        api_key: secrecy::Secret::new("test".into()),
+        auth: AnthropicAuth::from_single(secrecy::Secret::new("test".into())),
         model: "claude-opus-4-5-20251101".into(),
         base_url: "https://api.anthropic.com".into(),
         client: crate::shared_http_client(),
@@ -164,7 +164,7 @@ fn apply_thinking_low_effort_budget() {
     let provider = AnthropicProvider {
         context_window_global: std::collections::HashMap::new(),
         context_window_provider: std::collections::HashMap::new(),
-        api_key: secrecy::Secret::new("test".into()),
+        auth: AnthropicAuth::from_single(secrecy::Secret::new("test".into())),
         model: "claude-sonnet-4-5-20250929".into(),
         base_url: "https://api.anthropic.com".into(),
         client: crate::shared_http_client(),
@@ -266,9 +266,12 @@ async fn fetch_models_from_api_paginates_deduplicates_and_marks_first_three_once
     );
     let base_url = start_models_mock(Arc::new(Mutex::new(responses))).await;
 
-    let models = fetch_models_from_api(secrecy::Secret::new("test-key".into()), base_url)
-        .await
-        .expect("model discovery should succeed");
+    let models = fetch_models_from_api(
+        AnthropicAuth::from_single(secrecy::Secret::new("test-key".into())),
+        base_url,
+    )
+    .await
+    .expect("model discovery should succeed");
 
     let ids: Vec<&str> = models.iter().map(|model| model.id.as_str()).collect();
     assert_eq!(ids, vec![
@@ -302,9 +305,12 @@ async fn fetch_models_from_api_ignores_non_chat_entries() {
     );
     let base_url = start_models_mock(Arc::new(Mutex::new(responses))).await;
 
-    let models = fetch_models_from_api(secrecy::Secret::new("test-key".into()), base_url)
-        .await
-        .expect("model discovery should succeed");
+    let models = fetch_models_from_api(
+        AnthropicAuth::from_single(secrecy::Secret::new("test-key".into())),
+        base_url,
+    )
+    .await
+    .expect("model discovery should succeed");
 
     let ids: Vec<&str> = models.iter().map(|model| model.id.as_str()).collect();
     assert_eq!(ids, vec!["claude-sonnet-4-6", "claude-opus-4-6"]);
@@ -322,9 +328,12 @@ async fn fetch_models_from_api_errors_on_http_failure() {
     );
     let base_url = start_models_mock(Arc::new(Mutex::new(responses))).await;
 
-    let err = fetch_models_from_api(secrecy::Secret::new("test-key".into()), base_url)
-        .await
-        .expect_err("HTTP failure should surface as an error");
+    let err = fetch_models_from_api(
+        AnthropicAuth::from_single(secrecy::Secret::new("test-key".into())),
+        base_url,
+    )
+    .await
+    .expect_err("HTTP failure should surface as an error");
 
     assert!(err.to_string().contains("HTTP 429"));
 }
@@ -346,9 +355,12 @@ async fn fetch_models_from_api_errors_when_no_chat_models_are_returned() {
     );
     let base_url = start_models_mock(Arc::new(Mutex::new(responses))).await;
 
-    let err = fetch_models_from_api(secrecy::Secret::new("test-key".into()), base_url)
-        .await
-        .expect_err("empty chat-capable catalog should error");
+    let err = fetch_models_from_api(
+        AnthropicAuth::from_single(secrecy::Secret::new("test-key".into())),
+        base_url,
+    )
+    .await
+    .expect_err("empty chat-capable catalog should error");
 
     assert!(err.to_string().contains("returned no models"));
 }
@@ -533,7 +545,7 @@ fn cache_retention_none_skips_cache_control() {
     let provider = AnthropicProvider {
         context_window_global: std::collections::HashMap::new(),
         context_window_provider: std::collections::HashMap::new(),
-        api_key: secrecy::Secret::new("test".into()),
+        auth: AnthropicAuth::from_single(secrecy::Secret::new("test".into())),
         model: "claude-sonnet-4-5-20250929".into(),
         base_url: "https://api.anthropic.com".into(),
         client: crate::shared_http_client(),
@@ -600,4 +612,237 @@ fn mark_recommended_models_marks_first_three_globally() {
     assert!(models[1].recommended);
     assert!(models[2].recommended);
     assert!(!models[3].recommended);
+}
+
+#[test]
+fn from_single_detects_setup_token_and_api_keys() {
+    assert!(matches!(
+        AnthropicAuth::from_single(secrecy::Secret::new("sk-ant-oat01-subscription".into())),
+        AnthropicAuth::SetupToken(_)
+    ));
+    assert!(matches!(
+        AnthropicAuth::from_single(secrecy::Secret::new("sk-ant-api03-paid".into())),
+        AnthropicAuth::ApiKey(_)
+    ));
+}
+
+#[test]
+fn apply_uses_x_api_key_for_api_keys() {
+    let auth = AnthropicAuth::from_single(secrecy::Secret::new("sk-ant-api03-paid".into()));
+    let request = auth
+        .apply(reqwest::Client::new().get("http://localhost/"))
+        .build()
+        .unwrap();
+    assert_eq!(
+        request.headers().get("x-api-key").unwrap(),
+        "sk-ant-api03-paid"
+    );
+    assert!(request.headers().get("authorization").is_none());
+    assert!(request.headers().get("user-agent").is_none());
+}
+
+#[test]
+fn apply_uses_claude_code_identity_for_setup_token() {
+    let auth = AnthropicAuth::setup_token(secrecy::Secret::new("sk-ant-oat01-a".into()));
+    let request = auth
+        .apply(reqwest::Client::new().get("http://localhost/"))
+        .build()
+        .unwrap();
+    assert_eq!(
+        request.headers().get("authorization").unwrap(),
+        "Bearer sk-ant-oat01-a"
+    );
+    assert_eq!(
+        request.headers().get("anthropic-beta").unwrap(),
+        "claude-code-20250219,oauth-2025-04-20"
+    );
+    assert_eq!(request.headers().get("x-app").unwrap(), "cli");
+    assert!(
+        request
+            .headers()
+            .get("user-agent")
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .starts_with("claude-cli/")
+    );
+    assert!(request.headers().get("x-api-key").is_none());
+}
+
+#[test]
+fn wrap_system_passes_through_api_keys() {
+    let auth = AnthropicAuth::from_single(secrecy::Secret::new("sk-ant-api03-paid".into()));
+    let system = Some(serde_json::Value::String("be helpful".into()));
+    assert_eq!(auth.wrap_system(system.clone(), false), system);
+}
+
+#[test]
+fn wrap_system_prepends_identity_blocks_without_system_prompt() {
+    let auth = AnthropicAuth::setup_token(secrecy::Secret::new("sk-ant-oat01-a".into()));
+    let system = auth.wrap_system(None, false).unwrap();
+    let blocks = system.as_array().unwrap();
+    assert_eq!(blocks.len(), 2);
+    assert!(
+        blocks[0]["text"]
+            .as_str()
+            .unwrap()
+            .starts_with("x-anthropic-billing-header: cc_version=")
+    );
+    assert_eq!(
+        blocks[1]["text"].as_str().unwrap(),
+        "You are Claude Code, Anthropic's official CLI for Claude."
+    );
+    assert!(blocks[1].get("cache_control").is_none());
+}
+
+#[test]
+fn wrap_system_keeps_application_prompt_after_identity_blocks() {
+    let auth = AnthropicAuth::setup_token(secrecy::Secret::new("sk-ant-oat01-a".into()));
+    let system = auth
+        .wrap_system(Some(serde_json::Value::String("be helpful".into())), false)
+        .unwrap();
+    let blocks = system.as_array().unwrap();
+    assert_eq!(blocks.len(), 3);
+    assert_eq!(blocks[2]["text"].as_str().unwrap(), "be helpful");
+    assert!(blocks[1].get("cache_control").is_none());
+}
+
+#[test]
+fn wrap_system_preserves_existing_cache_control() {
+    let auth = AnthropicAuth::setup_token(secrecy::Secret::new("sk-ant-oat01-a".into()));
+    let cached = serde_json::json!([{
+        "type": "text",
+        "text": "be helpful",
+        "cache_control": { "type": "ephemeral" }
+    }]);
+    let system = auth.wrap_system(Some(cached), true).unwrap();
+    let blocks = system.as_array().unwrap();
+    assert_eq!(blocks.len(), 3);
+    // The application prompt keeps its cache breakpoint; the identity blocks
+    // do not grow a second one.
+    assert!(blocks[1].get("cache_control").is_none());
+    assert_eq!(
+        blocks[2]["cache_control"],
+        serde_json::json!({ "type": "ephemeral" })
+    );
+}
+
+#[test]
+fn wrap_system_caches_identity_when_no_application_prompt() {
+    let auth = AnthropicAuth::setup_token(secrecy::Secret::new("sk-ant-oat01-a".into()));
+    let system = auth.wrap_system(None, true).unwrap();
+    let blocks = system.as_array().unwrap();
+    assert_eq!(
+        blocks[1]["cache_control"],
+        serde_json::json!({ "type": "ephemeral" })
+    );
+}
+
+/// Mock `/v1/messages` that answers per bearer token and records the
+/// authorization headers in request order.
+async fn start_rotation_mock(
+    statuses: HashMap<String, StatusCode>,
+) -> (String, Arc<Mutex<Vec<String>>>) {
+    let seen: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
+    let seen_clone = seen.clone();
+    let statuses = Arc::new(statuses);
+    let token_status = {
+        let statuses = statuses.clone();
+        let seen = seen_clone.clone();
+        move |headers: &http::HeaderMap| {
+            let authorization = headers
+                .get("authorization")
+                .and_then(|value| value.to_str().ok())
+                .unwrap_or_default()
+                .to_string();
+            seen.lock().unwrap().push(authorization.clone());
+            let token = authorization.trim_start_matches("Bearer ");
+            let status = statuses
+                .get(token)
+                .copied()
+                .unwrap_or(StatusCode::UNAUTHORIZED);
+            (status, token.to_string())
+        }
+    };
+    let messages_status = token_status.clone();
+    let app = Router::new()
+        .route(
+            "/v1/messages",
+            post(move |req: Request| {
+                let (status, _) = messages_status(req.headers());
+                async move {
+                    let body = if status.is_success() {
+                        serde_json::json!({
+                            "content": [{"type": "text", "text": "ok"}],
+                            "usage": {},
+                        })
+                    } else {
+                        serde_json::json!({ "error": { "message": "rejected" } })
+                    };
+                    (status, Json(body))
+                }
+            }),
+        )
+        .route(
+            ANTHROPIC_MODELS_ENDPOINT_PATH,
+            get(move |req: Request| {
+                let (status, _) = token_status(req.headers());
+                async move {
+                    let body = if status.is_success() {
+                        serde_json::json!({
+                            "data": [{"id": "claude-opus-5-5", "display_name": "Claude Opus 5.5"}],
+                            "has_more": false,
+                        })
+                    } else {
+                        serde_json::json!({ "error": { "message": "rejected" } })
+                    };
+                    (status, Json(body))
+                }
+            }),
+        );
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    tokio::spawn(async move {
+        axum::serve(listener, app).await.unwrap();
+    });
+    (format!("http://{addr}"), seen)
+}
+
+#[tokio::test]
+async fn send_json_does_not_retry_on_auth_failure() {
+    let (base_url, seen) = start_rotation_mock(HashMap::from([
+        ("sk-ant-oat01-a".into(), StatusCode::UNAUTHORIZED),
+        ("sk-ant-oat01-b".into(), StatusCode::OK),
+    ]))
+    .await;
+    let auth = AnthropicAuth::setup_token(secrecy::Secret::new("sk-ant-oat01-a".into()));
+    let response = auth
+        .send_json(
+            crate::shared_http_client(),
+            &format!("{base_url}/v1/messages"),
+            &serde_json::json!({}),
+        )
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    assert_eq!(seen.lock().unwrap().as_slice(), ["Bearer sk-ant-oat01-a"]);
+}
+
+#[tokio::test]
+async fn complete_with_setup_token_sends_identity_blocks() {
+    let (base_url, seen) =
+        start_rotation_mock(HashMap::from([("sk-ant-oat01-a".into(), StatusCode::OK)])).await;
+    let provider = AnthropicProvider::with_auth(
+        AnthropicAuth::setup_token(secrecy::Secret::new("sk-ant-oat01-a".into())),
+        "claude-opus-5-5".into(),
+        base_url,
+        None,
+    );
+
+    let response = provider
+        .complete(&[ChatMessage::user("ping")], &[])
+        .await
+        .unwrap();
+    assert_eq!(response.text.as_deref(), Some("ok"));
+    assert_eq!(seen.lock().unwrap().as_slice(), ["Bearer sk-ant-oat01-a"]);
 }
