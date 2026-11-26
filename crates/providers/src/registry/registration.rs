@@ -86,8 +86,7 @@ impl ProviderRegistry {
         // ── Anthropic builtin ─────────────────────────────────────────
         if fetched.contains_key("anthropic")
             && config.is_enabled("anthropic")
-            && let Some(key) =
-                resolve_api_key(config, "anthropic", "ANTHROPIC_API_KEY", env_overrides)
+            && let Some(auth) = resolve_anthropic_auth(config, env_overrides)
         {
             let base_url = config
                 .get("anthropic")
@@ -108,7 +107,7 @@ impl ProviderRegistry {
 
             added += self.replace_anthropic_catalog(
                 models,
-                &key,
+                &auth,
                 &base_url,
                 &provider_label,
                 alias,
@@ -342,6 +341,28 @@ impl ProviderRegistry {
         // ── Custom providers ──────────────────────────────────────────
         for (name, entry) in &config.providers {
             if !name.starts_with("custom-") || !entry.enabled {
+                continue;
+            }
+            if matches!(entry.wire_api, moltis_config::WireApi::Anthropic) {
+                let Some(models) = fetched.get(name.as_str()) else {
+                    continue;
+                };
+                if let Some(auth) = resolve_custom_anthropic_auth(entry) {
+                    let base_url = entry
+                        .base_url
+                        .clone()
+                        .filter(|url| !url.trim().is_empty())
+                        .unwrap_or_else(|| "https://api.anthropic.com".into());
+                    added += self.replace_anthropic_catalog(
+                        models.clone(),
+                        &auth,
+                        &base_url,
+                        name,
+                        None,
+                        entry.cache_retention,
+                        extract_cw_overrides(&entry.model_overrides),
+                    );
+                }
                 continue;
             }
             let Some(models) = fetched.get(name.as_str()) else {
@@ -795,8 +816,7 @@ impl ProviderRegistry {
     ) {
         // Anthropic — register all known Claude models when API key is available.
         if config.is_enabled("anthropic")
-            && let Some(key) =
-                resolve_api_key(config, "anthropic", "ANTHROPIC_API_KEY", env_overrides)
+            && let Some(auth) = resolve_anthropic_auth(config, env_overrides)
         {
             let base_url = config
                 .get("anthropic")
@@ -818,7 +838,7 @@ impl ProviderRegistry {
                 .unwrap_or_default();
             self.register_anthropic_catalog(
                 models,
-                &key,
+                &auth,
                 &base_url,
                 &provider_label,
                 alias,
@@ -1089,6 +1109,40 @@ impl ProviderRegistry {
     ) {
         for (name, entry) in &config.providers {
             if !name.starts_with("custom-") || !entry.enabled {
+                continue;
+            }
+
+            if matches!(entry.wire_api, moltis_config::WireApi::Anthropic) {
+                if let Some(auth) = resolve_custom_anthropic_auth(entry) {
+                    let base_url = entry
+                        .base_url
+                        .clone()
+                        .filter(|url| !url.trim().is_empty())
+                        .unwrap_or_else(|| "https://api.anthropic.com".into());
+                    let preferred = configured_models_for_provider(config, name);
+                    let discovered = if should_fetch_models(config, name) {
+                        prefetched.get(name.as_str()).cloned().unwrap_or_default()
+                    } else {
+                        Vec::new()
+                    };
+                    let models = merge_preferred_and_discovered_models(preferred, discovered);
+                    if models.is_empty() {
+                        tracing::debug!(
+                            provider = %name,
+                            "custom anthropic provider has no models — skipping registration"
+                        );
+                        continue;
+                    }
+                    self.register_anthropic_catalog(
+                        models,
+                        &auth,
+                        &base_url,
+                        name,
+                        None,
+                        entry.cache_retention,
+                        extract_cw_overrides(&entry.model_overrides),
+                    );
+                }
                 continue;
             }
 

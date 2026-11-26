@@ -1053,6 +1053,29 @@ fn wire_api_serde_roundtrip() {
         serde_json::from_str::<WireApi>("\"responses\"").unwrap(),
         WireApi::Responses
     );
+    assert_eq!(
+        serde_json::to_string(&WireApi::Anthropic).unwrap(),
+        "\"anthropic\""
+    );
+    assert_eq!(
+        serde_json::from_str::<WireApi>("\"anthropic\"").unwrap(),
+        WireApi::Anthropic
+    );
+}
+
+#[test]
+fn provider_entry_wire_api_anthropic_from_toml() {
+    let toml_str = r#"
+[providers.custom-anthropic-backup]
+enabled = true
+wire_api = "anthropic"
+setup_token = "sk-ant-oat01-backup"
+models = ["claude-opus-5-5"]
+"#;
+    let config: MoltisConfig = toml::from_str(toml_str).unwrap();
+    let entry = config.providers.get("custom-anthropic-backup").unwrap();
+    assert_eq!(entry.wire_api, WireApi::Anthropic);
+    assert!(entry.setup_token.is_some());
 }
 
 #[test]

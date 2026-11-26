@@ -153,6 +153,9 @@ loopback_http = true                # Plain HTTP on loopback binds: http://local
 # [providers.anthropic]
 # enabled = true
 # api_key = "sk-ant-..."                      # Or set ANTHROPIC_API_KEY env var
+# Subscription alternative to api_key: a `claude setup-token` token
+# (or set ANTHROPIC_OAUTH_TOKEN). Requests then identify as Claude Code:
+# setup_token = "${{ANTHROPIC_OAUTH_TOKEN}}"
 # models = ["claude-sonnet-4-5-20250929"]     # Optional preferred models
 # fetch_models = true                          # Set false to skip remote discovery
 # base_url = "https://api.anthropic.com"     # API endpoint
@@ -166,6 +169,12 @@ loopback_http = true                # Plain HTTP on loopback binds: http://local
 # base_url = "https://api.minimax.io/anthropic" # Use https://api.minimaxi.com/anthropic for China
 # models = ["MiniMax-M3.1-Flash", "MiniMax-M3"]
 # alias = "minimax-anthropic"
+#
+# Additional Anthropic accounts as separately selectable providers:
+# [providers.custom-anthropic-backup]
+# wire_api = "anthropic"                     # Anthropic Messages API on a custom-* provider
+# setup_token = "${{ANTHROPIC_BACKUP_OAUTH_TOKEN}}"
+# models = ["claude-opus-5-5"]               # base_url defaults to api.anthropic.com
 
 # ── OpenAI ────────────────────────────────────────────────────
 # [providers.openai]

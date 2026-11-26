@@ -53,6 +53,29 @@ base_url = "https://my-service.example.com/v1"
 models = ["my-model"]
 ```
 
+### Custom Anthropic instances (`wire_api = "anthropic"`)
+
+A `custom-*` provider can speak the Anthropic Messages API instead, which
+makes several Claude accounts selectable as separate providers — the account
+is visible in the model selector as `custom-<name>::<model>`:
+
+```toml
+# Personal account, via the builtin provider:
+[providers.anthropic]
+setup_token = "${ANTHROPIC_OAUTH_TOKEN}"
+
+# Second account, selected explicitly:
+[providers.custom-anthropic-backup]
+wire_api = "anthropic"
+setup_token = "${ANTHROPIC_BACKUP_OAUTH_TOKEN}"
+models = ["claude-opus-5-5"]
+# base_url defaults to https://api.anthropic.com
+```
+
+Each instance takes its own `api_key` or `setup_token` (same OAuth request
+shape as the builtin). Configured `models` are preferred; without them the
+catalog is discovered from the endpoint.
+
 ## Configuration
 
 ### Via Web UI (Recommended)
@@ -144,6 +167,34 @@ Gemini supports native tool calling, vision/multimodal inputs, streaming, and au
 
 1. Get an API key from [console.anthropic.com](https://console.anthropic.com/).
 2. Set `ANTHROPIC_API_KEY` in your environment.
+
+#### Claude subscription (`claude setup-token`)
+
+A Claude Pro/Max subscription can be used instead of an API key. Run
+`claude setup-token` on a machine with Claude Code installed, then configure
+the token:
+
+```toml
+[providers.anthropic]
+setup_token = "${ANTHROPIC_OAUTH_TOKEN}"
+```
+
+The token can also be set through the `ANTHROPIC_OAUTH_TOKEN` environment
+variable, and an `sk-ant-oat…` value passed as `api_key`/`ANTHROPIC_API_KEY` is
+detected automatically. Tokens imported from an OpenClaw installation by
+`moltis import` (the `anthropic` entry of `oauth_tokens.json`) are used as a
+fallback when nothing else is configured.
+
+Additional Claude accounts belong in separate `custom-*` instances with
+`wire_api = "anthropic"` (see below), so the active account is always the one
+selected in the model selector — there is no automatic rotation between
+accounts.
+
+Because Anthropic only accepts subscription tokens for Claude Code traffic,
+these requests authenticate with `Authorization: Bearer` and identify as the
+Claude Code CLI (headers and system-prompt identity, the same request shape
+OpenClaw uses). Setup-tokens are long-lived but not refreshed by Moltis: when
+one expires, run `claude setup-token` again and replace it.
 
 ### OpenAI
 

@@ -293,3 +293,140 @@ async fn explicit_strict_tools_overrides_fireworks_kimi_default() -> anyhow::Res
     }
     Ok(())
 }
+
+fn capture_anthropic_request() -> anyhow::Result<(String, mpsc::Receiver<anyhow::Result<Value>>)> {
+    let listener = TcpListener::bind("127.0.0.1:0").context("bind test server")?;
+    let base_url = format!("http://{}", listener.local_addr().context("local addr")?);
+    let (tx, rx) = mpsc::sync_channel(1);
+    std::thread::spawn(move || {
+        let result = (|| -> anyhow::Result<Value> {
+            let (mut stream, _) = listener.accept().context("accept request")?;
+            let mut buffer = Vec::new();
+            let mut chunk = [0_u8; 4096];
+            let content_length = loop {
+                let read = stream.read(&mut chunk).context("read request")?;
+                anyhow::ensure!(
+                    read > 0,
+                    "connection closed before request headers completed"
+                );
+                buffer.extend_from_slice(&chunk[..read]);
+                let headers = String::from_utf8_lossy(&buffer);
+                if let Some((head, _)) = headers.split_once("\r\n\r\n") {
+                    break head
+                        .lines()
+                        .find_map(|line| {
+                            let (name, value) = line.split_once(':')?;
+                            name.eq_ignore_ascii_case("content-length")
+                                .then_some(value.trim())
+                        })
+                        .and_then(|value| value.parse::<usize>().ok())
+                        .context("content length")?;
+                }
+            };
+            let body_start = buffer
+                .windows(4)
+                .position(|w| w == b"\r\n\r\n")
+                .context("body")?
+                + 4;
+            while buffer.len() - body_start < content_length {
+                let read = stream.read(&mut chunk).context("read body")?;
+                anyhow::ensure!(read > 0, "connection closed before request body completed");
+                buffer.extend_from_slice(&chunk[..read]);
+            }
+            let body = &buffer[body_start..body_start + content_length];
+            let value = serde_json::from_slice(body).context("json body")?;
+            let response_body = r#"{"content":[{"type":"text","text":"ok"}],"usage":{}}"#;
+            let response = format!(
+                "HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: {}\r\n\r\n{response_body}",
+                response_body.len()
+            );
+            stream
+                .write_all(response.as_bytes())
+                .context("write response")?;
+            Ok(value)
+        })();
+        let _ = tx.send(result);
+    });
+    Ok((base_url, rx))
+}
+
+#[tokio::test]
+async fn custom_anthropic_provider_registers_with_setup_token() -> anyhow::Result<()> {
+    let (base_url, body_rx) = capture_anthropic_request()?;
+    let mut config = ProvidersConfig::default();
+    config
+        .providers
+        .insert("custom-anthropic-healabs".into(), ProviderEntry {
+            wire_api: moltis_config::WireApi::Anthropic,
+            setup_token: Some(Secret::new("sk-ant-oat01-healabs".into())),
+            base_url: Some(base_url),
+            models: vec!["claude-opus-5-5".into()],
+            ..ProviderEntry::default()
+        });
+
+    let registry = ProviderRegistry::from_config_with_prefetched(
+        &config,
+        &HashMap::new(),
+        &HashMap::new(),
+        HashMap::new(),
+    );
+    let provider = registry
+        .get("custom-anthropic-healabs::claude-opus-5-5")
+        .context("custom anthropic model is registered under its instance name")?;
+    let response = provider
+        .complete(&[ChatMessage::user("ping")], &[])
+        .await
+        .context("completion succeeds")?;
+    assert_eq!(response.text.as_deref(), Some("ok"));
+
+    let body = body_rx.recv().context("captured request")??;
+    // Setup-tokens authenticate with the Claude Code identity blocks.
+    let system = body["system"]
+        .as_array()
+        .context("identity system blocks")?;
+    assert_eq!(system.len(), 2);
+    assert!(
+        system[0]["text"]
+            .as_str()
+            .unwrap_or_default()
+            .starts_with("x-anthropic-billing-header:")
+    );
+    assert_eq!(
+        system[1]["text"].as_str().unwrap_or_default(),
+        "You are Claude Code, Anthropic's official CLI for Claude."
+    );
+    Ok(())
+}
+
+#[tokio::test]
+async fn custom_anthropic_provider_uses_plain_api_key_without_identity() -> anyhow::Result<()> {
+    let (base_url, body_rx) = capture_anthropic_request()?;
+    let mut config = ProvidersConfig::default();
+    config
+        .providers
+        .insert("custom-anthropic-paid".into(), ProviderEntry {
+            wire_api: moltis_config::WireApi::Anthropic,
+            api_key: Some(Secret::new("sk-ant-api03-paid".into())),
+            base_url: Some(base_url),
+            models: vec!["claude-opus-5-5".into()],
+            ..ProviderEntry::default()
+        });
+
+    let registry = ProviderRegistry::from_config_with_prefetched(
+        &config,
+        &HashMap::new(),
+        &HashMap::new(),
+        HashMap::new(),
+    );
+    let provider = registry
+        .get("custom-anthropic-paid::claude-opus-5-5")
+        .context("custom anthropic model is registered")?;
+    provider
+        .complete(&[ChatMessage::user("ping")], &[])
+        .await
+        .context("completion succeeds")?;
+
+    let body = body_rx.recv().context("captured request")??;
+    assert_eq!(body["system"], Value::Null);
+    Ok(())
+}
