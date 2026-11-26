@@ -230,6 +230,9 @@ clap      = { features = ["derive", "env"], version = "4" }
 indicatif = "0.17"
 # Database
 sqlx = { features = ["migrate", "runtime-tokio", "sqlite"], version = "0.8" }
+# Synchronous read-only access to foreign SQLite files (OpenClaw import).
+# Must link the same libsqlite3-sys as sqlx (`links = "sqlite3"`).
+rusqlite = { default-features = false, version = "0.37" }
 # Embedded key-value store (zvec memory backend cache + file index)
 redb = "2"
 # Zvec vector database (memory backend)
@@ -257,6 +260,7 @@ tokio-tungstenite = "0.26"
 toml              = "0.8"
 toml_edit         = "0.22"
 zip               = { default-features = false, features = ["deflate"], version = "2" }
+zstd              = "0.13"
 # LLM provider crates (optional, behind feature flags)
 async-openai    = { features = ["chat-completion"], version = "0.32" }
 base64          = "0.22"

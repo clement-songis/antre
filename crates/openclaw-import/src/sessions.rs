@@ -1,14 +1,18 @@
-//! Import session JSONL files from OpenClaw to Moltis format.
+//! Import OpenClaw sessions to Moltis format.
 //!
 //! OpenClaw sessions live at either:
+//! - `~/.openclaw/agents/<id>/agent/openclaw-agent.sqlite` (current releases,
+//!   see [`sqlite`]),
 //! - `~/.openclaw/agents/<id>/sessions/<key>.jsonl` (legacy layout), or
-//! - `~/.openclaw/agents/<id>/agent/sessions/<key>.jsonl` (newer layout).
+//! - `~/.openclaw/agents/<id>/agent/sessions/<key>.jsonl` (newer JSONL layout).
 //!
 //! Moltis sessions live at `<data_dir>/sessions/<safe-key>.jsonl` with metadata
 //! in `metadata.json`.
 
+pub(crate) mod sqlite;
+
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     io::{BufRead, BufReader, Write},
     path::Path,
 };
@@ -86,9 +90,12 @@ enum MoltisMessage {
 
 /// Import sessions from all agents in an OpenClaw installation.
 ///
-/// In addition to converting JSONL files, this also generates markdown
+/// In addition to converting transcripts, this also generates markdown
 /// transcripts in `memory_sessions_dir` (typically `<data>/memory/sessions/`)
 /// so that imported conversations are searchable by the Moltis memory system.
+///
+/// Each agent's `agent/openclaw-agent.sqlite` database is read first; JSONL
+/// files whose session ID was already found there are skipped.
 ///
 /// `agent_id_mapping` maps OpenClaw agent IDs to Moltis agent IDs. If empty,
 /// agent IDs are used as-is (backward compatible for single-agent installs).
@@ -102,13 +109,6 @@ pub fn import_sessions(
         return CategoryReport::skipped(ImportCategory::Sessions);
     }
 
-    let mut imported = 0;
-    let mut updated = 0;
-    let mut skipped = 0;
-    let mut errors = Vec::new();
-    let warnings = Vec::new();
-    let mut entries = Vec::new();
-
     if let Err(e) = std::fs::create_dir_all(dest_sessions_dir) {
         return CategoryReport::failed(
             ImportCategory::Sessions,
@@ -116,9 +116,7 @@ pub fn import_sessions(
         );
     }
 
-    // Load existing metadata once to detect incremental changes
-    let metadata_path = dest_sessions_dir.join("metadata.json");
-    let existing_metadata = load_session_metadata(&metadata_path);
+    let mut importer = SessionImporter::new(dest_sessions_dir, memory_sessions_dir);
 
     for openclaw_agent_id in &detection.agent_ids {
         let moltis_agent_id = agent_id_mapping
@@ -127,157 +125,266 @@ pub fn import_sessions(
             .unwrap_or_else(|| openclaw_agent_id.clone());
 
         let agent_dir = detection.home_dir.join("agents").join(openclaw_agent_id);
-        let Some(sessions_dir) = resolve_agent_sessions_dir(&agent_dir) else {
-            debug!(agent = %openclaw_agent_id, "no sessions directory found, skipping");
+        let sqlite_session_ids = sqlite::import_agent_sessions(
+            &mut importer,
+            &agent_dir,
+            openclaw_agent_id,
+            &moltis_agent_id,
+        );
+        import_agent_jsonl_sessions(
+            &mut importer,
+            &agent_dir,
+            openclaw_agent_id,
+            &moltis_agent_id,
+            &sqlite_session_ids,
+        );
+    }
+
+    importer.finish()
+}
+
+fn import_agent_jsonl_sessions(
+    importer: &mut SessionImporter<'_>,
+    agent_dir: &Path,
+    openclaw_agent_id: &str,
+    moltis_agent_id: &str,
+    already_imported: &HashSet<String>,
+) {
+    let Some(sessions_dir) = resolve_agent_sessions_dir(agent_dir) else {
+        debug!(agent = %openclaw_agent_id, "no sessions directory found, skipping");
+        return;
+    };
+
+    let Ok(dir_entries) = std::fs::read_dir(&sessions_dir) else {
+        debug!(agent = %openclaw_agent_id, "failed to read sessions directory, skipping");
+        return;
+    };
+
+    let session_label_map = load_session_label_map(&sessions_dir);
+
+    for entry in dir_entries.flatten() {
+        let path = entry.path();
+        if !path.is_file() || path.extension().is_some_and(|e| e != "jsonl") {
             continue;
-        };
+        }
 
-        let Ok(dir_entries) = std::fs::read_dir(&sessions_dir) else {
-            debug!(agent = %openclaw_agent_id, "failed to read sessions directory, skipping");
+        let stem = path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("unknown");
+        if already_imported.contains(stem) {
+            debug!(agent = %openclaw_agent_id, session = stem, "session already read from SQLite, skipping JSONL copy");
             continue;
-        };
+        }
 
-        let session_label_map = load_session_label_map(&sessions_dir);
+        let label = session_label_map
+            .get(stem)
+            .map(|(logical_key, origin)| build_session_label(logical_key, origin.as_ref()))
+            .unwrap_or_else(|| {
+                let prefix_len = 8.min(stem.len());
+                format!("OpenClaw: {}", &stem[..prefix_len])
+            });
 
-        for entry in dir_entries.flatten() {
-            let path = entry.path();
-            if !path.is_file() || path.extension().is_some_and(|e| e != "jsonl") {
-                continue;
-            }
-
-            let stem = path
-                .file_stem()
-                .and_then(|s| s.to_str())
-                .unwrap_or("unknown");
-            let dest_key = format!("oc:{moltis_agent_id}:{stem}");
-            let dest_file =
-                moltis_sessions::store::SessionStore::new(dest_sessions_dir.to_path_buf())
-                    .history_path_for(&dest_key);
-            if let Some(parent) = dest_file.parent()
-                && let Err(error) = std::fs::create_dir_all(parent)
-            {
-                warn!(%error, key = %dest_key, "failed to create session storage directory");
-                errors.push(format!("{dest_key}: {error}"));
-                continue;
-            }
-
-            let source_lines = count_lines(&path);
-
-            // Check if we already have this session and whether it has grown
-            let existing_entry = existing_metadata.get(&dest_key);
-            let is_update = if let Some(prev) = existing_entry {
-                if prev.source_line_count > 0 && source_lines <= prev.source_line_count {
-                    debug!(key = %dest_key, "session unchanged, skipping");
-                    skipped += 1;
-                    continue;
+        importer.import_one(
+            SessionSource {
+                dest_key: format!("oc:{moltis_agent_id}:{stem}"),
+                moltis_agent_id,
+                label,
+                source_line_count: count_lines(&path),
+                archived: false,
+                description: path.display().to_string(),
+            },
+            |sink| {
+                let reader = BufReader::new(std::fs::File::open(&path)?);
+                for line in reader.lines() {
+                    sink.push_line(&line?)?;
                 }
-                true
-            } else {
-                false
-            };
+                Ok(())
+            },
+        );
+    }
+}
 
-            match convert_session(&path, &dest_file) {
-                Ok(stats) => {
-                    let label = session_label_map
-                        .get(stem)
-                        .map(|(logical_key, origin)| {
-                            build_session_label(logical_key, origin.as_ref())
-                        })
-                        .unwrap_or_else(|| {
-                            let prefix_len = 8.min(stem.len());
-                            format!("OpenClaw: {}", &stem[..prefix_len])
-                        });
+/// Where one OpenClaw session comes from and how it is labelled in Moltis.
+pub(crate) struct SessionSource<'a> {
+    pub(crate) dest_key: String,
+    pub(crate) moltis_agent_id: &'a str,
+    pub(crate) label: String,
+    /// Size of the source (JSONL lines or SQLite events), used to skip
+    /// sessions that did not grow since the previous import.
+    pub(crate) source_line_count: u32,
+    pub(crate) archived: bool,
+    /// Human-readable source location for error messages.
+    pub(crate) description: String,
+}
 
-                    if is_update {
-                        debug!(key = %dest_key, messages = stats.message_count, "updated session (incremental)");
-                    } else {
-                        debug!(key = %dest_key, messages = stats.message_count, "imported session");
-                    }
+/// Shared bookkeeping for one import run: metadata, counters and errors.
+pub(crate) struct SessionImporter<'a> {
+    dest_sessions_dir: &'a Path,
+    memory_sessions_dir: &'a Path,
+    metadata_path: std::path::PathBuf,
+    existing_metadata: HashMap<String, ImportedSessionEntry>,
+    entries: Vec<ImportedSessionEntry>,
+    imported: usize,
+    updated: usize,
+    skipped: usize,
+    errors: Vec<String>,
+    warnings: Vec<String>,
+}
 
-                    if !stats.transcript.is_empty()
-                        && let Err(e) = write_transcript(
-                            memory_sessions_dir,
-                            &dest_key,
-                            &label,
-                            stats.last_model.as_deref(),
-                            &stats,
-                        )
-                    {
-                        warn!(key = %dest_key, error = %e, "failed to write session transcript");
-                    }
-
-                    let (id, created_at, version) = if let Some(prev) = existing_entry {
-                        (
-                            prev.id.clone(),
-                            prev.created_at,
-                            prev.version.saturating_add(1),
-                        )
-                    } else {
-                        (uuid_v4(), stats.first_timestamp.unwrap_or_else(now_ms), 0)
-                    };
-
-                    // Set agent_id for non-default agents
-                    let agent_id = if moltis_agent_id == "main" {
-                        None
-                    } else {
-                        Some(moltis_agent_id.clone())
-                    };
-
-                    entries.push(ImportedSessionEntry {
-                        id,
-                        key: dest_key,
-                        label: Some(label),
-                        model: stats.last_model,
-                        preview: stats.preview,
-                        created_at,
-                        updated_at: stats.last_timestamp.unwrap_or_else(now_ms),
-                        message_count: stats.message_count,
-                        last_seen_message_count: stats.message_count,
-                        source_line_count: source_lines,
-                        agent_id,
-                        archived: false,
-                        version,
-                    });
-                    if is_update {
-                        updated += 1;
-                    } else {
-                        imported += 1;
-                    }
-                },
-                Err(e) => {
-                    warn!(source = %path.display(), error = %e, "failed to convert session");
-                    errors.push(format!("failed to convert {}: {e}", path.display()));
-                },
-            }
+impl<'a> SessionImporter<'a> {
+    fn new(dest_sessions_dir: &'a Path, memory_sessions_dir: &'a Path) -> Self {
+        // Load existing metadata once to detect incremental changes
+        let metadata_path = dest_sessions_dir.join("metadata.json");
+        let existing_metadata = load_session_metadata(&metadata_path);
+        Self {
+            dest_sessions_dir,
+            memory_sessions_dir,
+            metadata_path,
+            existing_metadata,
+            entries: Vec::new(),
+            imported: 0,
+            updated: 0,
+            skipped: 0,
+            errors: Vec::new(),
+            warnings: Vec::new(),
         }
     }
 
-    // Write/merge session metadata
-    if !entries.is_empty()
-        && let Err(e) = merge_session_metadata(&metadata_path, &entries)
-    {
-        errors.push(format!("failed to update metadata.json: {e}"));
+    pub(crate) fn warn(&mut self, message: String) {
+        self.warnings.push(message);
     }
 
-    let total_changed = imported + updated;
-    let status = if !errors.is_empty() && total_changed > 0 {
-        ImportStatus::Partial
-    } else if !errors.is_empty() {
-        ImportStatus::Failed
-    } else if total_changed == 0 {
-        ImportStatus::Skipped
-    } else {
-        ImportStatus::Success
-    };
+    /// Convert one session unless it is unchanged since the last import.
+    ///
+    /// `feed` pushes the source records (JSONL lines) into the sink.
+    pub(crate) fn import_one(
+        &mut self,
+        source: SessionSource<'_>,
+        feed: impl FnOnce(&mut SessionSink) -> crate::error::Result<()>,
+    ) {
+        let dest_key = source.dest_key;
+        let dest_file =
+            moltis_sessions::store::SessionStore::new(self.dest_sessions_dir.to_path_buf())
+                .history_path_for(&dest_key);
+        if let Some(parent) = dest_file.parent()
+            && let Err(error) = std::fs::create_dir_all(parent)
+        {
+            warn!(%error, key = %dest_key, "failed to create session storage directory");
+            self.errors.push(format!("{dest_key}: {error}"));
+            return;
+        }
 
-    CategoryReport {
-        category: ImportCategory::Sessions,
-        status,
-        items_imported: imported,
-        items_updated: updated,
-        items_skipped: skipped,
-        warnings,
-        errors,
+        // Check if we already have this session and whether it has grown
+        let existing_entry = self.existing_metadata.get(&dest_key);
+        let is_update = if let Some(prev) = existing_entry {
+            if prev.source_line_count > 0 && source.source_line_count <= prev.source_line_count {
+                debug!(key = %dest_key, "session unchanged, skipping");
+                self.skipped += 1;
+                return;
+            }
+            true
+        } else {
+            false
+        };
+
+        let stats = match SessionSink::create(&dest_file).and_then(|mut sink| {
+            feed(&mut sink)?;
+            Ok(sink.finish())
+        }) {
+            Ok(stats) => stats,
+            Err(e) => {
+                warn!(source = %source.description, error = %e, "failed to convert session");
+                self.errors
+                    .push(format!("failed to convert {}: {e}", source.description));
+                return;
+            },
+        };
+
+        let label = source.label;
+        if is_update {
+            debug!(key = %dest_key, messages = stats.message_count, "updated session (incremental)");
+        } else {
+            debug!(key = %dest_key, messages = stats.message_count, "imported session");
+        }
+
+        if !stats.transcript.is_empty()
+            && let Err(e) = write_transcript(
+                self.memory_sessions_dir,
+                &dest_key,
+                &label,
+                stats.last_model.as_deref(),
+                &stats,
+            )
+        {
+            warn!(key = %dest_key, error = %e, "failed to write session transcript");
+        }
+
+        let (id, created_at, version) = if let Some(prev) = existing_entry {
+            (
+                prev.id.clone(),
+                prev.created_at,
+                prev.version.saturating_add(1),
+            )
+        } else {
+            (uuid_v4(), stats.first_timestamp.unwrap_or_else(now_ms), 0)
+        };
+
+        // Set agent_id for non-default agents
+        let agent_id =
+            (source.moltis_agent_id != "main").then(|| source.moltis_agent_id.to_string());
+
+        self.entries.push(ImportedSessionEntry {
+            id,
+            key: dest_key,
+            label: Some(label),
+            model: stats.last_model,
+            preview: stats.preview,
+            created_at,
+            updated_at: stats.last_timestamp.unwrap_or_else(now_ms),
+            message_count: stats.message_count,
+            last_seen_message_count: stats.message_count,
+            source_line_count: source.source_line_count,
+            agent_id,
+            archived: source.archived,
+            version,
+        });
+        if is_update {
+            self.updated += 1;
+        } else {
+            self.imported += 1;
+        }
+    }
+
+    fn finish(mut self) -> CategoryReport {
+        // Write/merge session metadata
+        if !self.entries.is_empty()
+            && let Err(e) = merge_session_metadata(&self.metadata_path, &self.entries)
+        {
+            self.errors
+                .push(format!("failed to update metadata.json: {e}"));
+        }
+
+        let total_changed = self.imported + self.updated;
+        let status = if !self.errors.is_empty() && total_changed > 0 {
+            ImportStatus::Partial
+        } else if !self.errors.is_empty() {
+            ImportStatus::Failed
+        } else if total_changed == 0 {
+            ImportStatus::Skipped
+        } else {
+            ImportStatus::Success
+        };
+
+        CategoryReport {
+            category: ImportCategory::Sessions,
+            status,
+            items_imported: self.imported,
+            items_updated: self.updated,
+            items_skipped: self.skipped,
+            warnings: self.warnings,
+            errors: self.errors,
+        }
     }
 }
 
@@ -376,29 +483,36 @@ struct TranscriptEntry {
     content: String,
 }
 
-fn convert_session(src: &Path, dest: &Path) -> crate::error::Result<ConvertStats> {
-    let file = std::fs::File::open(src)?;
-    let reader = BufReader::new(file);
+/// Writes converted Moltis messages while collecting stats.
+pub(crate) struct SessionSink {
+    dest_file: std::io::BufWriter<std::fs::File>,
+    stats: ConvertStats,
+}
 
-    let mut dest_file = std::fs::File::create(dest)?;
-    let mut stats = ConvertStats {
-        message_count: 0,
-        first_timestamp: None,
-        last_timestamp: None,
-        last_model: None,
-        preview: None,
-        transcript: Vec::new(),
-    };
+impl SessionSink {
+    fn create(dest: &Path) -> crate::error::Result<Self> {
+        Ok(Self {
+            dest_file: std::io::BufWriter::new(std::fs::File::create(dest)?),
+            stats: ConvertStats {
+                message_count: 0,
+                first_timestamp: None,
+                last_timestamp: None,
+                last_model: None,
+                preview: None,
+                transcript: Vec::new(),
+            },
+        })
+    }
 
-    for line in reader.lines() {
-        let line = line?;
+    /// Convert one OpenClaw transcript record (a JSONL line). Blank and
+    /// malformed records are skipped.
+    pub(crate) fn push_line(&mut self, line: &str) -> crate::error::Result<()> {
         if line.trim().is_empty() {
-            continue;
+            return Ok(());
         }
 
-        let record: OpenClawSessionRecord = match serde_json::from_str(&line) {
-            Ok(r) => r,
-            Err(_) => continue, // Skip malformed lines
+        let Ok(record) = serde_json::from_str::<OpenClawSessionRecord>(line) else {
+            return Ok(());
         };
 
         match record {
@@ -408,10 +522,10 @@ fn convert_session(src: &Path, dest: &Path) -> crate::error::Result<ConvertStats
                     .as_ref()
                     .and_then(OpenClawTimestamp::to_millis)
                     .or_else(|| timestamp.as_ref().and_then(OpenClawTimestamp::to_millis));
-                if let Some(msg) = convert_message(&message, message_timestamp, &mut stats) {
+                if let Some(msg) = convert_message(&message, message_timestamp, &mut self.stats) {
                     let json = serde_json::to_string(&msg)?;
-                    writeln!(dest_file, "{json}")?;
-                    stats.message_count += 1;
+                    writeln!(self.dest_file, "{json}")?;
+                    self.stats.message_count += 1;
                 }
             },
             OpenClawSessionRecord::Custom { custom_type, data } => {
@@ -422,18 +536,23 @@ fn convert_session(src: &Path, dest: &Path) -> crate::error::Result<ConvertStats
                         .and_then(|d| d.get("model"))
                         .and_then(|m| m.as_str())
                 {
-                    stats.last_model = Some(model.to_string());
+                    self.stats.last_model = Some(model.to_string());
                 }
             },
             OpenClawSessionRecord::SessionMeta { .. } => {
                 // Session metadata is used for detection/scan only
             },
         }
+        Ok(())
     }
 
-    stats.preview = build_preview(&stats.transcript);
-
-    Ok(stats)
+    fn finish(mut self) -> ConvertStats {
+        if let Err(error) = self.dest_file.flush() {
+            warn!(%error, "failed to flush converted session");
+        }
+        self.stats.preview = build_preview(&self.stats.transcript);
+        self.stats
+    }
 }
 
 fn convert_message(

@@ -9,6 +9,8 @@ pub enum Error {
     #[error(transparent)]
     Toml(#[from] toml::ser::Error),
     #[error(transparent)]
+    Sqlite(#[from] rusqlite::Error),
+    #[error(transparent)]
     Walkdir(#[from] walkdir::Error),
     #[error(transparent)]
     StripPrefix(#[from] std::path::StripPrefixError),

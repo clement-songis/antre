@@ -22,7 +22,7 @@ If the directory exists and contains recognizable OpenClaw files (`openclaw.json
 | **Skills** | `skills/` directories with `SKILL.md` | `~/.moltis/skills/` | Copies entire skill directories; skips duplicates |
 | **Memory** | `MEMORY.md` and all `memory/*.md` files | `~/.moltis/MEMORY.md` and `~/.moltis/memory/` | Imports daily logs, project notes, and all other markdown memory files. Appends with `<!-- Imported from OpenClaw -->` separator for idempotency |
 | **Channels** | Telegram and Discord bot configuration in `openclaw.json` | `moltis.toml` channels section | Supports both flat and multi-account Telegram configs |
-| **Sessions** | JSONL conversation files under `agents/*/sessions/` | `~/.moltis/sessions/v1/` and `~/.moltis/memory/sessions/` | Converts OpenClaw message format to Moltis format; prefixes keys with `oc:`. Also generates markdown transcripts for memory search indexing |
+| **Sessions** | Per-agent SQLite database `agents/*/agent/openclaw-agent.sqlite` (current OpenClaw) and JSONL conversation files under `agents/*/sessions/` (older releases) | `~/.moltis/sessions/v1/` and `~/.moltis/memory/sessions/` | Converts OpenClaw message format to Moltis format; prefixes keys with `oc:`. Also generates markdown transcripts for memory search indexing |
 | **MCP Servers** | `mcp-servers.json` | `~/.moltis/mcp-servers.json` | Merges with existing servers; skips duplicates by name |
 | **Workspace Files** | `SOUL.md`, `IDENTITY.md`, `USER.md`, `TOOLS.md`, `AGENTS.md`, `HEARTBEAT.md`, `BOOT.md` | `~/.moltis/` (root) or `~/.moltis/agents/<id>/` | Copies raw workspace files; skips if destination already has user content. Replaces auto-seeded defaults |
 | **Agent Presets** | Non-default agents in `agents.list` | `moltis.toml` `[agents.presets.*]` | Creates `spawn_agent` presets with name, theme, and model. Existing presets are preserved |
@@ -51,6 +51,17 @@ If your OpenClaw installation has multiple agents (defined in `openclaw.json`'s 
 - **Per-agent workspace files** (`SOUL.md`, `IDENTITY.md`, etc.) are copied to `~/.moltis/agents/<id>/`, giving each agent its own personality
 - **Per-agent sessions** are prefixed with `oc:<agent_id>:` so they appear under the correct agent
 - Agents without per-agent workspace files inherit from the root files automatically
+
+### Session storage
+
+Current OpenClaw releases keep each agent's sessions in a SQLite database, `agents/<id>/agent/openclaw-agent.sqlite`; older releases wrote one JSONL file per session. Moltis reads both:
+
+- The database is opened **read-only**, so the import works while OpenClaw is running (it waits up to 5 seconds for OpenClaw's write lock)
+- Each transcript generation (`session_windows` row) becomes one Moltis session keyed `oc:<agent_id>:<session_id>`, the same key a `<session_id>.jsonl` file gets. A `/reset` or rollover in OpenClaw therefore shows up as a separate session with the same title
+- Transcript records come from `transcript_events`, stored as plain JSON or zstd-compressed. Records that OpenClaw moved to a cold archive (`session_transcript_cold_archives`, embedded in the database or published under `agents/<id>/sessions/cold/`) are read back from that archive; if an archive file is missing, the rest of the session is still imported and the report shows a warning
+- Titles come from the session key and its origin (`session_nodes.entry_json`), falling back to the session's display name or label. Sessions archived in OpenClaw are imported as archived
+- Deleted and reset generations (`session_transcript_archives`, and `*.jsonl.deleted.*` / `*.jsonl.reset.*` files) are not imported
+- When a session exists both in the database and as a JSONL file, only the database copy is imported
 
 ## Importing via Web UI
 
@@ -160,7 +171,7 @@ The response includes a report with per-category status (`imported`, `skipped`, 
 
 ## Incremental Session Import
 
-If you continue using OpenClaw after the initial import, Moltis will detect new messages when you re-import. Sessions are compared by source file line count — if the source JSONL has grown since the last import, Moltis re-converts the full session and updates the metadata.
+If you continue using OpenClaw after the initial import, Moltis will detect new messages when you re-import. Sessions are compared by source size — the line count of a JSONL file, or the highest event sequence of a SQLite transcript — and if the source has grown since the last import, Moltis re-converts the full session and updates the metadata.
 
 On incremental update:
 - The session's original `id` and `created_at` are preserved
@@ -176,7 +187,7 @@ When the `file-watcher` feature is enabled (default), Moltis automatically watch
 
 **How it works:**
 
-- Moltis uses OS-level file notifications (FSEvents on macOS, inotify on Linux) to detect `.jsonl` file changes in the OpenClaw sessions directory
+- Moltis uses OS-level file notifications (FSEvents on macOS, inotify on Linux) to detect `.jsonl` file changes in the OpenClaw sessions directory. Writes to the SQLite database are not watched: they are picked up by the 60-second sync, which only runs when that directory exists. Otherwise, re-run the import to pick up new SQLite messages
 - Events are debounced with a 5-second window to batch rapid writes during active conversations
 - A 60-second periodic fallback ensures changes are caught even if file notifications are missed
 - Only sessions are synced automatically — provider keys, memory, skills, and other categories are handled by the manual import or their own dedicated watchers
@@ -203,7 +214,7 @@ Running the import multiple times is safe:
 - **Memory** uses an `<!-- Imported from OpenClaw -->` marker to avoid duplicating `MEMORY.md` content. Individual memory files skip if they already exist at the destination
 - **Skills** skip directories that already exist in the Moltis skills folder
 - **MCP servers** skip entries with matching names
-- **Sessions** use `oc:` prefixed keys that won't collide with native Moltis sessions. Unchanged sessions (same line count) are skipped; grown sessions are re-converted
+- **Sessions** use `oc:` prefixed keys that won't collide with native Moltis sessions. Unchanged sessions (same source size) are skipped; grown sessions are re-converted
 - **Provider keys** merge with existing keys without overwriting
 - **Workspace files** skip if the destination already has user content; replace only auto-seeded defaults
 
