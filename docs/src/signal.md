@@ -70,8 +70,49 @@ list. It is included by default.
 | `otp_cooldown_secs` | no | `300` | Cooldown after 3 failed OTP attempts |
 | `text_chunk_limit` | no | `4000` | Maximum UTF-8 bytes per outbound text chunk |
 
+## Voice Notes
+
+Voice notes from approved senders are transcribed with the speech-to-text
+provider configured under **Settings -> Voice** (`[voice.stt]`), then sent to
+the agent as the user message. Any text sent with the note is kept as a
+caption above the transcript. The audio is also saved to the session media so
+it can be played back from the web UI.
+
+Moltis fetches the audio from the daemon with signal-cli's `getAttachment`
+JSON-RPC method, so the daemon does not need to share a filesystem with
+Moltis. Audio is recognized from the attachment content type (AAC/M4A, Ogg
+Opus, MP3, WAV, WebM), falling back to the file extension.
+
+The sender always gets an answer:
+
+- No STT provider configured: a reply pointing to **Settings -> Voice**.
+- Voice note larger than 25 MB, download failure, transcription failure, or
+  empty transcript: a short reply asking to try again or type the message.
+- When a caption was sent with the note, the caption is forwarded to the agent
+  instead of the error reply.
+
+In groups, the usual `group_policy` and `mention_mode` rules apply before any
+download. A voice note cannot carry a mention, so with `mention_mode =
+"mention"` it is ignored unless it has a caption that mentions the account.
+
+## Images and Documents
+
+Other attachments from approved senders are downloaded the same way and handed
+to the agent with the message text:
+
+- **Images** (JPEG, PNG, GIF, WebP, up to 20 MB) are resized for the model and
+  sent as image input, so a vision-capable model can see them.
+- **Documents** (any other type, up to 25 MB) are saved to the session media
+  directory and the agent receives their name, type and local path. Text-like
+  files (plain text, Markdown, CSV, JSON, XML, YAML, TOML, HTML) and PDFs also
+  have their text inlined in the message, truncated to about 24,000
+  characters.
+
+A message can carry several attachments, including a voice note. An attachment
+that is too large, cannot be downloaded, or cannot be saved is never dropped
+silently: the agent receives a note such as `[Document - download failed]` and
+can tell the sender.
+
 ## Current Limits
 
-Signal support currently handles text DMs and group text messages. Outbound
-media uses the text fallback, and inbound attachments are surfaced as an
-attachment placeholder until attachment ingestion is added.
+Outbound media uses the text fallback: replies are sent as text only.

@@ -368,7 +368,7 @@ pub async fn handle_message_direct(
                     )
                     .await;
                     let document_files = saved_document.as_ref().map(|saved| {
-                        vec![channel_document_file(
+                        vec![ChannelDocumentFile::from_saved(
                             saved,
                             document_file.file_name.as_deref(),
                             &document_file.media_type,

@@ -15,7 +15,7 @@ capabilities that control what features are available.
 | WhatsApp | Gateway (WebSocket) | No | Streaming, voice ingest, OTP, pairing, location |
 | Slack | Socket Mode | No | Streaming, interactive messages, threads, reactions |
 | Nostr | Gateway (relay subscription) | No | OTP, encrypted DMs (NIP-04) |
-| Signal | Gateway (signal-cli SSE) | No | OTP, DMs, groups, outbound text |
+| Signal | Gateway (signal-cli SSE) | No | Voice ingest, inbound images and documents, OTP, DMs, groups, outbound text |
 
 ## Inbound Modes
 
