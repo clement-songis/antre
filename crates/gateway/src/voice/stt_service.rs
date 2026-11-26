@@ -5,7 +5,7 @@ use {
     base64::Engine,
     secrecy::Secret,
     serde_json::{Value, json},
-    tracing::{debug, warn},
+    tracing::debug,
 };
 
 use moltis_voice::{
@@ -16,7 +16,10 @@ use moltis_voice::{
 
 use crate::services::{ServiceResult, SttService};
 
-use super::{load_voice_config, resolve_openai_key, resolve_openai_whisper_base_url};
+use super::{
+    load_voice_config, resolve_openai_key, resolve_openai_whisper_base_url,
+    stt_fallback::{build_chain, transcribe_with_fallback},
+};
 
 /// Live STT service that delegates to voice providers.
 /// Reads fresh config on each operation to pick up changes.
@@ -414,17 +417,18 @@ impl SttService for LiveSttService {
         let cfg = load_voice_config();
         let audio_len = audio.len();
 
-        let provider_id = match provider {
+        // An explicit provider is a deliberate choice (e.g. the settings
+        // page testing one provider), so it never falls back.
+        let chain = match provider {
             Some(s) => {
-                SttProviderId::parse(s).ok_or_else(|| format!("unknown STT provider '{s}'"))?
+                vec![SttProviderId::parse(s).ok_or_else(|| format!("unknown STT provider '{s}'"))?]
             },
-            None => Self::resolve_provider(cfg.voice.stt.provider)
-                .ok_or_else(|| "no STT provider configured".to_string())?,
+            None => build_chain(
+                Self::resolve_provider(cfg.voice.stt.provider)
+                    .ok_or_else(|| "no STT provider configured".to_string())?,
+                &cfg.voice.stt.fallback,
+            ),
         };
-
-        let stt_provider: Box<dyn SttProvider + Send + Sync> =
-            Self::create_provider(provider_id)
-                .ok_or_else(|| format!("STT provider '{}' not configured", provider_id))?;
 
         let request = TranscribeRequest {
             audio,
@@ -434,7 +438,7 @@ impl SttService for LiveSttService {
         };
 
         debug!(
-            provider = %provider_id,
+            chain = ?chain,
             format,
             audio_bytes = audio_len,
             language = language.unwrap_or("auto"),
@@ -442,16 +446,12 @@ impl SttService for LiveSttService {
             "STT transcription request"
         );
 
-        let transcript = stt_provider.transcribe(request).await.map_err(|e| {
-            warn!(
-                provider = %provider_id,
-                format,
-                audio_bytes = audio_len,
-                error = %e,
-                "STT transcription failed"
-            );
-            format!("transcription failed: {}", e)
-        })?;
+        let (provider_id, transcript) =
+            transcribe_with_fallback(&chain, Self::create_provider, request)
+                .await
+                .map_err(|e| e.to_string())?;
+
+        debug!(provider = %provider_id, "STT transcription succeeded");
 
         Ok(json!({
             "text": transcript.text,

@@ -414,6 +414,7 @@ Moltis supports multiple STT providers across cloud and local backends.
 [voice.stt]
 enabled = true
 # provider = "whisper"  # Omit to auto-select the first configured provider
+# fallback = ["whisper-local"]  # Tried in order when the active provider fails
 providers = []          # Optional UI allowlist, empty = show all STT providers
 
 # Cloud providers - API key required
@@ -469,6 +470,32 @@ models are Realtime API models. The current Moltis OpenAI STT provider records a
 clip and sends it to `/audio/transcriptions`, so those Realtime model IDs are
 shown in voice settings as Realtime-only references rather than selectable clip
 transcription defaults.
+
+### Fallback Providers
+
+`voice.stt.fallback` lists providers to try, in order, when the active provider
+fails (HTTP error, rate limit or quota, timeout, network error, rejected audio).
+The active provider is always tried first; each provider is tried at most once,
+and providers that are not configured (the active one included) are skipped.
+
+```toml
+[voice.stt]
+provider = "google"
+fallback = ["whisper"]
+
+[voice.stt.whisper]
+base_url = "http://127.0.0.1:8001/v1"  # e.g. a local faster-whisper server
+```
+
+Each failure is logged as a warning with the provider, the error and its kind
+(`RateLimit`, `ServerError`, ...). When every provider fails, the error lists
+each provider's failure in order, ending with the last one.
+
+Fallback applies to transcriptions that use the configured provider: channel
+voice messages, the chat microphone, and `stt.transcribe` or the agent
+transcription tool without a `provider` argument. A request that names a
+provider (the `provider` argument, or the provider test in voice settings) uses
+that provider only.
 
 ### Local Provider Setup
 

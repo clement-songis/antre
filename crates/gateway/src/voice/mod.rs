@@ -4,6 +4,8 @@
 //! `SttService` traits using the moltis-voice crate's providers.
 
 #[cfg(feature = "voice")]
+mod stt_fallback;
+#[cfg(feature = "voice")]
 mod stt_service;
 #[cfg(feature = "voice")]
 mod tts_service;

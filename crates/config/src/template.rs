@@ -715,6 +715,8 @@ loopback_http = true                # Plain HTTP on loopback binds: http://local
 
 # [voice.stt]
 # enabled = true
+# provider = "google"                   # Omit to auto-select the first configured provider
+# fallback = ["whisper"]                # Tried in order when the active provider fails
 # providers = []                        # UI allowlist (empty = show all)
 
 # [voice.stt.whisper_local]

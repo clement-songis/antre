@@ -230,6 +230,9 @@ pub struct VoiceSttConfig {
     pub enabled: bool,
     /// Active provider. None means auto-select the first configured provider.
     pub provider: Option<VoiceSttProvider>,
+    /// Providers tried in order when the active provider fails. Providers that
+    /// are not configured are skipped.
+    pub fallback: Vec<VoiceSttProvider>,
     /// Provider IDs to list in the UI. Empty means list all.
     pub providers: Vec<String>,
     /// Whisper (OpenAI) settings.
@@ -259,6 +262,7 @@ impl Default for VoiceSttConfig {
         Self {
             enabled: true,
             provider: None,
+            fallback: Vec::new(),
             providers: Vec::new(),
             whisper: VoiceWhisperConfig::default(),
             groq: VoiceGroqSttConfig::default(),
