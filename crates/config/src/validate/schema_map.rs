@@ -808,6 +808,7 @@ pub(super) fn build_schema_map() -> KnownKeys {
                     Struct(HashMap::from([
                         ("enabled", Leaf),
                         ("provider", Leaf),
+                        ("fallback", Leaf),
                         ("providers", Leaf),
                         ("streaming", Leaf),
                         ("max_stream_seconds", Leaf),

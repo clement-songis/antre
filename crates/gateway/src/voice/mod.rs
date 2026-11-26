@@ -6,6 +6,8 @@
 #[cfg(feature = "voice")]
 mod gemini_key;
 #[cfg(feature = "voice")]
+mod stt_fallback;
+#[cfg(feature = "voice")]
 mod stt_service;
 #[cfg(feature = "voice")]
 pub mod stt_stream;
@@ -254,34 +256,6 @@ pub(crate) fn resolve_openai_key(
         .or_else(|| cfg.providers.get("openai").and_then(|p| p.api_key.clone()))
 }
 
-/// Resolve a Gemini API key with fallback: voice-specific config ->
-/// `GEMINI_API_KEY` / `GOOGLE_API_KEY` env vars -> LLM provider config
-/// (`providers.gemini.api_key`).
-#[cfg(feature = "voice")]
-pub(crate) fn resolve_gemini_key(cfg: &moltis_config::MoltisConfig) -> Option<Secret<String>> {
-    resolve_gemini_key_with_env(cfg, |name| std::env::var(name).ok())
-}
-
-#[cfg(feature = "voice")]
-fn resolve_gemini_key_with_env(
-    cfg: &moltis_config::MoltisConfig,
-    env: impl Fn(&str) -> Option<String>,
-) -> Option<Secret<String>> {
-    cfg.voice
-        .stt
-        .gemini
-        .api_key
-        .clone()
-        .or_else(|| {
-            ["GEMINI_API_KEY", "GOOGLE_API_KEY"]
-                .into_iter()
-                .filter_map(&env)
-                .find(|value| !value.trim().is_empty())
-                .map(Secret::new)
-        })
-        .or_else(|| cfg.providers.get("gemini").and_then(|p| p.api_key.clone()))
-}
-
 #[cfg(feature = "voice")]
 pub(crate) fn resolve_openai_provider_base_url(
     cfg: &moltis_config::MoltisConfig,
@@ -450,47 +424,6 @@ mod tests {
             resolve_openai_whisper_base_url(&cfg).as_deref(),
             Some("http://127.0.0.1:8001")
         );
-    }
-
-    #[test]
-    fn test_resolve_gemini_key_precedence() {
-        let mut cfg = moltis_config::MoltisConfig::default();
-        let no_env = |_: &str| None;
-        assert!(resolve_gemini_key_with_env(&cfg, no_env).is_none());
-
-        cfg.providers.providers.insert(
-            "gemini".to_string(),
-            moltis_config::schema::ProviderEntry {
-                api_key: Some(Secret::new("llm-key".to_string())),
-                ..moltis_config::schema::ProviderEntry::default()
-            },
-        );
-        let key = resolve_gemini_key_with_env(&cfg, no_env).unwrap();
-        assert_eq!(key.expose_secret(), "llm-key");
-
-        let google_env = |name: &str| (name == "GOOGLE_API_KEY").then(|| "google-env".to_string());
-        let key = resolve_gemini_key_with_env(&cfg, google_env).unwrap();
-        assert_eq!(key.expose_secret(), "google-env");
-
-        let both_env = |name: &str| match name {
-            "GEMINI_API_KEY" => Some(" ".to_string()),
-            "GOOGLE_API_KEY" => Some("google-env".to_string()),
-            _ => None,
-        };
-        let key = resolve_gemini_key_with_env(&cfg, both_env).unwrap();
-        assert_eq!(key.expose_secret(), "google-env");
-
-        let gemini_env = |name: &str| match name {
-            "GEMINI_API_KEY" => Some("gemini-env".to_string()),
-            "GOOGLE_API_KEY" => Some("google-env".to_string()),
-            _ => None,
-        };
-        let key = resolve_gemini_key_with_env(&cfg, gemini_env).unwrap();
-        assert_eq!(key.expose_secret(), "gemini-env");
-
-        cfg.voice.stt.gemini.api_key = Some(Secret::new("voice-key".to_string()));
-        let key = resolve_gemini_key_with_env(&cfg, gemini_env).unwrap();
-        assert_eq!(key.expose_secret(), "voice-key");
     }
 
     #[test]

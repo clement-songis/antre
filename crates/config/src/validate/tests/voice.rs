@@ -94,6 +94,25 @@ language = "fr-FR"
 }
 
 #[test]
+fn voice_stt_fallback_accepts_known_providers() {
+    let toml = r#"
+[voice.stt]
+provider = "google"
+fallback = ["whisper", "groq"]
+"#;
+    let result = validate_toml_str(toml);
+    let fallback_diags: Vec<_> = result
+        .diagnostics
+        .iter()
+        .filter(|d| d.path.starts_with("voice.stt.fallback"))
+        .collect();
+    assert!(
+        fallback_diags.is_empty(),
+        "valid fallback list should not produce diagnostics: {fallback_diags:?}"
+    );
+}
+
+#[test]
 fn voice_stt_streaming_fields_are_known() {
     let toml = r#"
 [voice.stt]
@@ -128,5 +147,36 @@ max_stream_seconds = 0
             .iter()
             .any(|d| d.path == "voice.stt.max_stream_seconds"),
         "expected warning for max_stream_seconds = 0"
+    );
+}
+
+#[test]
+fn voice_stt_fallback_warns_on_active_and_repeated_provider() {
+    let toml = r#"
+[voice.stt]
+provider = "google"
+fallback = ["google", "whisper", "whisper"]
+"#;
+    let result = validate_toml_str(toml);
+    let paths: Vec<_> = result
+        .diagnostics
+        .iter()
+        .filter(|d| d.path.starts_with("voice.stt.fallback"))
+        .map(|d| d.path.as_str())
+        .collect();
+    assert_eq!(paths, ["voice.stt.fallback[0]", "voice.stt.fallback[2]"]);
+}
+
+#[test]
+fn voice_stt_fallback_rejects_unknown_provider() {
+    let toml = r#"
+[voice.stt]
+fallback = ["not-a-provider"]
+"#;
+    let result = validate_toml_str(toml);
+    assert!(
+        result.has_errors(),
+        "unknown fallback provider should fail typed deserialization: {:?}",
+        result.diagnostics
     );
 }

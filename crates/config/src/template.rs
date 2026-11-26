@@ -715,6 +715,8 @@ loopback_http = true                # Plain HTTP on loopback binds: http://local
 
 # [voice.stt]
 # enabled = true
+# provider = "google"                   # Omit to auto-select the first configured provider
+# fallback = ["whisper"]                # Tried in order when the active provider fails
 # providers = []                        # UI allowlist (empty = show all)
 # streaming = true                      # Live transcription when the provider supports it
 # max_stream_seconds = 300              # Hard cap per live transcription stream
