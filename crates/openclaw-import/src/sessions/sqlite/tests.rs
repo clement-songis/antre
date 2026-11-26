@@ -551,3 +551,72 @@ fn unreadable_database_is_reported() -> TestResult {
     assert_eq!(report.errors.len(), 1);
     Ok(())
 }
+
+#[test]
+fn child_sessions_point_at_the_parent_transcript_of_their_time() -> TestResult {
+    let tmp = tempfile::tempdir()?;
+    let home = tmp.path().join("openclaw");
+    let dest = tmp.path().join("sessions");
+    let mem = tmp.path().join("memory").join("sessions");
+
+    let parent_key = "agent:main:telegram:dm:42";
+    let main = Fixture::create(&home, "main")?;
+    main.node(parent_key, "p-new", &serde_json::json!({}))?;
+    main.window(parent_key, "p-old", 10)?;
+    main.window(parent_key, "p-new", 30)?;
+    main.event("p-old", 1, &message("user", "spawn a scan"))?;
+    main.event("p-new", 1, &message("user", "after reset"))?;
+    main.node(
+        "agent:main:dashboard:child",
+        "c-dash",
+        &serde_json::json!({"parentSessionKey": parent_key, "spawnedBy": "agent:main:other"}),
+    )?;
+    main.window("agent:main:dashboard:child", "c-dash", 35)?;
+    main.event("c-dash", 1, &message("user", "child"))?;
+
+    let cyber = Fixture::create(&home, "cyberclaw")?;
+    for (key, id, created_at, spawned_by) in [
+        ("agent:cyberclaw:subagent:a", "c-early", 20, parent_key),
+        ("agent:cyberclaw:subagent:b", "c-late", 40, parent_key),
+        (
+            "agent:cyberclaw:subagent:c",
+            "c-orphan",
+            50,
+            "agent:gone:main",
+        ),
+    ] {
+        cyber.node(key, id, &serde_json::json!({"spawnedBy": spawned_by}))?;
+        cyber.window(key, id, created_at)?;
+        cyber.event(id, 1, &message("user", "task"))?;
+    }
+
+    let agents = ["cyberclaw", "main"];
+    let report = import_sessions(
+        &detection(&home, &agents),
+        &dest,
+        &mem,
+        &identity_mapping(&agents),
+    );
+    assert_eq!(report.status, ImportStatus::Success, "{:?}", report.errors);
+
+    let meta = metadata(&dest)?;
+    let parent_of = |key: &str| {
+        meta.get(key)
+            .and_then(|entry| entry.parent_session_key.clone())
+    };
+    assert_eq!(
+        parent_of("oc:cyberclaw:c-early").as_deref(),
+        Some("oc:main:p-old")
+    );
+    assert_eq!(
+        parent_of("oc:cyberclaw:c-late").as_deref(),
+        Some("oc:main:p-new")
+    );
+    assert_eq!(
+        parent_of("oc:main:c-dash").as_deref(),
+        Some("oc:main:p-new")
+    );
+    assert_eq!(parent_of("oc:cyberclaw:c-orphan"), None);
+    assert_eq!(parent_of("oc:main:p-new"), None);
+    Ok(())
+}

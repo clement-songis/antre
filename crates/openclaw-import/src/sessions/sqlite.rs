@@ -16,7 +16,9 @@ use {
 };
 
 use {
-    super::{SessionImporter, SessionSink, SessionSource, build_session_label},
+    super::{
+        ParentIndex, SessionImporter, SessionSink, SessionSource, build_session_label, dest_key,
+    },
     crate::{
         error::{Error, Result},
         types::{OpenClawSessionIndexEntry, OpenClawSessionOrigin},
@@ -62,70 +64,103 @@ pub(crate) fn agent_session_ids(agent_dir: &Path) -> HashSet<String> {
     })
 }
 
-/// Import every transcript window of one agent's database.
-///
-/// Returns the IDs of all sessions found in the database (imported, unchanged
-/// or failed) so the JSONL pass does not import them a second time.
-pub(super) fn import_agent_sessions(
-    importer: &mut SessionImporter<'_>,
-    agent_dir: &Path,
-    openclaw_agent_id: &str,
-    moltis_agent_id: &str,
-) -> HashSet<String> {
-    let Some(db_path) = agent_db_path(agent_dir) else {
-        return HashSet::new();
-    };
+/// One agent's database and the transcript windows it holds.
+pub(super) struct AgentSessions {
+    db_path: PathBuf,
+    db: AgentDb,
+    windows: Vec<Window>,
+}
 
-    let db = match AgentDb::open(&db_path, agent_dir) {
-        Ok(db) => db,
-        Err(error) => {
-            warn!(path = %db_path.display(), %error, "failed to open OpenClaw session database");
-            importer
-                .errors
-                .push(format!("failed to open {}: {error}", db_path.display()));
-            return HashSet::new();
-        },
-    };
-
-    let windows = match db.list_windows() {
-        Ok(windows) => windows,
-        Err(error) => {
-            warn!(path = %db_path.display(), %error, "failed to list OpenClaw SQLite sessions");
-            importer.errors.push(format!(
-                "failed to list sessions in {}: {error}",
-                db_path.display()
-            ));
-            return HashSet::new();
-        },
-    };
-    debug!(agent = %openclaw_agent_id, sessions = windows.len(), "reading OpenClaw SQLite sessions");
-
-    let mut seen = HashSet::new();
-    for window in windows {
-        let mut missing_events = 0_u32;
-        importer.import_one(
-            SessionSource {
-                dest_key: format!("oc:{moltis_agent_id}:{}", window.session_id),
-                moltis_agent_id,
-                label: window.label(),
-                source_line_count: window.source_size,
-                archived: window.archived,
-                description: format!("{} (session {})", db_path.display(), window.session_id),
+impl AgentSessions {
+    /// Open the agent database and list its windows. Failures are reported
+    /// on `importer` and yield `None`.
+    pub(super) fn load(
+        importer: &mut SessionImporter<'_>,
+        agent_dir: &Path,
+        openclaw_agent_id: &str,
+    ) -> Option<Self> {
+        let db_path = agent_db_path(agent_dir)?;
+        let loaded = AgentDb::open(&db_path, agent_dir).and_then(|db| {
+            let windows = db.list_windows()?;
+            Ok((db, windows))
+        });
+        match loaded {
+            Ok((db, windows)) => {
+                debug!(agent = %openclaw_agent_id, sessions = windows.len(), "reading OpenClaw SQLite sessions");
+                Some(Self {
+                    db_path,
+                    db,
+                    windows,
+                })
             },
-            |sink| {
-                missing_events = db.feed_events(&window.session_id, sink)?;
-                Ok(())
+            Err(error) => {
+                warn!(path = %db_path.display(), %error, "failed to read OpenClaw session database");
+                importer
+                    .errors
+                    .push(format!("failed to read {}: {error}", db_path.display()));
+                None
             },
-        );
-        if missing_events > 0 {
-            importer.warn(format!(
-                "session {}: {missing_events} archived event(s) could not be read",
-                window.session_id
-            ));
         }
-        seen.insert(window.session_id);
     }
-    seen
+
+    /// Register every window so child sessions can find their parent.
+    pub(super) fn index_parents(&self, moltis_agent_id: &str, parents: &mut ParentIndex) {
+        for window in &self.windows {
+            parents.insert(
+                &window.session_key,
+                window.created_at,
+                dest_key(moltis_agent_id, &window.session_id),
+            );
+        }
+    }
+
+    /// Import every window. Returns the IDs of all sessions found in the
+    /// database (imported, unchanged or failed) so the JSONL pass does not
+    /// import them a second time.
+    pub(super) fn import(
+        self,
+        importer: &mut SessionImporter<'_>,
+        moltis_agent_id: &str,
+        parents: &ParentIndex,
+    ) -> HashSet<String> {
+        let mut seen = HashSet::new();
+        for window in self.windows {
+            let mut missing_events = 0_u32;
+            let dest_key = dest_key(moltis_agent_id, &window.session_id);
+            let parent_key = window
+                .parent_key
+                .as_deref()
+                .and_then(|parent| parents.resolve(parent, window.created_at))
+                .filter(|parent| *parent != dest_key);
+            importer.import_one(
+                SessionSource {
+                    dest_key,
+                    moltis_agent_id,
+                    label: window.label(),
+                    source_line_count: window.source_size,
+                    archived: window.archived,
+                    parent_key,
+                    description: format!(
+                        "{} (session {})",
+                        self.db_path.display(),
+                        window.session_id
+                    ),
+                },
+                |sink| {
+                    missing_events = self.db.feed_events(&window.session_id, sink)?;
+                    Ok(())
+                },
+            );
+            if missing_events > 0 {
+                importer.warn(format!(
+                    "session {}: {missing_events} archived event(s) could not be read",
+                    window.session_id
+                ));
+            }
+            seen.insert(window.session_id);
+        }
+        seen
+    }
 }
 
 fn open_read_only(path: &Path) -> rusqlite::Result<Connection> {
@@ -146,6 +181,9 @@ struct Window {
     display_name: Option<String>,
     node_label: Option<String>,
     archived: bool,
+    /// Logical key of the session that spawned this one.
+    parent_key: Option<String>,
+    created_at: i64,
     /// Highest event `seq` + 1: transcripts are append-only, so it grows with
     /// every new event and is cheap to read from the primary key.
     source_size: u32,
@@ -225,7 +263,7 @@ impl AgentDb {
     fn list_windows(&self) -> Result<Vec<Window>> {
         let sql = format!(
             "SELECT w.session_id, w.session_key, n.entry_json, {display_name}, {label}, \
-                    {archived_at}, \
+                    {archived_at}, w.created_at, \
                     (SELECT MAX(seq) FROM transcript_events e WHERE e.session_id = w.session_id) \
              FROM session_windows w JOIN session_nodes n ON n.session_key = w.session_key \
              ORDER BY w.created_at, w.session_id",
@@ -242,7 +280,8 @@ impl AgentDb {
                 row.get::<_, Option<String>>(3)?,
                 row.get::<_, Option<String>>(4)?,
                 row.get::<_, Option<i64>>(5)?,
-                row.get::<_, Option<i64>>(6)?,
+                row.get::<_, i64>(6)?,
+                row.get::<_, Option<i64>>(7)?,
             ))
         })?;
 
@@ -255,15 +294,20 @@ impl AgentDb {
                 display_name,
                 node_label,
                 archived_at,
+                created_at,
                 max_seq,
             ) = row?;
             let Some(max_seq) = max_seq else {
                 continue;
             };
-            let origin = entry_json
+            let entry = entry_json
                 .as_deref()
-                .and_then(|json| serde_json::from_str::<OpenClawSessionIndexEntry>(json).ok())
-                .and_then(|entry| entry.origin);
+                .and_then(|json| serde_json::from_str::<OpenClawSessionIndexEntry>(json).ok());
+            let parent_key = entry
+                .as_ref()
+                .and_then(|entry| entry.parent_key())
+                .map(str::to_string);
+            let origin = entry.and_then(|entry| entry.origin);
             windows.push(Window {
                 session_id,
                 session_key,
@@ -271,6 +315,8 @@ impl AgentDb {
                 display_name: display_name.filter(|s| !s.trim().is_empty()),
                 node_label: node_label.filter(|s| !s.trim().is_empty()),
                 archived: archived_at.is_some(),
+                parent_key,
+                created_at,
                 source_size: u32::try_from(max_seq.saturating_add(1)).unwrap_or(0),
             });
         }

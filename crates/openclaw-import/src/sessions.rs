@@ -53,6 +53,8 @@ pub struct ImportedSessionEntry {
     pub agent_id: Option<String>,
     #[serde(default)]
     pub archived: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub parent_session_key: Option<String>,
     #[serde(default)]
     pub version: u64,
 }
@@ -118,24 +120,51 @@ pub fn import_sessions(
 
     let mut importer = SessionImporter::new(dest_sessions_dir, memory_sessions_dir);
 
+    // First pass: read every agent's index, so a child session can point at a
+    // parent stored by another agent.
+    let mut agents = Vec::new();
+    let mut parents = ParentIndex::default();
     for openclaw_agent_id in &detection.agent_ids {
         let moltis_agent_id = agent_id_mapping
             .get(openclaw_agent_id.as_str())
             .cloned()
             .unwrap_or_else(|| openclaw_agent_id.clone());
-
         let agent_dir = detection.home_dir.join("agents").join(openclaw_agent_id);
-        let sqlite_session_ids = sqlite::import_agent_sessions(
-            &mut importer,
-            &agent_dir,
+
+        let sqlite = sqlite::AgentSessions::load(&mut importer, &agent_dir, openclaw_agent_id);
+        if let Some(sqlite) = &sqlite {
+            sqlite.index_parents(&moltis_agent_id, &mut parents);
+        }
+        let jsonl_index = resolve_agent_sessions_dir(&agent_dir)
+            .map(|dir| load_session_label_map(&dir))
+            .unwrap_or_default();
+        for (session_id, entry) in &jsonl_index {
+            parents.insert(
+                &entry.logical_key,
+                i64::MIN,
+                dest_key(&moltis_agent_id, session_id),
+            );
+        }
+        agents.push((
             openclaw_agent_id,
-            &moltis_agent_id,
-        );
+            moltis_agent_id,
+            agent_dir,
+            sqlite,
+            jsonl_index,
+        ));
+    }
+
+    for (openclaw_agent_id, moltis_agent_id, agent_dir, sqlite, jsonl_index) in agents {
+        let sqlite_session_ids = sqlite
+            .map(|sqlite| sqlite.import(&mut importer, &moltis_agent_id, &parents))
+            .unwrap_or_default();
         import_agent_jsonl_sessions(
             &mut importer,
             &agent_dir,
             openclaw_agent_id,
             &moltis_agent_id,
+            &jsonl_index,
+            &parents,
             &sqlite_session_ids,
         );
     }
@@ -148,6 +177,8 @@ fn import_agent_jsonl_sessions(
     agent_dir: &Path,
     openclaw_agent_id: &str,
     moltis_agent_id: &str,
+    session_index: &HashMap<String, JsonlIndexEntry>,
+    parents: &ParentIndex,
     already_imported: &HashSet<String>,
 ) {
     let Some(sessions_dir) = resolve_agent_sessions_dir(agent_dir) else {
@@ -159,8 +190,6 @@ fn import_agent_jsonl_sessions(
         debug!(agent = %openclaw_agent_id, "failed to read sessions directory, skipping");
         return;
     };
-
-    let session_label_map = load_session_label_map(&sessions_dir);
 
     for entry in dir_entries.flatten() {
         let path = entry.path();
@@ -177,21 +206,28 @@ fn import_agent_jsonl_sessions(
             continue;
         }
 
-        let label = session_label_map
-            .get(stem)
-            .map(|(logical_key, origin)| build_session_label(logical_key, origin.as_ref()))
+        let index_entry = session_index.get(stem);
+        let label = index_entry
+            .map(|entry| build_session_label(&entry.logical_key, entry.origin.as_ref()))
             .unwrap_or_else(|| {
                 let prefix_len = 8.min(stem.len());
                 format!("OpenClaw: {}", &stem[..prefix_len])
             });
+        let dest_key = dest_key(moltis_agent_id, stem);
+        // A JSONL index only knows each key's current transcript.
+        let parent_key = index_entry
+            .and_then(|entry| entry.parent_key.as_deref())
+            .and_then(|parent| parents.resolve(parent, i64::MAX))
+            .filter(|parent| *parent != dest_key);
 
         importer.import_one(
             SessionSource {
-                dest_key: format!("oc:{moltis_agent_id}:{stem}"),
+                dest_key,
                 moltis_agent_id,
                 label,
                 source_line_count: count_lines(&path),
                 archived: false,
+                parent_key,
                 description: path.display().to_string(),
             },
             |sink| {
@@ -214,6 +250,8 @@ pub(crate) struct SessionSource<'a> {
     /// sessions that did not grow since the previous import.
     pub(crate) source_line_count: u32,
     pub(crate) archived: bool,
+    /// Moltis key of the parent session, for subagent and child sessions.
+    pub(crate) parent_key: Option<String>,
     /// Human-readable source location for error messages.
     pub(crate) description: String,
 }
@@ -347,6 +385,7 @@ impl<'a> SessionImporter<'a> {
             source_line_count: source.source_line_count,
             agent_id,
             archived: source.archived,
+            parent_session_key: source.parent_key,
             version,
         });
         if is_update {
@@ -388,11 +427,16 @@ impl<'a> SessionImporter<'a> {
     }
 }
 
+/// What `sessions.json` says about one session ID.
+struct JsonlIndexEntry {
+    logical_key: String,
+    origin: Option<OpenClawSessionOrigin>,
+    parent_key: Option<String>,
+}
+
 /// Load the `sessions.json` index and build a reverse map from session-ID
 /// (UUID filename stem) to the logical key and origin metadata.
-fn load_session_label_map(
-    sessions_dir: &Path,
-) -> HashMap<String, (String, Option<OpenClawSessionOrigin>)> {
+fn load_session_label_map(sessions_dir: &Path) -> HashMap<String, JsonlIndexEntry> {
     let index_path = sessions_dir.join("sessions.json");
     let Ok(content) = std::fs::read_to_string(&index_path) else {
         return HashMap::new();
@@ -403,13 +447,49 @@ fn load_session_label_map(
         return HashMap::new();
     };
 
-    let mut map = HashMap::new();
-    for (logical_key, entry) in entries {
-        if let Some(ref sid) = entry.session_id {
-            map.insert(sid.clone(), (logical_key, entry.origin));
+    entries
+        .into_iter()
+        .filter_map(|(logical_key, entry)| {
+            let session_id = entry.session_id.clone()?;
+            Some((session_id, JsonlIndexEntry {
+                parent_key: entry.parent_key().map(str::to_string),
+                logical_key,
+                origin: entry.origin,
+            }))
+        })
+        .collect()
+}
+
+fn dest_key(moltis_agent_id: &str, session_id: &str) -> String {
+    format!("oc:{moltis_agent_id}:{session_id}")
+}
+
+/// Moltis keys of the transcripts of each OpenClaw logical session key, so a
+/// child session can point at the transcript its parent was using.
+#[derive(Default)]
+struct ParentIndex(HashMap<String, Vec<(i64, String)>>);
+
+impl ParentIndex {
+    fn insert(&mut self, logical_key: &str, started_at: i64, dest_key: String) {
+        let windows = self.0.entry(logical_key.to_string()).or_default();
+        if windows.iter().any(|(_, key)| *key == dest_key) {
+            return;
         }
+        let position = windows.partition_point(|(time, _)| *time <= started_at);
+        windows.insert(position, (started_at, dest_key));
     }
-    map
+
+    /// The parent transcript that was current when the child started, or the
+    /// parent's first one if the child predates them all.
+    fn resolve(&self, parent_key: &str, child_started_at: i64) -> Option<String> {
+        let windows = self.0.get(parent_key)?;
+        windows
+            .iter()
+            .rev()
+            .find(|(time, _)| *time <= child_started_at)
+            .or_else(|| windows.first())
+            .map(|(_, key)| key.clone())
+    }
 }
 
 /// Build a human-readable session label from the logical key and origin.
