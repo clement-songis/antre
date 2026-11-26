@@ -1053,6 +1053,14 @@ fn wire_api_serde_roundtrip() {
         serde_json::from_str::<WireApi>("\"responses\"").unwrap(),
         WireApi::Responses
     );
+    assert_eq!(
+        serde_json::to_string(&WireApi::Anthropic).unwrap(),
+        "\"anthropic\""
+    );
+    assert_eq!(
+        serde_json::from_str::<WireApi>("\"anthropic\"").unwrap(),
+        WireApi::Anthropic
+    );
 }
 
 #[test]

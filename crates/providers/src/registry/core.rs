@@ -317,6 +317,28 @@ pub async fn fetch_discoverable_models(
         if !filter_matches(name) {
             continue;
         }
+        if matches!(entry.wire_api, moltis_config::WireApi::Anthropic) {
+            if should_fetch_models(config, name)
+                && let Some(api_key) = entry
+                    .api_key
+                    .as_ref()
+                    .filter(|key| !key.expose_secret().is_empty())
+            {
+                let base_url = entry
+                    .base_url
+                    .clone()
+                    .filter(|url| !url.trim().is_empty())
+                    .unwrap_or_else(|| "https://api.anthropic.com".into());
+                tasks.push((
+                    name.clone(),
+                    Box::pin(anthropic::fetch_models_from_api(
+                        api_key.clone(),
+                        base_url,
+                    )),
+                ));
+            }
+            continue;
+        }
         let Some(api_key) = entry
             .api_key
             .as_ref()
@@ -1119,6 +1141,27 @@ impl ProviderRegistry {
         // ── Custom providers ─────────────────────────────────────────────
         for (name, entry) in &config.providers {
             if !name.starts_with("custom-") || !entry.enabled {
+                continue;
+            }
+            if matches!(entry.wire_api, moltis_config::WireApi::Anthropic) {
+                let has_explicit_models = !configured_models_for_provider(config, name).is_empty();
+                if !has_explicit_models
+                    && should_fetch_models(config, name)
+                    && let Some(api_key) = entry
+                        .api_key
+                        .as_ref()
+                        .filter(|key| !key.expose_secret().is_empty())
+                {
+                    let base_url = entry
+                        .base_url
+                        .clone()
+                        .filter(|url| !url.trim().is_empty())
+                        .unwrap_or_else(|| "https://api.anthropic.com".into());
+                    pending.push((
+                        name.clone(),
+                        anthropic::start_model_discovery(api_key.clone(), base_url),
+                    ));
+                }
                 continue;
             }
             let Some(api_key) = entry

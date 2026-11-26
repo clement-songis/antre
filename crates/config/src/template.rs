@@ -166,6 +166,13 @@ loopback_http = true                # Plain HTTP on loopback binds: http://local
 # base_url = "https://api.minimax.io/anthropic" # Use https://api.minimaxi.com/anthropic for China
 # models = ["MiniMax-M3.1-Flash", "MiniMax-M3"]
 # alias = "minimax-anthropic"
+#
+# Anthropic-compatible endpoints as separate custom-* providers:
+# [providers.custom-minimax]
+# wire_api = "anthropic"                     # Anthropic Messages API on a custom-* provider
+# api_key = "${{MINIMAX_API_KEY}}"
+# base_url = "https://api.minimax.io/anthropic"
+# models = ["MiniMax-M3.1-Flash", "MiniMax-M3"]
 
 # ── OpenAI ────────────────────────────────────────────────────
 # [providers.openai]
