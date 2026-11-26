@@ -388,6 +388,23 @@ pub struct OpenClawSessionIndexEntry {
     #[serde(rename = "updatedAt")]
     pub updated_at: Option<u64>,
     pub origin: Option<OpenClawSessionOrigin>,
+    /// Session that spawned this one (subagent runs).
+    #[serde(default, rename = "spawnedBy")]
+    pub spawned_by: Option<String>,
+    /// Explicit parent for child sessions created from the dashboard.
+    #[serde(default, rename = "parentSessionKey")]
+    pub parent_session_key: Option<String>,
+}
+
+impl OpenClawSessionIndexEntry {
+    /// Logical key of the parent session, if this is a child session.
+    #[must_use]
+    pub fn parent_key(&self) -> Option<&str> {
+        self.parent_session_key
+            .as_deref()
+            .or(self.spawned_by.as_deref())
+            .filter(|key| !key.trim().is_empty())
+    }
 }
 
 /// Origin metadata for a session in `sessions.json`.

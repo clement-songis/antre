@@ -1021,6 +1021,43 @@ impl SqliteSessionMetadata {
         .unwrap_or_default()
     }
 
+    /// Copy one `metadata.json` entry (legacy index or OpenClaw import) into
+    /// SQLite, keeping its agent, archive state, preview and original dates.
+    pub async fn import_entry(&self, entry: &SessionEntry) -> Result<()> {
+        let key = entry.key.as_str();
+        self.upsert(key, entry.label.clone()).await?;
+        self.set_model(key, entry.model.clone()).await;
+        self.set_project_id(key, entry.project_id.clone()).await;
+        self.set_archived(key, entry.archived).await;
+        self.set_sandbox_enabled(key, entry.sandbox_enabled).await;
+        self.set_sandbox_image(key, entry.sandbox_image.clone())
+            .await;
+        self.set_worktree_branch(key, entry.worktree_branch.clone())
+            .await;
+        self.set_channel_binding(key, entry.channel_binding.clone())
+            .await;
+        self.set_parent(key, entry.parent_session_key.clone(), entry.fork_point)
+            .await;
+        self.set_mcp_disabled(key, entry.mcp_disabled).await;
+        if let Err(error) = self.set_agent_id(key, entry.agent_id.as_deref()).await {
+            tracing::warn!(key, %error, "failed to set agent_id on imported session");
+        }
+        if let Err(error) = self.set_mode_id(key, entry.mode_id.as_deref()).await {
+            tracing::warn!(key, %error, "failed to set mode_id on imported session");
+        }
+        self.set_preview(key, entry.preview.as_deref()).await;
+        // Last: every setter above stamps `updated_at` with "now".
+        self.set_timestamps_and_counts(
+            key,
+            entry.created_at,
+            entry.updated_at,
+            entry.message_count,
+            entry.last_seen_message_count,
+        )
+        .await;
+        Ok(())
+    }
+
     /// No-op — SQLite auto-persists.
     pub fn save(&self) -> Result<()> {
         Ok(())

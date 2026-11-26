@@ -112,72 +112,9 @@ impl GatewayOnboardingService {
 
         for entry in legacy_metadata.list() {
             self.session_metadata
-                .upsert(&entry.key, entry.label.clone())
+                .import_entry(&entry)
                 .await
-                .map_err(|e| format!("failed to upsert session '{}': {e}", entry.key))?;
-
-            self.session_metadata
-                .set_model(&entry.key, entry.model.clone())
-                .await;
-            self.session_metadata
-                .set_project_id(&entry.key, entry.project_id.clone())
-                .await;
-            self.session_metadata
-                .set_sandbox_enabled(&entry.key, entry.sandbox_enabled)
-                .await;
-            self.session_metadata
-                .set_sandbox_image(&entry.key, entry.sandbox_image.clone())
-                .await;
-            self.session_metadata
-                .set_worktree_branch(&entry.key, entry.worktree_branch.clone())
-                .await;
-            self.session_metadata
-                .set_channel_binding(&entry.key, entry.channel_binding.clone())
-                .await;
-            self.session_metadata
-                .set_parent(
-                    &entry.key,
-                    entry.parent_session_key.clone(),
-                    entry.fork_point,
-                )
-                .await;
-            self.session_metadata
-                .set_mcp_disabled(&entry.key, entry.mcp_disabled)
-                .await;
-            if let Err(e) = self
-                .session_metadata
-                .set_agent_id(&entry.key, entry.agent_id.as_deref())
-                .await
-            {
-                tracing::warn!(
-                    key = %entry.key,
-                    error = %e,
-                    "openclaw import: failed to set agent_id on session"
-                );
-            }
-            if let Err(e) = self
-                .session_metadata
-                .set_mode_id(&entry.key, entry.mode_id.as_deref())
-                .await
-            {
-                tracing::warn!(
-                    key = %entry.key,
-                    error = %e,
-                    "openclaw import: failed to set mode_id on session"
-                );
-            }
-            self.session_metadata
-                .set_preview(&entry.key, entry.preview.as_deref())
-                .await;
-            self.session_metadata
-                .set_timestamps_and_counts(
-                    &entry.key,
-                    entry.created_at,
-                    entry.updated_at,
-                    entry.message_count,
-                    entry.last_seen_message_count,
-                )
-                .await;
+                .map_err(|e| format!("failed to import session '{}': {e}", entry.key))?;
         }
 
         Ok(())
@@ -737,6 +674,7 @@ mod tests {
                 "updated_at": 1769582801626,
                 "message_count": 2,
                 "last_seen_message_count": 2,
+                "archived": true,
                 "version": 1
               }
             }"#,
@@ -794,5 +732,6 @@ mod tests {
             entry.preview.as_deref(),
             Some("hello from imported session")
         );
+        assert!(entry.archived);
     }
 }
