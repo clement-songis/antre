@@ -210,6 +210,20 @@ const runStateRevisions = new Map<string, number>();
 export const sessionListTab = signal<string>(localStorage.getItem("moltis-session-tab") || "sessions");
 export const showArchivedSessions = signal<boolean>(localStorage.getItem("moltis-show-archived-sessions") === "1");
 
+const EXPANDED_SESSIONS_STORAGE_KEY = "moltis-expanded-sessions";
+
+function loadExpandedSessionKeys(): Set<string> {
+	try {
+		const parsed: unknown = JSON.parse(localStorage.getItem(EXPANDED_SESSIONS_STORAGE_KEY) || "[]");
+		return new Set(Array.isArray(parsed) ? parsed.filter((key): key is string => typeof key === "string") : []);
+	} catch {
+		return new Set();
+	}
+}
+
+/** Sessions whose sub-sessions are shown in the sidebar tree. Collapsed by default. */
+export const expandedSessionKeys = signal<Set<string>>(loadExpandedSessionKeys());
+
 export const activeSession = computed<Session | null>(() => {
 	const key = activeSessionKey.value;
 	return sessions.value.find((s) => s.key === key) || null;
@@ -360,6 +374,15 @@ export function setShowArchivedSessions(show: boolean): void {
 	localStorage.setItem("moltis-show-archived-sessions", show ? "1" : "0");
 }
 
+/** Show or hide a session's sub-sessions in the sidebar tree. */
+export function toggleSessionExpanded(key: string): void {
+	const next = new Set(expandedSessionKeys.value);
+	if (next.has(key)) next.delete(key);
+	else next.add(key);
+	expandedSessionKeys.value = next;
+	localStorage.setItem(EXPANDED_SESSIONS_STORAGE_KEY, JSON.stringify([...next]));
+}
+
 export const sessionStore = {
 	sessions,
 	activeSessionKey,
@@ -368,6 +391,7 @@ export const sessionStore = {
 	refreshInProgressKey,
 	sessionListTab,
 	showArchivedSessions,
+	expandedSessionKeys,
 	Session,
 	setAll,
 	upsert,
@@ -377,5 +401,6 @@ export const sessionStore = {
 	setActive,
 	setSessionListTab,
 	setShowArchivedSessions,
+	toggleSessionExpanded,
 	notify,
 };
