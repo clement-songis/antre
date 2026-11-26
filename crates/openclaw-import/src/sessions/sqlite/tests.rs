@@ -676,3 +676,67 @@ fn cron_runs_become_one_session_per_job() -> TestResult {
     assert!(meta.contains_key("cron:oc-main-job2"));
     Ok(())
 }
+
+#[test]
+fn session_titles_keep_colons_and_parentheses() -> TestResult {
+    let tmp = tempfile::tempdir()?;
+    let home = tmp.path().join("openclaw");
+    let dest = tmp.path().join("sessions");
+    let mem = tmp.path().join("memory").join("sessions");
+
+    let db = Fixture::create(&home, "main")?;
+    for (key, id, label, display_name) in [
+        (
+            "agent:main:subagent:a",
+            "s-a",
+            Some("Griffin: fix the vm-spill (v2)"),
+            None,
+        ),
+        (
+            "agent:main:dashboard:b",
+            "s-b",
+            Some("RE Vanguard"),
+            Some("Resume: static analysis"),
+        ),
+        (
+            "agent:main:dashboard:c",
+            "s-c",
+            None,
+            Some("Resume: static analysis"),
+        ),
+        ("agent:main:main", "s-main", Some("ignored"), None),
+    ] {
+        db.node(key, id, &serde_json::json!({}))?;
+        db.conn.execute(
+            "UPDATE session_nodes SET label = ?1, display_name = ?2 WHERE session_key = ?3",
+            rusqlite::params![label, display_name, key],
+        )?;
+        db.window(key, id, 1)?;
+        db.event(id, 1, &message("user", "hi"))?;
+    }
+
+    let report = import_sessions(
+        &detection(&home, &["main"]),
+        &dest,
+        &mem,
+        &identity_mapping(&["main"]),
+    );
+    assert_eq!(report.status, ImportStatus::Success, "{:?}", report.errors);
+
+    let meta = metadata(&dest)?;
+    let label = |key: &str| meta.get(key).and_then(|entry| entry.label.clone());
+    assert_eq!(
+        label("oc:main:s-a").as_deref(),
+        Some("OpenClaw: Griffin: fix the vm-spill (v2)")
+    );
+    assert_eq!(
+        label("oc:main:s-b").as_deref(),
+        Some("OpenClaw: RE Vanguard")
+    );
+    assert_eq!(
+        label("oc:main:s-c").as_deref(),
+        Some("OpenClaw: Resume: static analysis")
+    );
+    assert_eq!(label("oc:main:s-main").as_deref(), Some("Main"));
+    Ok(())
+}
