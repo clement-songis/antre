@@ -5,7 +5,7 @@ use std::{
     time::Duration,
 };
 
-use {async_trait::async_trait, futures::StreamExt, secrecy::ExposeSecret, tokio_stream::Stream};
+use {async_trait::async_trait, futures::StreamExt, tokio_stream::Stream};
 
 use tracing::{debug, trace, warn};
 
@@ -14,8 +14,11 @@ use moltis_agents::model::{
     LlmProvider, StreamEvent, ToolCall, ToolChoice, Usage, UserContent,
 };
 
+mod auth;
+pub use auth::AnthropicAuth;
+
 pub struct AnthropicProvider {
-    api_key: secrecy::Secret<String>,
+    auth: AnthropicAuth,
     model: String,
     base_url: String,
     client: &'static reqwest::Client,
@@ -36,17 +39,7 @@ const ANTHROPIC_MODELS_ENDPOINT_PATH: &str = "/v1/models";
 
 impl AnthropicProvider {
     pub fn new(api_key: secrecy::Secret<String>, model: String, base_url: String) -> Self {
-        Self {
-            api_key,
-            model,
-            base_url,
-            client: crate::shared_http_client(),
-            alias: None,
-            reasoning_effort: None,
-            cache_retention: moltis_config::CacheRetention::Short,
-            context_window_global: HashMap::new(),
-            context_window_provider: HashMap::new(),
-        }
+        Self::with_auth(AnthropicAuth::from_single(api_key), model, base_url, None)
     }
 
     /// Create a new provider with a custom alias for metrics.
@@ -56,8 +49,18 @@ impl AnthropicProvider {
         base_url: String,
         alias: Option<String>,
     ) -> Self {
+        Self::with_auth(AnthropicAuth::from_single(api_key), model, base_url, alias)
+    }
+
+    /// Create a provider from explicit credentials (API key or setup-tokens).
+    pub fn with_auth(
+        auth: AnthropicAuth,
+        model: String,
+        base_url: String,
+        alias: Option<String>,
+    ) -> Self {
         Self {
-            api_key,
+            auth,
             model,
             base_url,
             client: crate::shared_http_client(),
@@ -128,6 +131,7 @@ impl AnthropicProvider {
     async fn probe_request(&self) -> anyhow::Result<()> {
         let (system_value, anthropic_messages) =
             to_anthropic_messages(&[ChatMessage::user("ping")], false);
+        let system_value = self.auth.wrap_system(system_value, false);
 
         let mut body = serde_json::json!({
             "model": self.model,
@@ -147,13 +151,8 @@ impl AnthropicProvider {
         );
 
         let http_resp = self
-            .client
-            .post(self.messages_url())
-            .header("x-api-key", self.api_key.expose_secret())
-            .header("anthropic-version", "2023-06-01")
-            .header("content-type", "application/json")
-            .json(&body)
-            .send()
+            .auth
+            .send_json(self.client, &self.messages_url(), &body)
             .await?;
 
         let status = http_resp.status();
@@ -192,13 +191,14 @@ impl AnthropicProvider {
         );
 
         let resp = self
-            .client
-            .get(&url)
-            .timeout(Duration::from_secs(15))
-            .header("x-api-key", self.api_key.expose_secret())
-            .header("anthropic-version", "2023-06-01")
-            .header("accept", "application/json")
-            .send()
+            .auth
+            .send(|| {
+                self.client
+                    .get(&url)
+                    .timeout(Duration::from_secs(15))
+                    .header("anthropic-version", "2023-06-01")
+                    .header("accept", "application/json")
+            })
             .await;
 
         let resp = match resp {
@@ -346,7 +346,7 @@ fn models_endpoint(base_url: &str) -> String {
 }
 
 pub async fn fetch_models_from_api(
-    api_key: secrecy::Secret<String>,
+    auth: AnthropicAuth,
     base_url: String,
 ) -> anyhow::Result<Vec<crate::DiscoveredModel>> {
     let client = crate::shared_http_client();
@@ -356,18 +356,20 @@ pub async fn fetch_models_from_api(
     let mut after_id: Option<String> = None;
 
     loop {
-        let mut request = client
-            .get(models_endpoint(&base_url))
-            .timeout(Duration::from_secs(15))
-            .header("x-api-key", api_key.expose_secret())
-            .header("anthropic-version", "2023-06-01")
-            .header("accept", "application/json");
-
-        if let Some(ref after) = after_id {
-            request = request.query(&[("after_id", after)]);
-        }
-
-        let response = request.send().await?;
+        let after = after_id.clone();
+        let response = auth
+            .send(|| {
+                let mut request = client
+                    .get(models_endpoint(&base_url))
+                    .timeout(Duration::from_secs(15))
+                    .header("anthropic-version", "2023-06-01")
+                    .header("accept", "application/json");
+                if let Some(ref after) = after {
+                    request = request.query(&[("after_id", after)]);
+                }
+                request
+            })
+            .await?;
         let status = response.status();
         let body = response.text().await?;
         if !status.is_success() {
@@ -416,7 +418,7 @@ pub async fn fetch_models_from_api(
 }
 
 pub fn start_model_discovery(
-    api_key: secrecy::Secret<String>,
+    auth: AnthropicAuth,
     base_url: String,
 ) -> mpsc::Receiver<anyhow::Result<Vec<crate::DiscoveredModel>>> {
     let (tx, rx) = mpsc::sync_channel(1);
@@ -425,7 +427,7 @@ pub fn start_model_discovery(
             .enable_all()
             .build()
             .map_err(anyhow::Error::from)
-            .and_then(|rt| rt.block_on(fetch_models_from_api(api_key, base_url)));
+            .and_then(|rt| rt.block_on(fetch_models_from_api(auth, base_url)));
         let _ = tx.send(result);
     });
     rx
@@ -696,7 +698,7 @@ impl LlmProvider for AnthropicProvider {
         effort: moltis_agents::model::ReasoningEffort,
     ) -> Option<std::sync::Arc<dyn LlmProvider>> {
         Some(std::sync::Arc::new(Self {
-            api_key: self.api_key.clone(),
+            auth: self.auth.clone(),
             model: self.model.clone(),
             base_url: self.base_url.clone(),
             client: self.client,
@@ -745,6 +747,7 @@ impl LlmProvider for AnthropicProvider {
     ) -> anyhow::Result<CompletionResponse> {
         let caching = self.caching_enabled();
         let (system_value, anthropic_messages) = to_anthropic_messages(messages, caching);
+        let system_value = self.auth.wrap_system(system_value, caching);
 
         let mut body = serde_json::json!({
             "model": self.model,
@@ -788,13 +791,8 @@ impl LlmProvider for AnthropicProvider {
         );
 
         let http_resp = self
-            .client
-            .post(self.messages_url())
-            .header("x-api-key", self.api_key.expose_secret())
-            .header("anthropic-version", "2023-06-01")
-            .header("content-type", "application/json")
-            .json(&body)
-            .send()
+            .auth
+            .send_json(self.client, &self.messages_url(), &body)
             .await?;
 
         let status = http_resp.status();
@@ -896,6 +894,7 @@ impl LlmProvider for AnthropicProvider {
         Box::pin(async_stream::stream! {
             let caching = self.caching_enabled();
             let (system_value, anthropic_messages) = to_anthropic_messages(&messages, caching);
+            let system_value = self.auth.wrap_system(system_value, caching);
 
             let mut body = serde_json::json!({
                 "model": self.model,
@@ -940,13 +939,8 @@ impl LlmProvider for AnthropicProvider {
             trace!(body_bytes = serde_json::to_vec(&body).map_or(0, |value| value.len()), "anthropic stream request body prepared");
 
             let resp = match self
-                .client
-                .post(self.messages_url())
-                .header("x-api-key", self.api_key.expose_secret())
-                .header("anthropic-version", "2023-06-01")
-                .header("content-type", "application/json")
-                .json(&body)
-                .send()
+                .auth
+                .send_json(self.client, &self.messages_url(), &body)
                 .await
             {
                 Ok(r) => {

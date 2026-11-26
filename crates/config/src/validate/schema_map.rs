@@ -36,6 +36,7 @@ pub(super) fn build_schema_map() -> KnownKeys {
         Struct(HashMap::from([
             ("enabled", Leaf),
             ("api_key", Leaf),
+            ("setup_token", Leaf),
             ("base_url", Leaf),
             ("url", Leaf),
             ("models", Leaf),

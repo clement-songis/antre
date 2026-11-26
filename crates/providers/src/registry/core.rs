@@ -22,8 +22,8 @@ use crate::{
     anthropic,
     config_helpers::{
         configured_models_for_provider, env_value, normalize_unique_models,
-        oauth_discovery_enabled, resolve_api_key, should_fetch_models,
-        subscription_preference_rank,
+        oauth_discovery_enabled, resolve_anthropic_auth, resolve_api_key,
+        resolve_custom_anthropic_auth, should_fetch_models, subscription_preference_rank,
     },
     discovered_model::{
         DiscoveredModel, catalog_to_discovered, merge_discovered_with_fallback_catalog,
@@ -208,7 +208,7 @@ pub async fn fetch_discoverable_models(
     if filter_matches("anthropic")
         && config.is_enabled("anthropic")
         && !cfg!(test)
-        && let Some(key) = resolve_api_key(config, "anthropic", "ANTHROPIC_API_KEY", env_overrides)
+        && let Some(auth) = resolve_anthropic_auth(config, env_overrides)
         && should_fetch_models(config, "anthropic")
     {
         let base_url = config
@@ -218,7 +218,7 @@ pub async fn fetch_discoverable_models(
             .unwrap_or_else(|| "https://api.anthropic.com".into());
         tasks.push((
             "anthropic".into(),
-            Box::pin(anthropic::fetch_models_from_api(key, base_url)),
+            Box::pin(anthropic::fetch_models_from_api(auth, base_url)),
         ));
     }
 
@@ -319,10 +319,7 @@ pub async fn fetch_discoverable_models(
         }
         if matches!(entry.wire_api, moltis_config::WireApi::Anthropic) {
             if should_fetch_models(config, name)
-                && let Some(api_key) = entry
-                    .api_key
-                    .as_ref()
-                    .filter(|key| !key.expose_secret().is_empty())
+                && let Some(auth) = resolve_custom_anthropic_auth(entry)
             {
                 let base_url = entry
                     .base_url
@@ -331,10 +328,7 @@ pub async fn fetch_discoverable_models(
                     .unwrap_or_else(|| "https://api.anthropic.com".into());
                 tasks.push((
                     name.clone(),
-                    Box::pin(anthropic::fetch_models_from_api(
-                        api_key.clone(),
-                        base_url,
-                    )),
+                    Box::pin(anthropic::fetch_models_from_api(auth, base_url)),
                 ));
             }
             continue;
@@ -777,7 +771,7 @@ impl ProviderRegistry {
     pub(crate) fn register_anthropic_catalog(
         &mut self,
         models: Vec<DiscoveredModel>,
-        key: &secrecy::Secret<String>,
+        auth: &anthropic::AnthropicAuth,
         base_url: &str,
         provider_label: &str,
         alias: Option<String>,
@@ -801,8 +795,8 @@ impl ProviderRegistry {
                 continue;
             }
             let provider = Arc::new(
-                anthropic::AnthropicProvider::with_alias(
-                    key.clone(),
+                anthropic::AnthropicProvider::with_auth(
+                    auth.clone(),
                     model_id.clone(),
                     base_url.to_string(),
                     alias.clone(),
@@ -830,7 +824,7 @@ impl ProviderRegistry {
     pub(crate) fn replace_anthropic_catalog(
         &mut self,
         models: Vec<DiscoveredModel>,
-        key: &secrecy::Secret<String>,
+        auth: &anthropic::AnthropicAuth,
         base_url: &str,
         provider_label: &str,
         alias: Option<String>,
@@ -845,8 +839,8 @@ impl ProviderRegistry {
                     .capabilities
                     .unwrap_or_else(|| ModelCapabilities::infer(&model.id));
                 let provider = Arc::new(
-                    anthropic::AnthropicProvider::with_alias(
-                        key.clone(),
+                    anthropic::AnthropicProvider::with_auth(
+                        auth.clone(),
                         model.id.clone(),
                         base_url.to_string(),
                         alias.clone(),
@@ -1062,8 +1056,7 @@ impl ProviderRegistry {
         // ── Anthropic builtin ───────────────────────────────────────────
         if config.is_enabled("anthropic")
             && !cfg!(test)
-            && let Some(key) =
-                resolve_api_key(config, "anthropic", "ANTHROPIC_API_KEY", env_overrides)
+            && let Some(auth) = resolve_anthropic_auth(config, env_overrides)
             && should_fetch_models(config, "anthropic")
         {
             let base_url = config
@@ -1073,7 +1066,7 @@ impl ProviderRegistry {
                 .unwrap_or_else(|| "https://api.anthropic.com".into());
             pending.push((
                 "anthropic".into(),
-                anthropic::start_model_discovery(key.clone(), base_url),
+                anthropic::start_model_discovery(auth, base_url),
             ));
         }
 
@@ -1147,10 +1140,7 @@ impl ProviderRegistry {
                 let has_explicit_models = !configured_models_for_provider(config, name).is_empty();
                 if !has_explicit_models
                     && should_fetch_models(config, name)
-                    && let Some(api_key) = entry
-                        .api_key
-                        .as_ref()
-                        .filter(|key| !key.expose_secret().is_empty())
+                    && let Some(auth) = resolve_custom_anthropic_auth(entry)
                 {
                     let base_url = entry
                         .base_url
@@ -1159,7 +1149,7 @@ impl ProviderRegistry {
                         .unwrap_or_else(|| "https://api.anthropic.com".into());
                     pending.push((
                         name.clone(),
-                        anthropic::start_model_discovery(api_key.clone(), base_url),
+                        anthropic::start_model_discovery(auth, base_url),
                     ));
                 }
                 continue;

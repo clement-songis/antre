@@ -144,7 +144,8 @@ pub enum WireApi {
     /// OpenAI Responses API format (`/responses`).
     Responses,
     /// Anthropic Messages API format (`/v1/messages`). For `custom-*`
-    /// providers backed by an Anthropic-compatible endpoint.
+    /// providers backed by an Anthropic endpoint, with an API key or
+    /// `claude setup-token` OAuth credentials.
     Anthropic,
 }
 
@@ -195,6 +196,19 @@ pub struct ProviderEntry {
         skip_serializing_if = "Option::is_none"
     )]
     pub api_key: Option<Secret<String>>,
+
+    /// A `claude setup-token` OAuth credential (Anthropic subscription).
+    ///
+    /// When set this takes precedence over `api_key`: requests use Bearer
+    /// authorization with the Claude Code identity. Additional Claude
+    /// accounts belong in separate `custom-*` instances with
+    /// `wire_api = "anthropic"`, not in a list here.
+    #[serde(
+        default,
+        serialize_with = "serialize_option_secret",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub setup_token: Option<Secret<String>>,
 
     /// Override the base URL.
     /// Accepts legacy `url` as an alias for compatibility.
@@ -330,6 +344,7 @@ impl Default for ProviderEntry {
         Self {
             enabled: true,
             api_key: None,
+            setup_token: None,
             base_url: None,
             models: Vec::new(),
             fetch_models: true,

@@ -27,6 +27,77 @@ pub(crate) fn resolve_api_key(
         .filter(|s| !s.expose_secret().is_empty())
 }
 
+/// Resolve Anthropic credentials for a `custom-*` provider whose
+/// `wire_api = "anthropic"`. Each instance gets its own credential, making
+/// several Claude accounts selectable as separate providers:
+///
+/// 1. `setup_token`: a subscription setup-token.
+/// 2. `api_key`: a single API key or setup-token (detected by `sk-ant-oat`).
+///
+/// As with other custom providers, credentials come from the config entry or
+/// `provider_keys.json`, not from a per-provider env var.
+pub(crate) fn resolve_custom_anthropic_auth(
+    entry: &moltis_config::schema::ProviderEntry,
+) -> Option<crate::anthropic::AnthropicAuth> {
+    if let Some(token) = entry
+        .setup_token
+        .clone()
+        .filter(|token| !token.expose_secret().is_empty())
+    {
+        return Some(crate::anthropic::AnthropicAuth::setup_token(token));
+    }
+
+    entry
+        .api_key
+        .clone()
+        .filter(|key| !key.expose_secret().is_empty())
+        .map(crate::anthropic::AnthropicAuth::from_single)
+}
+
+/// Resolve Anthropic credentials, in precedence order:
+///
+/// 1. `[providers.anthropic].setup_token`: a subscription setup-token.
+/// 2. A single API key or setup-token from `api_key` / `ANTHROPIC_API_KEY`,
+///    detected by its `sk-ant-oat` marker.
+/// 3. `ANTHROPIC_OAUTH_TOKEN`: a single setup-token (OpenClaw's env name).
+/// 4. The `anthropic` entry of `oauth_tokens.json`, e.g. written by
+///    `moltis import` from an OpenClaw installation.
+pub(crate) fn resolve_anthropic_auth(
+    config: &ProvidersConfig,
+    env_overrides: &HashMap<String, String>,
+) -> Option<crate::anthropic::AnthropicAuth> {
+    if let Some(token) = config
+        .get("anthropic")
+        .and_then(|entry| entry.setup_token.clone())
+        .filter(|token| !token.expose_secret().is_empty())
+    {
+        return Some(crate::anthropic::AnthropicAuth::setup_token(token));
+    }
+
+    if let Some(key) = resolve_api_key(config, "anthropic", "ANTHROPIC_API_KEY", env_overrides) {
+        return Some(crate::anthropic::AnthropicAuth::from_single(key));
+    }
+
+    if let Some(token) =
+        env_value(env_overrides, "ANTHROPIC_OAUTH_TOKEN").filter(|token| !token.is_empty())
+    {
+        return Some(crate::anthropic::AnthropicAuth::setup_token(
+            secrecy::Secret::new(token),
+        ));
+    }
+
+    #[cfg(feature = "provider-anthropic-oauth")]
+    if let Some(tokens) = moltis_oauth::TokenStore::new().load("anthropic")
+        && !tokens.access_token.expose_secret().is_empty()
+    {
+        return Some(crate::anthropic::AnthropicAuth::setup_token(
+            tokens.access_token.clone(),
+        ));
+    }
+
+    None
+}
+
 pub(crate) fn configured_models_for_provider(
     config: &ProvidersConfig,
     provider: &str,
