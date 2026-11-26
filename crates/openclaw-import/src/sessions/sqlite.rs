@@ -64,11 +64,11 @@ pub(crate) fn agent_session_ids(agent_dir: &Path) -> HashSet<String> {
     })
 }
 
-/// One agent's database and the transcript windows it holds.
+/// One agent's database and the conversations it holds.
 pub(super) struct AgentSessions {
     db_path: PathBuf,
     db: AgentDb,
-    windows: Vec<Window>,
+    conversations: Vec<Conversation>,
 }
 
 impl AgentSessions {
@@ -86,11 +86,12 @@ impl AgentSessions {
         });
         match loaded {
             Ok((db, windows)) => {
-                debug!(agent = %openclaw_agent_id, sessions = windows.len(), "reading OpenClaw SQLite sessions");
+                let conversations = Conversation::group(windows);
+                debug!(agent = %openclaw_agent_id, sessions = conversations.len(), "reading OpenClaw SQLite sessions");
                 Some(Self {
                     db_path,
                     db,
-                    windows,
+                    conversations,
                 })
             },
             Err(error) => {
@@ -103,20 +104,23 @@ impl AgentSessions {
         }
     }
 
-    /// Register every window so child sessions can find their parent.
+    /// Whether `session_id` is one of this database's transcript windows.
+    pub(super) fn has_window(&self, session_id: &str) -> bool {
+        self.conversations
+            .iter()
+            .any(|c| c.windows.iter().any(|w| w.session_id == session_id))
+    }
+
+    /// Register every conversation so child sessions can find their parent.
     pub(super) fn index_parents(&self, moltis_agent_id: &str, parents: &mut ParentIndex) {
-        for window in &self.windows {
-            parents.insert(
-                &window.session_key,
-                window.created_at,
-                dest_key(moltis_agent_id, &window.session_id),
-            );
+        for conversation in &self.conversations {
+            parents.insert(&conversation.key, conversation.dest_key(moltis_agent_id));
         }
     }
 
-    /// Import every window. Returns the IDs of all sessions found in the
-    /// database (imported, unchanged or failed) so the JSONL pass does not
-    /// import them a second time.
+    /// Import every conversation as one Moltis session. Returns the IDs of
+    /// all transcript windows found in the database (imported, unchanged or
+    /// failed) so the JSONL pass does not import them a second time.
     pub(super) fn import(
         self,
         importer: &mut SessionImporter<'_>,
@@ -124,42 +128,139 @@ impl AgentSessions {
         parents: &ParentIndex,
     ) -> HashSet<String> {
         let mut seen = HashSet::new();
-        for window in self.windows {
+        for conversation in self.conversations {
             let mut missing_events = 0_u32;
-            let dest_key = dest_key(moltis_agent_id, &window.session_id);
-            let parent_key = window
-                .parent_key
-                .as_deref()
-                .and_then(|parent| parents.resolve(parent, window.created_at))
+            let dest_key = conversation.dest_key(moltis_agent_id);
+            let parent_key = conversation
+                .parent_key()
+                .and_then(|parent| parents.resolve(conversation_key(parent)))
                 .filter(|parent| *parent != dest_key);
+            let window_ids: Vec<&str> = conversation
+                .windows
+                .iter()
+                .map(|window| window.session_id.as_str())
+                .collect();
             importer.import_one(
                 SessionSource {
                     dest_key,
                     moltis_agent_id,
-                    label: window.label(),
-                    source_line_count: window.source_size,
-                    archived: window.archived,
+                    label: conversation.label(),
+                    source_line_count: conversation.source_size(),
+                    archived: conversation.archived(),
                     parent_key,
                     description: format!(
                         "{} (session {})",
                         self.db_path.display(),
-                        window.session_id
+                        window_ids.join(", ")
                     ),
                 },
                 |sink| {
-                    missing_events = self.db.feed_events(&window.session_id, sink)?;
+                    for id in &window_ids {
+                        missing_events += self.db.feed_events(id, sink)?;
+                    }
                     Ok(())
                 },
             );
             if missing_events > 0 {
                 importer.warn(format!(
                     "session {}: {missing_events} archived event(s) could not be read",
-                    window.session_id
+                    conversation.key
                 ));
             }
-            seen.insert(window.session_id);
+            seen.extend(conversation.windows.into_iter().map(|w| w.session_id));
         }
         seen
+    }
+}
+
+/// The conversation a logical key belongs to. OpenClaw gives each isolated
+/// cron run its own key (`agent:<id>:cron:<job>:run:<run>`); runs belong to
+/// their job.
+fn conversation_key(session_key: &str) -> &str {
+    match session_key.split_once(":run:") {
+        Some((job, _)) if is_cron_key(job) => job,
+        _ => session_key,
+    }
+}
+
+fn is_cron_key(key: &str) -> bool {
+    key.split(':').nth(2) == Some("cron")
+}
+
+/// Every transcript window of one logical OpenClaw session, oldest first.
+///
+/// OpenClaw starts a new window on `/new`, resets and compaction; Moltis has
+/// no such notion, so the windows become one session in order.
+struct Conversation {
+    key: String,
+    windows: Vec<Window>,
+}
+
+impl Conversation {
+    /// Group windows (already sorted by creation time) by conversation.
+    fn group(windows: Vec<Window>) -> Vec<Self> {
+        let mut conversations: Vec<Self> = Vec::new();
+        let mut index: HashMap<String, usize> = HashMap::new();
+        for window in windows {
+            let key = conversation_key(&window.session_key).to_string();
+            match index.get(&key) {
+                Some(&i) => conversations[i].windows.push(window),
+                None => {
+                    index.insert(key.clone(), conversations.len());
+                    conversations.push(Self {
+                        key,
+                        windows: vec![window],
+                    });
+                },
+            }
+        }
+        conversations
+    }
+
+    /// Cron jobs land in Moltis' cron list; other conversations keep the key
+    /// of their first window, which never changes as windows are added.
+    fn dest_key(&self, moltis_agent_id: &str) -> String {
+        if is_cron_key(&self.key)
+            && let Some(job) = self.key.split(':').nth(3)
+        {
+            return format!("cron:oc-{moltis_agent_id}-{job}");
+        }
+        dest_key(moltis_agent_id, &self.first().session_id)
+    }
+
+    fn first(&self) -> &Window {
+        &self.windows[0]
+    }
+
+    fn latest(&self) -> &Window {
+        &self.windows[self.windows.len() - 1]
+    }
+
+    /// From the conversation's own node, not a cron run's.
+    fn label(&self) -> String {
+        self.windows
+            .iter()
+            .rev()
+            .find(|window| window.session_key == self.key)
+            .unwrap_or_else(|| self.latest())
+            .label(&self.key)
+    }
+
+    fn archived(&self) -> bool {
+        self.windows.iter().all(|window| window.archived)
+    }
+
+    fn parent_key(&self) -> Option<&str> {
+        self.windows
+            .iter()
+            .rev()
+            .find_map(|window| window.parent_key.as_deref())
+    }
+
+    fn source_size(&self) -> u32 {
+        self.windows.iter().fold(0_u32, |total, window| {
+            total.saturating_add(window.source_size)
+        })
     }
 }
 
@@ -183,14 +284,13 @@ struct Window {
     archived: bool,
     /// Logical key of the session that spawned this one.
     parent_key: Option<String>,
-    created_at: i64,
     /// Highest event `seq` + 1: transcripts are append-only, so it grows with
     /// every new event and is cheap to read from the primary key.
     source_size: u32,
 }
 
 impl Window {
-    fn label(&self) -> String {
+    fn label(&self, conversation_key: &str) -> String {
         let origin = OpenClawSessionOrigin {
             label: self
                 .origin
@@ -201,7 +301,7 @@ impl Window {
             provider: self.origin.as_ref().and_then(|o| o.provider.clone()),
             chat_type: self.origin.as_ref().and_then(|o| o.chat_type.clone()),
         };
-        build_session_label(&self.session_key, Some(&origin))
+        build_session_label(conversation_key, Some(&origin))
     }
 }
 
@@ -294,7 +394,7 @@ impl AgentDb {
                 display_name,
                 node_label,
                 archived_at,
-                created_at,
+                _created_at,
                 max_seq,
             ) = row?;
             let Some(max_seq) = max_seq else {
@@ -316,7 +416,6 @@ impl AgentDb {
                 node_label: node_label.filter(|s| !s.trim().is_empty()),
                 archived: archived_at.is_some(),
                 parent_key,
-                created_at,
                 source_size: u32::try_from(max_seq.saturating_add(1)).unwrap_or(0),
             });
         }

@@ -57,10 +57,11 @@ If your OpenClaw installation has multiple agents (defined in `openclaw.json`'s 
 Current OpenClaw releases keep each agent's sessions in a SQLite database, `agents/<id>/agent/openclaw-agent.sqlite`; older releases wrote one JSONL file per session. Moltis reads both:
 
 - The database is opened **read-only**, so the import works while OpenClaw is running (it waits up to 5 seconds for OpenClaw's write lock)
-- Each transcript generation (`session_windows` row) becomes one Moltis session keyed `oc:<agent_id>:<session_id>`, the same key a `<session_id>.jsonl` file gets. A `/reset` or rollover in OpenClaw therefore shows up as a separate session with the same title
+- Each OpenClaw conversation becomes one Moltis session. OpenClaw starts a new transcript generation (`session_windows` row) on `/new`, resets and compaction; the generations of one session key are joined in order, under the key of the first one, `oc:<agent_id>:<session_id>` (the key a `<session_id>.jsonl` file gets)
+- Cron jobs become one session per job, keyed `cron:oc-<agent_id>-<job_id>`, so they appear in the Cron tab. Isolated runs (`agent:<id>:cron:<job>:run:<run>`) join their job's session
 - Transcript records come from `transcript_events`, stored as plain JSON or zstd-compressed. Records that OpenClaw moved to a cold archive (`session_transcript_cold_archives`, embedded in the database or published under `agents/<id>/sessions/cold/`) are read back from that archive; if an archive file is missing, the rest of the session is still imported and the report shows a warning
 - Titles come from the session key and its origin (`session_nodes.entry_json`), falling back to the session's display name or label. Sessions archived in OpenClaw are imported as archived
-- Subagent and child sessions (`spawnedBy` / `parentSessionKey`, also read from `sessions.json` for JSONL installs) stay nested under their parent, even when the parent belongs to another agent. With several transcript generations, the child points at the one that was current when it started
+- Subagent and child sessions (`spawnedBy` / `parentSessionKey`, also read from `sessions.json` for JSONL installs) stay nested under their parent, even when the parent belongs to another agent
 - Deleted and reset generations (`session_transcript_archives`, and `*.jsonl.deleted.*` / `*.jsonl.reset.*` files) are not imported
 - When a session exists both in the database and as a JSONL file, only the database copy is imported
 

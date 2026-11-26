@@ -139,11 +139,11 @@ pub fn import_sessions(
             .map(|dir| load_session_label_map(&dir))
             .unwrap_or_default();
         for (session_id, entry) in &jsonl_index {
-            parents.insert(
-                &entry.logical_key,
-                i64::MIN,
-                dest_key(&moltis_agent_id, session_id),
-            );
+            // Already registered under its SQLite conversation.
+            if sqlite.as_ref().is_some_and(|db| db.has_window(session_id)) {
+                continue;
+            }
+            parents.insert(&entry.logical_key, dest_key(&moltis_agent_id, session_id));
         }
         agents.push((
             openclaw_agent_id,
@@ -214,10 +214,9 @@ fn import_agent_jsonl_sessions(
                 format!("OpenClaw: {}", &stem[..prefix_len])
             });
         let dest_key = dest_key(moltis_agent_id, stem);
-        // A JSONL index only knows each key's current transcript.
         let parent_key = index_entry
             .and_then(|entry| entry.parent_key.as_deref())
-            .and_then(|parent| parents.resolve(parent, i64::MAX))
+            .and_then(|parent| parents.resolve(parent))
             .filter(|parent| *parent != dest_key);
 
         importer.import_one(
@@ -464,31 +463,19 @@ fn dest_key(moltis_agent_id: &str, session_id: &str) -> String {
     format!("oc:{moltis_agent_id}:{session_id}")
 }
 
-/// Moltis keys of the transcripts of each OpenClaw logical session key, so a
-/// child session can point at the transcript its parent was using.
+/// Moltis key of each OpenClaw logical session key, so a child session can
+/// point at its parent. The first registration wins: SQLite conversations
+/// are registered before JSONL files.
 #[derive(Default)]
-struct ParentIndex(HashMap<String, Vec<(i64, String)>>);
+struct ParentIndex(HashMap<String, String>);
 
 impl ParentIndex {
-    fn insert(&mut self, logical_key: &str, started_at: i64, dest_key: String) {
-        let windows = self.0.entry(logical_key.to_string()).or_default();
-        if windows.iter().any(|(_, key)| *key == dest_key) {
-            return;
-        }
-        let position = windows.partition_point(|(time, _)| *time <= started_at);
-        windows.insert(position, (started_at, dest_key));
+    fn insert(&mut self, logical_key: &str, dest_key: String) {
+        self.0.entry(logical_key.to_string()).or_insert(dest_key);
     }
 
-    /// The parent transcript that was current when the child started, or the
-    /// parent's first one if the child predates them all.
-    fn resolve(&self, parent_key: &str, child_started_at: i64) -> Option<String> {
-        let windows = self.0.get(parent_key)?;
-        windows
-            .iter()
-            .rev()
-            .find(|(time, _)| *time <= child_started_at)
-            .or_else(|| windows.first())
-            .map(|(_, key)| key.clone())
+    fn resolve(&self, parent_key: &str) -> Option<String> {
+        self.0.get(parent_key).cloned()
     }
 }
 
@@ -498,7 +485,7 @@ impl ParentIndex {
 /// - `agent:*:main`             → "Main"
 /// - `agent:*:telegram:dm:*`    → "Telegram: {cleaned label}"
 /// - `agent:*:signal:dm:*`      → "Signal: {cleaned label}"
-/// - `agent:*:cron:*`           → "Cron"
+/// - `agent:*:cron:*`           → "Cron: {cleaned label}"
 /// - Other with origin label    → "OpenClaw: {cleaned label}"
 /// - Fallback (no index entry)  → "OpenClaw: {uuid prefix}"
 fn build_session_label(logical_key: &str, origin: Option<&OpenClawSessionOrigin>) -> String {
@@ -531,8 +518,14 @@ fn build_session_label(logical_key: &str, origin: Option<&OpenClawSessionOrigin>
         return "Signal".to_string();
     }
 
-    // agent:<name>:cron:* → "Cron"
+    // agent:<name>:cron:* → "Cron: {label}"
     if parts.len() >= 3 && parts[0] == "agent" && parts[2] == "cron" {
+        if let Some(cleaned) = origin
+            .and_then(|o| o.label.as_deref())
+            .and_then(normalize_display_name)
+        {
+            return format!("Cron: {cleaned}");
+        }
         return "Cron".to_string();
     }
 

@@ -305,7 +305,7 @@ fn imports_plain_and_compressed_events() -> TestResult {
 }
 
 #[test]
-fn imports_every_window_and_keeps_agent_ids() -> TestResult {
+fn merges_windows_into_one_session_and_keeps_agent_ids() -> TestResult {
     let tmp = tempfile::tempdir()?;
     let home = tmp.path().join("openclaw");
     let dest = tmp.path().join("sessions");
@@ -347,14 +347,19 @@ fn imports_every_window_and_keeps_agent_ids() -> TestResult {
         &identity_mapping(&agents),
     );
     assert_eq!(report.status, ImportStatus::Success, "{:?}", report.errors);
-    assert_eq!(report.items_imported, 3);
+    assert_eq!(report.items_imported, 2);
 
     let meta = metadata(&dest)?;
+    assert!(!meta.contains_key("oc:main:s-new"));
     assert!(!meta.contains_key("oc:main:s-empty"));
-    let old = meta.get("oc:main:s-old").ok_or("missing s-old")?;
-    assert_eq!(old.label.as_deref(), Some("Main"));
-    assert!(old.archived);
-    assert_eq!(contents(&history(&dest, "oc:main:s-new")?), ["after reset"]);
+    let main_session = meta.get("oc:main:s-old").ok_or("missing s-old")?;
+    assert_eq!(main_session.label.as_deref(), Some("Main"));
+    assert!(main_session.archived);
+    assert_eq!(main_session.source_line_count, 4);
+    assert_eq!(contents(&history(&dest, "oc:main:s-old")?), [
+        "before reset",
+        "after reset"
+    ]);
 
     let cy = meta.get("oc:cyberclaw:s-cy").ok_or("missing s-cy")?;
     assert_eq!(cy.agent_id.as_deref(), Some("cyberclaw"));
@@ -604,19 +609,70 @@ fn child_sessions_point_at_the_parent_transcript_of_their_time() -> TestResult {
         meta.get(key)
             .and_then(|entry| entry.parent_session_key.clone())
     };
-    assert_eq!(
-        parent_of("oc:cyberclaw:c-early").as_deref(),
-        Some("oc:main:p-old")
-    );
-    assert_eq!(
-        parent_of("oc:cyberclaw:c-late").as_deref(),
-        Some("oc:main:p-new")
-    );
-    assert_eq!(
-        parent_of("oc:main:c-dash").as_deref(),
-        Some("oc:main:p-new")
-    );
+    assert!(!meta.contains_key("oc:main:p-new"));
+    for child in [
+        "oc:cyberclaw:c-early",
+        "oc:cyberclaw:c-late",
+        "oc:main:c-dash",
+    ] {
+        assert_eq!(
+            parent_of(child).as_deref(),
+            Some("oc:main:p-old"),
+            "{child}"
+        );
+    }
     assert_eq!(parent_of("oc:cyberclaw:c-orphan"), None);
-    assert_eq!(parent_of("oc:main:p-new"), None);
+    assert_eq!(parent_of("oc:main:p-old"), None);
+    Ok(())
+}
+
+#[test]
+fn cron_runs_become_one_session_per_job() -> TestResult {
+    let tmp = tempfile::tempdir()?;
+    let home = tmp.path().join("openclaw");
+    let dest = tmp.path().join("sessions");
+    let mem = tmp.path().join("memory").join("sessions");
+
+    let job = "agent:main:cron:job1";
+    let db = Fixture::create(&home, "main")?;
+    db.node(
+        job,
+        "r2",
+        &serde_json::json!({"origin": {"label": "daily digest"}}),
+    )?;
+    db.window(job, "r1", 1)?;
+    db.window(job, "r2", 2)?;
+    let isolated = format!("{job}:run:r3");
+    db.node(&isolated, "r3", &serde_json::json!({}))?;
+    db.window(&isolated, "r3", 3)?;
+    db.node("agent:main:cron:job2", "o1", &serde_json::json!({}))?;
+    db.window("agent:main:cron:job2", "o1", 4)?;
+    for (id, text) in [
+        ("r1", "run one"),
+        ("r2", "run two"),
+        ("r3", "run three"),
+        ("o1", "other"),
+    ] {
+        db.event(id, 1, &message("user", text))?;
+    }
+
+    let report = import_sessions(
+        &detection(&home, &["main"]),
+        &dest,
+        &mem,
+        &identity_mapping(&["main"]),
+    );
+    assert_eq!(report.status, ImportStatus::Success, "{:?}", report.errors);
+    assert_eq!(report.items_imported, 2);
+
+    let meta = metadata(&dest)?;
+    let digest = meta.get("cron:oc-main-job1").ok_or("missing job1")?;
+    assert_eq!(digest.label.as_deref(), Some("Cron: daily digest"));
+    assert_eq!(contents(&history(&dest, "cron:oc-main-job1")?), [
+        "run one",
+        "run two",
+        "run three"
+    ]);
+    assert!(meta.contains_key("cron:oc-main-job2"));
     Ok(())
 }
