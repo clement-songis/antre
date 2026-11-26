@@ -788,10 +788,42 @@ fn load_session_label_map_parses_index() {
     assert!(map.contains_key("uuid-1"));
     assert!(map.contains_key("uuid-2"));
 
-    let (key, origin) = &map["uuid-1"];
-    assert_eq!(key, "agent:main:main");
+    let entry = &map["uuid-1"];
+    assert_eq!(entry.logical_key, "agent:main:main");
     assert_eq!(
-        origin.as_ref().and_then(|o| o.label.as_deref()),
+        entry.origin.as_ref().and_then(|o| o.label.as_deref()),
         Some("Test")
     );
+}
+
+#[test]
+fn jsonl_child_session_points_at_parent() {
+    let tmp = tempfile::tempdir().unwrap();
+    let home = tmp.path();
+    let dest = tmp.path().join("sessions");
+    let mem = tmp.path().join("memory").join("sessions");
+
+    let message = r#"{"type":"message","message":{"role":"user","content":"Hi"}}"#;
+    setup_session(home, "main", "uuid-parent", &[message]);
+    setup_session(home, "main", "uuid-child", &[message]);
+    write_sessions_json(
+        home,
+        "main",
+        r#"{
+            "agent:main:main": {"sessionId": "uuid-parent"},
+            "agent:main:subagent:x": {"sessionId": "uuid-child", "spawnedBy": "agent:main:main"}
+        }"#,
+    );
+
+    let detection = make_detection(home);
+    let report = import_sessions(&detection, &dest, &mem, &default_mapping());
+    assert_eq!(report.items_imported, 2);
+
+    let content = std::fs::read_to_string(dest.join("metadata.json")).unwrap();
+    let metadata: HashMap<String, ImportedSessionEntry> = serde_json::from_str(&content).unwrap();
+    assert_eq!(
+        metadata["oc:main:uuid-child"].parent_session_key.as_deref(),
+        Some("oc:main:uuid-parent")
+    );
+    assert_eq!(metadata["oc:main:uuid-parent"].parent_session_key, None);
 }
