@@ -23,7 +23,7 @@ async function mockVoiceProviders(page) {
 					name: "OpenAI Whisper",
 					type: "stt",
 					category: "cloud",
-					description: "OpenAI clip transcription. Realtime voice models require the Realtime API.",
+					description: "OpenAI transcription, live through the Realtime API when available.",
 					available: true,
 					enabled: true,
 					preferred: true,
@@ -31,12 +31,17 @@ async function mockVoiceProviders(page) {
 					keyPlaceholder: "sk-...",
 					keyUrl: "https://platform.openai.com/api-keys",
 					keyUrlLabel: "platform.openai.com/api-keys",
-					hint: "gpt-realtime-2, gpt-realtime-translate, and gpt-realtime-whisper are Realtime API models. Moltis currently records a clip and uses OpenAI's transcription endpoint for this provider.",
+					hint: "Live transcription uses the Realtime model (default gpt-live-transcribe). The model above transcribes clips and is the fallback when the live stream fails.",
 					capabilities: {
 						baseUrl: true,
 						customModel: true,
 						modelChoices: ["whisper-1", "gpt-4o-transcribe", "gpt-4o-mini-transcribe"],
-						realtimeModelChoices: ["gpt-realtime-2", "gpt-realtime-translate", "gpt-realtime-whisper"],
+						realtimeModelChoices: [
+							"gpt-live-transcribe",
+							"gpt-realtime-whisper",
+							"gpt-4o-transcribe",
+							"gpt-4o-mini-transcribe",
+						],
 					},
 					settings: {
 						baseUrl: null,
@@ -81,7 +86,7 @@ async function mockVoiceProviders(page) {
 }
 
 test.describe("Settings > Voice > OpenAI", () => {
-	test("saves OpenAI transcription model and shows Realtime model guidance", async ({ page }) => {
+	test("saves OpenAI clip and Realtime transcription models", async ({ page }) => {
 		const pageErrors = watchPageErrors(page);
 		await navigateAndWait(page, "/settings/voice");
 		await waitForWsConnected(page);
@@ -90,16 +95,16 @@ test.describe("Settings > Voice > OpenAI", () => {
 		const whisperRow = page
 			.locator(".provider-card")
 			.filter({ has: page.getByText("OpenAI Whisper", { exact: true }) });
-		await expect(whisperRow).toContainText("Realtime voice models require the Realtime API");
+		await expect(whisperRow).toContainText("live through the Realtime API");
 		await whisperRow.getByRole("button", { name: "Configure", exact: true }).click();
 
 		const modal = page.locator(".modal-box").filter({ has: page.getByText("Add OpenAI Whisper", { exact: true }) });
 		await expect(modal).toBeVisible();
-		await expect(modal).toContainText("gpt-realtime-2");
-		await expect(modal).toContainText("gpt-realtime-translate");
-		await expect(modal).toContainText("gpt-realtime-whisper");
+		const realtimeModel = modal.getByLabel("Realtime model (live transcription)", { exact: true });
+		await expect(realtimeModel).toHaveAttribute("placeholder", "gpt-live-transcribe (default)");
 
 		await modal.locator('input[placeholder="model (optional)"]').fill("gpt-4o-mini-transcribe");
+		await realtimeModel.fill("gpt-realtime-whisper");
 		await modal.getByRole("button", { name: "Save", exact: true }).click();
 
 		await expect
@@ -115,6 +120,7 @@ test.describe("Settings > Voice > OpenAI", () => {
 		expect(saveRequest.params).toMatchObject({
 			provider: "whisper",
 			model: "gpt-4o-mini-transcribe",
+			realtimeModel: "gpt-realtime-whisper",
 		});
 		expect(pageErrors).toEqual([]);
 	});

@@ -15,6 +15,8 @@ pub mod oauth;
 pub mod share;
 pub mod share_render;
 pub mod spa;
+#[cfg(feature = "voice")]
+mod stt_ws;
 pub mod templates;
 pub mod terminal;
 
@@ -274,6 +276,9 @@ fn add_feature_routes(routes: Router<AppState>) -> Router<AppState> {
 
     #[cfg(feature = "push-notifications")]
     let routes = routes.nest("/api/push", moltis_httpd::push_routes::push_router());
+
+    #[cfg(feature = "voice")]
+    let routes = routes.route("/api/stt/ws", get(stt_ws::api_stt_ws_upgrade_handler));
 
     routes
 }

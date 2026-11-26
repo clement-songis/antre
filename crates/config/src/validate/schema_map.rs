@@ -809,6 +809,8 @@ pub(super) fn build_schema_map() -> KnownKeys {
                         ("enabled", Leaf),
                         ("provider", Leaf),
                         ("providers", Leaf),
+                        ("streaming", Leaf),
+                        ("max_stream_seconds", Leaf),
                         (
                             "whisper",
                             Struct(HashMap::from([
@@ -816,6 +818,7 @@ pub(super) fn build_schema_map() -> KnownKeys {
                                 ("api_key", Leaf),
                                 ("base_url", Leaf),
                                 ("model", Leaf),
+                                ("realtime_model", Leaf),
                                 ("language", Leaf),
                             ])),
                         ),
@@ -861,6 +864,7 @@ pub(super) fn build_schema_map() -> KnownKeys {
                                 ("enabled", Leaf),
                                 ("api_key", Leaf),
                                 ("model", Leaf),
+                                ("realtime_model", Leaf),
                                 ("language", Leaf),
                             ])),
                         ),

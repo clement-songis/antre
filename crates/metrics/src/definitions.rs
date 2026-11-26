@@ -351,6 +351,16 @@ pub mod media {
     pub const FILES_EXPIRED_TOTAL: &str = "moltis_media_files_expired_total";
 }
 
+/// Voice metrics
+pub mod voice {
+    /// Live transcription streams by provider and outcome (labels: provider, status)
+    pub const STT_STREAMS_TOTAL: &str = "moltis_voice_stt_streams_total";
+    /// Live transcription stream duration in seconds
+    pub const STT_STREAM_DURATION_SECONDS: &str = "moltis_voice_stt_stream_duration_seconds";
+    /// Audio bytes relayed to live transcription providers
+    pub const STT_STREAM_AUDIO_BYTES_TOTAL: &str = "moltis_voice_stt_stream_audio_bytes_total";
+}
+
 /// OAuth metrics
 pub mod oauth {
     /// OAuth flow starts by provider

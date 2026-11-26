@@ -716,6 +716,11 @@ loopback_http = true                # Plain HTTP on loopback binds: http://local
 # [voice.stt]
 # enabled = true
 # providers = []                        # UI allowlist (empty = show all)
+# streaming = true                      # Live transcription when the provider supports it
+# max_stream_seconds = 300              # Hard cap per live transcription stream
+
+# [voice.stt.whisper]
+# realtime_model = "gpt-live-transcribe"  # OpenAI Realtime API model for live transcription
 
 # [voice.stt.whisper_local]
 # endpoint = "http://localhost:8080"    # OpenAI-compatible transcription server
@@ -725,6 +730,7 @@ loopback_http = true                # Plain HTTP on loopback binds: http://local
 # [voice.stt.gemini]
 # api_key = "..."                       # Or GEMINI_API_KEY / GOOGLE_API_KEY / providers.gemini
 # model = "gemini-3.5-transcribe"       # Gemini's dedicated transcription model
+# realtime_model = "gemini-3.5-transcribe-live"  # Live API model for live transcription
 # language = "fr-FR"                    # Optional BCP-47 hint, auto-detected when unset
 
 # ══════════════════════════════════════════════════════════════════════════════

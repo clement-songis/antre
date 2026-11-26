@@ -344,7 +344,7 @@ impl LiveSttService {
     }
 
     /// Resolve the active provider: explicit config value, or first configured.
-    fn resolve_provider(
+    pub(super) fn resolve_provider(
         config_provider: Option<moltis_config::VoiceSttProvider>,
     ) -> Option<SttProviderId> {
         if let Some(p) = config_provider {
@@ -370,6 +370,7 @@ impl SttService for LiveSttService {
             "enabled": any_configured,
             "provider": resolved.map(|p| p.to_string()).unwrap_or_default(),
             "configured": any_configured,
+            "streaming": super::stt_stream::streaming_status(),
         }))
     }
 

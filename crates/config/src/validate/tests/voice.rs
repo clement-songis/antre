@@ -92,3 +92,41 @@ language = "fr-FR"
         Some("gemini-3.5-transcribe")
     );
 }
+
+#[test]
+fn voice_stt_streaming_fields_are_known() {
+    let toml = r#"
+[voice.stt]
+streaming = true
+max_stream_seconds = 120
+
+[voice.stt.whisper]
+realtime_model = "gpt-live-transcribe"
+
+[voice.stt.gemini]
+realtime_model = "gemini-3.5-transcribe-live"
+"#;
+    let result = validate_toml_str(toml);
+    let unknown: Vec<_> = result
+        .diagnostics
+        .iter()
+        .filter(|d| d.path.starts_with("voice.stt"))
+        .collect();
+    assert!(unknown.is_empty(), "unexpected diagnostics: {unknown:?}");
+}
+
+#[test]
+fn zero_max_stream_seconds_warned() {
+    let toml = r#"
+[voice.stt]
+max_stream_seconds = 0
+"#;
+    let result = validate_toml_str(toml);
+    assert!(
+        result
+            .diagnostics
+            .iter()
+            .any(|d| d.path == "voice.stt.max_stream_seconds"),
+        "expected warning for max_stream_seconds = 0"
+    );
+}

@@ -416,6 +416,8 @@ Moltis supports multiple STT providers across cloud and local backends.
 enabled = true
 # provider = "whisper"  # Omit to auto-select the first configured provider
 providers = []          # Optional UI allowlist, empty = show all STT providers
+streaming = true        # Live transcription when the active provider supports it
+max_stream_seconds = 300  # Hard cap per live transcription stream
 
 # Cloud providers - API key required
 [voice.stt.whisper]
@@ -423,6 +425,7 @@ providers = []          # Optional UI allowlist, empty = show all STT providers
 # api_key = "sk-..."
 # base_url = "http://10.1.2.30:8001"  # Override for OpenAI-compatible servers (e.g. faster-whisper-server)
 model = "whisper-1"  # or "gpt-4o-transcribe", "gpt-4o-mini-transcribe"
+# realtime_model = "gpt-live-transcribe"  # Live transcription model (Realtime API)
 language = "en"     # Optional ISO 639-1 hint
 
 [voice.stt.groq]
@@ -451,6 +454,7 @@ language = "en"
 # configured as an LLM provider. Google AI Studio key, not Google Cloud.
 # api_key = "..."
 model = "gemini-3.5-transcribe"  # default
+# realtime_model = "gemini-3.5-transcribe-live"  # Live transcription model (Live API)
 # language = "fr-FR"  # Optional BCP-47 hint; omit to auto-detect
 
 # Local providers - no API key, requires server or binary
@@ -472,11 +476,83 @@ model_dir = "~/.moltis/models/sherpa-onnx-whisper-tiny.en"  # required
 language = "en"
 ```
 
-OpenAI's `gpt-realtime-2`, `gpt-realtime-translate`, and `gpt-realtime-whisper`
-models are Realtime API models. The current Moltis OpenAI STT provider records a
-clip and sends it to `/audio/transcriptions`, so those Realtime model IDs are
-shown in voice settings as Realtime-only references rather than selectable clip
-transcription defaults.
+### Live Transcription
+
+When the active STT provider supports streaming, the web UI shows the
+transcript while you speak instead of waiting for the whole clip. The final
+transcript is sent as a chat message, exactly like clip transcription, with
+the recorded audio attached.
+
+| Provider | Live model setting | Default |
+|----------|--------------------|---------|
+| OpenAI (`whisper`) | `voice.stt.whisper.realtime_model` | `gpt-live-transcribe` |
+| Google Gemini (`gemini`) | `voice.stt.gemini.realtime_model` | `gemini-3.5-transcribe-live` |
+
+`realtime_model` is separate from `model`: `model` transcribes clips and is
+the fallback, `realtime_model` is used for the live stream. OpenAI also
+accepts `gpt-realtime-whisper`, `gpt-4o-transcribe` and
+`gpt-4o-mini-transcribe` here. Set it from Settings > Voice or in
+`moltis.toml`.
+
+Gemini segments speech into utterances with its own voice activity
+detection and auto-detects the language, so `language` and `prompt` are not
+sent on the live stream. Its API key is sent in the `x-goog-api-key` header,
+never in the URL.
+
+How it works:
+
+1. The browser opens `/api/stt/ws`, a WebSocket on the gateway. It checks the
+   `Origin` header and requires the same authentication as the rest of the
+   UI.
+2. The gateway opens the provider's streaming API with the server-side key.
+   API keys never reach the browser.
+3. The browser sends 16-bit PCM mono audio; the gateway relays it and sends
+   back partial and final transcripts.
+
+The browser keeps recording the clip in parallel. If the live stream cannot
+start, fails, or returns nothing, the clip goes through normal clip
+transcription, so nothing said is lost. Conversation mode (VAD) stays on clip
+transcription for now.
+
+Limits: two concurrent streams per client IP, `max_stream_seconds` per stream
+(the stream is then finished and its transcript sent), 30 seconds without
+audio, and 64 KiB per audio frame. Set `streaming = false` to always use clip
+transcription.
+
+#### `/api/stt/ws` protocol
+
+Client to gateway: a JSON `start` message, then binary frames of PCM16
+little-endian mono audio at the `sampleRate` announced in `ready`, then `stop`
+(or `cancel`).
+
+```json
+{"type": "start", "provider": "whisper", "language": "fr"}
+{"type": "stop"}
+{"type": "cancel"}
+```
+
+`provider`, `language` and `prompt` are optional and default to the STT
+configuration.
+
+Gateway to client:
+
+```json
+{"type": "ready", "provider": "whisper", "model": "gpt-live-transcribe", "sampleRate": 24000}
+{"type": "speechStarted"}
+{"type": "partial", "segment": "item_1", "text": "Hello, wor"}
+{"type": "final", "segment": "item_1", "text": "Hello, world."}
+{"type": "done", "text": "Hello, world."}
+{"type": "error", "code": "provider_unavailable", "message": "...", "fallback": true}
+```
+
+A `partial` replaces the previous partial of the same segment. `done` carries
+all finals joined and closes the stream. `fallback: true` means the client
+should transcribe its recorded clip instead; error codes are `protocol`,
+`provider_unavailable` and `provider`.
+
+Metrics: `moltis_voice_stt_streams_total` (labels `provider`, `status`),
+`moltis_voice_stt_stream_duration_seconds` and
+`moltis_voice_stt_stream_audio_bytes_total`.
 
 ### Local Provider Setup
 
@@ -577,7 +653,12 @@ Get current STT status.
 {
   "enabled": true,
   "provider": "whisper",
-  "configured": true
+  "configured": true,
+  "streaming": {
+    "available": true,
+    "provider": "whisper",
+    "model": "gpt-live-transcribe"
+  }
 }
 ```
 
@@ -674,7 +755,8 @@ src/
     ├── voxtral_local.rs # Voxtral via local vLLM server
     ├── cli_utils.rs    # Shared utilities for CLI providers
     ├── whisper_cli.rs  # whisper.cpp CLI wrapper
-    └── sherpa_onnx.rs  # sherpa-onnx CLI wrapper
+    ├── sherpa_onnx.rs  # sherpa-onnx CLI wrapper
+    └── streaming/      # StreamingSttProvider trait, OpenAI Realtime and Gemini Live clients
 ```
 
 ### Key Traits
@@ -698,6 +780,15 @@ pub trait SttProvider: Send + Sync {
     fn is_configured(&self) -> bool;
     async fn transcribe(&self, request: TranscribeRequest) -> Result<Transcript>;
 }
+
+/// Live (streaming) Speech-to-Text provider trait
+#[async_trait]
+pub trait StreamingSttProvider: Send + Sync {
+    fn id(&self) -> SttProviderId;
+    fn model(&self) -> &str;
+    fn input_sample_rate(&self) -> u32;
+    async fn open(&self, request: StreamingSttRequest) -> Result<StreamingSttSession>;
+}
 ```
 
 ### Gateway Integration (`crates/gateway/src/voice.rs`)
@@ -705,6 +796,7 @@ pub trait SttProvider: Send + Sync {
 - `LiveTtsService`: Wraps TTS providers, implements `TtsService` trait
 - `LiveSttService`: Wraps STT providers, implements `SttService` trait
 - `NoopSttService`: No-op for when STT is not configured
+- `voice::stt_stream`: live transcription relay behind `/api/stt/ws`
 
 ### Voice Personas (`crates/gateway/src/voice_persona.rs`)
 
@@ -734,11 +826,16 @@ pub trait SttProvider: Send + Sync {
 3. Re-export from `crates/voice/src/stt/mod.rs`
 4. Add to `LiveSttService` in gateway
 
+For live transcription, also implement `StreamingSttProvider` in
+`crates/voice/src/stt/streaming/` and return it from
+`create_streaming_provider()` in `crates/gateway/src/voice/stt_stream.rs`.
+
 ## Web UI Integration
 
 The voice feature integrates with the web UI:
 
-- **Microphone button**: Record voice input in the chat interface
+- **Microphone button**: Record voice input in the chat interface, with a live
+  transcript when the provider supports streaming
 - **Settings page**: Configure and enable/disable voice providers
 - **Auto-detection**: API keys are detected from environment variables and LLM provider configs
 - **Toggle switches**: Enable/disable providers without removing configuration
