@@ -1,5 +1,5 @@
 const { expect, test } = require("../base-test");
-const { createSession, expectRpcOk, navigateAndWait, waitForWsConnected } = require("../helpers");
+const { createSession, expectRpcOk, navigateAndWait, waitForWsConnected, sessionMenuItem } = require("../helpers");
 
 function readClipboardMarkdown(page) {
 	return page.evaluate(async () => (await navigator.clipboard.readText()).replace(/\r\n/g, "\n"));
@@ -128,7 +128,7 @@ test.describe("Chat Markdown export", () => {
 		});
 
 		const downloadPromise = page.waitForEvent("download");
-		await page.getByRole("button", { name: "Save as Markdown", exact: true }).click();
+		await (await sessionMenuItem(page, "Save as Markdown")).click();
 		const download = await downloadPromise;
 		expect(download.suggestedFilename()).toMatch(/\.md$/);
 
@@ -172,11 +172,10 @@ test.describe("Chat Markdown export", () => {
 
 		const downloads = [];
 		page.on("download", (download) => downloads.push(download));
-		const saveButton = page.getByRole("button", { name: "Save as Markdown", exact: true });
-		await saveButton.click();
+		await (await sessionMenuItem(page, "Save as Markdown")).click();
 
 		await expect(page.getByText("Failed to load complete session history", { exact: true })).toBeVisible();
-		await expect(saveButton).toBeEnabled();
+		await expect(await sessionMenuItem(page, "Save as Markdown")).toBeEnabled();
 		expect(downloads).toHaveLength(0);
 		expect(pageErrors).toEqual([]);
 	});

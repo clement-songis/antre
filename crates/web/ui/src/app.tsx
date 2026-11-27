@@ -7,7 +7,9 @@ import * as _chatUi from "./chat-ui";
 import { installCodeCopyHandler } from "./code-copy";
 import * as _codeHighlight from "./code-highlight";
 import { initHighlighter } from "./code-highlight";
+import { mountContextMenuHost } from "./components/ContextMenu";
 import { SessionList } from "./components/SessionList";
+import { mountSidebarAccount } from "./components/SidebarAccount";
 import * as _events from "./events";
 import { onEvent } from "./events";
 import * as gon from "./gon";
@@ -353,6 +355,8 @@ window.addEventListener("resize", () => {
 	if (window.innerWidth >= 768) closeMobileMenu();
 });
 installCodeCopyHandler();
+mountContextMenuHost();
+mountSidebarAccount();
 document.addEventListener("keydown", (e) => {
 	if (e.key === "Escape") closeMobileMenu();
 	if (e.key === "k" && (e.metaKey || e.ctrlKey)) {

@@ -10,6 +10,7 @@
 
 import { render } from "preact";
 import { chatAddMsg, hideNewContentIndicator, isChatAtBottom, setComposerStopButton } from "../chat-ui";
+import type { MenuItem } from "../components/ContextMenu";
 import { SessionHeader } from "../components/SessionHeader";
 import { formatTokens, sendRpc } from "../helpers";
 import { t } from "../i18n";
@@ -34,6 +35,7 @@ import {
 	sendChat,
 	setMaybeRefreshFullContextFn,
 } from "./chat/chat-send";
+import { mcpToolsEnabled } from "./chat/chat-toggles";
 import {
 	buildPromptMemorySummary,
 	ctxEl,
@@ -248,16 +250,12 @@ function setDebugModalOpen(open: boolean): void {
 	const modal = S.$("debugModal") as HTMLElement | null;
 	if (!modal) return;
 	modal.classList.toggle("hidden", !open);
-	const btn = S.$("debugPanelBtn") as HTMLElement | null;
-	if (btn) btn.style.color = open ? "var(--accent)" : "var(--muted)";
 }
 
 function setFullContextModalOpen(open: boolean): void {
 	const modal = S.$("fullContextModal") as HTMLElement | null;
 	if (!modal) return;
 	modal.classList.toggle("hidden", !open);
-	const btn = S.$("fullContextBtn") as HTMLElement | null;
-	if (btn) btn.style.color = open ? "var(--accent)" : "var(--muted)";
 }
 
 function refreshDebugPanel(): void {
@@ -561,29 +559,28 @@ export function maybeRefreshFullContext(): void {
 
 // ── MCP toggle ───────────────────────────────────────────────
 export function updateMcpToggleUI(enabled: boolean): void {
-	const btn = S.$("mcpToggleBtn") as HTMLElement | null;
-	const label = S.$("mcpToggleLabel") as HTMLElement | null;
-	if (!btn) return;
-	if (enabled) {
-		btn.style.color = "var(--ok)";
-		btn.style.borderColor = "var(--ok)";
-		if (label) label.textContent = "MCP";
-		btn.title = "MCP tools enabled \u2014 click to disable for this session";
-	} else {
-		btn.style.color = "var(--muted)";
-		btn.style.borderColor = "var(--border)";
-		if (label) label.textContent = "MCP off";
-		btn.title = "MCP tools disabled \u2014 click to enable for this session";
-	}
+	mcpToolsEnabled.value = enabled;
 }
 
 function toggleMcp(): void {
-	const label = S.$("mcpToggleLabel") as HTMLElement | null;
-	const isEnabled = label && label.textContent === "MCP";
-	const newDisabled = isEnabled;
-	sendRpc("sessions.patch", { key: S.activeSessionKey, mcpDisabled: newDisabled }).then((res: any) => {
-		if (res?.ok) updateMcpToggleUI(!newDisabled);
+	const nextEnabled = !mcpToolsEnabled.value;
+	sendRpc("sessions.patch", { key: S.activeSessionKey, mcpDisabled: !nextEnabled }).then((res: any) => {
+		if (res?.ok) updateMcpToggleUI(nextEnabled);
 	});
+}
+
+/** Page-level items appended to the session menu in the chat header. */
+function chatMenuItems(): MenuItem[] {
+	return [
+		{
+			id: "mcp",
+			label: mcpToolsEnabled.value ? "Disable MCP tools" : "Enable MCP tools",
+			icon: "icon-link",
+			onSelect: toggleMcp,
+		},
+		{ id: "debug", label: "Debug context", icon: "icon-wrench", onSelect: toggleDebugPanel },
+		{ id: "full-context", label: "Full LLM context", icon: "icon-document", onSelect: toggleFullContextPanel },
+	];
 }
 
 interface ModelNotice {
@@ -686,6 +683,8 @@ function mountSessionHeaderControls(): void {
 				name: S.$("sessionNameMount"),
 				selectors: S.$("sessionHeaderToolbarMount"),
 				actions: S.$("sessionActionsMount"),
+				actionsAsMenu: true,
+				extraMenuItems: chatMenuItems,
 			}}
 		/>,
 		sessionHeaderHost,
@@ -927,20 +926,16 @@ function initializeChatMediaDrop(): void {
 const chatPageHTML =
 	'<div style="position:absolute;inset:0;display:grid;grid-template-rows:auto auto 1fr auto auto auto;overflow:hidden">' +
 	'<div class="chat-toolbar h-12 px-4 border-b border-[var(--border)] bg-[var(--surface)] flex items-center gap-2" style="grid-row:1;">' +
+	// The session title and its menu lead; context pickers and status follow.
+	// overflow-hidden keeps a long session name inside its own box.
+	'<div id="sessionNameMount" class="flex items-center min-w-0 overflow-hidden"></div>' +
+	'<div class="flex-1"></div>' +
 	'<div id="nodeCombo" class="model-combo hidden"><button id="nodeComboBtn" class="model-combo-btn" type="button"><span class="icon icon-sm icon-server" style="flex-shrink:0;"></span><span id="nodeComboLabel">Local</span><span class="icon icon-sm icon-chevron-down model-combo-chevron"></span></button><div id="nodeDropdown" class="model-dropdown hidden" tabindex="-1"><div id="nodeDropdownList" class="model-dropdown-list"></div></div></div>' +
 	'<div id="projectCombo" class="model-combo hidden"><button id="projectComboBtn" class="model-combo-btn" type="button"><span class="icon icon-sm icon-folder" style="flex-shrink:0;"></span><span id="projectComboLabel">No project</span><span class="icon icon-sm icon-chevron-down model-combo-chevron"></span></button><div id="projectDropdown" class="model-dropdown hidden"><div id="projectDropdownList" class="model-dropdown-list"></div></div></div>' +
-	// overflow-hidden keeps a long session name inside its own box. Without it a
-	// crowded toolbar lets the name spill left underneath #projectCombo, which is
-	// position:relative and so paints on top — the name looks clickable but every
-	// click lands on the project combo instead.
-	'<div id="sessionNameMount" class="ml-auto flex items-center min-w-0 overflow-hidden"></div>' +
 	'<div id="approvalsBadgeMount" class="flex items-center"></div>' +
 	'<div id="sessionHeaderToolbarMount" class="flex items-center gap-1.5"></div>' +
 	'<button id="sandboxToggle" class="sandbox-toggle text-xs border border-[var(--border)] px-2 py-1 rounded-md transition-colors cursor-pointer bg-transparent font-[var(--font-body)] inline-flex items-center gap-1" title="Toggle sandbox mode"><span class="icon icon-md icon-lock shrink-0"></span><span id="sandboxLabel">direct</span></button>' +
 	'<div class="chat-badge-desktop-only" style="position:relative;display:inline-block"><button id="sandboxImageBtn" class="text-xs border border-[var(--border)] px-2 py-1 rounded-md transition-colors cursor-pointer bg-transparent font-[var(--font-body)] inline-flex items-center gap-1 text-[var(--muted)]" title="Sandbox image"><span class="icon icon-md icon-cube shrink-0"></span><span id="sandboxImageLabel" class="max-w-[120px] truncate">unavailable</span></button><div id="sandboxImageDropdown" class="hidden" style="position:absolute;top:100%;left:0;z-index:50;margin-top:4px;min-width:200px;max-height:300px;overflow-y:auto;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.15);"></div></div>' +
-	'<button id="mcpToggleBtn" class="chat-badge-desktop-only text-xs border border-[var(--border)] px-2 py-1 rounded-md transition-colors cursor-pointer bg-transparent font-[var(--font-body)] inline-flex items-center gap-1" title="Toggle MCP tools for this session"><span class="icon icon-md icon-link shrink-0"></span><span id="mcpToggleLabel">MCP</span></button>' +
-	'<button id="debugPanelBtn" class="chat-badge-desktop-only text-xs border border-[var(--border)] px-2 py-1 rounded-md transition-colors cursor-pointer bg-transparent font-[var(--font-body)] inline-flex items-center gap-1 text-[var(--muted)]" title="Show context debug info"><span class="icon icon-md icon-wrench shrink-0"></span><span id="debugPanelLabel">Debug</span></button>' +
-	'<button id="fullContextBtn" class="chat-badge-desktop-only text-xs border border-[var(--border)] px-2 py-1 rounded-md transition-colors cursor-pointer bg-transparent font-[var(--font-body)] inline-flex items-center gap-1 text-[var(--muted)]" title="Show full LLM context (system prompt + history)"><span class="icon icon-md icon-document shrink-0"></span><span id="fullContextLabel">Context</span></button>' +
 	'<div id="sessionActionsMount" class="flex items-center gap-1.5"></div></div>' +
 	'<div id="debugModal" class="provider-modal-backdrop hidden"><div class="provider-modal" style="width:min(980px,96vw);max-width:96vw;max-height:88vh;"><div class="provider-modal-header"><div class="provider-item-name">Debug context</div><button id="debugModalCloseBtn" type="button" class="provider-btn provider-btn-secondary provider-btn-sm">Close</button></div><div class="provider-modal-body" style="padding:0;overflow:hidden;"><div id="debugPanel" class="px-4 py-3 overflow-y-auto" style="max-height:72vh;"></div></div></div></div>' +
 	'<div id="fullContextModal" class="provider-modal-backdrop hidden"><div class="provider-modal" style="width:min(1080px,96vw);max-width:96vw;max-height:88vh;"><div class="provider-modal-header"><div class="provider-item-name">Full context</div><button id="fullContextModalCloseBtn" type="button" class="provider-btn provider-btn-secondary provider-btn-sm">Close</button></div><div class="provider-modal-body" style="padding:0;overflow:hidden;"><div id="fullContextPanel" class="px-4 py-3 overflow-y-auto" style="max-height:72vh;"></div></div></div></div>' +
@@ -981,15 +976,9 @@ registerPrefix(
 		mountApprovalControls();
 		bindChatShortcuts();
 
-		const mcpToggle = S.$("mcpToggleBtn");
-		if (mcpToggle) mcpToggle.addEventListener("click", toggleMcp);
 		updateMcpToggleUI(true);
 
 		bindContextModals();
-
-		const debugBtn = S.$("debugPanelBtn");
-		if (debugBtn) debugBtn.addEventListener("click", toggleDebugPanel);
-		S.$("fullContextBtn")?.addEventListener("click", toggleFullContextPanel);
 
 		syncModelComboLabel();
 		const sessionKey = resolveInitialSessionKey(sessionKeyFromUrl ?? null);

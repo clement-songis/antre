@@ -8,6 +8,7 @@ const {
 	waitForChatSessionReady,
 	waitForWsConnected,
 	watchPageErrors,
+	sessionMenuItem,
 } = require("../helpers");
 
 function sessionKeysInSidebar(page) {
@@ -199,7 +200,7 @@ test.describe("Session management", () => {
 		await waitForWsConnected(page);
 		await createSession(page);
 
-		await expect(page.getByRole("button", { name: "Auto-title" })).toBeVisible();
+		await expect(await sessionMenuItem(page, "Auto-title")).toBeVisible();
 
 		expect(pageErrors).toEqual([]);
 	});
@@ -208,7 +209,7 @@ test.describe("Session management", () => {
 		const pageErrors = await navigateAndWait(page, "/");
 		await waitForWsConnected(page);
 
-		await page.locator("#fullContextBtn").click();
+		await (await sessionMenuItem(page, "Full LLM context")).click();
 		await expect(page.locator("#fullContextModal")).toBeVisible({ timeout: 10_000 });
 		await page.locator("#fullContextModalCloseBtn").click();
 		await expect(page.locator("#fullContextModal")).toBeHidden({ timeout: 10_000 });
@@ -461,14 +462,15 @@ test.describe("Session management", () => {
 		await waitForWsConnected(page);
 		await expectPageContentMounted(page);
 
-		await expect(page.locator('button[title="Clear session"]')).toBeVisible();
-		await expect(page.locator('button[title="Delete session"]')).toBeVisible();
-		await expect(page.locator('button[title="Archive session"]')).toBeVisible();
+		await expect(await sessionMenuItem(page, "Clear session")).toBeVisible();
+		await expect(await sessionMenuItem(page, "Delete session")).toBeVisible();
+		await expect(await sessionMenuItem(page, "Archive session")).toBeVisible();
+		await page.keyboard.press("Escape");
 
 		await createSession(page);
 
-		await expect(page.locator('button[title="Clear session"]')).toHaveCount(0);
-		await expect(page.locator('button[title="Delete session"]')).toBeVisible();
+		await expect(await sessionMenuItem(page, "Clear session")).toHaveCount(0);
+		await expect(await sessionMenuItem(page, "Delete session")).toBeVisible();
 
 		expect(pageErrors).toEqual([]);
 	});
@@ -488,7 +490,7 @@ test.describe("Session management", () => {
 
 		await expect(sessionItem).toBeVisible({ timeout: 10_000 });
 
-		await page.locator('button[title="Archive session"]').click();
+		await (await sessionMenuItem(page, "Archive session")).click();
 		await expect(page).toHaveURL(/\/chats\/main$/);
 		await expect(sessionItem).toHaveCount(0);
 
@@ -500,7 +502,7 @@ test.describe("Session management", () => {
 		await sessionItem.click();
 		await expect(page).toHaveURL(new RegExp(`/chats/${sessionKey.replace(/:/g, "/")}$`));
 
-		await page.locator('button[title="Unarchive session"]').click();
+		await (await sessionMenuItem(page, "Unarchive session")).click();
 		await expect(sessionItem).toBeVisible({ timeout: 10_000 });
 
 		await archivedToggle.uncheck();
@@ -517,7 +519,7 @@ test.describe("Session management", () => {
 		const mainItem = page.locator('#sessionList .session-item[data-session-key="main"]');
 		await expect(mainItem).toBeVisible({ timeout: 10_000 });
 
-		await page.locator('button[title="Archive session"]').click();
+		await (await sessionMenuItem(page, "Archive session")).click();
 		await expect(mainItem).toHaveCount(0);
 
 		const archivedToggle = page.locator("#showArchivedSessions");
@@ -525,8 +527,9 @@ test.describe("Session management", () => {
 		await archivedToggle.check();
 		await expect(mainItem).toBeVisible({ timeout: 10_000 });
 
-		await page.locator('button[title="Unarchive session"]').click();
-		await expect(page.locator('button[title="Archive session"]')).toBeVisible({ timeout: 10_000 });
+		await (await sessionMenuItem(page, "Unarchive session")).click();
+		await expect(await sessionMenuItem(page, "Archive session")).toBeVisible({ timeout: 10_000 });
+		await page.keyboard.press("Escape");
 
 		await archivedToggle.uncheck();
 		await expect(mainItem).toBeVisible({ timeout: 10_000 });
@@ -550,7 +553,7 @@ test.describe("Session management", () => {
 			.poll(() => page.evaluate(() => window.__moltis_stores?.sessionStore?.getByKey?.("main")?.messageCount || 0))
 			.toBe(0);
 
-		const deleteBtn = page.getByRole("button", { name: "Delete", exact: true });
+		const deleteBtn = await sessionMenuItem(page, "Delete session");
 		await expect(deleteBtn).toBeVisible({ timeout: 10_000 });
 		await deleteBtn.click();
 
@@ -773,7 +776,7 @@ test.describe("Session management", () => {
 			}
 		});
 
-		await page.locator('button[title="Share snapshot"]').click();
+		await (await sessionMenuItem(page, "Share snapshot")).click();
 		await expect(page.locator('[data-share-visibility="public"]')).toBeVisible({ timeout: 10_000 });
 		await expect(
 			page.getByText(
@@ -814,7 +817,7 @@ test.describe("Session management", () => {
 		const pageErrors = await navigateAndWait(page, "/");
 		await waitForWsConnected(page);
 
-		await page.locator('button[title="Share snapshot"]').click();
+		await (await sessionMenuItem(page, "Share snapshot")).click();
 		await expect(page.locator('[data-share-visibility="public"]')).toBeVisible({ timeout: 10_000 });
 		await page.locator('[data-share-visibility="public"]').click();
 
@@ -965,7 +968,7 @@ test.describe("Session management", () => {
 
 		await createSession(page);
 		const parentKey = await page.evaluate(() => window.__moltis_stores?.sessionStore?.activeSessionKey?.value);
-		const forkBtn = page.locator('button[title="Fork session"]');
+		const forkBtn = await sessionMenuItem(page, "Fork session");
 		await expect(forkBtn).toBeVisible({ timeout: 10_000 });
 		await forkBtn.click();
 		await expect
@@ -1011,14 +1014,14 @@ test.describe("Session management", () => {
 
 		// Create a parent session, then fork it for a real unmodified fork.
 		await createSession(page);
-		const forkBtn = page.locator('button[title="Fork session"]');
+		const forkBtn = await sessionMenuItem(page, "Fork session");
 		await expect(forkBtn).toBeVisible({ timeout: 10_000 });
 		const parentSessionUrl = page.url();
 		await forkBtn.click();
 		await expect.poll(() => page.url(), { timeout: 10_000 }).not.toBe(parentSessionUrl);
 
 		const forkSessionUrl = page.url();
-		const deleteBtn = page.locator('button[title="Delete session"]');
+		const deleteBtn = await sessionMenuItem(page, "Delete session");
 		await expect(deleteBtn).toBeVisible({ timeout: 10_000 });
 		await deleteBtn.click();
 
@@ -1060,7 +1063,7 @@ test.describe("Session management", () => {
 			)
 			.toBe(true);
 
-		const deleteBtn = page.locator('button[title="Delete session"]');
+		const deleteBtn = await sessionMenuItem(page, "Delete session");
 		await expect(deleteBtn).toBeVisible();
 		await deleteBtn.click();
 
@@ -1251,8 +1254,8 @@ test.describe("Session management", () => {
 		await expect(page.locator(".msg")).not.toHaveCount(0, { timeout: 5_000 });
 
 		// Verify delete and archive buttons are visible
-		const archiveBtn = page.locator('button[title="Archive session"]');
-		const deleteBtn = page.locator('button[title="Delete session"]');
+		const archiveBtn = await sessionMenuItem(page, "Archive session");
+		const deleteBtn = await sessionMenuItem(page, "Delete session");
 		await expect(archiveBtn).toBeVisible({ timeout: 5_000 });
 		await expect(deleteBtn).toBeVisible({ timeout: 5_000 });
 

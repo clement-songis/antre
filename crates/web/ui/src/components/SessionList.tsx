@@ -18,10 +18,13 @@ import {
 } from "../icons";
 import { currentPrefix, navigate, sessionPath } from "../router";
 import { switchSession } from "../sessions";
+import { pendingDeleteKeys, pinnedSessionKeys, renameSession, renamingSessionKey } from "../sessions/session-actions";
+import { sessionMenu } from "../sessions/session-menu";
 import { sessionHasPendingApproval } from "../stores/approval-store";
 import * as projectStore from "../stores/project-store";
 import { type Session, sessionStore } from "../stores/session-store";
 import { ChannelType } from "../types";
+import { contextMenuTrigger, MenuButton } from "./ContextMenu";
 
 // ── Braille spinner ───────────��─────────────────────────────
 const spinnerFrames: string[] = [
@@ -223,6 +226,37 @@ interface SessionItemProps {
 	expanded: boolean;
 }
 
+function SessionRenameInput({ session }: { session: Session }): VNode {
+	const ref = useRef<HTMLInputElement>(null);
+	useEffect(() => {
+		ref.current?.focus();
+		ref.current?.select();
+	}, []);
+	const finish = (commit: boolean): void => {
+		const value = ref.current?.value || "";
+		renamingSessionKey.value = null;
+		if (commit && value.trim() && value.trim() !== session.label) void renameSession(session.key, value);
+	};
+	return (
+		<input
+			ref={ref}
+			className="session-rename-input min-w-0 flex-1 text-xs bg-[var(--surface2)] border border-[var(--border)] rounded px-1 text-[var(--text)]"
+			aria-label="Session name"
+			defaultValue={session.label || ""}
+			onClick={(e) => {
+				e.preventDefault();
+				e.stopPropagation();
+			}}
+			onKeyDown={(e) => {
+				e.stopPropagation();
+				if (e.key === "Enter") finish(true);
+				else if (e.key === "Escape") finish(false);
+			}}
+			onBlur={() => finish(true)}
+		/>
+	);
+}
+
 function SessionItem({
 	session,
 	activeKey,
@@ -283,8 +317,11 @@ function SessionItem({
 		sessionStore.toggleSessionExpanded(session.key);
 	}
 
+	const renaming = renamingSessionKey.value === session.key;
+	const trigger = contextMenuTrigger(() => sessionMenu(session));
+
 	return (
-		<a href={href} className={className} data-session-key={session.key} style={style} onClick={onClick}>
+		<a href={href} className={className} data-session-key={session.key} style={style} onClick={onClick} {...trigger}>
 			<div className="session-info">
 				<div className="session-label">
 					{descendantCount > 0 && (
@@ -303,7 +340,14 @@ function SessionItem({
 						</button>
 					)}
 					<SessionIcon session={session} isBranch={isBranch} />
-					<span data-label-text>{session.label || session.key}</span>
+					{pinnedSessionKeys.value.has(session.key) ? (
+						<span className="icon icon-xs icon-list-plus text-[var(--muted)]" title="Pinned" aria-hidden="true" />
+					) : null}
+					{renaming ? (
+						<SessionRenameInput session={session} />
+					) : (
+						<span data-label-text>{session.label || session.key}</span>
+					)}
 					{showAgentBadge && (
 						<span
 							className="text-[10px] text-[var(--muted)] border border-[var(--border)] rounded px-1 py-0 ml-1"
@@ -317,6 +361,11 @@ function SessionItem({
 							{formatSessionTimestamp(ts, nowMs)}
 						</span>
 					)}
+					<MenuButton
+						className="session-menu-btn"
+						label={`Actions for ${session.label || session.key}`}
+						getMenu={() => sessionMenu(session)}
+					/>
 				</div>
 				{preview && <div className="session-preview">{preview}</div>}
 				<SessionMeta session={session} />
@@ -366,7 +415,11 @@ export function SessionList(): VNode {
 		return () => clearTimeout(timer);
 	}, []);
 
-	let filtered = filterId ? allSessions.filter((s) => s.projectId === filterId) : allSessions;
+	const pendingDelete = pendingDeleteKeys.value;
+	const pinned = pinnedSessionKeys.value;
+	let filtered = (filterId ? allSessions.filter((s) => s.projectId === filterId) : allSessions).filter(
+		(s) => !pendingDelete.has(s.key),
+	);
 	if (tab === "sessions") {
 		filtered = filtered.filter((s) => !(s.key || "").startsWith("cron:") && (showArchived || !s.archived));
 	} else if (tab === "cron") {
@@ -383,7 +436,10 @@ export function SessionList(): VNode {
 			childrenMap[s.parentSessionKey].push(s);
 		}
 	});
-	const roots = filtered.filter((s) => !(s.parentSessionKey && keyMap[s.parentSessionKey]));
+	// Pinned sessions first; the sort is stable, so each group keeps its order.
+	const roots = filtered
+		.filter((s) => !(s.parentSessionKey && keyMap[s.parentSessionKey]))
+		.sort((a, b) => Number(pinned.has(b.key)) - Number(pinned.has(a.key)));
 
 	// Keep the active session reachable: its ancestors stay open even when collapsed.
 	const activeAncestors = new Set<string>();

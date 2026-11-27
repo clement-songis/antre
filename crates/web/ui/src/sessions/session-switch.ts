@@ -4,6 +4,7 @@ import { chatAddMsg, removeThinking, setComposerStopButton, updateCommandInputUI
 import { sendRpc } from "../helpers";
 import { modelDisplayLabel, modelTitle, updateModelComboAvailability } from "../models";
 import { restoreNodeSelection } from "../nodes-selector";
+import { mcpToolsEnabled } from "../pages/chat/chat-toggles";
 import { currentThinkingText as liveThinkingText, resumeStreamedText } from "../pages/chat/transcript/actions";
 import { clearTranscript } from "../pages/chat/transcript/store";
 import { updateSessionProjectSelect } from "../project-combo";
@@ -92,13 +93,7 @@ const latestSwitchRequestBySession = new Map<string, number>();
 
 // ── MCP toggle restore ──────────────────────────────────────
 function restoreMcpToggle(mcpEnabled: boolean): void {
-	const mcpBtn = S.$("mcpToggleBtn");
-	const mcpLabel = S.$("mcpToggleLabel");
-	if (mcpBtn) {
-		mcpBtn.style.color = mcpEnabled ? "var(--ok)" : "var(--muted)";
-		mcpBtn.style.borderColor = mcpEnabled ? "var(--ok)" : "var(--border)";
-	}
-	if (mcpLabel) mcpLabel.textContent = mcpEnabled ? "MCP" : "MCP off";
+	mcpToolsEnabled.value = mcpEnabled;
 }
 
 // ── Restore session state ───────────────────────────────────

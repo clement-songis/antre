@@ -135,7 +135,7 @@ test.describe("Chat transcript components", () => {
 	test("the session header is mounted once", async ({ page }) => {
 		const pageErrors = watchPageErrors(page);
 		await expect(page.locator(".chat-toolbar .chat-session-name")).toHaveCount(1);
-		await expect(page.locator('.chat-toolbar [aria-label="Save as Markdown"]')).toHaveCount(1);
+		await expect(page.getByRole("button", { name: "Session actions", exact: true })).toHaveCount(1);
 		expect(pageErrors).toEqual([]);
 	});
 

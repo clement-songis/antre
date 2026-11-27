@@ -360,7 +360,21 @@ async function expectNoPageHorizontalOverflow(page, label = "page", testInfo = n
 	return overflow;
 }
 
+/**
+ * Open the chat header's session menu (unless a menu is already open) and
+ * return the menu item called `name`.
+ */
+async function sessionMenuItem(page, name) {
+	const menu = page.getByRole("menu");
+	if (!(await menu.isVisible().catch(() => false))) {
+		await page.getByRole("button", { name: "Session actions", exact: true }).click();
+		await expect(menu).toBeVisible();
+	}
+	return menu.getByRole("menuitem", { name, exact: true });
+}
+
 module.exports = {
+	sessionMenuItem,
 	expectPageContentMounted,
 	watchPageErrors,
 	waitForWsConnected,

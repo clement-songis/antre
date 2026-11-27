@@ -4,7 +4,7 @@
 // send the clearing patch.
 
 const { expect, test } = require("../base-test");
-const { createSession, navigateAndWait, waitForWsConnected } = require("../helpers");
+const { createSession, navigateAndWait, waitForWsConnected, sessionMenuItem } = require("../helpers");
 
 // Capture outgoing RPC payloads without letting them reach the server: the
 // server would (correctly) reject clearing a binding this test only faked
@@ -43,10 +43,9 @@ async function captureRpc(page, method) {
 	}, method);
 }
 
-// SessionHeader is mounted three times (name, toolbar, actions), so every one of
-// its controls appears three times. Scope to the actions mount.
-function releaseControl(page) {
-	return page.locator("#sessionActionsMount").getByTestId("session-unbind-channel");
+// The release action lives in the chat header's session menu.
+async function releaseControl(page) {
+	return sessionMenuItem(page, "Release channel");
 }
 
 // Mark the active session as attached to a Telegram chat whose own default
@@ -82,7 +81,7 @@ test.describe("Releasing a session from its channel", () => {
 
 		await markSessionAttached(page);
 
-		const release = releaseControl(page);
+		const release = await releaseControl(page);
 		await expect(release).toBeVisible({ timeout: 10_000 });
 		// The label must say what it restores, not just "unbind".
 		await expect(release).toHaveAttribute("title", /without tools or private context/);
@@ -128,7 +127,7 @@ test.describe("Releasing a session from its channel", () => {
 			)
 			.toBe(true);
 
-		await expect(releaseControl(page)).toHaveCount(0);
+		await expect(await releaseControl(page)).toHaveCount(0);
 		expect(pageErrors).toEqual([]);
 	});
 });

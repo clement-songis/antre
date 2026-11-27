@@ -214,7 +214,7 @@ async function fullContextPanelState(copyBtn, copiedBtn, downloadBtn, llmOutputB
 
 async function openFullContextWithRetry(page) {
 	const fullContextModal = page.locator("#fullContextModal");
-	const toggleBtn = page.locator("#fullContextBtn");
+	const sessionMenuButton = page.getByRole("button", { name: "Session actions", exact: true });
 	const panel = page.locator("#fullContextPanel");
 	const copyBtn = panel.getByRole("button", { name: "Copy", exact: true });
 	const copiedBtn = panel.getByRole("button", { name: "Copied!", exact: true });
@@ -226,8 +226,9 @@ async function openFullContextWithRetry(page) {
 		await waitForWsConnectedIfPossible(page);
 		await closeFullContextIfOpen(page, fullContextModal);
 
-		await expect(toggleBtn).toBeVisible({ timeout: 8_000 });
-		await toggleBtn.click();
+		await expect(sessionMenuButton).toBeVisible({ timeout: 8_000 });
+		await sessionMenuButton.click();
+		await page.getByRole("menuitem", { name: "Full LLM context", exact: true }).click();
 		await expect(fullContextModal).toBeVisible({ timeout: 8_000 });
 		await expect(panel).toBeVisible();
 

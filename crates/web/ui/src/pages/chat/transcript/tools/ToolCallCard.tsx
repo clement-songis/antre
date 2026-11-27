@@ -1,10 +1,12 @@
 // ── Collapsible tool call card and groups ───────────────────
 
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
+import { contextMenuTrigger, MenuButton } from "../../../../components/ContextMenu";
 import { navigate } from "../../../../router";
 import type { ToolResult } from "../../../../types/ws-events";
 import { appendToolResult, type ToolResultParts } from "../../../../ws/tool-helpers";
 import { ReasoningDisclosure, UsageFooter } from "../Messages";
+import { toolCardMenu } from "../message-menu";
 import type { ToolItem } from "../model";
 import { toolNoun, toolView } from "./registry";
 import { isRecord, plural } from "./shared";
@@ -122,34 +124,38 @@ export function ToolCallCard({ item, sessionKey }: ToolCallCardProps) {
 		<div
 			className={`msg exec-card tool-card ${state}${expanded ? " expanded" : ""}`}
 			id={item.id}
+			{...contextMenuTrigger(() => toolCardMenu(item))}
 			data-tool-name={item.name}
 			data-tool-state={item.status}
 			data-history-index={item.historyIndex}
 		>
-			<button
-				type="button"
-				className="tool-card-header"
-				aria-expanded={expanded}
-				aria-controls={bodyId}
-				onClick={() => setOpen(!expanded)}
-			>
-				<span className={`icon icon-sm ${view.icon} tool-card-icon`} aria-hidden="true" />
-				<span className="tool-card-verb">{view.verb}</span>
-				{view.target ? (
-					<span className="tool-card-target" title={view.target}>
-						{view.target}
-					</span>
-				) : null}
-				{view.badge ? <span className="tool-card-badge">{view.badge}</span> : null}
-				<span className="tool-card-meta">
-					{item.status === "running" ? <span className="exec-status">running{"…"}</span> : null}
-					{elapsed ? <span className="tool-card-elapsed">{elapsed}</span> : null}
-					{STATUS_ICON[state] ? (
-						<span className={`icon icon-xs ${STATUS_ICON[state]} tool-card-status`} aria-hidden="true" />
+			<div className="tool-card-head-row">
+				<button
+					type="button"
+					className="tool-card-header"
+					aria-expanded={expanded}
+					aria-controls={bodyId}
+					onClick={() => setOpen(!expanded)}
+				>
+					<span className={`icon icon-sm ${view.icon} tool-card-icon`} aria-hidden="true" />
+					<span className="tool-card-verb">{view.verb}</span>
+					{view.target ? (
+						<span className="tool-card-target" title={view.target}>
+							{view.target}
+						</span>
 					) : null}
-					<span className="icon icon-xs icon-chevron-right tool-card-chevron" aria-hidden="true" />
-				</span>
-			</button>
+					{view.badge ? <span className="tool-card-badge">{view.badge}</span> : null}
+					<span className="tool-card-meta">
+						{item.status === "running" ? <span className="exec-status">running{"…"}</span> : null}
+						{elapsed ? <span className="tool-card-elapsed">{elapsed}</span> : null}
+						{STATUS_ICON[state] ? (
+							<span className={`icon icon-xs ${STATUS_ICON[state]} tool-card-status`} aria-hidden="true" />
+						) : null}
+						<span className="icon icon-xs icon-chevron-right tool-card-chevron" aria-hidden="true" />
+					</span>
+				</button>
+				<MenuButton className="tool-card-menu-btn" label="Tool call actions" getMenu={() => toolCardMenu(item)} />
+			</div>
 			<div className="tool-card-body" id={bodyId} hidden={!expanded}>
 				{view.body}
 				<GenericResult item={item} sessionKey={sessionKey} parts="text" />

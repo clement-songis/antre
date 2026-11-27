@@ -9,21 +9,34 @@ import { t } from "./i18n";
 
 // ── Toast notifications ──────────────────────────────────────
 
+interface ToastAction {
+	label: string;
+	onClick: () => void;
+}
+
 interface Toast {
 	id: number;
 	message: string;
 	type: string;
+	action?: ToastAction;
 }
 
 export const toasts: Signal<Toast[]> = signal([]);
 let toastId = 0;
 
-export function showToast(message: string, type: string = "info"): void {
+export function dismissToast(id: number): void {
+	toasts.value = toasts.value.filter((toast) => toast.id !== id);
+}
+
+export function showToast(
+	message: string,
+	type: string = "info",
+	options: { action?: ToastAction; durationMs?: number } = {},
+): number {
 	const id = ++toastId;
-	toasts.value = toasts.value.concat([{ id: id, message: message, type: type }]);
-	setTimeout(() => {
-		toasts.value = toasts.value.filter((toast) => toast.id !== id);
-	}, 4000);
+	toasts.value = toasts.value.concat([{ id: id, message: message, type: type, action: options.action }]);
+	setTimeout(() => dismissToast(id), options.durationMs ?? 4000);
+	return id;
 }
 
 export async function copyToClipboard(
@@ -84,8 +97,21 @@ export function Toasts(): VNode {
 							background: bg,
 							boxShadow: "0 4px 12px rgba(0,0,0,.15)",
 						}}
+						role="status"
 					>
 						{toast.message}
+						{toast.action ? (
+							<button
+								type="button"
+								className="toast-action-btn"
+								onClick={() => {
+									dismissToast(toast.id);
+									toast.action?.onClick();
+								}}
+							>
+								{toast.action.label}
+							</button>
+						) : null}
 					</div>
 				);
 			})}

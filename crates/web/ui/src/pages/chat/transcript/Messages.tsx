@@ -8,6 +8,7 @@
 import type { ComponentChildren } from "preact";
 import { useEffect, useLayoutEffect, useRef } from "preact/hooks";
 import { appendChannelFooter } from "../../../chat-ui";
+import { contextMenuTrigger, MenuButton } from "../../../components/ContextMenu";
 import {
 	formatAssistantTokenUsage,
 	formatTokenSpeed,
@@ -19,6 +20,7 @@ import { appendMessageActions } from "../../../message-actions";
 import { upsertTtsProviderFooter } from "../../../message-voice";
 import { showThinkingTail } from "../../../ws/shared";
 import { Markdown } from "./Markdown";
+import { assistantMessageMenu, userMessageMenu } from "./message-menu";
 import type { AssistantItem, AssistantUsage, DomItem, NoticeItem, ThinkingItem, UserItem } from "./model";
 import { UserActions } from "./UserActions";
 
@@ -49,7 +51,12 @@ interface UserMessageProps {
 export function UserMessage({ item, sessionKey }: UserMessageProps) {
 	const hasText = item.text.trim().length > 0;
 	return (
-		<div className="msg user" data-item-id={item.id} data-history-index={item.historyIndex}>
+		<div
+			className="msg user"
+			data-item-id={item.id}
+			data-history-index={item.historyIndex}
+			{...contextMenuTrigger(() => userMessageMenu(item, sessionKey))}
+		>
 			{item.audioSrc ? (
 				<ImperativeSlot mount={(el) => renderAudioPlayer(el, item.audioSrc as string)} deps={[item.audioSrc]} />
 			) : null}
@@ -177,6 +184,7 @@ export function AssistantMessage({ item, sessionKey, isLast, children }: Assista
 			data-item-id={item.id}
 			data-history-index={item.historyIndex}
 			data-run-id={item.runId}
+			{...(item.final ? contextMenuTrigger(() => assistantMessageMenu(item, sessionKey)) : {})}
 		>
 			{item.audioSrc ? (
 				<ImperativeSlot
@@ -192,6 +200,11 @@ export function AssistantMessage({ item, sessionKey, isLast, children }: Assista
 			{item.final ? <ReasoningDisclosure text={item.reasoning} /> : null}
 			{item.final ? (
 				<UsageFooter usage={item.usage} replyMedium={item.replyMedium} createdAt={item.createdAt} showTime={isLast} />
+			) : null}
+			{item.final ? (
+				<div className="msg-menu-slot">
+					<MenuButton label="More actions" getMenu={() => assistantMessageMenu(item, sessionKey)} />
+				</div>
 			) : null}
 			{children}
 		</div>

@@ -19,6 +19,12 @@ function updateThemeButtons(activeMode: string): void {
 	});
 }
 
+/** Apply and remember a theme mode ("light", "dark" or "system"). */
+export function setThemeMode(mode: string): void {
+	localStorage.setItem("moltis-theme", mode);
+	applyTheme(mode);
+}
+
 export function initTheme(): void {
 	const saved = localStorage.getItem("moltis-theme") || "system";
 	applyTheme(saved);
@@ -43,8 +49,7 @@ export function initTheme(): void {
 		if (!btn) return;
 		const mode = btn.getAttribute("data-theme-val");
 		if (!mode) return;
-		localStorage.setItem("moltis-theme", mode);
-		applyTheme(mode);
+		setThemeMode(mode);
 	});
 }
 

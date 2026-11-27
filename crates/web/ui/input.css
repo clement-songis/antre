@@ -482,6 +482,145 @@
     color: var(--muted);
     font-style: italic;
   }
+  /* Context menus (popover on desktop, bottom sheet on phones) */
+  .context-menu-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+  }
+  .context-menu-backdrop.is-sheet {
+    background: color-mix(in srgb, var(--bg) 55%, transparent);
+    display: flex;
+    align-items: flex-end;
+  }
+  .context-menu {
+    position: fixed;
+    min-width: 180px;
+    max-width: min(320px, calc(100vw - 16px));
+    padding: 4px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 8px 24px color-mix(in srgb, var(--text) 18%, transparent);
+    display: flex;
+    flex-direction: column;
+  }
+  .context-menu.context-sheet {
+    position: static;
+    width: 100%;
+    max-width: none;
+    border-radius: var(--radius) var(--radius) 0 0;
+    padding: 8px 8px calc(8px + var(--safe-bottom, 0px));
+  }
+  .context-sheet-title {
+    font-size: 0.75rem;
+    color: var(--muted);
+    padding: 6px 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .context-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 6px 10px;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font: inherit;
+    font-size: 0.82rem;
+    text-align: left;
+    cursor: pointer;
+  }
+  .context-sheet .context-menu-item {
+    padding: 12px 10px;
+    font-size: 0.95rem;
+  }
+  .context-menu-item:hover,
+  .context-menu-item:focus-visible {
+    background: var(--surface2);
+    outline: none;
+  }
+  .context-menu-item:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+  .context-menu-item.is-danger {
+    color: var(--error);
+  }
+  .context-menu-separator {
+    border: none;
+    height: 1px;
+    margin: 4px 6px;
+    background: var(--border);
+  }
+  .context-sheet-cancel {
+    justify-content: center;
+    margin-top: 4px;
+    border-top: 1px solid var(--border);
+  }
+  .toast-action-btn {
+    margin-left: 12px;
+    padding: 2px 8px;
+    background: transparent;
+    border: 1px solid currentColor;
+    border-radius: var(--radius-sm);
+    color: inherit;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .session-menu-btn {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    margin-left: 2px;
+    opacity: 0;
+  }
+  .session-item:hover .session-menu-btn,
+  .session-item.active .session-menu-btn,
+  .session-menu-btn:focus-visible,
+  .session-menu-btn[aria-expanded="true"] {
+    opacity: 1;
+  }
+  @media (hover: none) {
+    .session-menu-btn {
+      opacity: 1;
+    }
+  }
+  /* The sidebar account menu holds the top bar's links and settings. */
+  @media (min-width: 768px) {
+    body.has-sidebar-account header .header-actions {
+      display: none;
+    }
+  }
+  .sidebar-account-btn:hover,
+  .sidebar-account-btn:focus-visible {
+    background: var(--surface2);
+  }
+  .menu-trigger-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .menu-trigger-btn:hover,
+  .menu-trigger-btn:focus-visible,
+  .menu-trigger-btn[aria-expanded="true"] {
+    color: var(--text);
+    background: var(--surface2);
+  }
+
   /* Collapsible tool cards (per-tool renderers) */
   .msg.exec-card.tool-card {
     padding: 0;
@@ -492,6 +631,44 @@
   }
   .msg.exec-card.tool-card.expanded {
     width: min(760px, 85%);
+  }
+  .tool-card-head-row {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+  }
+  .tool-card-head-row > .tool-card-header {
+    flex: 1;
+  }
+  .tool-card-menu-btn {
+    margin-right: 4px;
+    flex-shrink: 0;
+    opacity: 0;
+  }
+  .tool-card:hover .tool-card-menu-btn,
+  .tool-card-menu-btn:focus-visible,
+  .tool-card-menu-btn[aria-expanded="true"] {
+    opacity: 1;
+  }
+  .msg-menu-slot {
+    display: flex;
+    justify-content: flex-end;
+    height: 0;
+  }
+  .msg-menu-slot > .menu-trigger-btn {
+    transform: translateY(6px);
+    opacity: 0;
+  }
+  .msg.assistant:hover .msg-menu-slot > .menu-trigger-btn,
+  .msg-menu-slot > .menu-trigger-btn:focus-visible,
+  .msg-menu-slot > .menu-trigger-btn[aria-expanded="true"] {
+    opacity: 1;
+  }
+  @media (hover: none) {
+    .tool-card-menu-btn,
+    .msg-menu-slot > .menu-trigger-btn {
+      opacity: 1;
+    }
   }
   .tool-card-header {
     display: flex;

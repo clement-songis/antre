@@ -1,9 +1,12 @@
 // ── Edit and rewind actions on a user message ───────────────
 
+import { signal } from "@preact/signals";
 import { useEffect, useRef, useState } from "preact/hooks";
+import { MenuButton } from "../../../components/ContextMenu";
 import { sessionStore } from "../../../stores/session-store";
 import { reportRewindError } from "../RewindDialog";
 import { editAndResend, fetchRewindPoints, pointForUserItem, rewindTarget } from "../rewind";
+import { userMessageMenu } from "./message-menu";
 import type { UserItem } from "./model";
 
 interface UserActionsProps {
@@ -11,15 +14,31 @@ interface UserActionsProps {
 	sessionKey: string;
 }
 
-async function resolvePoint(item: UserItem, sessionKey: string) {
+/** The user message being edited in place, if any. */
+export const editingUserItemId = signal<string | null>(null);
+
+export async function resolvePoint(item: UserItem, sessionKey: string) {
 	const points = await fetchRewindPoints(sessionKey);
 	const point = pointForUserItem(item, points);
 	if (!point) throw new Error("This message is not in the saved history yet");
 	return { point, points };
 }
 
+/** Open the rewind dialog for this user message. */
+export async function openRewindFor(item: UserItem, sessionKey: string): Promise<void> {
+	try {
+		const { point, points } = await resolvePoint(item, sessionKey);
+		rewindTarget.value = { sessionKey, point, points };
+	} catch (err) {
+		reportRewindError(err);
+	}
+}
+
 export function UserActions({ item, sessionKey }: UserActionsProps) {
-	const [editing, setEditing] = useState(false);
+	const editing = editingUserItemId.value === item.id;
+	const setEditing = (value: boolean) => {
+		editingUserItemId.value = value ? item.id : null;
+	};
 	const [hasText, setHasText] = useState(true);
 	const [busy, setBusy] = useState(false);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -33,14 +52,7 @@ export function UserActions({ item, sessionKey }: UserActionsProps) {
 		el.setSelectionRange(el.value.length, el.value.length);
 	}, [editing]);
 
-	const openRewind = async () => {
-		try {
-			const { point, points } = await resolvePoint(item, sessionKey);
-			rewindTarget.value = { sessionKey, point, points };
-		} catch (err) {
-			reportRewindError(err);
-		}
-	};
+	const openRewind = () => openRewindFor(item, sessionKey);
 
 	const submitEdit = async () => {
 		const text = textareaRef.current?.value.trim() || "";
@@ -101,6 +113,7 @@ export function UserActions({ item, sessionKey }: UserActionsProps) {
 
 	return (
 		<div className="msg-user-actions">
+			<MenuButton label="More actions" getMenu={() => userMessageMenu(item, sessionKey)} />
 			<button
 				type="button"
 				className="msg-action-btn"

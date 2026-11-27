@@ -78,7 +78,7 @@ test.describe("Tool call cards", () => {
 		await expect(card.locator(".tool-diff-badge")).toHaveText("+2 −1");
 		const body = card.locator(".tool-card-body");
 		await expect(body).toBeHidden();
-		await card.getByRole("button", { expanded: false }).click();
+		await card.locator(".tool-card-header").click();
 		await expect(body).toBeVisible();
 		await expect(body.locator(".tool-diff-del")).toHaveText("- fn b() {}");
 		await expect(body.locator(".tool-diff-add")).toHaveCount(2);

@@ -25,6 +25,7 @@ import {
 import { saveSessionAsMarkdown } from "../sessions/session-markdown";
 import { sessionStore } from "../stores/session-store";
 import { ComboSelect, confirmDialog, shareLinkDialog, shareVisibilityDialog, showToast } from "../ui";
+import { MenuButton, type MenuItem, type MenuSpec } from "./ContextMenu";
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -81,6 +82,10 @@ export interface SessionHeaderSlots {
 	name?: HTMLElement | null;
 	selectors?: HTMLElement | null;
 	actions?: HTMLElement | null;
+	/** Put the session actions in a "…" menu next to the name instead of buttons. */
+	actionsAsMenu?: boolean;
+	/** More items for that menu (page toggles), appended after the session actions. */
+	extraMenuItems?: () => MenuItem[];
 }
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -712,14 +717,80 @@ export function SessionHeader({
 		</>
 	);
 
+	const sessionMenu = (): MenuSpec => {
+		const items: MenuItem[] = [];
+		if (canRename) {
+			items.push({ id: "rename", label: "Rename session", icon: "icon-code", onSelect: startRename });
+			items.push({
+				id: "auto-title",
+				label: "Auto-title",
+				icon: "icon-sparkles",
+				disabled: generatingTitle,
+				title: "Auto-generate title from conversation",
+				onSelect: onGenerateTitle,
+			});
+		}
+		if (showFork && !isCron) items.push({ id: "fork", label: "Fork session", icon: "icon-layers", onSelect: onFork });
+		if (showShare && !isCron)
+			items.push({ id: "share", label: "Share snapshot", icon: "icon-share", onSelect: onShare });
+		if (showSaveMarkdown) {
+			items.push({
+				id: "markdown",
+				label: "Save as Markdown",
+				icon: "icon-document",
+				disabled: savingMarkdown,
+				onSelect: onSaveMarkdown,
+			});
+		}
+		if (showArchive && canArchive) {
+			items.push({
+				id: "archive",
+				label: session?.archived ? "Unarchive session" : "Archive session",
+				icon: "icon-layers",
+				onSelect: onArchive,
+			});
+		}
+		if (canUnbindChannel) {
+			items.push({
+				id: "unbind",
+				label: "Release channel",
+				icon: "icon-link",
+				disabled: unbinding,
+				title: boundChannelLabel
+					? `Attached to ${boundChannelLabel}. Runs without tools or private context until released.`
+					: "Attached to a channel. Runs without tools or private context until released.",
+				onSelect: onUnbindChannel,
+			});
+		}
+		if (showClear && isMain)
+			items.push({ id: "clear", label: "Clear session", icon: "icon-retry", disabled: clearing, onSelect: onClear });
+		if (showDelete) {
+			items.push({
+				id: "delete",
+				label: "Delete session",
+				icon: "icon-x-circle",
+				danger: true,
+				separatorBefore: true,
+				onSelect: onDelete,
+			});
+		}
+		const extra = slots?.extraMenuItems?.() || [];
+		if (extra.length) items.push({ ...extra[0], separatorBefore: true }, ...extra.slice(1));
+		return { label: fullName || "Session", items };
+	};
+
 	if (slots) {
 		return (
 			<>
 				{slots.name
 					? createPortal(
-							<div className="flex items-center gap-2 min-w-0">
+							<div className="flex items-center gap-1 min-w-0">
 								{nameControl}
-								{renameCta}
+								{slots.actionsAsMenu ? (
+									<MenuButton className="session-title-menu-btn" label="Session actions" getMenu={sessionMenu} />
+								) : (
+									renameCta
+								)}
 							</div>,
 							slots.name,
 						)
@@ -727,7 +798,9 @@ export function SessionHeader({
 				{slots.selectors
 					? createPortal(<div className="flex items-center gap-2">{selectors}</div>, slots.selectors)
 					: null}
-				{slots.actions ? createPortal(<div className="flex items-center gap-1.5">{actions}</div>, slots.actions) : null}
+				{slots.actions && !slots.actionsAsMenu
+					? createPortal(<div className="flex items-center gap-1.5">{actions}</div>, slots.actions)
+					: null}
 			</>
 		);
 	}
