@@ -24,7 +24,7 @@ use {
         error::Error,
         exec::ApprovalBroadcaster,
     },
-    tracing::{info, warn},
+    tracing::info,
 };
 
 /// Number of consecutive identical reads before a `loop_warning` is added
@@ -453,17 +453,7 @@ pub async fn require_fs_mutation_approval(
     };
 
     info!(request, "fs mutation needs approval, waiting...");
-    let (request_id, rx) = manager.create_request(request, None).await;
-
-    if let Some(broadcaster) = broadcaster
-        && let Err(error) = broadcaster
-            .broadcast_request(&request_id, request, None)
-            .await
-    {
-        warn!(%error, request, "failed to broadcast fs approval request");
-    }
-
-    match manager.wait_for_decision(rx).await {
+    match manager.request_and_wait(request, None, broadcaster).await {
         ApprovalDecision::Approved => Ok(()),
         ApprovalDecision::Denied => Err(Error::message(format!(
             "filesystem mutation denied by user: {request}"

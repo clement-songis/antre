@@ -1,23 +1,18 @@
 // ── Non-chat event handlers ──────────────────────────────────
 
-import { chatAddErrorMsg, renderApprovalCard } from "../chat-ui";
+import { chatAddErrorMsg } from "../chat-ui";
 import { sendRpc } from "../helpers";
 import { updateLogsAlert } from "../logs-alert";
 import { fetchModels } from "../models";
 import { currentPage, currentPrefix } from "../router";
 import * as S from "../state";
 import type {
-	ApprovalPayload,
 	AuthCredentialsPayload,
 	LocationRequestPayload,
 	LogEntryPayload,
 	ModelsUpdatedPayload,
 	WsErrorPayload,
 } from "../types/ws-events";
-
-export function handleApprovalEvent(payload: ApprovalPayload): void {
-	renderApprovalCard(payload.requestId, payload.command);
-}
 
 export function handleLogEntry(payload: LogEntryPayload): void {
 	if (S.logsEventHandler) S.logsEventHandler(payload);

@@ -137,6 +137,16 @@ impl CheckpointManager {
 
 // ── Turn index ──────────────────────────────────────────────────────────────
 
+/// Result of [`CheckpointManager::restore_turns`].
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
+pub struct TurnRestoreOutcome {
+    /// Checkpoints restored.
+    pub restored: usize,
+    /// Distinct files or directories put back.
+    pub paths: Vec<String>,
+    pub errors: Vec<String>,
+}
+
 /// A group of checkpoints created during a single agent turn (run).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TurnRecord {
@@ -184,6 +194,29 @@ impl CheckpointManager {
         turns.sort_by_key(|turn| std::cmp::Reverse(turn.created_at));
         turns.truncate(limit);
         Ok(turns)
+    }
+
+    /// Undo `turns`: newest turn first and, inside a turn, newest checkpoint
+    /// first, so each file ends in the state it had before the oldest of
+    /// those turns touched it.
+    pub async fn restore_turns(&self, turns: &[TurnRecord]) -> TurnRestoreOutcome {
+        let mut ordered: Vec<&TurnRecord> = turns.iter().collect();
+        ordered.sort_by_key(|turn| std::cmp::Reverse(turn.created_at));
+        let mut outcome = TurnRestoreOutcome::default();
+        for turn in ordered {
+            for id in turn.checkpoint_ids.iter().rev() {
+                match self.restore(id).await {
+                    Ok(record) => {
+                        outcome.restored += 1;
+                        if !outcome.paths.contains(&record.source_path) {
+                            outcome.paths.push(record.source_path);
+                        }
+                    },
+                    Err(error) => outcome.errors.push(format!("{id}: {error}")),
+                }
+            }
+        }
+        outcome
     }
 
     /// Remove old checkpoints when the total count exceeds the threshold.
@@ -671,5 +704,54 @@ mod tests {
             "<p>v1</p>"
         );
         assert!(manager.snapshot_path("../x").await.is_err());
+    }
+
+    fn turn(run_id: &str, created_at: i64, checkpoint_ids: Vec<String>) -> TurnRecord {
+        TurnRecord {
+            run_id: run_id.into(),
+            session_key: "s".into(),
+            created_at,
+            source_paths: vec![String::new(); checkpoint_ids.len()],
+            checkpoint_ids,
+        }
+    }
+
+    #[tokio::test]
+    async fn restore_turns_rewinds_to_the_state_before_the_oldest_turn() {
+        let tmp = tempfile::tempdir().unwrap();
+        let manager = CheckpointManager::new(tmp.path().to_path_buf());
+        let path = tmp.path().join("file.txt");
+        fs::write(&path, "v0\n").unwrap();
+        let cp1 = manager.checkpoint_path(&path, "t1").await.unwrap();
+        fs::write(&path, "v1\n").unwrap();
+        let cp2 = manager.checkpoint_path(&path, "t2").await.unwrap();
+        fs::write(&path, "v2\n").unwrap();
+        let cp3 = manager.checkpoint_path(&path, "t2").await.unwrap();
+        fs::write(&path, "v3\n").unwrap();
+
+        let first = turn("r1", 1, vec![cp1.id.clone()]);
+        let second = turn("r2", 2, vec![cp2.id.clone(), cp3.id.clone()]);
+
+        let outcome = manager.restore_turns(&[second.clone()]).await;
+        assert_eq!(outcome.restored, 2);
+        assert!(outcome.errors.is_empty());
+        assert_eq!(fs::read_to_string(&path).unwrap(), "v1\n");
+
+        fs::write(&path, "v3\n").unwrap();
+        let outcome = manager.restore_turns(&[first, second]).await;
+        assert_eq!(outcome.restored, 3);
+        assert_eq!(outcome.paths.len(), 1);
+        assert_eq!(fs::read_to_string(&path).unwrap(), "v0\n");
+    }
+
+    #[tokio::test]
+    async fn restore_turns_reports_missing_checkpoints() {
+        let tmp = tempfile::tempdir().unwrap();
+        let manager = CheckpointManager::new(tmp.path().to_path_buf());
+        let outcome = manager
+            .restore_turns(&[turn("r1", 1, vec!["deadbeef".into()])])
+            .await;
+        assert_eq!(outcome.restored, 0);
+        assert_eq!(outcome.errors.len(), 1);
     }
 }

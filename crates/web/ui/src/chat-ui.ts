@@ -330,59 +330,6 @@ export function chatAddErrorMsg(message: string): void {
 	chatAddErrorCard(parseErrorMessage(message));
 }
 
-export function renderApprovalCard(requestId: string, command: string): void {
-	if (!S.chatMsgBox) return;
-	clearChatEmptyState();
-	const tpl = S.$<HTMLTemplateElement>("tpl-approval-card")!;
-	const frag = tpl.content.cloneNode(true) as DocumentFragment;
-	const card = frag.firstElementChild as HTMLElement;
-	card.id = `approval-${requestId}`;
-
-	(card.querySelector(".approval-cmd") as HTMLElement).textContent = command;
-
-	const allowBtn = card.querySelector(".approval-allow") as HTMLButtonElement;
-	const denyBtn = card.querySelector(".approval-deny") as HTMLButtonElement;
-	allowBtn.onclick = () => {
-		resolveApproval(requestId, "approved", command, card);
-	};
-	denyBtn.onclick = () => {
-		resolveApproval(requestId, "denied", null, card);
-	};
-
-	const countdown = card.querySelector(".approval-countdown") as HTMLElement;
-	let remaining = 120;
-	const timer = setInterval(() => {
-		remaining--;
-		countdown.textContent = `${remaining}s`;
-		if (remaining <= 0) {
-			clearInterval(timer);
-			card.classList.add("approval-expired");
-			allowBtn.disabled = true;
-			denyBtn.disabled = true;
-			countdown.textContent = "expired";
-		}
-	}, 1000);
-	countdown.textContent = `${remaining}s`;
-
-	S.chatMsgBox.appendChild(card);
-	smartScrollToBottom();
-}
-
-export function resolveApproval(requestId: string, decision: string, command: string | null, card: HTMLElement): void {
-	const params: Record<string, string> = { requestId, decision };
-	if (command) params.command = command;
-	sendRpc("exec.approval.resolve", params).then(() => {
-		card.classList.add("approval-resolved");
-		card.querySelectorAll<HTMLButtonElement>(".approval-btn").forEach((b) => {
-			b.disabled = true;
-		});
-		const status = document.createElement("div");
-		status.className = "approval-status";
-		status.textContent = decision === "approved" ? "Allowed" : "Denied";
-		card.appendChild(status);
-	});
-}
-
 export function highlightAndScroll(msgEls: (HTMLElement | null)[], messageIndex: number, query: string): void {
 	let target: HTMLElement | null = null;
 	if (messageIndex >= 0 && messageIndex < msgEls.length && msgEls[messageIndex]) {

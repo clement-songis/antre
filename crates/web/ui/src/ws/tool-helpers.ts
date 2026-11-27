@@ -162,14 +162,26 @@ export function completeToolCard(toolCard: HTMLElement, p: ChatPayload, eventSes
 	}
 }
 
-export function clearStaleRunningToolCards(): void {
+/**
+ * Settle cards still spinning when the run ends. After an abort or an error
+ * their tool never reported back, so they are shown as cancelled, not ok.
+ */
+export function clearStaleRunningToolCards(outcome: "finished" | "cancelled" = "finished"): void {
 	if (!S.chatMsgBox) return;
 	const statusEls = S.chatMsgBox.querySelectorAll(".msg.exec-card .exec-status");
 	for (const statusEl of statusEls) {
 		const card = statusEl.closest(".msg.exec-card") as HTMLElement | null;
 		statusEl.remove();
 		if (!card) continue;
-		if (!(card.classList.contains("exec-ok") || card.classList.contains("exec-err"))) {
+		if (card.classList.contains("exec-ok") || card.classList.contains("exec-err")) continue;
+		if (outcome === "cancelled") {
+			card.className = "msg exec-card exec-cancelled";
+			card.setAttribute("data-tool-state", "cancelled");
+			const note = document.createElement("div");
+			note.className = "exec-cancelled-detail";
+			note.textContent = "Cancelled";
+			card.appendChild(note);
+		} else {
 			card.className = "msg exec-card exec-ok";
 		}
 	}

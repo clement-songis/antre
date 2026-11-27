@@ -10,6 +10,7 @@ import { fetchProjects } from "./projects";
 import { currentPage, currentPrefix, mount } from "./router";
 import { fetchSessions } from "./sessions";
 import * as S from "./state";
+import { handleApprovalRequested, handleApprovalResolved, refreshPendingApprovals } from "./stores/approval-store";
 import { sessionStore } from "./stores/session-store";
 import type { ConnectOptions } from "./ws-connect";
 import { connectWs, forceReconnect, subscribeEvents } from "./ws-connect";
@@ -27,7 +28,6 @@ import {
 	handleSandboxPrepare,
 } from "./ws/sandbox-handlers";
 import {
-	handleApprovalEvent,
 	handleAuthCredentialsChanged,
 	handleLocationRequest,
 	handleLogEntry,
@@ -57,7 +57,8 @@ const eventHandlers: Record<string, (payload: Record<string, unknown>, streamMet
 	chat: handleChatEvent as (payload: Record<string, unknown>) => void,
 	error: handleWsError as (payload: Record<string, unknown>) => void,
 	"auth.credentials_changed": handleAuthCredentialsChanged as (payload: Record<string, unknown>) => void,
-	"exec.approval.requested": handleApprovalEvent as unknown as (payload: Record<string, unknown>) => void,
+	"exec.approval.requested": handleApprovalRequested as unknown as (payload: Record<string, unknown>) => void,
+	"exec.approval.resolved": handleApprovalResolved as unknown as (payload: Record<string, unknown>) => void,
 	"logs.entry": handleLogEntry as (payload: Record<string, unknown>) => void,
 	"sandbox.prepare": handleSandboxPrepare as (payload: Record<string, unknown>) => void,
 	"sandbox.image.build": handleSandboxImageBuild as (payload: Record<string, unknown>) => void,
@@ -130,6 +131,7 @@ const connectOpts: ConnectOptions = {
 			]),
 		);
 		S.setSubscribed(true);
+		void refreshPendingApprovals();
 		// Keep initial hydration authoritative via app bootstrap/gon.
 		// On reconnect, force a fresh snapshot in case realtime events were missed.
 		if (isReconnect) {

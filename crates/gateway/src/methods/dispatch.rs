@@ -66,6 +66,7 @@ const READ_METHODS: &[&str] = &[
     #[cfg(feature = "agent")]
     "agents.presets_list",
     "modes.list",
+    "checkpoints.turns",
     "agent.identity.get",
     "skills.list",
     "skills.status",
@@ -197,6 +198,7 @@ const WRITE_METHODS: &[&str] = &[
     #[cfg(feature = "agent")]
     "agents.preset.save",
     "modes.set_session",
+    "checkpoints.restore",
     "wake",
     "talk.mode",
     "tts.enable",

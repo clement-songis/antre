@@ -276,16 +276,11 @@ pub(in crate::channel_events) async fn handle_rollback(
             turns.len()
         )));
     }
-    let turn = &turns[n - 1];
-
-    let mut restored = 0;
-    let mut errors = Vec::new();
-    for id in &turn.checkpoint_ids {
-        match manager.restore(id).await {
-            Ok(_) => restored += 1,
-            Err(e) => errors.push(format!("{id}: {e}")),
-        }
-    }
+    let outcome = manager
+        .restore_turns(std::slice::from_ref(&turns[n - 1]))
+        .await;
+    let restored = outcome.restored;
+    let errors = outcome.errors;
 
     broadcast(
         state,

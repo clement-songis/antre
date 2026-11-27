@@ -250,8 +250,9 @@ function sanitizeHref(href: string): string {
 const mdRenderer = new Renderer();
 mdRenderer.code = ({ text, lang }) => {
 	const langAttr = lang ? ` data-lang="${esc(lang)}"` : "";
-	const badge = lang ? `<div class="code-lang-badge">${esc(lang)}</div>` : "";
-	return `<pre class="code-block">${badge}<code${langAttr}>${esc(text)}</code></pre>\n`;
+	const badge = lang ? `<span class="code-lang-badge">${esc(lang)}</span>` : "";
+	const copy = '<button type="button" class="code-copy-btn" aria-label="Copy code" title="Copy code">Copy</button>';
+	return `<pre class="code-block"><div class="code-block-tools">${badge}${copy}</div><code${langAttr}>${esc(text)}</code></pre>\n`;
 };
 mdRenderer.table = function (token) {
 	const renderCell = (cell: { tokens: Token[] }) => this.parser.parseInline(cell.tokens);
@@ -612,7 +613,43 @@ export function toolCallSummary(
 		case "browser":
 			return summarizeBrowserTool(args, executionMode);
 		default:
-			return name || "tool";
+			return summarizeGenericTool(name || "tool", args);
+	}
+}
+
+function stringArg(args: ToolCallArgs, ...keys: string[]): string {
+	for (const key of keys) {
+		const value = args[key];
+		if (typeof value === "string" && value.trim()) return value.trim();
+	}
+	return "";
+}
+
+/** Name plus the argument that identifies the call: path, pattern, task. */
+function summarizeGenericTool(name: string, args: ToolCallArgs): string {
+	const path = stringArg(args, "file_path", "path");
+	switch (name) {
+		case "Read":
+		case "Write":
+		case "Edit":
+		case "MultiEdit":
+			return path ? `${name} ${path}` : name;
+		case "Glob":
+		case "Grep": {
+			const pattern = stringArg(args, "pattern");
+			const where = path ? ` in ${path}` : "";
+			return pattern ? `${name} ${pattern}${where}` : name;
+		}
+		case "spawn_agent": {
+			const task = stringArg(args, "task", "prompt", "description");
+			return task ? `spawn_agent ${task.length > 80 ? `${task.slice(0, 80)}\u2026` : task}` : name;
+		}
+		case "task_list":
+			return [name, stringArg(args, "action"), stringArg(args, "subject")].filter(Boolean).join(" ");
+		default: {
+			const hint = path || stringArg(args, "url", "query", "pattern", "action", "name");
+			return hint ? `${name} ${hint}` : name;
+		}
 	}
 }
 

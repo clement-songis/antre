@@ -44,7 +44,7 @@ pub struct ExecCompletionEvent {
 pub type ExecCompletionFn = Arc<dyn Fn(ExecCompletionEvent) + Send + Sync>;
 
 use crate::{
-    approval::{ApprovalAction, ApprovalDecision, ApprovalManager},
+    approval::{ApprovalAction, ApprovalDecision, ApprovalManager, PendingApprovalView},
     sandbox::{ManagedFilesMount, NoSandbox, Sandbox, SandboxId, SandboxRouter},
 };
 
@@ -59,6 +59,28 @@ pub trait ApprovalBroadcaster: Send + Sync {
         command: &str,
         session_key: Option<&str>,
     ) -> Result<()>;
+
+    /// Announce a request with its full metadata (expiry included). Clients
+    /// count down from `expires_at_ms` instead of guessing the timeout.
+    async fn broadcast_pending(&self, request: &PendingApprovalView) -> Result<()> {
+        self.broadcast_request(
+            &request.id,
+            &request.command,
+            request.session_key.as_deref(),
+        )
+        .await
+    }
+
+    /// Announce that a request left the pending set, whatever resolved it
+    /// (a client, a channel `/approve`, or the timeout).
+    async fn broadcast_resolved(
+        &self,
+        _request_id: &str,
+        _decision: &ApprovalDecision,
+        _session_key: Option<&str>,
+    ) -> Result<()> {
+        Ok(())
+    }
 }
 
 /// Provider of environment variables to inject into sandbox execution.
@@ -373,16 +395,10 @@ impl ExecTool {
             command_bytes = command.len(),
             "command needs approval, waiting..."
         );
-        let (request_id, receiver) = manager.create_request(command, session_key).await;
-        if let Some(broadcaster) = &self.broadcaster
-            && let Err(error) = broadcaster
-                .broadcast_request(&request_id, command, session_key)
-                .await
+        match manager
+            .request_and_wait(command, session_key, self.broadcaster.as_ref())
+            .await
         {
-            warn!(%error, "failed to broadcast approval request");
-        }
-
-        match manager.wait_for_decision(receiver).await {
             ApprovalDecision::Approved => {
                 info!(command_bytes = command.len(), "command approved");
                 Ok(())

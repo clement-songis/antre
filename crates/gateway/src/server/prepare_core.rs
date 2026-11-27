@@ -305,7 +305,14 @@ pub async fn prepare_gateway_core_with_profile(
     }
 
     // Create shared approval manager from config.
-    let approval_manager = Arc::new(approval_manager_from_config(&config));
+    let approval_manager = Arc::new(
+        approval_manager_from_config(&config).with_persisted_approvals(
+            data_dir
+                .clone()
+                .unwrap_or_else(moltis_config::data_dir)
+                .join("exec-approved-commands.json"),
+        ),
+    );
 
     let mut services = GatewayServices::noop();
 

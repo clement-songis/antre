@@ -172,6 +172,8 @@ export interface CompactPayload {
 export interface ApprovalPayload {
 	requestId: string;
 	command: string;
+	sessionKey?: string | null;
+	expiresAtMs?: number | null;
 }
 
 export interface LogEntryPayload {

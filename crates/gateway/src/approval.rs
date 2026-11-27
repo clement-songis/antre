@@ -12,7 +12,7 @@ use {
     moltis_channels::ChannelReplyTarget,
     moltis_sessions::metadata::SessionEntry,
     moltis_tools::{
-        approval::{ApprovalDecision, ApprovalManager},
+        approval::{ApprovalDecision, ApprovalManager, PendingApprovalView},
         exec::ApprovalBroadcaster,
     },
 };
@@ -163,22 +163,70 @@ impl ApprovalBroadcaster for GatewayApprovalBroadcaster {
         command: &str,
         session_key: Option<&str>,
     ) -> moltis_tools::Result<()> {
+        self.broadcast_pending(&PendingApprovalView {
+            id: request_id.to_string(),
+            command: command.to_string(),
+            session_key: session_key.map(str::to_string),
+            expires_at_ms: 0,
+        })
+        .await
+    }
+
+    async fn broadcast_pending(&self, request: &PendingApprovalView) -> moltis_tools::Result<()> {
+        let session_key = request.session_key.as_deref();
         broadcast(
             &self.state,
             "exec.approval.requested",
-            serde_json::json!({
-                "requestId": request_id,
-                "command": command,
-                "sessionKey": session_key,
-            }),
+            approval_requested_payload(request),
             BroadcastOpts::default(),
         )
         .await;
-        if let Err(error) = self.notify_origin_channel(session_key, command).await {
-            warn!(%error, session_key, request_id, "failed to notify originating channel about approval");
+        if let Err(error) = self
+            .notify_origin_channel(session_key, &request.command)
+            .await
+        {
+            warn!(%error, session_key, request_id = %request.id, "failed to notify originating channel about approval");
         }
         Ok(())
     }
+
+    async fn broadcast_resolved(
+        &self,
+        request_id: &str,
+        decision: &ApprovalDecision,
+        session_key: Option<&str>,
+    ) -> moltis_tools::Result<()> {
+        broadcast(
+            &self.state,
+            "exec.approval.resolved",
+            approval_resolved_payload(request_id, decision, session_key),
+            BroadcastOpts::default(),
+        )
+        .await;
+        Ok(())
+    }
+}
+
+fn approval_requested_payload(request: &PendingApprovalView) -> Value {
+    let expires_at_ms = (request.expires_at_ms > 0).then_some(request.expires_at_ms);
+    serde_json::json!({
+        "requestId": request.id,
+        "command": request.command,
+        "sessionKey": request.session_key,
+        "expiresAtMs": expires_at_ms,
+    })
+}
+
+fn approval_resolved_payload(
+    request_id: &str,
+    decision: &ApprovalDecision,
+    session_key: Option<&str>,
+) -> Value {
+    serde_json::json!({
+        "requestId": request_id,
+        "decision": decision,
+        "sessionKey": session_key,
+    })
 }
 
 /// Truncate a command string for safe display in channel notifications.
@@ -228,6 +276,35 @@ mod tests {
         // The receiver should get Denied.
         let decision = rx.try_recv().unwrap();
         assert_eq!(decision, ApprovalDecision::Denied);
+    }
+
+    #[test]
+    fn requested_payload_carries_session_and_expiry() {
+        let payload = approval_requested_payload(&PendingApprovalView {
+            id: "r1".into(),
+            command: "make".into(),
+            session_key: Some("s1".into()),
+            expires_at_ms: 42,
+        });
+        assert_eq!(payload["requestId"], "r1");
+        assert_eq!(payload["sessionKey"], "s1");
+        assert_eq!(payload["expiresAtMs"], 42);
+
+        let without_expiry = approval_requested_payload(&PendingApprovalView {
+            id: "r2".into(),
+            command: "make".into(),
+            session_key: None,
+            expires_at_ms: 0,
+        });
+        assert!(without_expiry["expiresAtMs"].is_null());
+    }
+
+    #[test]
+    fn resolved_payload_names_the_decision() {
+        let payload = approval_resolved_payload("r1", &ApprovalDecision::Timeout, Some("s1"));
+        assert_eq!(payload["requestId"], "r1");
+        assert_eq!(payload["decision"], "timeout");
+        assert_eq!(payload["sessionKey"], "s1");
     }
 
     #[tokio::test]

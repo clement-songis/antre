@@ -1,6 +1,7 @@
 use std::{
     borrow::Cow,
     collections::{HashSet, VecDeque},
+    path::PathBuf,
     sync::Arc,
     time::Duration,
 };
@@ -9,9 +10,12 @@ use {
     crate::error::Error,
     regex::RegexSet,
     serde::{Deserialize, Serialize},
+    time::OffsetDateTime,
     tokio::sync::{RwLock, oneshot},
     tracing::{debug, warn},
 };
+
+use crate::exec::ApprovalBroadcaster;
 
 use crate::Result;
 
@@ -482,6 +486,7 @@ pub fn matches_allowlist(command: &str, allowlist: &[String]) -> bool {
 struct PendingApproval {
     command: String,
     session_key: Option<String>,
+    expires_at_ms: u64,
     tx: oneshot::Sender<ApprovalDecision>,
 }
 
@@ -492,6 +497,13 @@ pub struct PendingApprovalView {
     pub command: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub session_key: Option<String>,
+    /// Unix epoch milliseconds after which the request times out.
+    #[serde(default)]
+    pub expires_at_ms: u64,
+}
+
+fn now_epoch_ms() -> u64 {
+    u64::try_from(OffsetDateTime::now_utc().unix_timestamp_nanos() / 1_000_000).unwrap_or(0)
 }
 
 /// The approval manager handles approval flow for exec commands.
@@ -502,6 +514,8 @@ pub struct ApprovalManager {
     pub timeout: Duration,
     pending: Arc<RwLock<std::collections::HashMap<String, PendingApproval>>>,
     approved_commands: Arc<RwLock<HashSet<String>>>,
+    /// JSON file holding "always allow" commands across restarts.
+    approved_commands_path: Option<PathBuf>,
 }
 
 impl Default for ApprovalManager {
@@ -513,11 +527,105 @@ impl Default for ApprovalManager {
             timeout: Duration::from_secs(120),
             pending: Arc::new(RwLock::new(std::collections::HashMap::new())),
             approved_commands: Arc::new(RwLock::new(HashSet::new())),
+            approved_commands_path: None,
         }
     }
 }
 
 impl ApprovalManager {
+    /// Persist "always allow" decisions to `path` and load the ones saved
+    /// there before. A missing or unreadable file starts an empty set.
+    #[must_use]
+    pub fn with_persisted_approvals(mut self, path: PathBuf) -> Self {
+        let loaded: HashSet<String> = std::fs::read_to_string(&path)
+            .ok()
+            .and_then(|raw| serde_json::from_str::<Vec<String>>(&raw).ok())
+            .map(|commands| commands.into_iter().collect())
+            .unwrap_or_default();
+        self.approved_commands = Arc::new(RwLock::new(loaded));
+        self.approved_commands_path = Some(path);
+        self
+    }
+
+    /// Commands the operator chose to always allow, sorted.
+    pub async fn approved_commands(&self) -> Vec<String> {
+        let mut commands: Vec<String> = self
+            .approved_commands
+            .read()
+            .await
+            .iter()
+            .cloned()
+            .collect();
+        commands.sort();
+        commands
+    }
+
+    async fn persist_approved_commands(&self) {
+        let Some(path) = self.approved_commands_path.clone() else {
+            return;
+        };
+        let commands = self.approved_commands().await;
+        let json = match serde_json::to_string_pretty(&commands) {
+            Ok(json) => json,
+            Err(error) => {
+                warn!(%error, "failed to serialize approved commands");
+                return;
+            },
+        };
+        if let Some(parent) = path.parent()
+            && let Err(error) = tokio::fs::create_dir_all(parent).await
+        {
+            warn!(%error, path = %parent.display(), "failed to create approvals directory");
+            return;
+        }
+        if let Err(error) = tokio::fs::write(&path, json).await {
+            warn!(%error, path = %path.display(), "failed to persist approved commands");
+        }
+    }
+
+    /// Create a request, announce it, wait for the decision and announce the
+    /// outcome. A timed-out request is dropped from the pending set so it no
+    /// longer shows up in `pending_requests`.
+    pub async fn request_and_wait(
+        &self,
+        command: &str,
+        session_key: Option<&str>,
+        broadcaster: Option<&Arc<dyn ApprovalBroadcaster>>,
+    ) -> ApprovalDecision {
+        let (request_id, receiver) = self.create_request(command, session_key).await;
+        let expires_at_ms = self
+            .pending
+            .read()
+            .await
+            .get(&request_id)
+            .map(|pending| pending.expires_at_ms)
+            .unwrap_or_default();
+        let view = PendingApprovalView {
+            id: request_id.clone(),
+            command: command.to_string(),
+            session_key: session_key.map(str::to_string),
+            expires_at_ms,
+        };
+        if let Some(broadcaster) = broadcaster
+            && let Err(error) = broadcaster.broadcast_pending(&view).await
+        {
+            warn!(%error, "failed to broadcast approval request");
+        }
+
+        let decision = self.wait_for_decision(receiver).await;
+        if decision == ApprovalDecision::Timeout {
+            self.pending.write().await.remove(&request_id);
+        }
+        if let Some(broadcaster) = broadcaster
+            && let Err(error) = broadcaster
+                .broadcast_resolved(&request_id, &decision, session_key)
+                .await
+        {
+            warn!(%error, "failed to broadcast approval resolution");
+        }
+        decision
+    }
+
     /// Decide whether a command needs approval.
     /// Returns Ok(()) if the command can proceed, Err if denied.
     pub async fn check_command(&self, command: &str) -> Result<ApprovalAction> {
@@ -637,12 +745,14 @@ impl ApprovalManager {
     ) -> (String, oneshot::Receiver<ApprovalDecision>) {
         let id = uuid::Uuid::new_v4().to_string();
         let (tx, rx) = oneshot::channel();
+        let timeout_ms = u64::try_from(self.timeout.as_millis()).unwrap_or(u64::MAX);
         self.pending
             .write()
             .await
             .insert(id.clone(), PendingApproval {
                 command: command.to_string(),
                 session_key: session_key.map(str::to_string),
+                expires_at_ms: now_epoch_ms().saturating_add(timeout_ms),
                 tx,
             });
         debug!(id = %id, command, session_key, "approval request created");
@@ -651,12 +761,17 @@ impl ApprovalManager {
 
     /// Resolve a pending approval request.
     pub async fn resolve(&self, id: &str, decision: ApprovalDecision, command: Option<&str>) {
-        if let Some(pending) = self.pending.write().await.remove(id) {
+        let removed = self.pending.write().await.remove(id);
+        if let Some(pending) = removed {
             if decision == ApprovalDecision::Approved && command.is_some() {
-                self.approved_commands
+                let inserted = self
+                    .approved_commands
                     .write()
                     .await
                     .insert(pending.command.clone());
+                if inserted {
+                    self.persist_approved_commands().await;
+                }
             }
             let _ = pending.tx.send(decision);
             debug!(id, "approval resolved");
@@ -683,6 +798,7 @@ impl ApprovalManager {
                 id: id.clone(),
                 command: pending.command.clone(),
                 session_key: pending.session_key.clone(),
+                expires_at_ms: pending.expires_at_ms,
             })
             .collect();
         requests.sort_by(|left, right| left.id.cmp(&right.id));
@@ -1183,6 +1299,106 @@ EOF\n";
                 .unwrap(),
             ApprovalAction::NeedsApproval
         );
+    }
+
+    #[tokio::test]
+    async fn always_allow_is_persisted_and_reloaded() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("approvals").join("approved.json");
+        let manager = ApprovalManager::default().with_persisted_approvals(path.clone());
+        let (id, _receiver) = manager.create_request("cargo build", None).await;
+        manager
+            .resolve(&id, ApprovalDecision::Approved, Some("cargo build"))
+            .await;
+
+        let reloaded = ApprovalManager::default().with_persisted_approvals(path);
+        assert_eq!(reloaded.approved_commands().await, vec![
+            "cargo build".to_string()
+        ]);
+        assert_eq!(
+            reloaded.check_command("cargo build").await.unwrap(),
+            ApprovalAction::Proceed
+        );
+    }
+
+    #[tokio::test]
+    async fn allow_once_is_not_remembered() {
+        let manager = ApprovalManager::default();
+        let (id, _receiver) = manager.create_request("cargo build", None).await;
+        manager.resolve(&id, ApprovalDecision::Approved, None).await;
+        assert!(manager.approved_commands().await.is_empty());
+        assert_eq!(
+            manager.check_command("cargo build").await.unwrap(),
+            ApprovalAction::NeedsApproval
+        );
+    }
+
+    #[tokio::test]
+    async fn pending_request_carries_expiry() {
+        let manager = ApprovalManager {
+            timeout: Duration::from_secs(30),
+            ..Default::default()
+        };
+        let before = now_epoch_ms();
+        let _ = manager.create_request("make", Some("s1")).await;
+        let pending = manager.pending_requests().await;
+        assert_eq!(pending.len(), 1);
+        assert!(pending[0].expires_at_ms >= before + 30_000);
+        assert!(pending[0].expires_at_ms <= now_epoch_ms() + 30_000);
+    }
+
+    #[derive(Default)]
+    struct RecordingBroadcaster {
+        pending: tokio::sync::Mutex<Vec<PendingApprovalView>>,
+        resolved: tokio::sync::Mutex<Vec<(String, ApprovalDecision)>>,
+    }
+
+    #[async_trait::async_trait]
+    impl ApprovalBroadcaster for RecordingBroadcaster {
+        async fn broadcast_request(&self, _: &str, _: &str, _: Option<&str>) -> Result<()> {
+            Ok(())
+        }
+
+        async fn broadcast_pending(&self, request: &PendingApprovalView) -> Result<()> {
+            self.pending.lock().await.push(request.clone());
+            Ok(())
+        }
+
+        async fn broadcast_resolved(
+            &self,
+            request_id: &str,
+            decision: &ApprovalDecision,
+            _: Option<&str>,
+        ) -> Result<()> {
+            self.resolved
+                .lock()
+                .await
+                .push((request_id.to_string(), decision.clone()));
+            Ok(())
+        }
+    }
+
+    #[tokio::test]
+    async fn timed_out_request_is_dropped_and_announced() {
+        let manager = ApprovalManager {
+            timeout: Duration::from_millis(20),
+            ..Default::default()
+        };
+        let recorder = Arc::new(RecordingBroadcaster::default());
+        let broadcaster: Arc<dyn ApprovalBroadcaster> = recorder.clone();
+        let decision = manager
+            .request_and_wait("sleep 1", Some("s1"), Some(&broadcaster))
+            .await;
+        assert_eq!(decision, ApprovalDecision::Timeout);
+        assert!(manager.pending_requests().await.is_empty());
+        let pending = recorder.pending.lock().await;
+        assert_eq!(pending.len(), 1);
+        assert_eq!(pending[0].session_key.as_deref(), Some("s1"));
+        let resolved = recorder.resolved.lock().await;
+        assert_eq!(resolved.as_slice(), &[(
+            pending[0].id.clone(),
+            ApprovalDecision::Timeout
+        )]);
     }
 
     mod env_prefix;

@@ -292,15 +292,18 @@
 .thinking-text {
   color: var(--muted);
   white-space: pre-wrap;
-  text-overflow: ellipsis;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
   font-size: 0.82rem;
   font-style: italic;
   line-height: 1.4;
   animation: 2s ease-in-out infinite thinking-pulse;
-  display: -webkit-box;
+  display: block;
+  max-height: calc(1.4em * 4);
   overflow: hidden;
+}
+/* Live reasoning grows at the bottom: show its tail, fade the top. */
+.thinking-text.is-overflowing {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 1.4em);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 1.4em);
 }
 
 @keyframes thinking-pulse {
@@ -480,10 +483,16 @@
   position: relative;
 }
 
-.code-lang-badge {
+.code-block-tools {
   position: absolute;
   top: 4px;
   right: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.code-lang-badge {
   font-size: 0.7em;
   color: var(--muted);
   text-transform: uppercase;
@@ -491,6 +500,31 @@
   user-select: none;
   pointer-events: none;
   font-family: var(--font-mono);
+}
+
+.code-copy-btn {
+  font-size: 0.7em;
+  font-family: var(--font-body);
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 1px 6px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.code-block:hover .code-copy-btn,
+.code-copy-btn:focus-visible,
+.code-copy-btn.copied {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .code-copy-btn {
+    opacity: 1;
+  }
 }
 
 /* Shiki dual-theme: dark mode uses --shiki-dark colors */

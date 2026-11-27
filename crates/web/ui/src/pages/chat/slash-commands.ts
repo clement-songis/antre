@@ -26,6 +26,8 @@ type SlashCommandName =
 export interface SlashCommand {
 	name: SlashCommandName;
 	description: string;
+	/** Argument hint. Commands with one are inserted for editing instead of run on Enter. */
+	args?: string;
 }
 
 /** Handler function for a slash command. */
@@ -74,18 +76,18 @@ interface ModesListPayload {
 // ── Slash commands list ─────────────────────────────────────
 
 export const slashCommands: SlashCommand[] = [
-	{ name: "btw", description: "Quick side question (no tools, not persisted)" },
+	{ name: "btw", description: "Quick side question (no tools, not persisted)", args: "<question>" },
 	{ name: "clear", description: "Clear conversation history" },
 	{ name: "compact", description: "Summarize conversation to save tokens" },
 	{ name: "context", description: "Show session context and project info" },
-	{ name: "fast", description: "Toggle fast/priority mode" },
+	{ name: "fast", description: "Toggle fast/priority mode", args: "[on|off|status]" },
 	{ name: "fork", description: "Fork this session into a new branch" },
-	{ name: "insights", description: "Show usage analytics (tokens, providers)" },
-	{ name: "mode", description: "Switch session mode (/mode none to clear)" },
+	{ name: "insights", description: "Show usage analytics (tokens, providers)", args: "[days]" },
+	{ name: "mode", description: "Switch session mode (/mode none to clear)", args: "[N|id|none]" },
 	{ name: "new", description: "Start a new session" },
 	{ name: "reset", description: "Clear conversation history" },
-	{ name: "rollback", description: "List or restore file checkpoints" },
-	{ name: "sh", description: "Enter command mode (/sh off or Esc to exit)" },
+	{ name: "rollback", description: "List or restore file checkpoints", args: "[N]" },
+	{ name: "sh", description: "Enter command mode (/sh off or Esc to exit)", args: "[on|off|command]" },
 ];
 
 let slashMenuEl: HTMLDivElement | null = null;
@@ -160,6 +162,12 @@ export function slashShowMenu(filter: string): void {
 		descSpan.className = "slash-desc";
 		descSpan.textContent = cmd.description;
 		item.appendChild(nameSpan);
+		if (cmd.args) {
+			const argsSpan = document.createElement("span");
+			argsSpan.className = "slash-args text-[var(--muted)] font-mono text-xs";
+			argsSpan.textContent = cmd.args;
+			item.appendChild(argsSpan);
+		}
 		item.appendChild(descSpan);
 		item.addEventListener("mousedown", (e: MouseEvent) => {
 			e.preventDefault();
@@ -183,11 +191,24 @@ export function slashHideMenu(): void {
 	slashMenuIdx = 0;
 }
 
-export function slashSelectItem(idx: number): void {
-	if (!slashMenuItems[idx]) return;
-	(S.chatInput as HTMLTextAreaElement).value = `/${slashMenuItems[idx].name}`;
+/**
+ * Put the command in the composer. `run` sends it at once when it takes no
+ * arguments or was typed in full; otherwise it waits for its arguments.
+ */
+export function slashSelectItem(idx: number, run = false): void {
+	const cmd = slashMenuItems[idx];
+	if (!cmd) return;
+	const input = S.chatInput as HTMLTextAreaElement;
+	const typedInFull = input.value.trim() === `/${cmd.name}`;
 	slashHideMenu();
-	sendChatFn?.();
+	if (run && (!cmd.args || typedInFull)) {
+		input.value = `/${cmd.name}`;
+		sendChatFn?.();
+		return;
+	}
+	input.value = `/${cmd.name} `;
+	input.focus();
+	input.setSelectionRange(input.value.length, input.value.length);
 }
 
 export function slashHandleInput(): void {
@@ -215,7 +236,7 @@ export function slashHandleKeydown(e: KeyboardEvent): boolean {
 	}
 	if (e.key === "Enter" || e.key === "Tab") {
 		e.preventDefault();
-		slashSelectItem(slashMenuIdx);
+		slashSelectItem(slashMenuIdx, e.key === "Enter");
 		return true;
 	}
 	if (e.key === "Escape") {
@@ -310,9 +331,9 @@ function findMode(modes: ModePayload[], args: string): ModePayload | null {
 
 function handleModeCommand(cmdArgs: string): void {
 	const args = cmdArgs.trim();
-	chatAddMsg("system", "Loading modes...");
+	const placeholder = chatAddMsg("system", "Loading modes...");
 	sendRpc("modes.list", {}).then((listRes) => {
-		if (S.chatMsgBox?.lastChild) S.chatMsgBox.removeChild(S.chatMsgBox.lastChild);
+		placeholder?.remove();
 		if (!listRes?.ok) {
 			chatAddMsg("error", listRes?.error?.message || "Failed to load modes");
 			return;
@@ -350,6 +371,76 @@ function handleModeCommand(cmdArgs: string): void {
 	});
 }
 
+interface RollbackTurn {
+	runId: string;
+	createdAt: number;
+	paths: string[];
+	checkpointCount: number;
+}
+
+function formatAge(epochSecs: number): string {
+	const secs = Math.max(0, Math.round(Date.now() / 1000 - epochSecs));
+	if (secs < 60) return `${secs}s ago`;
+	if (secs < 3600) return `${Math.floor(secs / 60)}m ago`;
+	if (secs < 86400) return `${Math.floor(secs / 3600)}h ago`;
+	return `${Math.floor(secs / 86400)}d ago`;
+}
+
+function basename(path: string): string {
+	return path.split("/").pop() || path;
+}
+
+export function formatRollbackTurns(turns: RollbackTurn[]): string {
+	if (turns.length === 0) return "No file checkpoints yet. Checkpoints are created automatically before file writes.";
+	const lines = ["**Recent turns with file changes:**", ""];
+	turns.forEach((turn, index) => {
+		const names = turn.paths.map(basename);
+		const preview = names.length <= 3 ? names.join(", ") : `${names.slice(0, 2).join(", ")} +${names.length - 2} more`;
+		const label = turn.paths.length === 1 ? "file" : "files";
+		lines.push(`${index + 1}. ${formatAge(turn.createdAt)} \u2014 ${turn.paths.length} ${label} (${preview})`);
+	});
+	lines.push("", "Use `/rollback N` to restore the files of turn N.");
+	return lines.join("\n");
+}
+
+function handleRollbackCommand(cmdArgs: string): void {
+	const arg = cmdArgs.trim();
+	if (!arg) {
+		const placeholder = chatAddMsg("system", "Loading checkpoints\u2026");
+		sendRpc<{ turns?: RollbackTurn[] }>("checkpoints.turns", { sessionKey: S.activeSessionKey, limit: 10 }).then(
+			(res) => {
+				placeholder?.remove();
+				if (!res?.ok) {
+					chatAddMsg("error", res?.error?.message || "Failed to list checkpoints");
+					return;
+				}
+				chatAddMsg("system", renderMarkdown(formatRollbackTurns(res.payload?.turns || [])), true);
+			},
+		);
+		return;
+	}
+	const turn = Number(arg);
+	if (!(Number.isInteger(turn) && turn > 0)) {
+		chatAddMsg("error", "Usage: /rollback [N]");
+		return;
+	}
+	const placeholder = chatAddMsg("system", `Restoring files from turn ${turn}\u2026`);
+	sendRpc<{ restored?: number; errors?: string[] }>("checkpoints.restore", {
+		sessionKey: S.activeSessionKey,
+		turn,
+	}).then((res) => {
+		placeholder?.remove();
+		if (!res?.ok) {
+			chatAddMsg("error", res?.error?.message || "Rollback failed");
+			return;
+		}
+		const errors = res.payload?.errors || [];
+		const restored = res.payload?.restored || 0;
+		const suffix = errors.length ? ` ${errors.length} error(s): ${errors.join("; ")}` : "";
+		chatAddMsg(errors.length ? "error" : "system", `Restored ${restored} checkpoint(s) from turn ${turn}.${suffix}`);
+	});
+}
+
 /**
  * Handler map — every `SlashCommandName` must have an entry here.
  * TypeScript will error at `satisfies` if a command is missing.
@@ -366,9 +457,9 @@ const slashHandlers: Record<SlashCommandName, SlashHandler> = {
 	},
 
 	context: () => {
-		chatAddMsg("system", "Loading context\u2026");
+		const placeholder = chatAddMsg("system", "Loading context\u2026");
 		sendRpc("chat.context", {}).then((res) => {
-			if (S.chatMsgBox?.lastChild) S.chatMsgBox.removeChild(S.chatMsgBox.lastChild);
+			placeholder?.remove();
 			if (res.ok && res.payload) {
 				try {
 					renderContextCard(res.payload as ContextData);
@@ -409,11 +500,11 @@ const slashHandlers: Record<SlashCommandName, SlashHandler> = {
 
 	insights: (args) => {
 		const days = args.trim() || "30";
-		chatAddMsg("system", `Loading insights for last ${days} days\u2026`);
+		const placeholder = chatAddMsg("system", `Loading insights for last ${days} days\u2026`);
 		fetch(`/api/metrics/insights?days=${days}`)
 			.then((resp) => (resp.ok ? resp.json() : Promise.reject(new Error(`HTTP ${resp.status}`))))
 			.then((data: InsightsApiResponse) => {
-				if (S.chatMsgBox?.lastChild) S.chatMsgBox.removeChild(S.chatMsgBox.lastChild);
+				placeholder?.remove();
 				const lines: string[] = [];
 				lines.push(`**Insights** \u2014 last ${data.days} days\n`);
 				lines.push("| Metric | Value |");
@@ -451,9 +542,9 @@ const slashHandlers: Record<SlashCommandName, SlashHandler> = {
 			chatAddMsg("error", "Usage: /btw <question>");
 			return;
 		}
-		chatAddMsg("system", "Thinking\u2026");
+		const placeholder = chatAddMsg("system", "Thinking\u2026");
 		sendRpc("chat.send_sync", { text: args, _ephemeral: true, _tool_policy: { deny: ["*"] } }).then((res) => {
-			if (S.chatMsgBox?.lastChild) S.chatMsgBox.removeChild(S.chatMsgBox.lastChild);
+			placeholder?.remove();
 			if (res.ok && res.payload) {
 				const text = typeof res.payload === "string" ? res.payload : (res.payload as UnknownRecord).text;
 				chatAddMsg("system", renderMarkdown(String(text || "(no response)")), true);
@@ -463,9 +554,9 @@ const slashHandlers: Record<SlashCommandName, SlashHandler> = {
 
 	fast: (args) => {
 		const arg = args.trim().toLowerCase();
-		chatAddMsg("system", `Fast mode: ${arg || "toggle"}\u2026`);
+		const placeholder = chatAddMsg("system", `Fast mode: ${arg || "toggle"}\u2026`);
 		sendRpc("chat.send_sync", { text: `/fast ${arg}`.trim() }).then((res) => {
-			if (S.chatMsgBox?.lastChild) S.chatMsgBox.removeChild(S.chatMsgBox.lastChild);
+			placeholder?.remove();
 			if (res.ok && res.payload) {
 				const text = typeof res.payload === "string" ? res.payload : (res.payload as UnknownRecord).text;
 				chatAddMsg("system", String(text || "Done"));
@@ -474,25 +565,20 @@ const slashHandlers: Record<SlashCommandName, SlashHandler> = {
 	},
 
 	fork: (args) => {
-		chatAddMsg("system", "Forking session\u2026");
+		const placeholder = chatAddMsg("system", "Forking session\u2026");
 		sendRpc("sessions.fork", { key: S.activeSessionKey, label: args.trim() || undefined }).then((res) => {
-			if (S.chatMsgBox?.lastChild) S.chatMsgBox.removeChild(S.chatMsgBox.lastChild);
+			placeholder?.remove();
 			if (res.ok && res.payload) {
-				const key = (res.payload as UnknownRecord).sessionKey as string;
-				const label = (res.payload as UnknownRecord).label as string;
-				chatAddMsg("system", `Forked into: ${label || key}. Use the session list to switch.`);
+				const payload = res.payload as UnknownRecord;
+				const key = String(payload.key || payload.sessionKey || "");
 				fetchSessions();
+				if (key) switchSession(key);
+				else chatAddMsg("system", "Forked the session.");
 			} else chatAddMsg("error", res.error?.message || "Fork failed");
 		});
 	},
 
-	rollback: () => {
-		chatAddMsg(
-			"system",
-			renderMarkdown("Rollback is available via the `/rollback` channel command (Telegram, Discord, etc.) or the CLI."),
-			true,
-		);
-	},
+	rollback: (args) => handleRollbackCommand(args),
 };
 
 export function handleSlashCommand(cmdName: string, cmdArgs: string): void {

@@ -4,6 +4,7 @@ import { render } from "preact";
 import prettyBytes from "pretty-bytes";
 import { applyIdentityFavicon, formatPageTitle } from "./branding";
 import * as _chatUi from "./chat-ui";
+import { installCodeCopyHandler } from "./code-copy";
 import * as _codeHighlight from "./code-highlight";
 import { initHighlighter } from "./code-highlight";
 import { SessionList } from "./components/SessionList";
@@ -351,6 +352,7 @@ if (mobileMenuLogoutBtn) {
 window.addEventListener("resize", () => {
 	if (window.innerWidth >= 768) closeMobileMenu();
 });
+installCodeCopyHandler();
 document.addEventListener("keydown", (e) => {
 	if (e.key === "Escape") closeMobileMenu();
 	if (e.key === "k" && (e.metaKey || e.ctrlKey)) {

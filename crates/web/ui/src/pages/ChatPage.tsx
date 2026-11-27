@@ -32,6 +32,7 @@ import { switchSession } from "../sessions";
 import * as S from "../state";
 import { copyToClipboard } from "../ui";
 import { initVadButton, initVoiceInput, teardownVoiceInput } from "../voice-input";
+import { ApprovalDock, ApprovalsBadge, handleApprovalShortcut } from "./chat/ApprovalDock";
 import {
 	chatAutoResize,
 	handleHistoryDown,
@@ -635,6 +636,20 @@ function handleChatCopy(e: ClipboardEvent): void {
 
 // ── Session header controls ──────────────────────────────────
 
+function mountApprovalControls(): void {
+	const dockMount = S.$("approvalDockMount");
+	if (dockMount) render(<ApprovalDock />, dockMount);
+	const badgeMount = S.$("approvalsBadgeMount");
+	if (badgeMount) render(<ApprovalsBadge />, badgeMount);
+}
+
+function unmountApprovalControls(): void {
+	for (const id of ["approvalDockMount", "approvalsBadgeMount"]) {
+		const mount = S.$(id);
+		if (mount) render(null, mount);
+	}
+}
+
 function mountSessionHeaderControls(): void {
 	const sessionNameMount = S.$("sessionNameMount");
 	if (sessionNameMount) {
@@ -716,18 +731,59 @@ function bindChatComposer(): void {
 	S.chatSendBtn?.addEventListener("click", handleComposerSendClick);
 }
 
+function stopGeneration(btn: HTMLButtonElement | null): void {
+	const sessionKey = btn?.dataset.stopSessionKey || S.activeSessionKey;
+	if (btn) {
+		btn.disabled = true;
+		btn.classList.add("is-stopping");
+		btn.title = "Stopping generation";
+		btn.setAttribute("aria-label", "Stopping generation");
+	}
+	sendRpc("chat.abort", { sessionKey }).catch(() => setComposerStopButton(true, sessionKey));
+}
+
 function handleComposerSendClick(e: MouseEvent): void {
 	const btn = e.currentTarget as HTMLButtonElement;
 	if (btn.dataset.mode !== "stop") {
 		sendChat();
 		return;
 	}
-	const sessionKey = btn.dataset.stopSessionKey || S.activeSessionKey;
-	btn.disabled = true;
-	btn.classList.add("is-stopping");
-	btn.title = "Stopping generation";
-	btn.setAttribute("aria-label", "Stopping generation");
-	sendRpc("chat.abort", { sessionKey }).catch(() => setComposerStopButton(true, sessionKey));
+	stopGeneration(btn);
+}
+
+function anyChatModalOpen(): boolean {
+	for (const id of ["debugModal", "fullContextModal"]) {
+		const modal = S.$(id);
+		if (modal && !modal.classList.contains("hidden")) return true;
+	}
+	return !!document.querySelector(".provider-modal-backdrop:not(.hidden), [role='dialog'][aria-modal='true']");
+}
+
+let approvalShortcutHandler: ((e: KeyboardEvent) => void) | null = null;
+let escapeStopHandler: ((e: KeyboardEvent) => void) | null = null;
+
+function bindChatShortcuts(): void {
+	approvalShortcutHandler = (e: KeyboardEvent) => {
+		if (anyChatModalOpen()) return;
+		handleApprovalShortcut(e);
+	};
+	escapeStopHandler = (e: KeyboardEvent) => {
+		if (e.key !== "Escape" || e.defaultPrevented || e.isComposing) return;
+		if (anyChatModalOpen()) return;
+		const btn = S.chatSendBtn as HTMLButtonElement | null;
+		if (btn?.dataset.mode !== "stop" || btn.disabled) return;
+		e.preventDefault();
+		stopGeneration(btn);
+	};
+	document.addEventListener("keydown", approvalShortcutHandler, true);
+	document.addEventListener("keydown", escapeStopHandler);
+}
+
+function unbindChatShortcuts(): void {
+	if (approvalShortcutHandler) document.removeEventListener("keydown", approvalShortcutHandler, true);
+	if (escapeStopHandler) document.removeEventListener("keydown", escapeStopHandler);
+	approvalShortcutHandler = null;
+	escapeStopHandler = null;
 }
 
 function initializeChatControls(): void {
@@ -844,7 +900,7 @@ function initializeChatMediaDrop(): void {
 // Safe: static hardcoded HTML template string — no user input is interpolated.
 // This is a compile-time constant defined in the original JS source.
 const chatPageHTML =
-	'<div style="position:absolute;inset:0;display:grid;grid-template-rows:auto auto 1fr auto auto;overflow:hidden">' +
+	'<div style="position:absolute;inset:0;display:grid;grid-template-rows:auto auto 1fr auto auto auto;overflow:hidden">' +
 	'<div class="chat-toolbar h-12 px-4 border-b border-[var(--border)] bg-[var(--surface)] flex items-center gap-2" style="grid-row:1;">' +
 	'<div id="nodeCombo" class="model-combo hidden"><button id="nodeComboBtn" class="model-combo-btn" type="button"><span class="icon icon-sm icon-server" style="flex-shrink:0;"></span><span id="nodeComboLabel">Local</span><span class="icon icon-sm icon-chevron-down model-combo-chevron"></span></button><div id="nodeDropdown" class="model-dropdown hidden" tabindex="-1"><div id="nodeDropdownList" class="model-dropdown-list"></div></div></div>' +
 	'<div id="projectCombo" class="model-combo hidden"><button id="projectComboBtn" class="model-combo-btn" type="button"><span class="icon icon-sm icon-folder" style="flex-shrink:0;"></span><span id="projectComboLabel">No project</span><span class="icon icon-sm icon-chevron-down model-combo-chevron"></span></button><div id="projectDropdown" class="model-dropdown hidden"><div id="projectDropdownList" class="model-dropdown-list"></div></div></div>' +
@@ -853,6 +909,7 @@ const chatPageHTML =
 	// position:relative and so paints on top — the name looks clickable but every
 	// click lands on the project combo instead.
 	'<div id="sessionNameMount" class="ml-auto flex items-center min-w-0 overflow-hidden"></div>' +
+	'<div id="approvalsBadgeMount" class="flex items-center"></div>' +
 	'<div id="sessionHeaderToolbarMount" class="flex items-center gap-1.5"></div>' +
 	'<button id="sandboxToggle" class="sandbox-toggle text-xs border border-[var(--border)] px-2 py-1 rounded-md transition-colors cursor-pointer bg-transparent font-[var(--font-body)] inline-flex items-center gap-1" title="Toggle sandbox mode"><span class="icon icon-md icon-lock shrink-0"></span><span id="sandboxLabel">direct</span></button>' +
 	'<div class="chat-badge-desktop-only" style="position:relative;display:inline-block"><button id="sandboxImageBtn" class="text-xs border border-[var(--border)] px-2 py-1 rounded-md transition-colors cursor-pointer bg-transparent font-[var(--font-body)] inline-flex items-center gap-1 text-[var(--muted)]" title="Sandbox image"><span class="icon icon-md icon-cube shrink-0"></span><span id="sandboxImageLabel" class="max-w-[120px] truncate">unavailable</span></button><div id="sandboxImageDropdown" class="hidden" style="position:absolute;top:100%;left:0;z-index:50;margin-top:4px;min-width:200px;max-height:300px;overflow-y:auto;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.15);"></div></div>' +
@@ -863,8 +920,9 @@ const chatPageHTML =
 	'<div id="debugModal" class="provider-modal-backdrop hidden"><div class="provider-modal" style="width:min(980px,96vw);max-width:96vw;max-height:88vh;"><div class="provider-modal-header"><div class="provider-item-name">Debug context</div><button id="debugModalCloseBtn" type="button" class="provider-btn provider-btn-secondary provider-btn-sm">Close</button></div><div class="provider-modal-body" style="padding:0;overflow:hidden;"><div id="debugPanel" class="px-4 py-3 overflow-y-auto" style="max-height:72vh;"></div></div></div></div>' +
 	'<div id="fullContextModal" class="provider-modal-backdrop hidden"><div class="provider-modal" style="width:min(1080px,96vw);max-width:96vw;max-height:88vh;"><div class="provider-modal-header"><div class="provider-item-name">Full context</div><button id="fullContextModalCloseBtn" type="button" class="provider-btn provider-btn-secondary provider-btn-sm">Close</button></div><div class="provider-modal-body" style="padding:0;overflow:hidden;"><div id="fullContextPanel" class="px-4 py-3 overflow-y-auto" style="max-height:72vh;"></div></div></div></div>' +
 	'<div class="p-4 flex flex-col gap-2" id="messages" role="log" aria-label="Chat messages" style="grid-row:3;overflow-y:auto;min-height:0;min-width:0"></div>' +
-	'<div id="queuedMessages" class="queued-tray hidden" style="grid-row:4;"></div>' +
-	'<div class="chat-input-row bg-[var(--bg)]" style="grid-row:5;"><div id="chatComposer" class="chat-composer"><div class="chat-composer-input-line"><span id="chatCommandPrompt" class="chat-command-prompt chat-command-prompt-hidden" title="Command prompt symbol" aria-hidden="true">$</span><textarea id="chatInput" placeholder="Type a message..." rows="1" enterkeyhint="send" class="chat-composer-textarea"></textarea></div><div class="chat-composer-footer"><div class="chat-composer-tools"><div id="modelCombo" class="model-combo"><button id="modelComboBtn" class="model-combo-btn" type="button"><span id="modelComboLabel">loading\u2026</span><span class="icon icon-sm icon-chevron-down model-combo-chevron"></span></button><div id="modelDropdown" class="model-dropdown hidden"><input id="modelSearchInput" type="text" placeholder="Search models\u2026" class="model-search-input" autocomplete="off" /><div id="modelDropdownList" class="model-dropdown-list"></div></div></div><div id="reasoningCombo" class="model-combo hidden"><button id="reasoningComboBtn" class="model-combo-btn" type="button" title="Reasoning effort"><span class="icon icon-sm icon-brain" style="flex-shrink:0;"></span><span id="reasoningComboLabel">Off</span><span class="icon icon-sm icon-chevron-down model-combo-chevron"></span></button><div id="reasoningDropdown" class="model-dropdown hidden"><div id="reasoningDropdownList" class="model-dropdown-list"></div></div></div></div><div id="tokenBar" class="token-bar"></div><div class="chat-composer-actions"><input id="attachInput" class="hidden" type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple /><button id="attachBtn" type="button" title="Attach images" class="chat-composer-icon-btn"><span class="icon icon-lg icon-paperclip"></span></button><button id="micBtn" disabled title="Click to start recording" class="mic-btn chat-composer-icon-btn"><span class="icon icon-lg icon-microphone"></span></button><button id="vadBtn" disabled title="Conversation mode (VAD)" class="vad-btn chat-composer-icon-btn"><span class="icon icon-lg icon-waveform"></span></button><button id="sendBtn" disabled aria-label="Send" title="Send" class="chat-composer-send-btn"><span class="icon icon-lg icon-arrow-up"></span></button></div></div></div></div></div>';
+	'<div id="approvalDockMount" style="grid-row:4;"></div>' +
+	'<div id="queuedMessages" class="queued-tray hidden" style="grid-row:5;"></div>' +
+	'<div class="chat-input-row bg-[var(--bg)]" style="grid-row:6;"><div id="chatComposer" class="chat-composer"><div class="chat-composer-input-line"><span id="chatCommandPrompt" class="chat-command-prompt chat-command-prompt-hidden" title="Command prompt symbol" aria-hidden="true">$</span><textarea id="chatInput" placeholder="Type a message..." rows="1" enterkeyhint="send" class="chat-composer-textarea"></textarea></div><div class="chat-composer-footer"><div class="chat-composer-tools"><div id="modelCombo" class="model-combo"><button id="modelComboBtn" class="model-combo-btn" type="button"><span id="modelComboLabel">loading\u2026</span><span class="icon icon-sm icon-chevron-down model-combo-chevron"></span></button><div id="modelDropdown" class="model-dropdown hidden"><input id="modelSearchInput" type="text" placeholder="Search models\u2026" class="model-search-input" autocomplete="off" /><div id="modelDropdownList" class="model-dropdown-list"></div></div></div><div id="reasoningCombo" class="model-combo hidden"><button id="reasoningComboBtn" class="model-combo-btn" type="button" title="Reasoning effort"><span class="icon icon-sm icon-brain" style="flex-shrink:0;"></span><span id="reasoningComboLabel">Off</span><span class="icon icon-sm icon-chevron-down model-combo-chevron"></span></button><div id="reasoningDropdown" class="model-dropdown hidden"><div id="reasoningDropdownList" class="model-dropdown-list"></div></div></div></div><div id="tokenBar" class="token-bar"></div><div class="chat-composer-actions"><input id="attachInput" class="hidden" type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple /><button id="attachBtn" type="button" title="Attach images" class="chat-composer-icon-btn"><span class="icon icon-lg icon-paperclip"></span></button><button id="micBtn" disabled title="Click to start recording" class="mic-btn chat-composer-icon-btn"><span class="icon icon-lg icon-microphone"></span></button><button id="vadBtn" disabled title="Conversation mode (VAD)" class="vad-btn chat-composer-icon-btn"><span class="icon icon-lg icon-waveform"></span></button><button id="sendBtn" disabled aria-label="Send" title="Send" class="chat-composer-send-btn"><span class="icon icon-lg icon-arrow-up"></span></button></div></div></div></div></div>';
 
 // ── Page registration ────────────────────────────────────────
 
@@ -893,6 +951,8 @@ registerPrefix(
 		setMaybeRefreshFullContextFn(maybeRefreshFullContext);
 
 		mountSessionHeaderControls();
+		mountApprovalControls();
+		bindChatShortcuts();
 
 		const mcpToggle = S.$("mcpToggleBtn");
 		if (mcpToggle) mcpToggle.addEventListener("click", toggleMcp);
@@ -927,6 +987,8 @@ registerPrefix(
 			chatScrollHandler = null;
 		}
 		S.chatMsgBox?.removeEventListener("copy", handleChatCopy);
+		unbindChatShortcuts();
+		unmountApprovalControls();
 		teardownVoiceInput();
 		teardownMediaDrop();
 		unbindReasoningToggle();

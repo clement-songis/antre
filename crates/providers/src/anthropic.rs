@@ -525,6 +525,32 @@ fn parse_tool_calls(content: &[serde_json::Value]) -> Vec<ToolCall> {
         .collect()
 }
 
+/// Map one `content_block_delta` SSE event to a stream event. Extended
+/// thinking arrives as `thinking_delta`; it is forwarded as reasoning so the
+/// UI can show it live instead of only after the turn.
+fn content_block_delta_event(evt: &serde_json::Value) -> Option<StreamEvent> {
+    let delta = &evt["delta"];
+    match delta["type"].as_str().unwrap_or("") {
+        "text_delta" => delta["text"]
+            .as_str()
+            .filter(|text| !text.is_empty())
+            .map(|text| StreamEvent::Delta(text.to_string())),
+        "thinking_delta" => delta["thinking"]
+            .as_str()
+            .filter(|text| !text.is_empty())
+            .map(|text| StreamEvent::ReasoningDelta(text.to_string())),
+        "input_json_delta" => {
+            delta["partial_json"]
+                .as_str()
+                .map(|partial_json| StreamEvent::ToolCallArgumentsDelta {
+                    index: evt["index"].as_u64().unwrap_or(0) as usize,
+                    delta: partial_json.to_string(),
+                })
+        },
+        _ => None,
+    }
+}
+
 /// Convert `ChatMessage` list to Anthropic format.
 ///
 /// Returns `(system_blocks_or_text, anthropic_messages)`. System messages are
@@ -1027,23 +1053,8 @@ impl LlmProvider for AnthropicProvider {
                                         }
                                     }
                                     "content_block_delta" => {
-                                        let delta = &evt["delta"];
-                                        let delta_type = delta["type"].as_str().unwrap_or("");
-
-                                        if delta_type == "text_delta" {
-                                            if let Some(text) = delta["text"].as_str()
-                                                && !text.is_empty()
-                                            {
-                                                yield StreamEvent::Delta(text.to_string());
-                                            }
-                                        } else if delta_type == "input_json_delta"
-                                            && let Some(partial_json) = delta["partial_json"].as_str()
-                                        {
-                                            let index = evt["index"].as_u64().unwrap_or(0) as usize;
-                                            yield StreamEvent::ToolCallArgumentsDelta {
-                                                index,
-                                                delta: partial_json.to_string(),
-                                            };
+                                        if let Some(event) = content_block_delta_event(&evt) {
+                                            yield event;
                                         }
                                     }
                                     "content_block_stop" => {

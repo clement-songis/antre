@@ -88,3 +88,9 @@ export function isReasoningAlreadyShown(text: string | null | undefined): boolea
 	}
 	return false;
 }
+
+/** Keep the newest reasoning lines in view inside a height-capped element. */
+export function showThinkingTail(el: HTMLElement): void {
+	el.scrollTop = el.scrollHeight;
+	el.classList.toggle("is-overflowing", el.scrollHeight > el.clientHeight + 1);
+}

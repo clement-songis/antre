@@ -18,6 +18,7 @@ import {
 } from "../icons";
 import { currentPrefix, navigate, sessionPath } from "../router";
 import { switchSession } from "../sessions";
+import { sessionHasPendingApproval } from "../stores/approval-store";
 import * as projectStore from "../stores/project-store";
 import { type Session, sessionStore } from "../stores/session-store";
 import { ChannelType } from "../types";
@@ -143,11 +144,19 @@ function SessionIcon({ session, isBranch }: SessionIconProps): VNode {
 
 	// Read the reactive signal — auto-subscribes for badge updates.
 	const count = session.badgeCount.value;
+	const awaitingApproval = sessionHasPendingApproval(session.key);
 
 	return (
-		<span className="session-icon" style={iconStyle} title={title}>
+		<span className="session-icon relative" style={iconStyle} title={title}>
 			<span ref={iconRef} />
 			<span className="session-spinner" />
+			{awaitingApproval && (
+				<span
+					className="session-approval-dot absolute -top-0.5 -left-0.5 w-2 h-2 rounded-full bg-[var(--warn)]"
+					data-session-approval={session.key}
+					title="Waiting for approval"
+				/>
+			)}
 			{count > 0 && (
 				<span className="session-badge" data-session-key={session.key}>
 					{count > 99 ? "99+" : String(count)}

@@ -307,16 +307,19 @@
   }
   .thinking-text {
     color: var(--muted);
+    white-space: pre-wrap;
     font-size: 0.82rem;
     font-style: italic;
-    animation: thinking-pulse 2s ease-in-out infinite;
     line-height: 1.4;
-    white-space: pre-wrap;
+    animation: 2s ease-in-out infinite thinking-pulse;
+    display: block;
+    max-height: calc(1.4em * 4);
     overflow: hidden;
-    text-overflow: ellipsis;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
+  }
+  /* Live reasoning grows at the bottom: show its tail, fade the top. */
+  .thinking-text.is-overflowing {
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 1.4em);
+    mask-image: linear-gradient(to bottom, transparent 0, #000 1.4em);
   }
   @keyframes thinking-pulse {
     0%, 100% { opacity: 0.6; }
@@ -390,6 +393,16 @@
   }
   .msg.exec-card.exec-err {
     border-color: var(--error);
+  }
+  .msg.exec-card.exec-cancelled {
+    border-color: var(--border);
+    border-style: dashed;
+    opacity: 0.75;
+  }
+  .exec-cancelled-detail {
+    font-size: 0.72rem;
+    color: var(--muted);
+    font-style: italic;
   }
   .exec-prompt {
     font-family: var(--font-mono);
@@ -778,6 +791,14 @@
   .approval-deny {
     background: var(--error);
     color: #fff;
+  }
+  .approval-always {
+    background: transparent;
+    color: var(--ok);
+    border: 1px solid var(--ok);
+  }
+  .approval-btns {
+    flex-wrap: wrap;
   }
   .approval-countdown {
     font-size: 0.72rem;

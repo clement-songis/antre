@@ -534,6 +534,7 @@ mod agents;
 #[cfg(feature = "canvas")]
 mod canvas;
 mod channels;
+mod checkpoints;
 #[cfg(feature = "connectors")]
 mod connectors;
 mod core;
@@ -553,6 +554,7 @@ pub(super) fn register(reg: &mut MethodRegistry) {
     #[cfg(feature = "canvas")]
     canvas::register(reg);
     modes::register(reg);
+    checkpoints::register(reg);
     sessions::register(reg);
     channels::register(reg);
     #[cfg(feature = "connectors")]

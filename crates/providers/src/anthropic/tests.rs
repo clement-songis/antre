@@ -848,3 +848,26 @@ async fn complete_with_setup_token_sends_identity_blocks() {
     assert_eq!(response.text.as_deref(), Some("ok"));
     assert_eq!(seen.lock().unwrap().as_slice(), ["Bearer sk-ant-oat01-a"]);
 }
+
+#[test]
+fn content_block_delta_maps_text_thinking_and_tool_json() {
+    let text = serde_json::json!({"type": "content_block_delta", "index": 0, "delta": {"type": "text_delta", "text": "hi"}});
+    assert!(matches!(content_block_delta_event(&text), Some(StreamEvent::Delta(t)) if t == "hi"));
+
+    let thinking = serde_json::json!({"type": "content_block_delta", "index": 0, "delta": {"type": "thinking_delta", "thinking": "let me see"}});
+    assert!(
+        matches!(content_block_delta_event(&thinking), Some(StreamEvent::ReasoningDelta(t)) if t == "let me see")
+    );
+
+    let tool = serde_json::json!({"type": "content_block_delta", "index": 2, "delta": {"type": "input_json_delta", "partial_json": "{\"a\""}});
+    assert!(matches!(
+        content_block_delta_event(&tool),
+        Some(StreamEvent::ToolCallArgumentsDelta { index: 2, .. })
+    ));
+
+    let signature = serde_json::json!({"type": "content_block_delta", "index": 0, "delta": {"type": "signature_delta", "signature": "abc"}});
+    assert!(content_block_delta_event(&signature).is_none());
+
+    let empty = serde_json::json!({"type": "content_block_delta", "index": 0, "delta": {"type": "thinking_delta", "thinking": ""}});
+    assert!(content_block_delta_event(&empty).is_none());
+}

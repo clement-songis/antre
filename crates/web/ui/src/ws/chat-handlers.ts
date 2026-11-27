@@ -37,6 +37,7 @@ import {
 	makeThinkingDots,
 	moveFirstQueuedToChat,
 	setSafeMarkdownHtml,
+	showThinkingTail,
 	updateSessionHistoryIndex,
 	updateSessionRunId,
 } from "./shared";
@@ -85,6 +86,7 @@ function handleChatThinkingText(p: ChatPayload, isActive: boolean, isChatPage: b
 		textEl.className = "thinking-text";
 		textEl.textContent = p.text || "";
 		indicator.appendChild(textEl);
+		showThinkingTail(textEl);
 		smartScrollToBottom();
 	}
 }
@@ -554,7 +556,7 @@ function handleChatError(p: ChatPayload, isActive: boolean, isChatPage: boolean,
 	}
 	setComposerStopButton(false);
 	removeThinking();
-	clearStaleRunningToolCards();
+	clearStaleRunningToolCards("cancelled");
 	if (p.error?.title) {
 		chatAddErrorCard(localizeStructuredError(p.error) as Parameters<typeof chatAddErrorCard>[0]);
 	} else {
@@ -651,7 +653,7 @@ function handleChatAborted(p: ChatPayload, isActive: boolean, isChatPage: boolea
 	}
 	setComposerStopButton(false);
 	removeThinking();
-	clearStaleRunningToolCards();
+	clearStaleRunningToolCards("cancelled");
 	renderAbortedPartialInDom(eventSession, p, partialState);
 	S.setStreamEl(null);
 	S.setStreamText("");
