@@ -31,6 +31,6 @@ pub use {
     },
     key_store::{KeyStore, ProviderConfig},
     known_providers::{AuthType, KnownProvider, known_providers},
-    oauth::import_detected_oauth_tokens,
+    oauth::{import_codex_cli_tokens, report_external_credentials},
     service::{ErrorParser, LiveProviderSetupService},
 };

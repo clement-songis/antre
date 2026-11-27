@@ -8,6 +8,7 @@ mod support;
 mod available;
 mod credentials;
 mod custom;
+mod external;
 mod oauth;
 mod service;
 mod validate;

@@ -184,6 +184,13 @@ pub async fn prepare_gateway_core_with_profile(
         &local_model_ids,
     );
 
+    // Another tool's credentials are read only with the user's consent.
+    moltis_providers::openai_codex::allow_codex_cli_tokens(
+        config
+            .providers
+            .external_credentials
+            .contains(&moltis_config::schema::ExternalCredentialSource::CodexCli),
+    );
     let has_explicit_provider_settings =
         crate::provider_setup::has_explicit_provider_settings(&config.providers);
     let auto_detected_provider_sources = if has_explicit_provider_settings {
@@ -260,10 +267,9 @@ pub async fn prepare_gateway_core_with_profile(
                     "llm auto-detected provider source"
                 );
             }
-            let import_token_store = moltis_oauth::TokenStore::new();
-            crate::provider_setup::import_detected_oauth_tokens(
+            crate::provider_setup::report_external_credentials(
                 &auto_detected_provider_sources,
-                &import_token_store,
+                &moltis_oauth::TokenStore::new(),
             );
         }
     }

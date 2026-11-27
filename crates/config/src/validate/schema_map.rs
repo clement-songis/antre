@@ -414,6 +414,7 @@ pub(super) fn build_schema_map() -> KnownKeys {
                 ("offered", Array(Box::new(Leaf))),
                 ("show_legacy_models", Leaf),
                 ("allow_claude_subscription_tokens", Leaf),
+                ("external_credentials", Array(Box::new(Leaf))),
             ]),
         }),
         (

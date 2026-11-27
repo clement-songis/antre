@@ -3,11 +3,7 @@
 
 use std::path::{Path, PathBuf};
 
-use {
-    secrecy::Secret,
-    serde_json::Value,
-    tracing::{debug, info},
-};
+use {secrecy::Secret, serde_json::Value, tracing::info};
 
 use moltis_oauth::{TokenStore, normalize_loopback_redirect};
 
@@ -90,33 +86,50 @@ fn parse_codex_cli_tokens(data: &str) -> Option<moltis_oauth::OAuthTokens> {
 
 // ── Token import ───────────────────────────────────────────────────────────
 
-/// Import auto-detected external OAuth tokens into the token store so all
-/// providers read from a single location. Currently handles Codex CLI
-/// `~/.codex/auth.json` -> `openai-codex` in the token store.
-pub fn import_detected_oauth_tokens(
+/// Report detected external OAuth credentials without touching them. Another
+/// tool's tokens (Codex CLI `~/.codex/auth.json`) are read live only with
+/// consent (`[providers] external_credentials`) or copied by an explicit
+/// [`import_codex_cli_tokens`]; startup never copies them.
+pub fn report_external_credentials(
     detected: &[crate::AutoDetectedProviderSource],
     token_store: &TokenStore,
 ) {
-    for source in detected {
-        if source.provider == "openai-codex"
-            && source.source.contains(".codex/auth.json")
-            && token_store.load("openai-codex").is_none()
-            && let Some(path) = codex_cli_auth_path()
-            && let Ok(data) = std::fs::read_to_string(&path)
-            && let Some(tokens) = parse_codex_cli_tokens(&data)
-        {
-            match token_store.save("openai-codex", &tokens) {
-                Ok(()) => info!(
-                    source = %path.display(),
-                    "imported openai-codex tokens from Codex CLI auth"
-                ),
-                Err(e) => debug!(
-                    error = %e,
-                    "failed to import openai-codex tokens"
-                ),
-            }
-        }
+    let codex_detected = detected.iter().any(|source| {
+        source.provider == "openai-codex" && source.source.contains(".codex/auth.json")
+    });
+    if !codex_detected || token_store.load("openai-codex").is_some() {
+        return;
     }
+    if moltis_providers::openai_codex::codex_cli_tokens_allowed() {
+        info!("openai-codex uses Codex CLI auth (allowed by providers.external_credentials)");
+    } else {
+        info!(
+            "Codex CLI credentials found in ~/.codex/auth.json; not used without consent. \
+             Import them from the providers settings, or allow live use with \
+             [providers] external_credentials = [\"codex-cli\"]"
+        );
+    }
+}
+
+/// Copy the Codex CLI's tokens into `token_store` as `openai-codex`. For an
+/// explicit user action only; returns the file it read.
+pub fn import_codex_cli_tokens(token_store: &TokenStore) -> Result<PathBuf, String> {
+    let path = codex_cli_auth_path().ok_or_else(|| "home directory not found".to_string())?;
+    import_codex_cli_tokens_from(&path, token_store)?;
+    Ok(path)
+}
+
+pub(crate) fn import_codex_cli_tokens_from(
+    path: &Path,
+    token_store: &TokenStore,
+) -> Result<(), String> {
+    let data = std::fs::read_to_string(path)
+        .map_err(|error| format!("cannot read {}: {error}", path.display()))?;
+    let tokens = parse_codex_cli_tokens(&data)
+        .ok_or_else(|| format!("{} holds no Codex access token", path.display()))?;
+    token_store
+        .save("openai-codex", &tokens)
+        .map_err(|error| format!("cannot save openai-codex tokens: {error}"))
 }
 
 // ── Provider-specific OAuth helpers ────────────────────────────────────────
@@ -166,6 +179,7 @@ pub(crate) fn has_oauth_tokens_for_provider(
     primary_store.load(provider_name).is_some()
         || home_store.is_some_and(|store| store.load(provider_name).is_some())
         || (provider_name == "openai-codex"
+            && moltis_providers::openai_codex::codex_cli_tokens_allowed()
             && codex_cli_auth_path()
                 .as_deref()
                 .is_some_and(codex_cli_auth_has_access_token))
@@ -183,7 +197,7 @@ pub(crate) fn has_oauth_tokens(provider_name: &str, token_store: &TokenStore) ->
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 #[cfg(test)]
 mod tests {
-    use {super::*, moltis_oauth::OAuthTokens};
+    use {super::*, moltis_oauth::OAuthTokens, secrecy::ExposeSecret};
 
     fn make_oauth_config(redirect_uri: &str) -> moltis_oauth::OAuthConfig {
         moltis_oauth::OAuthConfig {
@@ -319,6 +333,52 @@ mod tests {
 
         std::fs::write(&path, r#"{"not_tokens":true}"#).unwrap();
         assert!(!codex_cli_auth_has_access_token(&path));
+    }
+
+    #[test]
+    fn explicit_codex_import_copies_tokens_into_the_store() {
+        let dir = tempfile::tempdir().unwrap();
+        let auth = dir.path().join("auth.json");
+        std::fs::write(
+            &auth,
+            r#"{"tokens":{"access_token":"at","refresh_token":"rt","account_id":"acc"}}"#,
+        )
+        .unwrap();
+        let store = TokenStore::with_path(dir.path().join("oauth_tokens.json"));
+
+        import_codex_cli_tokens_from(&auth, &store).unwrap();
+
+        let saved = store.load("openai-codex").unwrap();
+        assert_eq!(saved.access_token.expose_secret(), "at");
+        assert_eq!(saved.account_id.as_deref(), Some("acc"));
+    }
+
+    #[test]
+    fn explicit_codex_import_reports_unusable_files() {
+        let dir = tempfile::tempdir().unwrap();
+        let store = TokenStore::with_path(dir.path().join("oauth_tokens.json"));
+        let missing = dir.path().join("missing.json");
+        assert!(import_codex_cli_tokens_from(&missing, &store).is_err());
+
+        let empty = dir.path().join("auth.json");
+        std::fs::write(&empty, r#"{"tokens":{"access_token":""}}"#).unwrap();
+        let error = import_codex_cli_tokens_from(&empty, &store).unwrap_err();
+        assert!(error.contains("no Codex access token"), "{error}");
+        assert!(store.load("openai-codex").is_none());
+    }
+
+    /// Reporting detected external credentials must never copy them.
+    #[test]
+    fn reporting_external_credentials_copies_nothing() {
+        let dir = tempfile::tempdir().unwrap();
+        let store = TokenStore::with_path(dir.path().join("oauth_tokens.json"));
+        let detected = [crate::AutoDetectedProviderSource {
+            provider: "openai-codex".into(),
+            source: "file:/home/u/.codex/auth.json".into(),
+        }];
+        report_external_credentials(&detected, &store);
+        assert!(store.load("openai-codex").is_none());
+        assert!(!dir.path().join("oauth_tokens.json").exists());
     }
 
     #[test]

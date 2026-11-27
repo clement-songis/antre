@@ -366,6 +366,16 @@ OpenAI Codex uses OAuth-based access.
 2. Click **Connect** and complete the auth flow.
 3. Choose a Codex model.
 
+**Already logged in with the Codex CLI?** Moltis detects `~/.codex/auth.json`
+but never reads or copies it on its own. Either copy those tokens once with
+the `providers.import_external` RPC (`{"source": "codex-cli"}`), or let Moltis
+read the Codex CLI's file live (it then follows the CLI's token refreshes):
+
+```toml
+[providers]
+external_credentials = ["codex-cli"]
+```
+
 If the browser cannot reach `localhost:1455`, Moltis now supports a manual
 fallback in both **Settings** and **Onboarding**: paste the callback URL (or
 `code#state`) into the OAuth panel and submit it.

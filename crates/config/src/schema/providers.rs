@@ -107,6 +107,12 @@ pub struct ProvidersConfig {
     #[serde(default, skip_serializing_if = "is_false")]
     pub allow_claude_subscription_tokens: bool,
 
+    /// Credentials owned by other tools that Moltis may read live, e.g.
+    /// `["codex-cli"]` for `~/.codex/auth.json`. Empty (default): such files
+    /// are detected and reported, never read or copied without consent.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub external_credentials: Vec<ExternalCredentialSource>,
+
     /// Provider-specific settings keyed by provider name.
     /// See [`KNOWN_PROVIDER_NAMES`] for the full list of recognised names.
     #[serde(flatten)]
@@ -116,6 +122,14 @@ pub struct ProvidersConfig {
     /// This is populated at runtime by the gateway and not persisted.
     #[serde(skip)]
     pub local_models: Vec<String>,
+}
+
+/// A credential file owned by another tool.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum ExternalCredentialSource {
+    /// Codex CLI OAuth tokens in `~/.codex/auth.json` (`openai-codex`).
+    CodexCli,
 }
 
 /// How tool calling is handled for a provider.
@@ -453,5 +467,29 @@ impl ProvidersConfig {
     /// Get the configured entry for a provider, if any.
     pub fn get(&self, name: &str) -> Option<&ProviderEntry> {
         self.provider_entry(name)
+    }
+}
+
+#[allow(clippy::unwrap_used, clippy::expect_used)]
+#[cfg(test)]
+mod external_credentials_tests {
+    use super::*;
+
+    #[test]
+    fn external_credentials_default_to_none() {
+        let config: ProvidersConfig = toml::from_str("").unwrap();
+        assert!(config.external_credentials.is_empty());
+    }
+
+    #[test]
+    fn external_credentials_parse_known_sources_only() {
+        let config: ProvidersConfig =
+            toml::from_str(r#"external_credentials = ["codex-cli"]"#).unwrap();
+        assert_eq!(config.external_credentials, [
+            ExternalCredentialSource::CodexCli
+        ]);
+        assert!(
+            toml::from_str::<ProvidersConfig>(r#"external_credentials = ["claude-cli"]"#).is_err()
+        );
     }
 }

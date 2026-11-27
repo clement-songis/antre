@@ -22,8 +22,8 @@ use crate::openai_compat::to_responses_api_tools;
 mod catalog;
 
 pub use catalog::{
-    available_models, default_model_catalog, fetch_models_with_token, has_stored_tokens,
-    live_models, start_model_discovery,
+    allow_codex_cli_tokens, available_models, codex_cli_tokens_allowed, default_model_catalog,
+    fetch_models_with_token, has_stored_tokens, live_models, start_model_discovery,
 };
 
 use catalog::load_codex_cli_tokens;
@@ -32,6 +32,19 @@ use catalog::load_codex_cli_tokens;
 use catalog::{
     CODEX_MODELS_CLIENT_VERSION, DEFAULT_CODEX_MODELS, parse_codex_cli_tokens, parse_models_payload,
 };
+
+#[cfg(test)]
+mod consent_tests {
+    use super::*;
+
+    /// Nothing in the test suite grants consent, so the Codex CLI file must
+    /// stay unread whatever `~/.codex/auth.json` holds on this machine.
+    #[test]
+    fn codex_cli_tokens_are_not_read_without_consent() {
+        assert!(!codex_cli_tokens_allowed());
+        assert!(load_codex_cli_tokens().is_none());
+    }
+}
 
 pub struct OpenAiCodexProvider {
     model: String,

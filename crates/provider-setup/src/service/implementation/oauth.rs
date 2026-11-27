@@ -420,7 +420,10 @@ fn is_github_copilot_provider(provider_name: &str) -> bool {
     provider_name == "github-copilot"
 }
 
-fn ensure_provider_enabled(config: &mut moltis_config::schema::ProvidersConfig, provider: &str) {
+pub(super) fn ensure_provider_enabled(
+    config: &mut moltis_config::schema::ProvidersConfig,
+    provider: &str,
+) {
     config
         .providers
         .entry(provider.to_string())

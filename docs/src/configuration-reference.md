@@ -926,6 +926,7 @@ Each channel account (`channels.<channel_type>.<account_name>`) is an arbitrary 
 | `offered` | array of string | `[]` | Allowlist of enabled providers (also controls web UI pickers). Empty = all enabled. |
 | `show_legacy_models` | bool | `false` | Show models older than one year in the chat model selector. |
 | `allow_claude_subscription_tokens` | bool | `false` | Accept `claude setup-token` subscription credentials for Anthropic providers. Off by default because Anthropic's terms may not allow subscription OAuth in third-party apps; setup-tokens are ignored with a warning until enabled. |
+| `external_credentials` | array of string | `[]` | Other tools' credentials Moltis may read live. Only `"codex-cli"` (`~/.codex/auth.json`) today. Empty = detected but never read or copied. |
 | `<name>` | `ProviderEntry` (see below) | — | Provider-specific settings keyed by provider name. |
 
 ### `providers.<name>` — ProviderEntry

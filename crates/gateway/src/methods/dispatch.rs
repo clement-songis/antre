@@ -231,6 +231,7 @@ const WRITE_METHODS: &[&str] = &[
     "providers.save_models",
     "providers.validate_key",
     "providers.remove_key",
+    "providers.import_external",
     "providers.add_custom",
     "providers.oauth.start",
     "providers.oauth.complete",

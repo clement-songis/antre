@@ -1130,6 +1130,11 @@ pub trait ProviderSetupService: Send + Sync {
     async fn oauth_complete(&self, params: Value) -> ServiceResult;
     async fn oauth_status(&self, params: Value) -> ServiceResult;
     async fn remove_key(&self, params: Value) -> ServiceResult;
+    /// Copy another tool's credentials (`{"source": "codex-cli"}`) into
+    /// Moltis's store. Only ever called on an explicit user action.
+    async fn import_external(&self, _params: Value) -> ServiceResult {
+        Err("provider setup not configured".into())
+    }
     async fn validate_key(&self, params: Value) -> ServiceResult;
     async fn save_model(&self, params: Value) -> ServiceResult;
     async fn save_models(&self, params: Value) -> ServiceResult;

@@ -53,8 +53,29 @@ pub(super) fn parse_codex_cli_tokens(data: &str) -> Option<moltis_oauth::OAuthTo
     })
 }
 
-/// Try to load tokens from the Codex CLI file at `~/.codex/auth.json`.
+/// Whether the user consented to Moltis reading the Codex CLI's own tokens
+/// (`[providers] external_credentials = ["codex-cli"]`). Off until the
+/// gateway applies the config: another tool's credentials are never read
+/// silently.
+static CODEX_CLI_TOKENS_ALLOWED: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(false);
+
+/// Apply the user's consent for reading `~/.codex/auth.json`.
+pub fn allow_codex_cli_tokens(allowed: bool) {
+    CODEX_CLI_TOKENS_ALLOWED.store(allowed, std::sync::atomic::Ordering::Relaxed);
+}
+
+#[must_use]
+pub fn codex_cli_tokens_allowed() -> bool {
+    CODEX_CLI_TOKENS_ALLOWED.load(std::sync::atomic::Ordering::Relaxed)
+}
+
+/// Load tokens from the Codex CLI file at `~/.codex/auth.json`, only with
+/// the user's consent ([`allow_codex_cli_tokens`]).
 pub(super) fn load_codex_cli_tokens() -> Option<moltis_oauth::OAuthTokens> {
+    if !codex_cli_tokens_allowed() {
+        return None;
+    }
     let home = std::env::var("HOME").ok()?;
     let path = std::path::PathBuf::from(home)
         .join(".codex")

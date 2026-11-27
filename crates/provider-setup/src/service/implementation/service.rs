@@ -320,9 +320,10 @@ impl LiveProviderSetupService {
             {
                 return true;
             }
-            // Match provider-registry behavior: openai-codex may be inferred from
-            // Codex CLI auth at ~/.codex/auth.json.
+            // Match provider-registry behavior: openai-codex may read Codex
+            // CLI auth at ~/.codex/auth.json, only with the user's consent.
             if provider.name == "openai-codex"
+                && moltis_providers::openai_codex::codex_cli_tokens_allowed()
                 && crate::oauth::codex_cli_auth_path()
                     .as_deref()
                     .is_some_and(crate::oauth::codex_cli_auth_has_access_token)
@@ -378,6 +379,10 @@ impl ProviderSetupService for LiveProviderSetupService {
 
     async fn remove_key(&self, params: Value) -> ServiceResult {
         self.remove_key_inner(params).await
+    }
+
+    async fn import_external(&self, params: Value) -> ServiceResult {
+        self.import_external_inner(params).await
     }
 
     async fn oauth_status(&self, params: Value) -> ServiceResult {

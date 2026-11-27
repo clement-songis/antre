@@ -143,6 +143,7 @@ loopback_http = true                # Plain HTTP on loopback binds: http://local
                                     # Enabled providers and those shown in onboarding/picker UI ([] = enable/show all)
 # show_legacy_models = true         # Show models older than 1 year in the chat model selector (they always appear in Settings)
 # allow_claude_subscription_tokens = false # Accept `claude setup-token` credentials (Anthropic ToS risk)
+# external_credentials = ["codex-cli"]  # Let Moltis read other tools' credentials live (~/.codex/auth.json); default: never, even when detected
 # All available providers (canonical list in schema/providers.rs):
 #   "anthropic", "openai", "gemini", "groq", "xai", "deepinfra",
 #   "deepseek", "fireworks", "mistral", "openrouter", "cerebras", "minimax",
