@@ -1371,3 +1371,6 @@ async fn api_endpoint_rate_limited_after_high_request_volume() {
 
 #[path = "auth_middleware/more.rs"]
 mod more;
+
+#[path = "auth_middleware/session_ticket.rs"]
+mod session_ticket;

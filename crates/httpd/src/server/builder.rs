@@ -55,6 +55,7 @@ pub(super) fn build_gateway_base_internal(
             webauthn_registry: webauthn_registry.clone(),
             gateway_state: Arc::clone(&state),
             login_guard: crate::login_guard::LoginGuard::new(),
+            session_tickets: crate::auth_routes::SessionTickets::default(),
         };
         router = router.nest("/api/auth", auth_router().with_state(auth_state));
     }
@@ -181,6 +182,7 @@ pub(super) fn build_gateway_base_internal(
             webauthn_registry: webauthn_registry.clone(),
             gateway_state: Arc::clone(&state),
             login_guard: crate::login_guard::LoginGuard::new(),
+            session_tickets: crate::auth_routes::SessionTickets::default(),
         };
         router = router.nest("/api/auth", auth_router().with_state(auth_state));
     }

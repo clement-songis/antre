@@ -542,6 +542,7 @@ mod vault_unseal_tests {
             webauthn_registry: None,
             gateway_state,
             login_guard: LoginGuard::new(),
+            session_tickets: crate::auth_routes::SessionTickets::default(),
         }
     }
 

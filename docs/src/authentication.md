@@ -138,6 +138,24 @@ force the connection to be treated as remote.
   `connect` handshake `auth.api_key` field (WebSocket)
 - **Must have at least one scope** — keys without scopes are denied
 
+### Session from an API key (WebView clients)
+
+The web UI authenticates with the session cookie, and a WebView (desktop
+or mobile shell) cannot add a Bearer header to every request and to the
+WebSocket. A shell holding an `operator.admin` API key trades it for a
+session instead:
+
+1. `POST /api/auth/session-ticket` with `Authorization: Bearer <key>`
+   returns `{"ticket", "expires_in": 60, "redeem_path"}`. Keys without
+   `operator.admin` get `403`: a session has full access.
+2. The shell navigates its WebView to `redeem_path`
+   (`GET /api/auth/session-ticket/redeem?ticket=…`), which sets the session
+   cookie and redirects to `/`.
+
+Tickets are random (256 bits), single-use and expire after 60 seconds; at
+most 64 are pending. Failed redemptions count against the login rate limit,
+and issue/redeem/reject events go to the auth audit log.
+
 ## API Key Scopes
 
 | Scope | Permissions |

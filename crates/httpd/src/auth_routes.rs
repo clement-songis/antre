@@ -20,6 +20,8 @@ use {
     },
 };
 
+pub use session_ticket::SessionTickets;
+
 use crate::{
     auth_middleware::{AuthResult, AuthSession, SESSION_COOKIE, check_auth},
     login_guard::LoginGuard,
@@ -35,6 +37,7 @@ pub struct AuthState {
     pub webauthn_registry: Option<SharedWebAuthnRegistry>,
     pub gateway_state: Arc<GatewayState>,
     pub login_guard: LoginGuard,
+    pub session_tickets: SessionTickets,
 }
 
 impl axum::extract::FromRef<AuthState> for Arc<CredentialStore> {
@@ -86,6 +89,11 @@ pub fn auth_router() -> axum::Router<AuthState> {
             post(setup_passkey_register_finish_handler),
         )
         .route("/reset", post(reset_auth_handler))
+        .route("/session-ticket", post(session_ticket::issue_handler))
+        .route(
+            "/session-ticket/redeem",
+            get(session_ticket::redeem_handler),
+        )
         // Vault endpoints (encryption-at-rest).
         .merge(vault_routes())
 }
@@ -1244,4 +1252,5 @@ fn extract_session_token(headers: &axum::http::HeaderMap) -> Option<&str> {
     crate::auth_middleware::parse_cookie(cookie_header, SESSION_COOKIE)
 }
 
+mod session_ticket;
 mod vault;
