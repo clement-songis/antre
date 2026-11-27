@@ -12,6 +12,7 @@ pub mod container_mounts;
 pub mod defaults;
 pub mod env_subst;
 pub mod error;
+pub mod legacy_brand;
 pub mod loader;
 pub mod migrate;
 pub mod process_probe;

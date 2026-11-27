@@ -747,3 +747,23 @@ name = "Rex"
         );
     }
 }
+
+#[test]
+fn find_config_file_reads_legacy_name_until_current_exists() {
+    let _guard = CONFIG_DIR_TEST_LOCK.lock().unwrap();
+    let dir = tempfile::tempdir().expect("tempdir");
+    let legacy = dir
+        .path()
+        .join(crate::legacy_brand::LEGACY_CONFIG_FILENAMES[0]);
+    std::fs::write(&legacy, "[server]\nport = 1\n").expect("write legacy");
+    set_config_dir(dir.path().to_path_buf());
+
+    assert_eq!(find_config_file(), Some(legacy.clone()));
+
+    let current = dir.path().join("antre.toml");
+    std::fs::write(&current, "[server]\nport = 2\n").expect("write current");
+    assert_eq!(find_config_file(), Some(current));
+    assert!(legacy.exists());
+
+    clear_config_dir();
+}

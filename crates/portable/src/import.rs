@@ -378,7 +378,9 @@ async fn process_archive_into_dirs<R: Read>(
     // ── Merge SQLite databases ───────────────────────────────────────
     if !opts.dry_run {
         for (archive_path, data) in &db_snapshots {
-            if archive_path == "db/antre.db" {
+            if archive_path == "db/antre.db"
+                || archive_path == antre_config::legacy_brand::LEGACY_ARCHIVE_DB_PATH
+            {
                 match merge_antre_db(data_dir, data, opts.conflict).await {
                     Ok(counts) => {
                         for (table, n) in &counts {

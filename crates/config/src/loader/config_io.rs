@@ -278,7 +278,7 @@ fn load_layered_config_toml(
 /// project-local and user-global paths are skipped for isolation.
 pub fn find_config_file() -> Option<PathBuf> {
     if let Some(dir) = config_dir_override() {
-        for name in CONFIG_FILENAMES {
+        for name in config_filenames() {
             let p = dir.join(name);
             if p.exists() {
                 return Some(p);
@@ -289,7 +289,7 @@ pub fn find_config_file() -> Option<PathBuf> {
     }
 
     // Project-local
-    for name in CONFIG_FILENAMES {
+    for name in config_filenames() {
         let p = PathBuf::from(name);
         if p.exists() {
             return Some(p);
@@ -297,8 +297,8 @@ pub fn find_config_file() -> Option<PathBuf> {
     }
 
     // User-global: ~/.config/antre/
-    if let Some(dir) = home_dir().map(|h| h.join(".config").join("antre")) {
-        for name in CONFIG_FILENAMES {
+    if let Some(dir) = user_global_config_dir() {
+        for name in config_filenames() {
             let p = dir.join(name);
             if p.exists() {
                 return Some(p);

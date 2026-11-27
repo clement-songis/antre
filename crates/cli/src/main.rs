@@ -61,7 +61,7 @@ use {
     anyhow::anyhow,
     clap::{Parser, Subcommand},
     status_line::StatusLine,
-    tracing::info,
+    tracing::{info, warn},
     tracing_subscriber::{
         EnvFilter, Layer as _,
         filter::filter_fn,
@@ -470,9 +470,25 @@ async fn trust_ca() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[tokio::main]
-async fn main() -> anyhow::Result<()> {
+fn main() -> anyhow::Result<()> {
     dotenvy::dotenv().ok();
+    // Before clap reads `env = "ANTRE_*"` arguments, and before the runtime
+    // starts threads: `set_var` is only sound while the process has one.
+    let legacy_env = antre_config::legacy_brand::legacy_env_promotions(std::env::vars_os());
+    for promotion in &legacy_env {
+        #[allow(unsafe_code)]
+        // SAFETY: no other thread exists yet, see above.
+        unsafe {
+            std::env::set_var(&promotion.current, &promotion.value);
+        }
+    }
+    tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()?
+        .block_on(run(legacy_env))
+}
+
+async fn run(legacy_env: Vec<antre_config::legacy_brand::EnvPromotion>) -> anyhow::Result<()> {
     let cli = Cli::parse();
 
     // Create the log buffer only for the gateway command so the web UI can
@@ -491,6 +507,13 @@ async fn main() -> anyhow::Result<()> {
     };
 
     info!(version = antre_config::VERSION, "antre starting");
+    for promotion in &legacy_env {
+        warn!(
+            legacy = %promotion.legacy,
+            current = %promotion.current,
+            "deprecated environment variable, rename it"
+        );
+    }
 
     // Apply directory overrides before any command so all subcommands
     // (config check, db, sandbox, etc.) respect --config-dir / --data-dir.
@@ -502,6 +525,14 @@ async fn main() -> anyhow::Result<()> {
     }
     if let Some(ref dir) = cli.share_dir {
         antre_config::set_share_dir(dir.clone());
+    }
+
+    for step in antre_config::legacy_brand::migrate_legacy_install() {
+        if step.is_failure() {
+            warn!("legacy install migration: {step}");
+        } else {
+            info!("legacy install migration: {step}");
+        }
     }
 
     // Ensure config/data directories exist for every command path. This is a

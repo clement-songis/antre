@@ -17,7 +17,15 @@ fn generate_random_port() -> u16 {
 }
 
 /// Standard config file names, checked in order.
-const CONFIG_FILENAMES: &[&str] = &["antre.toml", "antre.yaml", "antre.yml", "antre.json"];
+const CURRENT_CONFIG_FILENAMES: &[&str] = &["antre.toml", "antre.yaml", "antre.yml", "antre.json"];
+
+/// Config file names, checked in order: current names, then legacy ones.
+fn config_filenames() -> impl Iterator<Item = &'static str> {
+    CURRENT_CONFIG_FILENAMES
+        .iter()
+        .chain(crate::legacy_brand::LEGACY_CONFIG_FILENAMES)
+        .copied()
+}
 
 /// Override for the config directory, set via `set_config_dir()`.
 static CONFIG_DIR_OVERRIDE: Mutex<Option<PathBuf>> = Mutex::new(None);
@@ -160,13 +168,19 @@ pub fn config_dir() -> Option<PathBuf> {
     {
         return Some(PathBuf::from(dir));
     }
-    home_dir().map(|h| h.join(".config").join("antre"))
+    user_global_config_dir()
 }
 
-/// Returns the user-global config directory (`~/.config/antre`) without
-/// considering overrides like `ANTRE_CONFIG_DIR`.
+/// Returns the user-global config directory (`~/.config/antre`, or the
+/// legacy one while only that exists) without considering overrides like
+/// `ANTRE_CONFIG_DIR`.
 pub fn user_global_config_dir() -> Option<PathBuf> {
-    home_dir().map(|h| h.join(".config").join("antre"))
+    home_dir().map(|h| {
+        crate::legacy_brand::resolve_default_dir(
+            h.join(".config").join("antre"),
+            crate::legacy_brand::legacy_config_dir(&h),
+        )
+    })
 }
 
 /// Returns the user-global config directory only when it differs from the
@@ -185,7 +199,7 @@ pub fn user_global_config_dir_if_different() -> Option<PathBuf> {
 /// Finds a config file in the user-global config directory only.
 pub fn find_user_global_config_file() -> Option<PathBuf> {
     let dir = user_global_config_dir()?;
-    for name in CONFIG_FILENAMES {
+    for name in config_filenames() {
         let p = dir.join(name);
         if p.exists() {
             return Some(p);
@@ -195,7 +209,7 @@ pub fn find_user_global_config_file() -> Option<PathBuf> {
 }
 
 /// Returns the data directory: programmatic override -> `ANTRE_DATA_DIR` env ->
-/// `~/.antre/`.
+/// `~/.antre/` (or the legacy directory while only that exists).
 pub fn data_dir() -> PathBuf {
     if let Some(dir) = data_dir_override() {
         return dir;
@@ -206,7 +220,12 @@ pub fn data_dir() -> PathBuf {
         return PathBuf::from(dir);
     }
     home_dir()
-        .map(|h| h.join(".antre"))
+        .map(|h| {
+            crate::legacy_brand::resolve_default_dir(
+                h.join(".antre"),
+                crate::legacy_brand::legacy_data_dir(&h),
+            )
+        })
         .unwrap_or_else(|| PathBuf::from(".antre"))
 }
 

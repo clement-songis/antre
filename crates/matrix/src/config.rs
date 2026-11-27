@@ -72,6 +72,7 @@ pub enum MatrixOwnershipMode {
     #[default]
     UserManaged,
     /// Antre should bootstrap and manage this dedicated bot account.
+    #[serde(alias = "moltis_owned")] // rebrand:keep (stored channel configs)
     AntreOwned,
 }
 
@@ -607,6 +608,18 @@ mod tests {
         assert_eq!(
             serde_json::to_value(MatrixAuthMode::Oidc).unwrap_or_else(|error| panic!("{error}")),
             "oidc"
+        );
+    }
+
+    #[test]
+    fn legacy_ownership_mode_name_still_parses() {
+        let legacy = serde_json::json!("moltis_owned"); // rebrand:keep
+        let mode: MatrixOwnershipMode =
+            serde_json::from_value(legacy).unwrap_or_else(|error| panic!("parse failed: {error}"));
+        assert_eq!(mode, MatrixOwnershipMode::AntreOwned);
+        assert_eq!(
+            serde_json::to_value(&mode).unwrap_or_else(|error| panic!("{error}")),
+            serde_json::json!("antre_owned")
         );
     }
 }

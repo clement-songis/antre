@@ -24,6 +24,7 @@ pub(crate) const MAX_ARCHIVE_PATH_METADATA_BYTES: u64 = 8192;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExportManifest {
     pub format_version: u32,
+    #[serde(alias = "moltis_version")] // rebrand:keep (older archives)
     pub antre_version: String,
     pub created_at: String,
     pub inventory: ArchiveInventory,
@@ -34,6 +35,7 @@ pub struct ExportManifest {
 pub struct ArchiveInventory {
     pub config_files: Vec<String>,
     pub workspace_files: Vec<String>,
+    #[serde(alias = "has_moltis_db")] // rebrand:keep (older archives)
     pub has_antre_db: bool,
     pub has_memory_db: bool,
     pub session_files: Vec<String>,
@@ -161,5 +163,27 @@ mod tests {
         let decoded: ExportManifest = serde_json::from_str(json).unwrap();
         assert!(decoded.inventory.managed_files.files.is_empty());
         assert_eq!(decoded.inventory.managed_files.total_bytes, 0);
+    }
+
+    #[test]
+    fn legacy_brand_manifest_still_parses() {
+        // rebrand:keep-start
+        let json = r#"{
+            "format_version": 1,
+            "moltis_version": "20260311.01",
+            "created_at": "2026-05-01T00:00:00Z",
+            "inventory": {
+                "config_files": ["moltis.toml"],
+                "workspace_files": [],
+                "has_moltis_db": true,
+                "has_memory_db": false,
+                "session_files": [],
+                "media_files": []
+            }
+        }"#;
+        // rebrand:keep-end
+        let decoded: ExportManifest = serde_json::from_str(json).unwrap();
+        assert_eq!(decoded.antre_version, "20260311.01");
+        assert!(decoded.inventory.has_antre_db);
     }
 }
