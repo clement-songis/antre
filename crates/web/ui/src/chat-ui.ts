@@ -505,7 +505,8 @@ export function updateTokenBar(): void {
 				? "Context tokens used by the latest assistant turn"
 				: `Context tokens used by the latest assistant turn; ${t("common:labels.contextUnknown")}`
 			: "";
-	if (text === "0 (0%)") {
+	// Nothing used yet in a session with a known or default window: hide.
+	if (total === 0 && S.sessionContextWindow > 0) {
 		text = "";
 	}
 	if (!S.sessionToolsEnabled) {

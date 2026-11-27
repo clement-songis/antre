@@ -1,10 +1,11 @@
 const { expect, test } = require("../base-test");
-const { navigateAndWait, waitForWsConnected, watchPageErrors } = require("../helpers");
+const { navigateAndWait, waitForChatSessionReady, waitForWsConnected, watchPageErrors } = require("../helpers");
 
 test.describe("context meter with an unknown window", () => {
 	test.beforeEach(async ({ page }) => {
 		await navigateAndWait(page, "/chats/main");
 		await waitForWsConnected(page);
+		await waitForChatSessionReady(page);
 	});
 
 	test("token bar shows ? instead of a percentage of a guessed window", async ({ page }) => {

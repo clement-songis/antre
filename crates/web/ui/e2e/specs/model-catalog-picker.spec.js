@@ -1,5 +1,5 @@
 const { expect, test } = require("../base-test");
-const { navigateAndWait, waitForWsConnected, watchPageErrors } = require("../helpers");
+const { navigateAndWait, waitForChatSessionReady, waitForWsConnected, watchPageErrors } = require("../helpers");
 
 /** Set mock models in the browser and freeze the store so bootstrap/WS cannot overwrite. */
 async function setMockModels(page, mockModels, mockSelectedId) {
@@ -35,6 +35,7 @@ test.describe("model picker catalog details", () => {
 	test.beforeEach(async ({ page }) => {
 		await navigateAndWait(page, "/chats/main");
 		await waitForWsConnected(page);
+		await waitForChatSessionReady(page);
 	});
 
 	test("shows the wire id under the name, the context size and deprecation", async ({ page }) => {

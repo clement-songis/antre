@@ -288,8 +288,10 @@ export function setSessionSwitchInProgress(v: boolean): void {
 export function setLastHistoryIndex(v: number): void {
 	lastHistoryIndex = v;
 }
+/** Set a known window; call `setSessionContextWindowKnown(false)` after it for a default. */
 export function setSessionContextWindow(v: number): void {
 	sessionContextWindow = v;
+	sessionContextWindowKnown = true;
 }
 export function setSessionContextWindowKnown(v: boolean): void {
 	sessionContextWindowKnown = v;
