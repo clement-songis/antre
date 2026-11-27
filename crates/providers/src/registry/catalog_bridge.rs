@@ -1,0 +1,305 @@
+//! Glue between the provider registry and the model catalog: config
+//! overrides and live discovery feed the catalog, registration reads it back.
+
+use std::{collections::HashMap, path::PathBuf, sync::OnceLock};
+
+use moltis_model_catalog::{
+    ModelKind, ModelSpec, ResolvedModel, Source,
+    catalog::ANY_PROVIDER,
+    global,
+    live_cache::{LiveCache, LiveSnapshot},
+};
+
+use crate::{
+    discovered_model::DiscoveredModel, model_capabilities::ModelInfo, model_id::capability_model_id,
+};
+
+static LIVE_CACHE: OnceLock<LiveCache> = OnceLock::new();
+
+/// Persist live `/models` results under `dir` (the gateway passes
+/// `data_dir()/model-catalog/live`). Without it nothing is written.
+pub fn set_live_cache_dir(dir: PathBuf) {
+    let _ = LIVE_CACHE.set(LiveCache::new(dir));
+}
+
+/// Resolve a registered model against the global catalog.
+pub(crate) fn resolve(
+    provider: &str,
+    model_id: &str,
+    heuristic: Option<&ModelSpec>,
+) -> ResolvedModel {
+    let id = capability_model_id(model_id);
+    global::read(|catalog| catalog.resolve(provider, id, heuristic))
+}
+
+/// Feed `[models.<id>]` and `[providers.<name>.model_overrides.<id>]`
+/// context windows into the catalog's override layer.
+pub(crate) fn record_context_overrides(
+    global_overrides: &HashMap<String, u32>,
+    provider_overrides: &[(String, HashMap<String, u32>)],
+) {
+    let to_rows = |overrides: &HashMap<String, u32>| -> Vec<ModelSpec> {
+        overrides
+            .iter()
+            .map(|(id, window)| ModelSpec {
+                context_window: Some(*window),
+                ..ModelSpec::new(id.clone())
+            })
+            .collect()
+    };
+    global::write(|catalog| {
+        catalog.set_provider_rows(Source::Override, ANY_PROVIDER, to_rows(global_overrides));
+        for (provider, overrides) in provider_overrides {
+            let mut rows = catalog.provider_rows(Source::Override, provider);
+            rows.retain(|row| !overrides.contains_key(&row.id));
+            rows.extend(to_rows(overrides));
+            catalog.set_provider_rows(Source::Override, provider, rows);
+        }
+    });
+}
+
+/// Let `custom-*` providers inherit metadata from the models.dev provider
+/// that publishes exactly their base URL (GreenPT, CompactifAI and the like
+/// list ids only on `/models`).
+pub(crate) fn record_custom_aliases(config: &moltis_config::schema::ProvidersConfig) {
+    global::write(|catalog| {
+        for (name, entry) in &config.providers {
+            if !name.starts_with("custom-") {
+                continue;
+            }
+            let Some(base_url) = entry.base_url.as_deref() else {
+                continue;
+            };
+            if let Some(models_dev) = catalog.models_dev_provider_for_base_url(base_url) {
+                tracing::debug!(provider = %name, models_dev = %models_dev, "custom provider matched a models.dev provider");
+                catalog.set_provider_alias(name, &models_dev);
+            }
+        }
+    });
+}
+
+/// Record a provider's live discovery result in the catalog and on disk.
+pub(crate) fn record_live_models(provider: &str, models: &[DiscoveredModel]) {
+    if models.is_empty() {
+        return;
+    }
+    let rows: Vec<ModelSpec> = models.iter().map(|model| model.metadata.clone()).collect();
+    if let Some(cache) = LIVE_CACHE.get() {
+        let snapshot = LiveSnapshot {
+            fetched_at: time::OffsetDateTime::now_utc(),
+            models: rows.clone(),
+        };
+        if let Err(error) = cache.save(provider, &snapshot) {
+            tracing::debug!(provider, %error, "failed to persist live model list");
+        }
+    }
+    global::write(|catalog| catalog.set_provider_rows(Source::Live, provider, rows));
+}
+
+/// Last good live results for providers whose discovery did not answer this
+/// time, so they keep their real model list instead of the fallback.
+pub(crate) fn cached_discoveries(
+    providers: &[String],
+    fresh: &HashMap<String, Vec<DiscoveredModel>>,
+) -> HashMap<String, Vec<DiscoveredModel>> {
+    let Some(cache) = LIVE_CACHE.get() else {
+        return HashMap::new();
+    };
+    providers
+        .iter()
+        .filter(|provider| !fresh.contains_key(*provider))
+        .filter_map(|provider| {
+            let snapshot = cache.load(provider).ok().flatten()?;
+            let models = snapshot
+                .models
+                .into_iter()
+                .map(|spec| {
+                    let name = spec.display_name.clone().unwrap_or_else(|| spec.id.clone());
+                    DiscoveredModel::new(spec.id.clone(), name).with_metadata(spec)
+                })
+                .collect();
+            Some((provider.clone(), models))
+        })
+        .collect()
+}
+
+/// Catalog details pickers show next to a registered model.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModelCatalogDetails {
+    /// Id sent to the API, without the provider namespace.
+    pub wire_id: String,
+    /// Date or snapshot suffix split off the id ("0925", "2026-01-23").
+    pub version_label: Option<String>,
+    /// Context window from a real source; `None` means unknown.
+    pub context_window: Option<u32>,
+    pub max_output: Option<u32>,
+    pub deprecated: bool,
+    /// `YYYY-MM-DD`.
+    pub retires_at: Option<String>,
+}
+
+/// Look up the details of a registered model.
+#[must_use]
+pub fn model_catalog_details(info: &ModelInfo) -> ModelCatalogDetails {
+    let raw = crate::model_id::raw_model_id(&info.id);
+    let wire_id = crate::model_id::split_reasoning_suffix(raw).0.to_string();
+    let resolved = resolve(&info.provider, &wire_id, None);
+    let date_format = time::macros::format_description!("[year]-[month]-[day]");
+    ModelCatalogDetails {
+        version_label: moltis_model_catalog::prettify_id(&wire_id).version,
+        context_window: resolved.known_context_window(),
+        max_output: resolved.spec.max_output,
+        deprecated: resolved.status().is_deprecated(),
+        retires_at: resolved
+            .spec
+            .retires_at
+            .and_then(|date| date.format(&date_format).ok()),
+        wire_id,
+    }
+}
+
+/// Apply catalog data to a model being registered: human name, capabilities
+/// known from a real source. Returns `false` when the catalog says the model
+/// is not a chat model, so it must not be offered in chat pickers.
+pub(crate) fn enrich_model_info(info: &mut ModelInfo, raw_id: &str) -> bool {
+    let known = resolve(&info.provider, raw_id, None);
+    if known.spec.kind.is_some_and(|kind| kind != ModelKind::Chat) {
+        tracing::debug!(
+            provider = %info.provider,
+            model = raw_id,
+            kind = ?known.spec.kind,
+            "skipping non-chat model from the chat registry"
+        );
+        return false;
+    }
+
+    // Name priority: user override, provider API, catalog, then a name the
+    // registration path already chose, then the prettified id.
+    let id_echoed = info.display_name.trim().is_empty() || info.display_name == raw_id;
+    let authoritative = known
+        .name_source
+        .is_some_and(|source| source <= Source::Live);
+    if let Some(name) = &known.spec.display_name
+        && (authoritative || id_echoed)
+    {
+        info.display_name.clone_from(name);
+    } else if id_echoed {
+        info.display_name = known.display_name().name;
+    }
+
+    if let Some(window) = known.known_context_window() {
+        info.capabilities.context_window = window;
+    }
+    if let Some(tools) = known.spec.tools {
+        info.capabilities.tools = tools;
+    }
+    if known.spec.input_modalities.is_some() {
+        info.capabilities.vision = known.spec.accepts_images();
+    }
+    if let Some(reasoning) = &known.spec.reasoning {
+        info.capabilities.reasoning = reasoning.is_supported();
+    }
+    true
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
+mod tests {
+    use {super::*, crate::model_capabilities::ModelCapabilities};
+
+    fn info(provider: &str, id: &str, name: &str) -> ModelInfo {
+        ModelInfo {
+            id: id.into(),
+            provider: provider.into(),
+            display_name: name.into(),
+            created_at: None,
+            recommended: false,
+            capabilities: ModelCapabilities::infer(id),
+        }
+    }
+
+    #[test]
+    fn enrich_fills_catalog_name_and_window() {
+        let mut model = info("anthropic", "claude-opus-5-5", "claude-opus-5-5");
+        assert!(enrich_model_info(&mut model, "claude-opus-5-5"));
+        assert_eq!(model.display_name, "Claude Opus 5.5");
+        assert_eq!(model.capabilities.context_window, 1_000_000);
+    }
+
+    #[test]
+    fn enrich_prettifies_unknown_ids_and_keeps_given_names() {
+        let mut unknown = info("custom-box", "glm-4.6-air-0925", "glm-4.6-air-0925");
+        assert!(enrich_model_info(&mut unknown, "glm-4.6-air-0925"));
+        assert_eq!(unknown.display_name, "GLM 4.6 Air");
+
+        let mut named = info("custom-box", "my-model", "My Model");
+        assert!(enrich_model_info(&mut named, "my-model"));
+        assert_eq!(named.display_name, "My Model");
+    }
+
+    #[test]
+    fn details_expose_wire_id_version_and_known_window() {
+        let model = info("zai", "zai::glm-4.6-air-0925", "GLM 4.6 Air");
+        let details = model_catalog_details(&model);
+        assert_eq!(details.wire_id, "glm-4.6-air-0925");
+        assert_eq!(details.version_label.as_deref(), Some("0925"));
+        assert_eq!(details.context_window, None);
+
+        let opus = info(
+            "anthropic",
+            "anthropic::claude-opus-5-5@reasoning-high",
+            "Claude Opus 5.5",
+        );
+        let details = model_catalog_details(&opus);
+        assert_eq!(details.wire_id, "claude-opus-5-5");
+        assert_eq!(details.context_window, Some(1_000_000));
+        assert!(!details.deprecated);
+        let json = serde_json::to_value(&details).unwrap();
+        assert_eq!(json["wireId"], "claude-opus-5-5");
+    }
+
+    #[test]
+    fn enrich_rejects_non_chat_models() {
+        let mut image = info("openai", "gpt-image-2.6-flare", "gpt-image-2.6-flare");
+        assert!(!enrich_model_info(&mut image, "gpt-image-2.6-flare"));
+    }
+
+    #[test]
+    fn overrides_win_over_catalog() {
+        record_context_overrides(
+            &HashMap::from([("override-test-model".to_string(), 42_000)]),
+            &[(
+                "anthropic".to_string(),
+                HashMap::from([("claude-sonnet-5-5".to_string(), 64_000)]),
+            )],
+        );
+        assert_eq!(
+            resolve("custom-x", "override-test-model", None).known_context_window(),
+            Some(42_000)
+        );
+        let sonnet = resolve("anthropic", "claude-sonnet-5-5", None);
+        assert_eq!(sonnet.known_context_window(), Some(64_000));
+        assert_eq!(sonnet.context_source, Some(Source::Override));
+    }
+
+    #[test]
+    fn live_rows_feed_the_catalog_and_the_disk_cache() {
+        let models = vec![
+            DiscoveredModel::new("live-only-model", "live-only-model").with_metadata(ModelSpec {
+                context_window: Some(77_000),
+                display_name: Some("Live Only".into()),
+                ..ModelSpec::default()
+            }),
+        ];
+        record_live_models("live-test-provider", &models);
+        let resolved = resolve("live-test-provider", "live-only-model", None);
+        assert_eq!(resolved.known_context_window(), Some(77_000));
+        assert_eq!(resolved.context_source, Some(Source::Live));
+        record_live_models("live-test-provider", &[]);
+        assert_eq!(
+            resolve("live-test-provider", "live-only-model", None).known_context_window(),
+            Some(77_000)
+        );
+    }
+}

@@ -304,6 +304,23 @@ loopback_http = true                # Plain HTTP on loopback binds: http://local
 # context_window = 200_000
 
 # ══════════════════════════════════════════════════════════════════════════════
+# MODEL CATALOG
+# ══════════════════════════════════════════════════════════════════════════════
+# Names, context windows, capabilities, prices and retirement dates come from
+# a catalog merged from: overrides > runtime probes > live /models >
+# refreshed models.dev > bundled snapshot > id heuristics.
+# A refreshed catalog only describes providers you configured and never sets
+# base URLs, headers or credentials. See docs: model-catalog.md.
+#
+# [catalog]
+# refresh = true                     # false = keep the bundled snapshot (offline)
+# refresh_urls = [                   # Tried in order until one is valid
+#   "https://models.dev/api.json",
+#   "https://raw.githubusercontent.com/clement-songis/moltis/main/crates/model-catalog/data/models-dev.json.gz",
+# ]
+# refresh_interval_hours = 12        # Minimum hours between downloads
+
+# ══════════════════════════════════════════════════════════════════════════════
 # CHAT SETTINGS
 # ══════════════════════════════════════════════════════════════════════════════
 

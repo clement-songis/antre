@@ -304,11 +304,33 @@ fn parse_model_entry(entry: &serde_json::Value) -> Option<crate::DiscoveredModel
     }
 
     let display_name = obj.get("display_name").and_then(serde_json::Value::as_str);
+    let tokens = |key: &str| {
+        obj.get(key)
+            .and_then(serde_json::Value::as_u64)
+            .and_then(|value| u32::try_from(value).ok())
+    };
+    let retires_at = obj
+        .get("retires_at")
+        .and_then(serde_json::Value::as_str)
+        .and_then(crate::live_metadata::parse_date);
+    let status = match obj.get("lifecycle").and_then(serde_json::Value::as_str) {
+        Some("deprecated") => Some(moltis_model_catalog::ModelStatus::Deprecated),
+        Some("retired") => Some(moltis_model_catalog::ModelStatus::Retired),
+        Some("active") => Some(moltis_model_catalog::ModelStatus::Active),
+        _ => None,
+    };
 
-    Some(crate::DiscoveredModel::new(
-        model_id,
-        normalize_display_name(model_id, display_name),
-    ))
+    Some(
+        crate::DiscoveredModel::new(model_id, normalize_display_name(model_id, display_name))
+            .with_metadata(moltis_model_catalog::ModelSpec {
+                display_name: crate::live_metadata::api_name(model_id, display_name),
+                context_window: tokens("max_input_tokens"),
+                max_output: tokens("max_tokens"),
+                status,
+                retires_at,
+                ..moltis_model_catalog::ModelSpec::default()
+            }),
+    )
 }
 
 fn parse_models_payload(value: &serde_json::Value) -> Vec<crate::DiscoveredModel> {

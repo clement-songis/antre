@@ -7634,6 +7634,7 @@ dependencies = [
  "directories",
  "ipnet",
  "moltis-metrics",
+ "moltis-model-catalog",
  "moltis-protocol",
  "secrecy 0.8.0",
  "serde",
@@ -7880,6 +7881,7 @@ dependencies = [
  "moltis-memory",
  "moltis-memory-zvec",
  "moltis-metrics",
+ "moltis-model-catalog",
  "moltis-msteams",
  "moltis-netbird",
  "moltis-network-filter",
@@ -8231,6 +8233,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "moltis-model-catalog"
+version = "0.1.0"
+dependencies = [
+ "flate2",
+ "mockito",
+ "moltis-metrics",
+ "reqwest 0.13.2",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.18",
+ "time",
+ "tokio",
+ "toml 0.8.23",
+ "tracing",
+]
+
+[[package]]
 name = "moltis-msteams"
 version = "0.1.0"
 dependencies = [
@@ -8537,6 +8557,7 @@ dependencies = [
  "moltis-common",
  "moltis-config",
  "moltis-metrics",
+ "moltis-model-catalog",
  "moltis-oauth",
  "reqwest 0.13.2",
  "schemars 1.2.1",
@@ -8546,6 +8567,7 @@ dependencies = [
  "sysinfo",
  "tempfile",
  "thiserror 2.0.18",
+ "time",
  "tokio",
  "tokio-stream",
  "tokio-tungstenite 0.26.2",
@@ -8944,6 +8966,7 @@ dependencies = [
  "dirs",
  "futures",
  "moltis-config",
+ "moltis-model-catalog",
  "reqwest 0.13.2",
  "secrecy 0.8.0",
  "serde",

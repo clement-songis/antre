@@ -133,10 +133,18 @@ pub trait LlmProvider: Send + Sync {
         false
     }
 
-    /// Context window size in tokens for this model.
-    /// Used to detect when conversation approaches the limit and trigger auto-compact.
+    /// Context window size in tokens for this model, always a number so it
+    /// can size budgets. Use [`Self::context_limits`] to know whether it is
+    /// real or the [`UNKNOWN_CONTEXT_WINDOW`](super::UNKNOWN_CONTEXT_WINDOW)
+    /// default.
     fn context_window(&self) -> u32 {
-        200_000
+        super::UNKNOWN_CONTEXT_WINDOW
+    }
+
+    /// Limits a real source knows for this model. Providers registered
+    /// through the provider registry answer from the model catalog.
+    fn context_limits(&self) -> super::ContextLimits {
+        super::ContextLimits::default()
     }
 
     /// Whether this provider supports vision (image inputs).

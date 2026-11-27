@@ -44,6 +44,8 @@ json_schema_ast   = { workspace = true }
 moltis-agents     = { path = "../agents" }
 moltis-common     = { workspace = true }
 moltis-config     = { workspace = true }
+moltis-model-catalog = { workspace = true }
+time                 = { features = ["macros", "parsing"], workspace = true }
 reqwest           = { workspace = true }
 schemars          = { workspace = true }
 secrecy           = { workspace = true }

@@ -12,8 +12,35 @@ use crate::openai_codex::OpenAiCodexProvider;
 /// so the first one the account still serves wins.
 const PREFERRED_ORCHESTRATORS: &[&str] = &["gpt-6.2-sol", "gpt-6.1-sol", "gpt-6-luna"];
 const FALLBACK_ORCHESTRATOR: &str = "gpt-6.2-sol";
-pub const DEFAULT_IMAGE_MODEL: &str = "gpt-image-2.6-flare";
-pub const SUPPORTED_IMAGE_MODELS: &[&str] = &["gpt-image-2.6-flare", "gpt-image-2.6-sunburst"];
+/// Used only if the catalog has no OpenAI image model at all.
+const FALLBACK_IMAGE_MODEL: &str = "gpt-image-2.6-flare";
+
+/// OpenAI's image role from the model catalog.
+#[must_use]
+pub fn default_image_model() -> String {
+    moltis_model_catalog::global::role_id_or(
+        "openai",
+        moltis_model_catalog::ModelKind::Image,
+        FALLBACK_IMAGE_MODEL,
+    )
+}
+
+/// Active OpenAI image models the catalog knows, the default first.
+#[must_use]
+pub fn supported_image_models() -> Vec<String> {
+    let default = default_image_model();
+    let mut models: Vec<String> = moltis_model_catalog::global::read(|catalog| {
+        catalog
+            .models_of_kind("openai", moltis_model_catalog::ModelKind::Image)
+            .into_iter()
+            .filter(|model| !model.status().is_deprecated())
+            .map(|model| model.spec.id)
+            .collect()
+    });
+    models.retain(|id| *id != default);
+    models.insert(0, default);
+    models
+}
 const DEFAULT_SIZE: &str = "1024x1024";
 const DEFAULT_QUALITY: &str = "medium";
 const DEFAULT_OUTPUT_FORMAT: &str = "png";
@@ -37,7 +64,7 @@ impl ImageGenerationRequest {
     pub fn new(prompt: impl Into<String>) -> Self {
         Self {
             prompt: prompt.into(),
-            model: DEFAULT_IMAGE_MODEL.to_string(),
+            model: default_image_model(),
             size: DEFAULT_SIZE.to_string(),
             quality: DEFAULT_QUALITY.to_string(),
             output_format: DEFAULT_OUTPUT_FORMAT.to_string(),
@@ -344,8 +371,11 @@ mod tests {
     #[test]
     fn new_request_defaults_to_current_image_model() {
         let request = ImageGenerationRequest::new("a fox");
-        assert_eq!(request.model, DEFAULT_IMAGE_MODEL);
-        assert!(SUPPORTED_IMAGE_MODELS.contains(&request.model.as_str()));
+        assert_eq!(request.model, "gpt-image-2.6-flare");
+        let supported = supported_image_models();
+        assert_eq!(supported[0], request.model);
+        assert!(supported.iter().any(|id| id == "gpt-image-2.6-sunburst"));
+        assert!(!supported.iter().any(|id| id == "gpt-image-2"));
     }
 
     #[test]

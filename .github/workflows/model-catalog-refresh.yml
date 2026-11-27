@@ -1,0 +1,60 @@
+name: Refresh model catalog
+
+# Daily refresh of the bundled models.dev snapshot. Opens (or updates) one
+# pull request with a diff summary; never merges it.
+on:
+  schedule:
+    - cron: "17 5 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: model-catalog-refresh
+  cancel-in-progress: true
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      BRANCH: bot/model-catalog-refresh
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
+
+      - uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2
+        with:
+          shared-key: model-catalog-refresh-v1
+
+      - name: Refresh snapshot
+        run: ./scripts/update-model-catalog.sh --diff-out "$RUNNER_TEMP/catalog-diff.md"
+
+      - name: Catalog tests
+        run: cargo test -p moltis-model-catalog
+
+      - name: Open or update pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          if git diff --quiet -- crates/model-catalog/data/models-dev.json.gz; then
+            echo "Snapshot unchanged."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -C "$BRANCH"
+          git add crates/model-catalog/data/models-dev.json.gz
+          git commit -m "chore(model-catalog): refresh models.dev snapshot"
+          git push --force "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" "HEAD:refs/heads/${BRANCH}"
+          title="chore(model-catalog): refresh models.dev snapshot"
+          if gh pr view "$BRANCH" --repo "$REPO" --json state --jq .state 2>/dev/null | grep -q OPEN; then
+            gh pr edit "$BRANCH" --repo "$REPO" --body-file "$RUNNER_TEMP/catalog-diff.md"
+          else
+            gh pr create --repo "$REPO" --head "$BRANCH" --base main \
+              --title "$title" --body-file "$RUNNER_TEMP/catalog-diff.md"
+          fi

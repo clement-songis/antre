@@ -1,0 +1,29 @@
+[package]
+description       = "Model catalog: metadata for every provider model, merged from overrides, probes, live discovery, models.dev and heuristics"
+edition.workspace = true
+name              = "moltis-model-catalog"
+version.workspace = true
+
+[dependencies]
+flate2         = { workspace = true }
+moltis-metrics = { optional = true, workspace = true }
+reqwest        = { workspace = true }
+serde          = { workspace = true }
+serde_json     = { workspace = true }
+thiserror      = { workspace = true }
+time           = { features = ["formatting", "macros", "parsing", "serde"], workspace = true }
+tokio          = { workspace = true }
+toml           = { workspace = true }
+tracing        = { optional = true, workspace = true }
+
+[features]
+default = ["metrics", "tracing"]
+metrics = ["dep:moltis-metrics"]
+tracing = ["dep:tracing"]
+
+[dev-dependencies]
+mockito  = { workspace = true }
+tempfile = { workspace = true }
+
+[lints]
+workspace = true

@@ -45,7 +45,22 @@ use crate::{
 
 struct RegistryModelProvider {
     model_id: String,
+    /// Provider name and raw model id, to read the catalog at call time so a
+    /// background catalog refresh is picked up without re-registering.
+    catalog_provider: String,
+    catalog_model: String,
     inner: Arc<dyn LlmProvider>,
+}
+
+impl RegistryModelProvider {
+    fn catalog_limits(&self) -> moltis_agents::model::ContextLimits {
+        let resolved =
+            super::catalog_bridge::resolve(&self.catalog_provider, &self.catalog_model, None);
+        moltis_agents::model::ContextLimits {
+            window: resolved.known_context_window(),
+            max_output: resolved.spec.max_output,
+        }
+    }
 }
 
 #[async_trait::async_trait]
@@ -86,7 +101,13 @@ impl LlmProvider for RegistryModelProvider {
     }
 
     fn context_window(&self) -> u32 {
-        self.inner.context_window()
+        self.catalog_limits()
+            .window
+            .unwrap_or_else(|| self.inner.context_window())
+    }
+
+    fn context_limits(&self) -> moltis_agents::model::ContextLimits {
+        self.catalog_limits()
     }
 
     fn supports_vision(&self) -> bool {
@@ -128,6 +149,8 @@ impl LlmProvider for RegistryModelProvider {
     ) -> Option<Arc<dyn LlmProvider>> {
         let new_inner = Arc::clone(&self.inner).with_reasoning_effort(effort)?;
         Some(Arc::new(RegistryModelProvider {
+            catalog_provider: self.catalog_provider.clone(),
+            catalog_model: self.catalog_model.clone(),
             model_id: format!(
                 "{}@reasoning-{}",
                 split_reasoning_suffix(&self.model_id).0,
@@ -686,7 +709,10 @@ impl ProviderRegistry {
         }
 
         let live_catalog = match source.live_models() {
-            Ok(models) => models,
+            Ok(models) => {
+                super::catalog_bridge::record_live_models(source.provider_name(), &models);
+                models
+            },
             Err(err) => {
                 tracing::warn!(
                     provider = source.provider_name(),
@@ -887,10 +913,15 @@ impl ProviderRegistry {
     /// Register a provider manually.
     pub fn register(&mut self, mut info: ModelInfo, provider: Arc<dyn LlmProvider>) {
         let model_id = raw_model_id(&info.id).to_string();
+        if !super::catalog_bridge::enrich_model_info(&mut info, &model_id) {
+            return;
+        }
         let registry_model_id = namespaced_model_id(&info.provider, &model_id);
         info.id = registry_model_id.clone();
         let wrapped: Arc<dyn LlmProvider> = Arc::new(RegistryModelProvider {
             model_id: registry_model_id.clone(),
+            catalog_provider: info.provider.clone(),
+            catalog_model: model_id,
             inner: provider,
         });
         self.providers.insert(registry_model_id, wrapped);
@@ -979,7 +1010,35 @@ impl ProviderRegistry {
         global_cw_overrides: HashMap<String, u32>,
     ) -> Self {
         let mut reg = Self::empty();
+        super::catalog_bridge::record_context_overrides(
+            &global_cw_overrides,
+            &config
+                .providers
+                .iter()
+                .map(|(name, entry)| (name.clone(), extract_cw_overrides(&entry.model_overrides)))
+                .collect::<Vec<_>>(),
+        );
         reg.global_cw_overrides = global_cw_overrides;
+        super::catalog_bridge::record_custom_aliases(config);
+
+        let configured: Vec<String> = config.providers.keys().cloned().collect();
+        let cached = super::catalog_bridge::cached_discoveries(&configured, prefetched);
+        for (provider, models) in prefetched {
+            super::catalog_bridge::record_live_models(provider, models);
+        }
+        let merged_prefetched;
+        let prefetched = if cached.is_empty() {
+            prefetched
+        } else {
+            for (provider, models) in &cached {
+                super::catalog_bridge::record_live_models(provider, models);
+            }
+            merged_prefetched = cached
+                .into_iter()
+                .chain(prefetched.iter().map(|(k, v)| (k.clone(), v.clone())))
+                .collect::<HashMap<_, _>>();
+            &merged_prefetched
+        };
 
         // Built-in providers first: they support tool calling.
         reg.register_builtin_providers(config, env_overrides, prefetched);

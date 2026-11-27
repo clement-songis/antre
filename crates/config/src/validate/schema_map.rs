@@ -962,6 +962,14 @@ pub(super) fn build_schema_map() -> KnownKeys {
             ])),
         ),
         ("models", Map(Box::new(model_override()))),
+        (
+            "catalog",
+            Struct(HashMap::from([
+                ("refresh", Leaf),
+                ("refresh_urls", Array(Box::new(Leaf))),
+                ("refresh_interval_hours", Leaf),
+            ])),
+        ),
     ]))
 }
 

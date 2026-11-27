@@ -7,6 +7,8 @@ use super::{
 
 #[path = "tests/agents.rs"]
 mod agents;
+#[path = "tests/catalog.rs"]
+mod catalog;
 #[path = "tests/channels.rs"]
 mod channels;
 #[path = "tests/chat.rs"]

@@ -8,8 +8,8 @@ use {
     async_trait::async_trait,
     moltis_agents::tool_registry::AgentTool,
     moltis_providers::openai_codex_image::{
-        DEFAULT_IMAGE_MODEL, GeneratedImage, ImageGenerationRequest, OpenAiCodexImageProvider,
-        SUPPORTED_IMAGE_MODELS,
+        GeneratedImage, ImageGenerationRequest, OpenAiCodexImageProvider, default_image_model,
+        supported_image_models,
     },
     serde_json::{Value, json},
 };
@@ -56,11 +56,14 @@ impl GenerateImageTool {
         let prompt = str_param(params, "prompt")
             .ok_or_else(|| Error::message("missing required parameter: prompt"))?;
 
-        let model = str_param(params, "model").unwrap_or(DEFAULT_IMAGE_MODEL);
-        if !SUPPORTED_IMAGE_MODELS.contains(&model) {
+        let supported = supported_image_models();
+        let model = str_param(params, "model")
+            .map(str::to_string)
+            .unwrap_or_else(default_image_model);
+        if !supported.contains(&model) {
             return Err(Error::message(format!(
                 "unsupported image model '{model}' — supported: {}",
-                SUPPORTED_IMAGE_MODELS.join(", ")
+                supported.join(", ")
             ))
             .into());
         }
@@ -83,7 +86,7 @@ impl GenerateImageTool {
 
         Ok(ImageGenerationRequest {
             prompt: prompt.to_string(),
-            model: model.to_string(),
+            model,
             size: size.to_string(),
             quality: quality.to_string(),
             output_format: output_format.to_string(),
@@ -145,8 +148,8 @@ impl AgentTool for GenerateImageTool {
                 },
                 "model": {
                     "type": "string",
-                    "enum": SUPPORTED_IMAGE_MODELS,
-                    "description": "Image model to use. Defaults to gpt-image-2.6-flare."
+                    "enum": supported_image_models(),
+                    "description": format!("Image model to use. Defaults to {}.", default_image_model())
                 },
                 "size": {
                     "type": "string",
@@ -196,7 +199,7 @@ mod tests {
         .unwrap();
 
         assert_eq!(request.prompt, "a neon fox");
-        assert_eq!(request.model, DEFAULT_IMAGE_MODEL);
+        assert_eq!(request.model, default_image_model());
         assert_eq!(request.size, DEFAULT_SIZE);
         assert_eq!(request.quality, DEFAULT_QUALITY);
         assert_eq!(request.output_format, DEFAULT_OUTPUT_FORMAT);
@@ -205,13 +208,13 @@ mod tests {
 
     #[test]
     fn request_from_params_accepts_every_supported_model() {
-        for model in SUPPORTED_IMAGE_MODELS {
+        for model in supported_image_models() {
             let request = GenerateImageTool::request_from_params(&json!({
                 "prompt": "a neon fox",
                 "model": model
             }))
             .unwrap();
-            assert_eq!(request.model, *model);
+            assert_eq!(request.model, model);
         }
     }
 

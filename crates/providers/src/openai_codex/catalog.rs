@@ -161,10 +161,19 @@ fn parse_model_entry(entry: &serde_json::Value) -> Option<crate::DiscoveredModel
         .and_then(serde_json::Value::as_str);
 
     let created_at = obj.get("created").and_then(serde_json::Value::as_i64);
+    let context_window = obj
+        .get("context_window")
+        .and_then(serde_json::Value::as_u64)
+        .and_then(|value| u32::try_from(value).ok());
 
     Some(
         crate::DiscoveredModel::new(model_id, normalize_display_name(model_id, display_name))
-            .with_created_at(created_at),
+            .with_created_at(created_at)
+            .with_metadata(moltis_model_catalog::ModelSpec {
+                display_name: crate::live_metadata::api_name(model_id, display_name),
+                context_window,
+                ..moltis_model_catalog::ModelSpec::default()
+            }),
     )
 }
 

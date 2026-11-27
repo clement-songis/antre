@@ -5,9 +5,9 @@ pub use moltis_config::schema::{AgentToolControls, ReasoningEffort, ToolChoice};
 
 mod types;
 pub use types::{
-    CompletionResponse, InputTokenAccounting, MAX_CAPTURED_PROVIDER_RAW_EVENTS, ModelMetadata,
-    TOOL_CALL_METADATA_KEYS, ToolCall, ToolCallArgumentDiagnostic, ToolCallArgumentSource, Usage,
-    push_capped_provider_raw_event,
+    CompletionResponse, ContextLimits, InputTokenAccounting, MAX_CAPTURED_PROVIDER_RAW_EVENTS,
+    ModelMetadata, TOOL_CALL_METADATA_KEYS, ToolCall, ToolCallArgumentDiagnostic,
+    ToolCallArgumentSource, UNKNOWN_CONTEXT_WINDOW, Usage, push_capped_provider_raw_event,
 };
 
 mod chat;

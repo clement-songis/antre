@@ -357,6 +357,8 @@ pub(super) fn check_semantic_warnings(config: &MoltisConfig, diagnostics: &mut V
         }
     }
 
+    check_catalog(&config.catalog, diagnostics);
+
     // Loop limit must be positive to avoid immediate run failures.
     if config.tools.agent_max_iterations == 0 {
         diagnostics.push(Diagnostic {
@@ -1378,5 +1380,36 @@ pub(super) fn check_file_references(
                 });
             }
         }
+    }
+}
+
+fn check_catalog(catalog: &crate::schema::CatalogConfig, diagnostics: &mut Vec<Diagnostic>) {
+    for (index, url) in catalog.refresh_urls.iter().enumerate() {
+        if !(url.starts_with("https://") || url.starts_with("http://")) {
+            diagnostics.push(Diagnostic {
+                severity: Severity::Error,
+                category: "invalid-value",
+                path: format!("catalog.refresh_urls[{index}]"),
+                message: format!(
+                    "catalog.refresh_urls entries must be http(s) URLs (got \"{url}\")"
+                ),
+            });
+        }
+    }
+    if catalog.refresh && catalog.refresh_urls.is_empty() {
+        diagnostics.push(Diagnostic {
+            severity: Severity::Warning,
+            category: "invalid-value",
+            path: "catalog.refresh_urls".into(),
+            message: "catalog.refresh is on but catalog.refresh_urls is empty; set refresh = false to keep the bundled snapshot".into(),
+        });
+    }
+    if catalog.refresh && catalog.refresh_interval_hours == 0 {
+        diagnostics.push(Diagnostic {
+            severity: Severity::Warning,
+            category: "invalid-value",
+            path: "catalog.refresh_interval_hours".into(),
+            message: "catalog.refresh_interval_hours = 0 downloads the catalog on every check; use at least 1".into(),
+        });
     }
 }

@@ -13,6 +13,7 @@ pub mod github_copilot;
 pub mod http;
 #[cfg(feature = "provider-kimi-code")]
 pub mod kimi_code;
+mod live_metadata;
 #[cfg(feature = "local-llm")]
 pub mod local_gguf;
 #[cfg(feature = "local-llm")]

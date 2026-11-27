@@ -19,6 +19,7 @@ mod init_channels;
 mod init_code_index;
 mod init_memory;
 mod location;
+mod model_catalog;
 mod prepare_core;
 mod prepared;
 mod seed_content;

@@ -9,6 +9,8 @@ use {
 
 #[path = "schema/agents.rs"]
 mod agents;
+#[path = "schema/catalog.rs"]
+mod catalog;
 #[path = "schema/chat.rs"]
 mod chat;
 #[path = "schema/code_index.rs"]
@@ -35,8 +37,8 @@ mod tools;
 mod voice;
 
 pub use {
-    agents::*, chat::*, code_index::*, hooks::*, instrumentation::*, memory::*, modes::*, phone::*,
-    providers::*, runtime::*, system::*, tools::*, voice::*,
+    agents::*, catalog::*, chat::*, code_index::*, hooks::*, instrumentation::*, memory::*,
+    modes::*, phone::*, providers::*, runtime::*, system::*, tools::*, voice::*,
 };
 
 // ── Reasoning effort ──────────────────────────────────────────────────────
@@ -344,6 +346,9 @@ pub struct MoltisConfig {
     /// ```
     #[serde(default, skip_serializing_if = "HashMap::is_empty")]
     pub models: HashMap<String, ModelOverride>,
+    /// Model catalog refresh settings (`[catalog]`).
+    #[serde(default)]
+    pub catalog: CatalogConfig,
     /// Upstream HTTP/SOCKS proxy for all outbound requests.
     ///
     /// Supports `http://`, `https://`, `socks5://`, and `socks5h://` schemes.

@@ -82,6 +82,9 @@ impl ProviderRegistry {
     ) -> usize {
         let fetched = &result.models;
         let mut added = 0usize;
+        for (provider, models) in fetched {
+            catalog_bridge::record_live_models(provider, models);
+        }
 
         // ── Anthropic builtin ─────────────────────────────────────────
         if fetched.contains_key("anthropic")

@@ -162,6 +162,17 @@ fn parse_model_entry(entry: &serde_json::Value) -> Option<DiscoveredModel> {
         capabilities.context_window = context_window;
         model = model.with_capabilities(capabilities);
     }
+    let retires_at = obj
+        .get("shutdown_date")
+        .and_then(serde_json::Value::as_str)
+        .and_then(crate::live_metadata::parse_date);
+    model = model.with_metadata(moltis_model_catalog::ModelSpec {
+        display_name: crate::live_metadata::api_name(model_id, display_name),
+        context_window,
+        retires_at,
+        status: retires_at.map(|_| moltis_model_catalog::ModelStatus::Deprecated),
+        ..moltis_model_catalog::ModelSpec::default()
+    });
 
     Some(model)
 }

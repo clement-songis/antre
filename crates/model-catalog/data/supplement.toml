@@ -1,0 +1,147 @@
+# Curated additions to the models.dev snapshot, merged into the bundled layer
+# (a supplement row wins over models.dev for the fields it sets).
+#
+# Add a model here only when models.dev does not list it yet, or to record a
+# fact models.dev has no field for. Sources: provider docs, see
+# plans/research/providers-inventory.md (2026-11-27).
+
+# ── OpenAI image generation (Responses image_generation tool / Images API)
+[[models]]
+provider = "openai"
+id = "gpt-image-2.6-flare"
+display_name = "GPT Image 2.6 Flare"
+family = "gpt-image"
+kind = "image"
+input_modalities = ["text", "image"]
+output_modalities = ["image"]
+
+[[models]]
+provider = "openai"
+id = "gpt-image-2.6-sunburst"
+display_name = "GPT Image 2.6 Sunburst"
+family = "gpt-image"
+kind = "image"
+input_modalities = ["text", "image"]
+output_modalities = ["image"]
+
+# ── OpenAI voice
+[[models]]
+provider = "openai"
+id = "gpt-4o-mini-tts"
+display_name = "GPT-4o mini TTS"
+kind = "tts"
+input_modalities = ["text"]
+output_modalities = ["audio"]
+
+[[models]]
+provider = "openai"
+id = "tts-1"
+display_name = "TTS 1"
+kind = "tts"
+status = "deprecated"
+replacement = "gpt-4o-mini-tts"
+
+[[models]]
+provider = "openai"
+id = "tts-1-hd"
+display_name = "TTS 1 HD"
+kind = "tts"
+status = "deprecated"
+replacement = "gpt-4o-mini-tts"
+
+[[models]]
+provider = "openai"
+id = "gpt-transcribe"
+display_name = "GPT Transcribe"
+kind = "stt"
+input_modalities = ["audio"]
+output_modalities = ["text"]
+
+[[models]]
+provider = "openai"
+id = "gpt-live-transcribe"
+display_name = "GPT Live Transcribe"
+kind = "stt"
+input_modalities = ["audio"]
+output_modalities = ["text"]
+
+[[models]]
+provider = "openai"
+id = "whisper-1"
+display_name = "Whisper"
+kind = "stt"
+status = "deprecated"
+replacement = "gpt-transcribe"
+
+[[models]]
+provider = "openai"
+id = "gpt-4o-transcribe"
+display_name = "GPT-4o Transcribe"
+kind = "stt"
+status = "deprecated"
+replacement = "gpt-transcribe"
+
+[[models]]
+provider = "openai"
+id = "gpt-4o-mini-transcribe"
+display_name = "GPT-4o mini Transcribe"
+kind = "stt"
+status = "deprecated"
+replacement = "gpt-transcribe"
+
+# ── Mistral voice
+[[models]]
+provider = "mistral"
+id = "voxtral-small-transcribe-latest"
+display_name = "Voxtral Small Transcribe"
+kind = "stt"
+input_modalities = ["audio"]
+output_modalities = ["text"]
+
+[[models]]
+provider = "mistral"
+id = "voxtral-mini-latest"
+status = "deprecated"
+retires_at = "2027-04-30"
+replacement = "voxtral-small-transcribe-latest"
+
+# ── Google Gemini voice
+[[models]]
+provider = "gemini"
+id = "gemini-3.8-flash-tts"
+display_name = "Gemini 3.8 Flash TTS"
+kind = "tts"
+input_modalities = ["text"]
+output_modalities = ["audio"]
+
+[[models]]
+provider = "gemini"
+id = "gemini-3.5-transcribe"
+display_name = "Gemini 3.5 Transcribe"
+kind = "stt"
+input_modalities = ["audio"]
+output_modalities = ["text"]
+
+[[models]]
+provider = "gemini"
+id = "gemini-2.5-flash-preview-tts"
+retires_at = "2026-12-18"
+replacement = "gemini-3.8-flash-tts"
+
+[[models]]
+provider = "gemini"
+id = "gemini-2.5-pro-preview-tts"
+retires_at = "2026-12-18"
+replacement = "gemini-3.8-flash-tts"
+
+# ── Provider facts
+# Z.AI prints quota reset times in China Standard Time without an offset.
+[[provider_defaults]]
+provider = "zai"
+id = "*"
+rate_limit_tz = "+08:00"
+
+[[provider_defaults]]
+provider = "zai-code"
+id = "*"
+rate_limit_tz = "+08:00"

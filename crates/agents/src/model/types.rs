@@ -143,6 +143,22 @@ pub fn push_capped_provider_raw_event(
     }
 }
 
+/// Context window assumed when no source knows a model's size. Conservative
+/// on purpose: overestimating makes compaction fire too late and the next
+/// request fail with `context_window_exceeded`.
+pub const UNKNOWN_CONTEXT_WINDOW: u32 = 128_000;
+
+/// Token limits of the current model as far as the model catalog knows them.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct ContextLimits {
+    /// `None` when no real source (override, probe, provider API, catalog)
+    /// knows the window; callers then budget with
+    /// [`LlmProvider::context_window`](crate::model::LlmProvider::context_window)
+    /// and tell the user the size is unknown.
+    pub window: Option<u32>,
+    pub max_output: Option<u32>,
+}
+
 /// Runtime model metadata fetched from provider APIs.
 #[derive(Debug, Clone)]
 pub struct ModelMetadata {

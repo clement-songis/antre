@@ -20,8 +20,17 @@ use super::{SttProvider, TranscribeRequest, Transcript};
 /// Generative Language API base URL.
 const API_BASE: &str = "https://generativelanguage.googleapis.com/v1beta";
 
-/// Default Gemini transcription model.
-const DEFAULT_MODEL: &str = "gemini-3.5-transcribe";
+/// Used only if the model catalog has no STT model for this provider.
+const FALLBACK_MODEL: &str = "gemini-3.5-transcribe";
+
+/// The provider's STT role from the model catalog.
+fn default_model() -> String {
+    moltis_model_catalog::global::role_id_or(
+        "gemini",
+        moltis_model_catalog::ModelKind::Stt,
+        FALLBACK_MODEL,
+    )
+}
 
 const REQUEST_TIMEOUT_SECS: u64 = 120;
 const CONNECT_TIMEOUT_SECS: u64 = 10;
@@ -88,7 +97,7 @@ impl GeminiStt {
             api_key,
             model: model
                 .filter(|model| !model.trim().is_empty())
-                .unwrap_or_else(|| DEFAULT_MODEL.into()),
+                .unwrap_or_else(default_model),
             language,
             base_url: API_BASE.into(),
         }
@@ -313,7 +322,7 @@ mod tests {
         assert_eq!(provider.id(), "gemini");
         assert_eq!(provider.name(), "Google Gemini");
         assert!(!provider.is_configured());
-        assert_eq!(provider.model, DEFAULT_MODEL);
+        assert_eq!(provider.model, default_model());
 
         let configured = GeminiStt::new(Some(Secret::new("test-key".into())));
         assert!(configured.is_configured());
@@ -338,7 +347,7 @@ mod tests {
         assert_eq!(provider.language.as_deref(), Some("fr-FR"));
 
         let blank_model = GeminiStt::with_options(None, Some("  ".into()), None);
-        assert_eq!(blank_model.model, DEFAULT_MODEL);
+        assert_eq!(blank_model.model, default_model());
     }
 
     #[tokio::test]

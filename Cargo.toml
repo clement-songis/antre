@@ -38,6 +38,7 @@ default-members = [
   "crates/media",
   "crates/memory",
   "crates/metrics",
+  "crates/model-catalog",
   "crates/msteams",
   "crates/netbird",
   "crates/network-filter",
@@ -116,6 +117,7 @@ members = [
   "crates/memory",
   "crates/memory-zvec",
   "crates/metrics",
+  "crates/model-catalog",
   "crates/msteams",
   "crates/netbird",
   "crates/node-host",
@@ -445,6 +447,7 @@ moltis-media              = { path = "crates/media" }
 moltis-memory             = { path = "crates/memory" }
 moltis-memory-zvec        = { path = "crates/memory-zvec" }
 moltis-metrics            = { path = "crates/metrics" }
+moltis-model-catalog      = { path = "crates/model-catalog" }
 moltis-msteams            = { path = "crates/msteams" }
 moltis-netbird            = { path = "crates/netbird" }
 moltis-network-filter     = { default-features = false, path = "crates/network-filter" }

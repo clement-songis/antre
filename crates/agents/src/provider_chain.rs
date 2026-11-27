@@ -332,6 +332,10 @@ impl LlmProvider for ProviderChain {
         self.primary().provider.context_window()
     }
 
+    fn context_limits(&self) -> crate::model::ContextLimits {
+        self.primary().provider.context_limits()
+    }
+
     async fn complete(
         &self,
         messages: &[ChatMessage],

@@ -19,8 +19,17 @@ const API_BASE: &str = "https://api.openai.com/v1";
 /// Default voice.
 const DEFAULT_VOICE: &str = "alloy";
 
-/// Default model (real-time optimized).
-const DEFAULT_MODEL: &str = "gpt-4o-mini-tts";
+/// Used only if the model catalog has no TTS model for this provider.
+const FALLBACK_MODEL: &str = "gpt-4o-mini-tts";
+
+/// The provider's TTS role from the model catalog.
+fn default_model() -> String {
+    moltis_model_catalog::global::role_id_or(
+        "openai",
+        moltis_model_catalog::ModelKind::Tts,
+        FALLBACK_MODEL,
+    )
+}
 
 /// Available OpenAI TTS voices.
 const VOICES: &[(&str, &str)] = &[
@@ -74,7 +83,7 @@ impl OpenAiTts {
             api_key,
             base_url: Self::normalize_base_url(None),
             default_voice: DEFAULT_VOICE.into(),
-            default_model: DEFAULT_MODEL.into(),
+            default_model: default_model(),
         }
     }
 
@@ -91,7 +100,7 @@ impl OpenAiTts {
             api_key,
             base_url: Self::normalize_base_url(base_url),
             default_voice: voice.unwrap_or_else(|| DEFAULT_VOICE.into()),
-            default_model: model.unwrap_or_else(|| DEFAULT_MODEL.into()),
+            default_model: model.unwrap_or_else(default_model),
         }
     }
 

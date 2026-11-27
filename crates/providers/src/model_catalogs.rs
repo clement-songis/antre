@@ -24,16 +24,14 @@ pub(crate) const ANTHROPIC_MODELS: &[(&str, &str)] = &[
     ("claude-opus-4-7", "Claude Opus 4.7"),
     ("claude-sonnet-4-6", "Claude Sonnet 4.6"),
     ("claude-opus-4-6", "Claude Opus 4.6"),
-    ("claude-opus-4-5-20251101", "Claude Opus 4.5"),
     ("claude-haiku-4-5-20251001", "Claude Haiku 4.5"),
-    ("claude-sonnet-4-5-20250929", "Claude Sonnet 4.5"),
 ];
 
 /// Known Mistral models.
 pub(crate) const MISTRAL_MODELS: &[(&str, &str)] = &[
-    ("mistral-large-4-0", "Mistral Large 4"),
-    ("mistral-small-4-0-26-03", "Mistral Small 4"),
-    ("codestral-25-08", "Codestral 25.08"),
+    ("mistral-large-4", "Mistral Large 4"),
+    ("mistral-small-2603", "Mistral Small 4"),
+    ("codestral-2508", "Codestral 25.08"),
 ];
 
 /// Known Cerebras models.
@@ -46,9 +44,8 @@ pub(crate) const CEREBRAS_MODELS: &[(&str, &str)] = &[
 /// See: <https://console.groq.com/docs/models>
 pub(crate) const GROQ_MODELS: &[(&str, &str)] = &[
     ("openai/gpt-oss-120b", "GPT OSS 120B"),
-    ("llama-3.3-70b-versatile", "Llama 3.3 70B Versatile"),
     ("openai/gpt-oss-20b", "GPT OSS 20B"),
-    ("llama-3.1-8b-instant", "Llama 3.1 8B Instant"),
+    ("qwen/qwen3.8-27b", "Qwen 3.8 27B"),
 ];
 
 /// Known xAI models.
@@ -79,11 +76,14 @@ pub(crate) const ZAI_MODELS: &[(&str, &str)] = &[
     ("glm-4.6v-flash", "GLM-4.6V Flash"),
     ("glm-4.5", "GLM-4.5"),
     ("glm-4.5-air", "GLM-4.5 Air"),
-    ("glm-4.5-airx", "GLM-4.5 AirX"),
     ("glm-4.5-flash", "GLM-4.5 Flash"),
     ("glm-4.5v", "GLM-4.5V (Vision)"),
     ("glm-4-32b-0414-128k", "GLM-4 32B 128K"),
 ];
+
+/// Known Z.AI Coding Plan models (a subset of the general API's).
+pub(crate) const ZAI_CODE_MODELS: &[(&str, &str)] =
+    &[("glm-5.3", "GLM-5.3"), ("glm-5.3-flash", "GLM-5.3 Flash")];
 
 /// Fireworks Kimi model-ID prefixes.
 ///
@@ -100,55 +100,43 @@ const FIREWORKS_KIMI_ROUTER_PREFIXES: &[&str] = &[
 /// See: <https://fireworks.ai/models/fireworks/kimi-k3>
 pub(crate) const FIREWORKS_MODELS: &[(&str, &str)] = &[
     ("accounts/fireworks/models/kimi-k3", "Kimi K3"),
-    ("accounts/fireworks/models/gpt-oss-120b", "GPT OSS 120B"),
+    ("accounts/fireworks/models/kimi-k3p1-pro", "Kimi K3.1 Pro"),
+    (
+        "accounts/fireworks/models/minimax-m3p1-flash",
+        "MiniMax M3.1 Flash",
+    ),
 ];
 
 /// Known Alibaba Cloud Coding Plan models.
 /// See: <https://www.alibabacloud.com/help/en/model-studio/coding-plan>
 pub(crate) const ALIBABA_CODING_MODELS: &[(&str, &str)] = &[
+    ("qwen3.7-plus", "Qwen 3.7 Plus"),
     ("qwen3.6-plus", "Qwen 3.6 Plus"),
-    ("kimi-k2.5", "Kimi K2.5"),
     ("glm-5", "GLM-5"),
     ("MiniMax-M2.5", "MiniMax M2.5"),
-    ("qwen3.5-plus", "Qwen 3.5 Plus"),
-    ("qwen3-max-2026-01-23", "Qwen3 Max"),
-    ("qwen3-coder-next", "Qwen3 Coder Next"),
-    ("qwen3-coder-plus", "Qwen3 Coder Plus"),
-    ("glm-4.7", "GLM-4.7"),
+    ("kimi-k2.5", "Kimi K2.5"),
 ];
 
 /// Known DeepInfra models.
 /// See: <https://deepinfra.com/models>
 pub(crate) const DEEPINFRA_MODELS: &[(&str, &str)] = &[
-    (
-        "meta-llama/Llama-4-Maverick-17B-128E-Instruct",
-        "Llama 4 Maverick",
-    ),
-    ("meta-llama/Llama-4-Scout-17B-16E-Instruct", "Llama 4 Scout"),
-    ("deepseek-ai/DeepSeek-V3", "DeepSeek V3"),
-    ("deepseek-ai/DeepSeek-R1", "DeepSeek R1"),
-    ("Qwen/Qwen3-235B-A22B", "Qwen3 235B"),
-    ("Qwen/Qwen3-32B", "Qwen3 32B"),
-    (
-        "mistralai/Mistral-Small-24B-Instruct-2501",
-        "Mistral Small 24B",
-    ),
-    ("google/gemma-3-27b-it", "Gemma 3 27B"),
+    ("deepseek-ai/DeepSeek-V4.1-Flash", "DeepSeek V4.1 Flash"),
+    ("moonshotai/Kimi-K3.1-Pro", "Kimi K3.1 Pro"),
+    ("Qwen/Qwen4-Max", "Qwen4 Max"),
+    ("zai-org/GLM-5.3-Flash", "GLM-5.3 Flash"),
 ];
 
 /// Known DeepSeek models.
 pub(crate) const DEEPSEEK_MODELS: &[(&str, &str)] = &[
     ("deepseek-flash", "DeepSeek Flash"),
-    ("deepseek-v4-flash", "DeepSeek V4 Flash"),
     ("deepseek-v4-pro", "DeepSeek V4 Pro"),
 ];
 
 /// Known Moonshot models.
 pub(crate) const MOONSHOT_MODELS: &[(&str, &str)] = &[
+    ("kimi-k3.1-pro", "Kimi K3.1 Pro"),
     ("kimi-k3", "Kimi K3"),
-    ("kimi-k2.7-code-highspeed", "Kimi K2.7 Code Highspeed"),
-    ("kimi-k2.6", "Kimi K2.6"),
-    ("kimi-k2.5", "Kimi K2.5"),
+    ("kimi-k3.1-pro-highspeed", "Kimi K3.1 Pro Highspeed"),
 ];
 
 /// Known Google Gemini models.
@@ -301,7 +289,7 @@ pub(crate) const OPENAI_COMPAT_PROVIDERS: &[OpenAiCompatDef] = &[
         env_key: "Z_CODE_API_KEY",
         env_base_url_key: "Z_CODE_BASE_URL",
         default_base_url: "https://api.z.ai/api/coding/paas/v4",
-        models: ZAI_MODELS,
+        models: ZAI_CODE_MODELS,
         capabilities: OpenAiProviderCapabilities {
             reasoning_effort_policy: ReasoningEffortPolicy::Zai,
             optional_reasoning_content_model_prefixes: &["glm-5.3", "glm-5.2"],
@@ -465,6 +453,78 @@ mod tests {
                 );
             }
         }
+    }
+
+    /// Every id a static fallback list ships must exist in the bundled
+    /// catalog for that provider and must not be deprecated there.
+    #[test]
+    fn fallback_ids_exist_in_catalog_and_are_active() {
+        let catalog = moltis_model_catalog::ModelCatalog::bundled().expect("bundled catalog");
+        let mut lists: Vec<(&str, Vec<String>)> = OPENAI_COMPAT_PROVIDERS
+            .iter()
+            .map(|def| {
+                (
+                    def.config_name,
+                    def.models.iter().map(|(id, _)| (*id).to_string()).collect(),
+                )
+            })
+            .collect();
+        lists.push((
+            "anthropic",
+            ANTHROPIC_MODELS
+                .iter()
+                .map(|(id, _)| (*id).to_string())
+                .collect(),
+        ));
+        lists.push((
+            "openai",
+            crate::openai::default_model_catalog()
+                .into_iter()
+                .map(|m| m.id)
+                .collect(),
+        ));
+        #[cfg(feature = "provider-openai-codex")]
+        lists.push((
+            "openai-codex",
+            crate::openai_codex::default_model_catalog()
+                .into_iter()
+                .map(|m| m.id)
+                .collect(),
+        ));
+        #[cfg(feature = "provider-github-copilot")]
+        lists.push((
+            "github-copilot",
+            crate::github_copilot::default_model_catalog()
+                .into_iter()
+                .map(|m| m.id)
+                .collect(),
+        ));
+
+        let mut problems = Vec::new();
+        for (provider, ids) in lists {
+            if moltis_model_catalog::providers::models_dev_ids(provider).is_empty() {
+                continue;
+            }
+            let known = catalog.known_ids(provider);
+            for id in ids {
+                if !known.contains(&id) {
+                    problems.push(format!("{provider}::{id} is not in the catalog"));
+                    continue;
+                }
+                if catalog
+                    .resolve(provider, &id, None)
+                    .status()
+                    .is_deprecated()
+                {
+                    problems.push(format!("{provider}::{id} is deprecated"));
+                }
+            }
+        }
+        assert!(
+            problems.is_empty(),
+            "stale fallback ids:\n{}",
+            problems.join("\n")
+        );
     }
 
     #[test]

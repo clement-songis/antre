@@ -22,8 +22,17 @@ use {
 /// Mistral API base URL.
 const API_BASE: &str = "https://api.mistral.ai/v1";
 
-/// Default Mistral transcription model.
-const DEFAULT_MODEL: &str = "voxtral-small-transcribe-latest";
+/// Used only if the model catalog has no STT model for this provider.
+const FALLBACK_MODEL: &str = "voxtral-small-transcribe-latest";
+
+/// The provider's STT role from the model catalog.
+fn default_model() -> String {
+    moltis_model_catalog::global::role_id_or(
+        "mistral",
+        moltis_model_catalog::ModelKind::Stt,
+        FALLBACK_MODEL,
+    )
+}
 
 /// Mistral AI STT provider using Voxtral Transcribe.
 #[derive(Clone)]
@@ -57,7 +66,7 @@ impl MistralStt {
         Self {
             client: Client::new(),
             api_key,
-            model: DEFAULT_MODEL.into(),
+            model: default_model(),
             language: None,
         }
     }
@@ -72,7 +81,7 @@ impl MistralStt {
         Self {
             client: Client::new(),
             api_key,
-            model: model.unwrap_or_else(|| DEFAULT_MODEL.into()),
+            model: model.unwrap_or_else(default_model),
             language,
         }
     }

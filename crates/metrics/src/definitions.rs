@@ -54,6 +54,16 @@ pub mod llm {
     pub const TOKENS_PER_SECOND: &str = "moltis_llm_tokens_per_second";
 }
 
+/// Model catalog metrics
+pub mod model_catalog {
+    /// Successful models.dev catalog refreshes that downloaded a new copy
+    pub const REFRESH_UPDATES_TOTAL: &str = "moltis_model_catalog_refresh_updates_total";
+    /// Failed models.dev catalog refreshes
+    pub const REFRESH_ERRORS_TOTAL: &str = "moltis_model_catalog_refresh_errors_total";
+    /// Live `/models` results written to the on-disk cache
+    pub const LIVE_CACHE_WRITES_TOTAL: &str = "moltis_model_catalog_live_cache_writes_total";
+}
+
 /// Native client (`moltis-client`) metrics
 pub mod client {
     /// Total WebSocket connection attempts to a daemon

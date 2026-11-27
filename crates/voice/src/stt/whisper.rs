@@ -22,8 +22,17 @@ use {
 /// OpenAI API base URL.
 const API_BASE: &str = "https://api.openai.com/v1";
 
-/// Default model on the OpenAI API (`whisper-1` is deprecated there).
-const DEFAULT_MODEL: &str = "gpt-transcribe";
+/// Used only if the model catalog has no STT model for this provider.
+const FALLBACK_MODEL: &str = "gpt-transcribe";
+
+/// The provider's STT role from the model catalog.
+fn default_model() -> String {
+    moltis_model_catalog::global::role_id_or(
+        "openai",
+        moltis_model_catalog::ModelKind::Stt,
+        FALLBACK_MODEL,
+    )
+}
 /// Default model for OpenAI-compatible servers behind a custom base URL,
 /// which conventionally alias `whisper-1` rather than OpenAI's newer ids.
 const DEFAULT_COMPAT_MODEL: &str = "whisper-1";
@@ -85,7 +94,7 @@ impl WhisperStt {
         let base_url = Self::normalize_base_url(base_url);
         let model = model.unwrap_or_else(|| {
             if base_url == API_BASE {
-                DEFAULT_MODEL.into()
+                default_model()
             } else {
                 DEFAULT_COMPAT_MODEL.into()
             }
@@ -321,7 +330,7 @@ mod tests {
     #[test]
     fn test_with_options_defaults() {
         let provider = WhisperStt::with_options(Some(Secret::new("key".into())), None, None, None);
-        assert_eq!(provider.model, DEFAULT_MODEL);
+        assert_eq!(provider.model, default_model());
         assert!(provider.language.is_none());
     }
 
@@ -344,7 +353,7 @@ mod tests {
     #[test]
     fn test_new_delegates_to_with_options() {
         let provider = WhisperStt::new(Some(Secret::new("key".into())));
-        assert_eq!(provider.model, DEFAULT_MODEL);
+        assert_eq!(provider.model, default_model());
         assert!(provider.language.is_none());
     }
 

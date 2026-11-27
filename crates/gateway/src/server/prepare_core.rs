@@ -199,6 +199,10 @@ pub async fn prepare_gateway_core_with_profile(
         )
     };
 
+    let catalog_data_dir = moltis_config::data_dir();
+    super::model_catalog::init_model_catalog(&catalog_data_dir).await;
+    super::model_catalog::spawn_catalog_refresh(&config.catalog, &catalog_data_dir);
+
     // Kick off discovery workers immediately, but build a static startup
     // registry first so gateway startup does not block on network I/O.
     let startup_discovery_pending =
@@ -216,6 +220,12 @@ pub async fn prepare_gateway_core_with_profile(
     }
     let (provider_summary, providers_available_at_startup) = {
         let reg = registry.read().await;
+        super::model_catalog::restrict_remote_catalog(
+            reg.list_models()
+                .iter()
+                .map(|model| model.provider.clone())
+                .chain(effective_providers.providers.keys().cloned()),
+        );
         log_startup_model_inventory(&reg);
         (reg.provider_summary(), !reg.is_empty())
     };

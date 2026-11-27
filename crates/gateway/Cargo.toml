@@ -64,6 +64,7 @@ moltis-projects           = { workspace = true }
 moltis-protocol           = { workspace = true }
 moltis-provider-setup     = { workspace = true }
 moltis-providers          = { workspace = true }
+moltis-model-catalog      = { workspace = true }
 moltis-qmd                = { optional = true, workspace = true }
 moltis-routing            = { workspace = true }
 moltis-secret-store       = { workspace = true }

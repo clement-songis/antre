@@ -70,6 +70,20 @@ for providers that are already configured. They never set base URLs,
 headers or credentials. `catalog.refresh_url` can point to a mirror or be
 disabled for offline installs.
 
+### Snapshot, fallbacks and updates (user decision 2026-11-27)
+
+- The bundled snapshot is the **full** models.dev `api.json`, compressed, not
+  trimmed: any provider that only returns ids still gets names, sizes,
+  capabilities and costs, offline included.
+- `catalog.refresh_urls` is an ordered list: models.dev first, then a mirror
+  of the fork's own committed snapshot, so a models.dev outage or format
+  change falls back to the last known-good copy. A downloaded catalog
+  replaces the cache only after validation (schema parse, sane size, minimum
+  model count).
+- A scheduled GitHub Actions workflow (daily + manual dispatch) refreshes the
+  committed snapshot, runs the catalog tests and opens or updates one PR with
+  a diff summary. No auto-merge.
+
 ### Roles instead of ids
 
 Features name a role resolved against the catalog, for example

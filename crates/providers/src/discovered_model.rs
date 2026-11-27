@@ -19,17 +19,30 @@ pub struct DiscoveredModel {
     /// Used to surface the most relevant models in the UI.
     pub recommended: bool,
     pub capabilities: Option<ModelCapabilities>,
+    /// Metadata the provider API actually returned (live source). Empty for
+    /// static catalog entries; capabilities above may still hold guesses.
+    pub metadata: moltis_model_catalog::ModelSpec,
 }
 
 impl DiscoveredModel {
     pub fn new(id: impl Into<String>, display_name: impl Into<String>) -> Self {
+        let id = id.into();
         Self {
-            id: id.into(),
+            metadata: moltis_model_catalog::ModelSpec::new(id.clone()),
+            id,
             display_name: display_name.into(),
             created_at: None,
             recommended: false,
             capabilities: None,
         }
+    }
+
+    /// Attach live metadata returned by the provider API.
+    #[must_use]
+    pub fn with_metadata(mut self, mut metadata: moltis_model_catalog::ModelSpec) -> Self {
+        metadata.id.clone_from(&self.id);
+        self.metadata = metadata;
+        self
     }
 
     pub fn with_created_at(mut self, created_at: Option<i64>) -> Self {
@@ -83,6 +96,7 @@ pub(crate) fn merge_preferred_and_discovered_models(
                 created_at: d.created_at,
                 recommended: d.recommended,
                 capabilities: d.capabilities,
+                metadata: d.metadata.clone(),
             }
         } else {
             DiscoveredModel::new(model_id.clone(), model_id)
@@ -136,6 +150,7 @@ pub(crate) fn merge_discovered_with_fallback_catalog(
                 created_at: m.created_at,
                 recommended: m.recommended,
                 capabilities,
+                metadata: m.metadata,
             }
         })
         .collect()
