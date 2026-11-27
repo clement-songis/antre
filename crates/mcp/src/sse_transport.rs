@@ -419,7 +419,10 @@ impl SseTransport {
                         return Ok(last.and_then(|data| self.handle_event(&data, wanted, &reply_tx)));
                     };
                     let chunk = chunk.map_err(sanitize_reqwest_error)?;
-                    self.incoming.touch();
+                    // Keepalives on the GET stream must not extend unrelated requests.
+                    if wanted.is_some() {
+                        self.incoming.touch();
+                    }
                     for data in decoder.push(&chunk)? {
                         if let Some(resp) = self.handle_event(&data, wanted, &reply_tx) {
                             return Ok(Some(resp));

@@ -673,10 +673,12 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(result, serde_json::json!("ok"));
-        let seen = approver.seen.lock().unwrap();
-        assert_eq!(seen[0].tool, "write");
-        assert_eq!(seen[0].session_key.as_deref(), Some("s1"));
-        assert_eq!(seen[0].arguments, serde_json::json!({"path": "a"}));
+        {
+            let seen = approver.seen.lock().unwrap();
+            assert_eq!(seen[0].tool, "write");
+            assert_eq!(seen[0].session_key.as_deref(), Some("s1"));
+            assert_eq!(seen[0].arguments, serde_json::json!({"path": "a"}));
+        }
         assert!(received.lock().await.is_some());
 
         let denier = Arc::new(FixedApprover {

@@ -705,4 +705,52 @@ mod tests {
 
         assert!(cfg.env.is_empty());
     }
+
+    #[test]
+    fn parses_trust_and_sampling_and_inherits_them_on_update() {
+        let params = serde_json::json!({
+            "command": "npx",
+            "trust": "ask",
+            "sampling": {"enabled": true, "max_tokens_per_request": 256}
+        });
+        let config = parse_server_config(&params, None).unwrap();
+        assert_eq!(config.trust, crate::registry::McpTrustTier::Ask);
+        assert!(config.sampling.enabled);
+        assert_eq!(config.sampling.max_tokens_per_request, 256);
+        assert_eq!(config.sampling.max_requests_per_session, 20);
+
+        let updated =
+            parse_server_config(&serde_json::json!({"args": ["-y"]}), Some(&config)).unwrap();
+        assert_eq!(updated.trust, crate::registry::McpTrustTier::Ask);
+        assert!(updated.sampling.enabled);
+
+        let bad = parse_server_config(&serde_json::json!({"command": "x", "trust": "maybe"}), None);
+        assert!(bad.unwrap_err().to_string().contains("invalid 'trust'"));
+        let bad = parse_server_config(
+            &serde_json::json!({"command": "x", "sampling": {"enabled": "yes"}}),
+            None,
+        );
+        assert!(bad.unwrap_err().to_string().contains("invalid 'sampling'"));
+    }
+
+    #[test]
+    fn converts_toml_entry_with_trust_and_sampling() {
+        let entry: moltis_config::schema::McpServerEntry =
+            serde_json::from_value(serde_json::json!({
+                "transport": "streamable-http",
+                "url": "https://mcp.example.com",
+                "headers": {"X-Key": "v"},
+                "trust": "untrusted",
+                "sampling": {"enabled": true},
+                "oauth": {"client_id": "c", "auth_url": "https://a", "token_url": "https://t"}
+            }))
+            .unwrap();
+        let config = McpServerConfig::from(&entry);
+        assert_eq!(config.transport, TransportType::StreamableHttp);
+        assert_eq!(config.trust, crate::registry::McpTrustTier::Untrusted);
+        assert!(config.sampling.enabled);
+        assert!(!config.policy().sampling_allowed());
+        assert_eq!(config.headers["X-Key"].expose_secret(), "v");
+        assert_eq!(config.oauth.unwrap().client_id, "c");
+    }
 }

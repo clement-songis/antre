@@ -374,3 +374,93 @@ os_write_paths = ["projects/demo"]
         assert!(flagged.is_empty(), "{backend}: {flagged:?}");
     }
 }
+
+#[test]
+fn mcp_trust_sampling_and_auto_mode_keys_are_known() {
+    let toml = r#"
+[tools]
+registry_mode = "auto"
+lazy_mcp_threshold = 10
+
+[mcp]
+elicitation_timeout_secs = 120
+apps_enabled = true
+
+[mcp.servers.notes]
+command = "npx"
+trust = "ask"
+
+[mcp.servers.notes.sampling]
+enabled = true
+max_tokens_per_request = 512
+max_requests_per_session = 5
+max_tokens_per_session = 10000
+model = "openai/gpt-5-mini"
+"#;
+    let result = validate_toml_str(toml);
+    let problems: Vec<_> = result
+        .diagnostics
+        .iter()
+        .filter(|d| d.path.starts_with("mcp") || d.path.starts_with("tools"))
+        .collect();
+    assert!(problems.is_empty(), "unexpected diagnostics: {problems:?}");
+}
+
+#[test]
+fn mcp_elicitation_timeout_must_be_positive() {
+    let result = validate_toml_str("[mcp]\nelicitation_timeout_secs = 0\n");
+    assert!(
+        result
+            .diagnostics
+            .iter()
+            .any(|d| d.path == "mcp.elicitation_timeout_secs" && d.severity == Severity::Error),
+        "got: {:?}",
+        result.diagnostics
+    );
+}
+
+#[test]
+fn mcp_sampling_warnings_for_untrusted_and_zero_limits() {
+    let toml = r#"
+[mcp.servers.scraper]
+command = "npx"
+trust = "untrusted"
+
+[mcp.servers.scraper.sampling]
+enabled = true
+max_requests_per_session = 0
+"#;
+    let result = validate_toml_str(toml);
+    let paths: Vec<&str> = result
+        .diagnostics
+        .iter()
+        .filter(|d| d.severity == Severity::Warning)
+        .map(|d| d.path.as_str())
+        .collect();
+    assert!(
+        paths.contains(&"mcp.servers.scraper.sampling.enabled"),
+        "{paths:?}"
+    );
+    assert!(
+        paths.contains(&"mcp.servers.scraper.sampling.max_requests_per_session"),
+        "{paths:?}"
+    );
+}
+
+#[test]
+fn mcp_disabled_sampling_produces_no_warning() {
+    let toml = r#"
+[mcp.servers.scraper]
+command = "npx"
+trust = "untrusted"
+"#;
+    let result = validate_toml_str(toml);
+    assert!(
+        !result
+            .diagnostics
+            .iter()
+            .any(|d| d.path.contains("sampling")),
+        "{:?}",
+        result.diagnostics
+    );
+}

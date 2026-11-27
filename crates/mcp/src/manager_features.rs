@@ -137,9 +137,7 @@ impl McpManager {
                     templates: Vec::new(),
                     error: None,
                 };
-                let Some(client) = slot.read_client().await else {
-                    return None;
-                };
+                let client = slot.read_client().await?;
                 if client
                     .server_capabilities()
                     .is_none_or(|caps| caps.resources.is_none())
@@ -288,5 +286,247 @@ impl McpManager {
             inner.tools.insert(server.to_string(), tools.clone());
         }
         Ok(tools)
+    }
+}
+
+#[allow(clippy::unwrap_used, clippy::expect_used)]
+#[cfg(test)]
+mod tests {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    use {super::*, async_trait::async_trait, serde_json::json};
+
+    use crate::{
+        client::McpClientState,
+        protocol::ResourceContents,
+        registry::{McpRegistry, McpServerConfig},
+        types::{PromptsCapability, ResourcesCapability, ServerCapabilities, ToolsCallResult},
+    };
+
+    struct FakeClient {
+        name: &'static str,
+        capabilities: ServerCapabilities,
+        tools: Vec<McpToolDef>,
+        roots_notified: Arc<AtomicUsize>,
+        fail_resources: bool,
+    }
+
+    impl FakeClient {
+        fn new(name: &'static str, roots_notified: Arc<AtomicUsize>) -> Self {
+            Self {
+                name,
+                capabilities: ServerCapabilities {
+                    resources: Some(ResourcesCapability {
+                        subscribe: true,
+                        list_changed: false,
+                    }),
+                    prompts: Some(PromptsCapability::default()),
+                    ..ServerCapabilities::default()
+                },
+                tools: vec![McpToolDef {
+                    name: "chart".into(),
+                    meta: Some(json!({"ui": {"resourceUri": "ui://chart"}})),
+                    ..Default::default()
+                }],
+                roots_notified,
+                fail_resources: false,
+            }
+        }
+    }
+
+    #[async_trait]
+    impl McpClientTrait for FakeClient {
+        fn server_name(&self) -> &str {
+            self.name
+        }
+
+        fn state(&self) -> McpClientState {
+            McpClientState::Ready
+        }
+
+        fn tools(&self) -> &[McpToolDef] {
+            &self.tools
+        }
+
+        async fn list_tools(&mut self) -> Result<&[McpToolDef]> {
+            self.tools.push(McpToolDef {
+                name: format!("added_{}", self.tools.len()),
+                ..Default::default()
+            });
+            Ok(&self.tools)
+        }
+
+        async fn call_tool(&self, _: &str, _: serde_json::Value) -> Result<ToolsCallResult> {
+            Err(Error::message("unused"))
+        }
+
+        async fn is_alive(&self) -> bool {
+            true
+        }
+
+        async fn shutdown(&mut self) {}
+
+        fn server_capabilities(&self) -> Option<&ServerCapabilities> {
+            Some(&self.capabilities)
+        }
+
+        async fn list_resources(&self) -> Result<Vec<McpResource>> {
+            if self.fail_resources {
+                return Err(Error::message("boom"));
+            }
+            Ok(vec![McpResource {
+                uri: format!("file:///{}", self.name),
+                ..Default::default()
+            }])
+        }
+
+        async fn list_resource_templates(&self) -> Result<Vec<McpResourceTemplate>> {
+            Ok(Vec::new())
+        }
+
+        async fn read_resource(&self, uri: &str) -> Result<ResourcesReadResult> {
+            Ok(ResourcesReadResult {
+                contents: vec![ResourceContents {
+                    uri: uri.into(),
+                    mime_type: Some(crate::protocol::MCP_APP_MIME_TYPE.into()),
+                    text: Some("<p>chart</p>".into()),
+                    ..Default::default()
+                }],
+            })
+        }
+
+        async fn list_prompts(&self) -> Result<Vec<McpPrompt>> {
+            Ok(vec![McpPrompt {
+                name: "review".into(),
+                arguments: vec![crate::protocol::PromptArgument {
+                    name: "code".into(),
+                    required: true,
+                    ..Default::default()
+                }],
+                ..Default::default()
+            }])
+        }
+
+        async fn get_prompt(
+            &self,
+            name: &str,
+            _: HashMap<String, String>,
+        ) -> Result<PromptsGetResult> {
+            Ok(PromptsGetResult {
+                description: Some(name.into()),
+                messages: Vec::new(),
+            })
+        }
+
+        async fn notify_roots_changed(&self) -> Result<()> {
+            self.roots_notified.fetch_add(1, Ordering::SeqCst);
+            Ok(())
+        }
+    }
+
+    async fn manager_with(clients: Vec<FakeClient>) -> McpManager {
+        let mut registry = McpRegistry::new();
+        for client in &clients {
+            registry
+                .servers
+                .insert(client.name.into(), McpServerConfig {
+                    command: "x".into(),
+                    trust: if client.name == "b" {
+                        McpTrustTier::Untrusted
+                    } else {
+                        McpTrustTier::Trusted
+                    },
+                    ..Default::default()
+                });
+        }
+        let manager = McpManager::new(registry);
+        {
+            let mut inner = manager.inner.write().await;
+            for client in clients {
+                let name = client.name.to_string();
+                inner.tools.insert(name.clone(), client.tools.clone());
+                let shared: Arc<RwLock<dyn McpClientTrait>> = Arc::new(RwLock::new(client));
+                inner
+                    .clients
+                    .insert(name, Arc::new(ClientSlot::with_client(shared)));
+            }
+        }
+        manager
+    }
+
+    #[tokio::test]
+    async fn summaries_resources_and_prompt_commands_span_servers() {
+        let notified = Arc::new(AtomicUsize::new(0));
+        let mut failing = FakeClient::new("b", Arc::clone(&notified));
+        failing.fail_resources = true;
+        let manager =
+            manager_with(vec![FakeClient::new("a", Arc::clone(&notified)), failing]).await;
+
+        let summaries = manager.server_summaries().await;
+        assert_eq!(summaries.len(), 2);
+        assert!(summaries[0].resources && summaries[0].resource_subscribe && summaries[0].prompts);
+        assert!(summaries[0].apps);
+        assert_eq!(summaries[1].trust, McpTrustTier::Untrusted);
+
+        let all = manager.list_all_resources().await;
+        assert_eq!(all.len(), 2);
+        let a = all.iter().find(|entry| entry.server == "a").unwrap();
+        assert_eq!(a.resources[0].uri, "file:///a");
+        let b = all.iter().find(|entry| entry.server == "b").unwrap();
+        assert_eq!(b.error.as_deref(), Some("boom"));
+
+        let commands = manager.prompt_commands().await;
+        let names: Vec<&str> = commands.iter().map(|c| c.command.as_str()).collect();
+        assert_eq!(names, vec!["a:review", "b:review"]);
+    }
+
+    #[tokio::test]
+    async fn get_prompt_checks_required_arguments() {
+        let manager = manager_with(vec![FakeClient::new("a", Arc::default())]).await;
+        let missing = manager.get_prompt("a", "review", HashMap::new()).await;
+        assert!(missing.unwrap_err().to_string().contains("code"));
+        let ok = manager
+            .get_prompt("a", "review", HashMap::from([("code".into(), "x".into())]))
+            .await
+            .unwrap();
+        assert_eq!(ok.description.as_deref(), Some("review"));
+        assert!(manager.list_prompts("missing").await.is_err());
+    }
+
+    #[tokio::test]
+    async fn roots_notify_only_on_change() {
+        let notified = Arc::new(AtomicUsize::new(0));
+        let manager = manager_with(vec![FakeClient::new("a", Arc::clone(&notified))]).await;
+        let root = Root::from_path(std::path::Path::new("/w"), None).unwrap();
+        manager.set_roots(vec![root.clone()]).await;
+        manager.set_roots(vec![root.clone()]).await;
+        assert_eq!(notified.load(Ordering::SeqCst), 1);
+        assert_eq!(manager.roots(), vec![root]);
+    }
+
+    #[tokio::test]
+    async fn ui_resource_refresh_and_errors() {
+        let manager = manager_with(vec![FakeClient::new("a", Arc::default())]).await;
+        let ui = manager.read_ui_resource("a", "ui://chart").await.unwrap();
+        assert_eq!(ui.html, "<p>chart</p>");
+        assert!(manager.read_ui_resource("a", "file:///x").await.is_err());
+
+        let tools = manager.refresh_tools("a").await.unwrap();
+        assert_eq!(tools.len(), 2);
+        assert_eq!(manager.server_tools("a").await.unwrap().len(), 2);
+        assert!(manager.refresh_tools("nope").await.is_err());
+
+        assert!(
+            manager.subscribe_resource("a", "file:///a").await.is_err(),
+            "fake lacks subscribe"
+        );
+        assert_eq!(manager.list_resources("a").await.unwrap().len(), 1);
+        assert!(
+            manager
+                .list_resource_templates("a")
+                .await
+                .unwrap()
+                .is_empty()
+        );
     }
 }
