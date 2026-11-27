@@ -6,6 +6,8 @@ use moltis_protocol::{ErrorShape, ResponseFrame, error_codes};
 
 use crate::state::GatewayState;
 
+use super::services::mcp_features::{MCP_FEATURE_READ_METHODS, MCP_FEATURE_WRITE_METHODS};
+
 // ── Types ────────────────────────────────────────────────────────────────────
 
 /// Context passed to every method handler.
@@ -316,7 +318,12 @@ const WRITE_METHODS: &[&str] = &[
     "connectors.datasets.remove",
 ];
 
-const APPROVAL_METHODS: &[&str] = &["exec.approval.request", "exec.approval.resolve"];
+const APPROVAL_METHODS: &[&str] = &[
+    "exec.approval.request",
+    "exec.approval.resolve",
+    "mcp.elicitation.list",
+    "mcp.elicitation.resolve",
+];
 
 const PAIRING_METHODS: &[&str] = &[
     "node.pair.request",
@@ -377,13 +384,15 @@ pub fn authorize_method(method: &str, role: &str, scopes: &[String]) -> Option<E
             "missing scope: operator.pairing",
         ));
     }
-    if is_in(method, READ_METHODS) && !(has(s::READ) || has(s::WRITE)) {
+    let read_method = is_in(method, READ_METHODS) || is_in(method, MCP_FEATURE_READ_METHODS);
+    let write_method = is_in(method, WRITE_METHODS) || is_in(method, MCP_FEATURE_WRITE_METHODS);
+    if read_method && !(has(s::READ) || has(s::WRITE)) {
         return Some(ErrorShape::new(
             error_codes::UNAUTHORIZED,
             "missing scope: operator.read",
         ));
     }
-    if is_in(method, WRITE_METHODS) && !has(s::WRITE) {
+    if write_method && !has(s::WRITE) {
         return Some(ErrorShape::new(
             error_codes::UNAUTHORIZED,
             "missing scope: operator.write",
@@ -392,8 +401,8 @@ pub fn authorize_method(method: &str, role: &str, scopes: &[String]) -> Option<E
 
     if is_in(method, APPROVAL_METHODS)
         || is_in(method, PAIRING_METHODS)
-        || is_in(method, READ_METHODS)
-        || is_in(method, WRITE_METHODS)
+        || read_method
+        || write_method
     {
         return None;
     }

@@ -181,6 +181,121 @@ Found 15 repositories:
 ...
 ```
 
+## Beyond Tools: Resources, Prompts, Roots, Sampling and Elicitation
+
+Moltis implements the MCP 2025-11-25 revision and accepts servers that
+negotiate an older one (2025-06-18, 2025-03-26, 2024-11-05).
+
+### Resources
+
+Servers can expose resources (files, records, documents) and URI templates.
+
+- The agent gets two tools: `mcp_resources_list` (optionally for one server)
+  and `mcp_resource_read` (`server` + `uri`). Text is returned up to 100 KB per
+  item; binary content is described, not returned.
+- The UI uses the RPC methods `mcp.resources.list`, `mcp.resources.read`,
+  `mcp.resources.subscribe` and `mcp.resources.unsubscribe`.
+- Subscribed resources emit `mcp.resource.updated` events
+  (`{ server, uri }`); list changes emit `mcp.resources.changed`.
+
+### Prompts
+
+Server prompts are offered as slash-command candidates named
+`<server>:<prompt>`.
+
+- `mcp.prompts.list` returns `{ commands: [{ command, server, prompt, title,
+  description, arguments }] }` for the composer.
+- `mcp.prompts.get` (`server`, `name`, `arguments`) renders a prompt; missing
+  required arguments are reported before the server is called.
+
+### Roots
+
+Servers that ask for `roots/list` see the agent workspace (the data
+directory) and every project directory as `file://` roots. Untrusted servers
+see an empty list. Running servers are told when the list changes.
+
+### Elicitation
+
+A server can ask the user a structured question while a tool runs
+(`elicitation/create`, form mode).
+
+1. The gateway broadcasts `mcp.elicitation.requested` with
+   `{ id, server, sessionKey, message, schema, timeoutSecs }`.
+2. If the session belongs to a channel (Telegram, Discord…), the question and
+   its fields are also sent there as text, with a pointer to the web UI.
+3. The UI answers with `mcp.elicitation.resolve`
+   (`requestId`, `action`: `accept` | `decline` | `cancel`, `content`).
+   Accepted answers are checked against the schema; an invalid answer is
+   rejected and the request stays open.
+4. Without an answer within `mcp.elicitation_timeout_secs` (300 s) the request
+   is cancelled and the channel is told. `mcp.elicitation.resolved` is
+   broadcast in every case.
+
+`mcp.elicitation.list` returns the pending requests. Both methods need the
+`operator.approvals` scope. URL-mode elicitation is not supported yet.
+
+### Sampling
+
+A server can ask the model for a completion (`sampling/createMessage`). It
+is off by default and enabled per server:
+
+```toml
+[mcp.servers.notes.sampling]
+enabled = true
+max_tokens_per_request = 1024
+max_requests_per_session = 20
+max_tokens_per_session = 50000
+# model = "anthropic/claude-haiku-4-5"
+```
+
+The request is answered with the model of the chat session whose tool call
+triggered it (or `model`, or the first configured provider). Output stops at
+the request's token cap. Counters are per chat session and kept in memory.
+Each completed request broadcasts `mcp.sampling.completed`.
+
+### Trust tiers
+
+| | `trusted` (default) | `ask` | `untrusted` |
+|---|---|---|---|
+| Tool calls | run directly | user approves each call | user approves each call |
+| Tool results | as returned | as returned | wrapped as untrusted data |
+| Sampling | if enabled | if enabled, approved per request | never |
+| Elicitation | yes | yes | declined |
+| Roots | workspace + projects | workspace + projects | none |
+
+```toml
+[mcp.servers.web-scraper]
+trust = "untrusted"
+```
+
+Approvals go through the same flow as shell command approvals: the web UI
+shows them, and channel users get `/approve N` / `/deny N`. With no approval
+flow available a call that needs approval is refused.
+
+### Many servers: deferred tool schemas
+
+With `tools.registry_mode = "auto"`, MCP tools are moved behind
+`tool_search` once there are more than `tools.lazy_mcp_threshold` of them, so
+connecting servers does not grow the prompt. See
+[Tool Registry](tool-registry.md).
+
+### MCP Apps
+
+Protocol support only: tools that declare `_meta.ui.resourceUri` are listed
+with that metadata by `mcp.tools`, tools marked app-only are hidden from the
+model, and `mcp.apps.resource` (`server`, `uri`) returns a validated
+`ui://` document (`html`, `mimeType`, `uiMeta` with CSP and permissions).
+Set `mcp.apps_enabled = true` to advertise the extension; the web UI does not
+render apps yet.
+
+### Transports
+
+Server-to-client requests work over stdio and Streamable HTTP. Over
+Streamable HTTP, requests sent inside a response stream are answered with a
+separate POST, and the optional GET stream is opened for notifications sent
+outside requests. The legacy SSE transport cannot receive server requests, so
+sampling, elicitation and roots are not advertised to those servers.
+
 ## Creating an MCP Server
 
 ### Simple Node.js Server
@@ -359,6 +474,7 @@ MCP servers run with the same permissions as Moltis. Only use servers from trust
 - **Use environment variables** for secrets
 - **Prefer placeholders** in remote URLs and headers (`$NAME` / `${NAME}`) instead of hardcoding secrets repeatedly
 - **Network isolation** — run untrusted servers in containers
+- **Set a trust tier** — `trust = "ask"` or `"untrusted"` for servers you do not control
 
 ## Troubleshooting
 

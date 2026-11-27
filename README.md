@@ -57,7 +57,7 @@ cargo install moltis --git https://github.com/moltis-org/moltis
 | Sandbox/backends | App-level permissions, browser/node tools | Local, Docker, SSH, Daytona, Singularity, Modal | **Docker/Podman + Apple Container + WASM + Seatbelt/bubblewrap** |
 | Auth/access | Pairing and local gateway controls | CLI and messaging gateway setup | **Password + Passkey + API keys + Vault** |
 | Voice I/O | Voice wake and talk modes | Voice memo transcription | **Built-in STT + TTS providers** |
-| MCP | Plugin/integration support | MCP integration | **stdio + HTTP/SSE** |
+| MCP | Plugin/integration support | MCP integration | **stdio + HTTP/SSE, resources, prompts, sampling, elicitation** |
 | Skills | Bundled, managed, and workspace skills | Self-improving skills and Skills Hub support | **Bundled/workspace skills + autonomous improvement + OpenClaw import** |
 | Memory/RAG | Plugin-backed memory and context engine | Agent-curated memory, session search, user modeling | **SQLite + FTS + vector memory** |
 
@@ -128,7 +128,7 @@ Verify releases with `gh attestation verify <artifact> -R moltis-org/moltis` or 
 - **Memory & Recall** — Per-agent memory workspaces, embeddings-powered long-term memory, hybrid vector + full-text search, session persistence with auto-compaction, cross-session recall, Cursor-compatible project context, context-file safety scanning
 - **Managed Files** - Authenticated nested file management in Settings, with an agent-advertised host path and independent read-only-by-default mounts for Docker, Podman, and Apple Container sandboxes
 - **Safer Agent Editing** — Automatic checkpoints before built-in skill and memory mutations, restore tooling, session branching
-- **Extensibility** — MCP servers (stdio + HTTP/SSE), skill system, 15 lifecycle hook events with circuit breaker, destructive command guard
+- **Extensibility** — MCP servers (stdio + HTTP/SSE) with resources, prompts, roots, sampling with spend limits, elicitation, per-server trust tiers and deferred tool schemas, skill system, 15 lifecycle hook events with circuit breaker, destructive command guard
 - **Agent Client Protocol** — drives external ACP agents (`codex-acp`, `claude-agent-acp`, Cursor), and serves Moltis to ACP clients over stdio via `moltis acp`
 - **First Run** — Opens onboarding in your browser with the setup code pre-filled, serves certificate-free `http://localhost`, offers once to trust a name-constrained local CA for LAN HTTPS, and pins the web UI URL below the terminal logs (with an `ssh -L` hint over SSH)
 - **Security** — Encryption-at-rest vault (XChaCha20-Poly1305 + Argon2id), password + passkey + API key auth, sandbox isolation, SSRF/CSWSH protection

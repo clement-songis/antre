@@ -30,7 +30,7 @@ use {
         session_events::SessionEventBus,
         store::SessionStore,
     },
-    secrecy::{ExposeSecret, Secret},
+    secrecy::ExposeSecret,
     std::{path::PathBuf, sync::Arc},
     tracing::{debug, info, warn},
 };
@@ -384,35 +384,9 @@ pub async fn prepare_gateway_core_with_profile(
         let mut merged = mcp_reg;
         for (name, entry) in &config.mcp.servers {
             if !merged.servers.contains_key(name.as_str()) {
-                let transport = entry.transport_type();
-                let oauth = entry
-                    .oauth
-                    .as_ref()
-                    .map(|o| moltis_mcp::registry::McpOAuthConfig {
-                        client_id: o.client_id.clone(),
-                        client_secret: o.client_secret.clone(),
-                        auth_url: o.auth_url.clone(),
-                        token_url: o.token_url.clone(),
-                        scopes: o.scopes.clone(),
-                    });
                 merged
                     .servers
-                    .insert(name.to_string(), moltis_mcp::McpServerConfig {
-                        command: entry.command.clone(),
-                        args: entry.args.clone(),
-                        env: entry.env.clone(),
-                        enabled: entry.enabled,
-                        request_timeout_secs: entry.request_timeout_secs,
-                        transport,
-                        url: entry.url.clone().map(Secret::new),
-                        headers: entry
-                            .headers
-                            .iter()
-                            .map(|(key, value)| (key.clone(), Secret::new(value.clone())))
-                            .collect(),
-                        oauth,
-                        display_name: entry.display_name.clone(),
-                    });
+                    .insert(name.to_string(), moltis_mcp::McpServerConfig::from(entry));
             }
         }
         mcp_configured_count = merged.servers.values().filter(|s| s.enabled).count();
@@ -421,11 +395,17 @@ pub async fn prepare_gateway_core_with_profile(
             config_env_overrides.clone(),
             std::time::Duration::from_secs(config.mcp.request_timeout_secs.max(1)),
         ));
-        live_mcp = Arc::new(crate::mcp_service::LiveMcpService::new(
-            Arc::clone(&mcp_manager),
-            config_env_overrides.clone(),
-            None,
-        ));
+        mcp_manager.set_apps_enabled(config.mcp.apps_enabled);
+        live_mcp = Arc::new(
+            crate::mcp_service::LiveMcpService::new(
+                Arc::clone(&mcp_manager),
+                config_env_overrides.clone(),
+                None,
+            )
+            .with_elicitation_timeout(std::time::Duration::from_secs(
+                config.mcp.elicitation_timeout_secs.max(1),
+            )),
+        );
         services.mcp = live_mcp.clone() as Arc<dyn crate::services::McpService>;
     }
     startup_mem_probe.checkpoint("services.core_wired");
@@ -1406,7 +1386,6 @@ pub async fn prepare_gateway_core_with_profile(
         #[cfg(feature = "tailscale")]
         tailscale_reset_on_exit_override,
         code_index,
-        #[cfg(any(feature = "qmd", feature = "code-index-builtin"))]
         project_store: Arc::clone(&project_store),
     })
     .await

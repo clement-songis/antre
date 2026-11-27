@@ -81,7 +81,6 @@ pub(super) struct PostStateInputs {
     pub live_mcp: Arc<crate::mcp_service::LiveMcpService>,
     pub memory_manager: Option<moltis_memory::runtime::DynMemoryRuntime>,
     pub code_index: Arc<moltis_code_index::CodeIndex>,
-    #[cfg(any(feature = "qmd", feature = "code-index-builtin"))]
     pub project_store: Arc<dyn moltis_projects::ProjectStore>,
     pub credential_store: Arc<auth::CredentialStore>,
     pub db_pool: sqlx::SqlitePool,
@@ -181,7 +180,6 @@ pub(super) async fn complete_startup(
         #[cfg(feature = "tailscale")]
         tailscale_reset_on_exit_override,
         code_index,
-        #[cfg(any(feature = "qmd", feature = "code-index-builtin"))]
         project_store,
     } = inputs;
 
@@ -826,6 +824,12 @@ pub(super) async fn complete_startup(
             tool_registry.register(Box::new(crate::mcp_agent_tools::McpRestartTool::new(
                 Arc::clone(&mcp),
             )));
+            tool_registry.register(Box::new(crate::mcp_agent_tools::McpResourcesListTool::new(
+                Arc::clone(&mcp),
+            )));
+            tool_registry.register(Box::new(crate::mcp_agent_tools::McpResourceReadTool::new(
+                Arc::clone(&mcp),
+            )));
         }
         #[cfg(feature = "msteams")]
         {
@@ -1364,6 +1368,21 @@ pub(super) async fn complete_startup(
         live_mcp
             .set_tool_registry(Arc::clone(&shared_tool_registry))
             .await;
+        {
+            let mcp_broadcaster: Arc<dyn moltis_tools::exec::ApprovalBroadcaster> =
+                Arc::new(GatewayApprovalBroadcaster::new(Arc::clone(&state)));
+            let mcp_host = Arc::new(crate::mcp_host::GatewayMcpHost::new(
+                Arc::clone(&state),
+                Arc::clone(&registry),
+                Arc::clone(&approval_manager),
+                mcp_broadcaster,
+                Arc::clone(&live_mcp),
+            ));
+            live_mcp.manager().set_host(mcp_host.clone());
+            live_mcp.manager().set_tool_approver(mcp_host);
+            let roots = crate::mcp_host::workspace_roots(&data_dir, project_store.as_ref()).await;
+            live_mcp.manager().set_roots(roots).await;
+        }
         if profile.is_headless() {
             let started = live_mcp.manager().start_enabled().await;
             if !started.is_empty() {

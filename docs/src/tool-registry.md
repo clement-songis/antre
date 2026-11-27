@@ -117,6 +117,21 @@ The runner re-computes schemas each iteration, so activated tools appear
 immediately. The iteration limit is tripled in lazy mode to account for the
 extra discovery round-trips.
 
+### Auto mode: defer only MCP tools
+
+```toml
+[tools]
+registry_mode = "auto"
+lazy_mcp_threshold = 20   # default
+```
+
+Built-in tools keep their full schemas. When more than `lazy_mcp_threshold`
+MCP tools are registered, they move behind `tool_search`, whose description
+lists each connected server and its tool count (for example
+`github (31), linear (18)`). The tool list stays identical from turn to turn
+however many servers are connected, so the cached prompt prefix survives.
+Activated tools last for the current turn only, like in lazy mode.
+
 ### When to use
 
 - Many MCP servers connected (50+ tools)

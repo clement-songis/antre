@@ -114,33 +114,45 @@ impl GatewayApprovalBroadcaster {
         session_key: Option<&str>,
         command: &str,
     ) -> moltis_tools::Result<()> {
-        let Some(session_key) = session_key else {
-            return Ok(());
-        };
-        let Some(session_metadata) = self.state.services.session_metadata.as_ref() else {
-            return Ok(());
-        };
-        let Some(outbound) = self.state.services.channel_outbound_arc() else {
-            return Ok(());
-        };
-
-        let target = session_metadata
-            .get(session_key)
-            .await
-            .and_then(|entry| channel_reply_target_for_entry(&entry));
-        let Some(target) = target else {
-            return Ok(());
-        };
-
         let preview = truncate_command_preview(command, MAX_COMMAND_PREVIEW_LEN);
         let message = format!(
             "Approval needed for `{preview}`.\nUse /approvals to see the numbered list, then /approve N or /deny N. The web UI still works too.",
         );
-        outbound
-            .send_text(&target.account_id, &target.outbound_to(), &message, None)
+        notify_session_channel(&self.state, session_key, &message)
             .await
-            .map_err(|error| moltis_tools::Error::external("send approval notification", error))
+            .map_err(|error| {
+                moltis_tools::Error::message(format!("send approval notification: {error}"))
+            })
     }
+}
+
+/// Send a text message to the channel a session is bound to. Sessions
+/// without a channel binding (web UI) are skipped.
+pub(crate) async fn notify_session_channel(
+    state: &GatewayState,
+    session_key: Option<&str>,
+    message: &str,
+) -> anyhow::Result<()> {
+    let Some(session_key) = session_key else {
+        return Ok(());
+    };
+    let Some(session_metadata) = state.services.session_metadata.as_ref() else {
+        return Ok(());
+    };
+    let Some(outbound) = state.services.channel_outbound_arc() else {
+        return Ok(());
+    };
+    let target = session_metadata
+        .get(session_key)
+        .await
+        .and_then(|entry| channel_reply_target_for_entry(&entry));
+    let Some(target) = target else {
+        return Ok(());
+    };
+    outbound
+        .send_text(&target.account_id, &target.outbound_to(), message, None)
+        .await?;
+    Ok(())
 }
 
 #[async_trait]

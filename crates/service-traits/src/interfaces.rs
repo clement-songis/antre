@@ -530,6 +530,50 @@ pub trait McpService: Send + Sync {
     async fn update_request_timeout(&self, _request_timeout_secs: u64) -> ServiceResult {
         Ok(serde_json::json!({ "ok": true }))
     }
+
+    /// Per-server capabilities (resources, prompts, apps), trust and roots.
+    async fn features(&self, _params: Value) -> ServiceResult {
+        Err("MCP not configured".into())
+    }
+
+    /// Resources and templates of one server (`server`) or of all servers.
+    async fn resources_list(&self, _params: Value) -> ServiceResult {
+        Err("MCP not configured".into())
+    }
+
+    async fn resource_read(&self, _params: Value) -> ServiceResult {
+        Err("MCP not configured".into())
+    }
+
+    async fn resource_subscribe(&self, _params: Value) -> ServiceResult {
+        Err("MCP not configured".into())
+    }
+
+    async fn resource_unsubscribe(&self, _params: Value) -> ServiceResult {
+        Err("MCP not configured".into())
+    }
+
+    /// Prompts of all servers as slash-command candidates.
+    async fn prompts_list(&self, _params: Value) -> ServiceResult {
+        Err("MCP not configured".into())
+    }
+
+    async fn prompt_get(&self, _params: Value) -> ServiceResult {
+        Err("MCP not configured".into())
+    }
+
+    async fn elicitation_list(&self, _params: Value) -> ServiceResult {
+        Ok(serde_json::json!({ "requests": [] }))
+    }
+
+    async fn elicitation_resolve(&self, _params: Value) -> ServiceResult {
+        Err("MCP not configured".into())
+    }
+
+    /// Read an MCP App `ui://` resource (HTML plus its `_meta.ui`).
+    async fn ui_resource_read(&self, _params: Value) -> ServiceResult {
+        Err("MCP not configured".into())
+    }
 }
 
 pub struct NoopMcpService;

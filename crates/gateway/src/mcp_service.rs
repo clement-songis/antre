@@ -32,6 +32,7 @@ pub struct LiveMcpService {
     tool_registry: RwLock<Option<Arc<RwLock<ToolRegistry>>>>,
     config_env_overrides: HashMap<String, String>,
     credential_store: RwLock<Option<Arc<crate::auth::CredentialStore>>>,
+    elicitations: Arc<moltis_mcp::PendingElicitations>,
 }
 
 impl LiveMcpService {
@@ -45,7 +46,22 @@ impl LiveMcpService {
             tool_registry: RwLock::new(None),
             config_env_overrides,
             credential_store: RwLock::new(credential_store),
+            elicitations: Arc::new(moltis_mcp::PendingElicitations::new(
+                std::time::Duration::from_secs(300),
+            )),
         }
+    }
+
+    /// Use a different elicitation timeout (`mcp.elicitation_timeout_secs`).
+    #[must_use]
+    pub fn with_elicitation_timeout(mut self, timeout: std::time::Duration) -> Self {
+        self.elicitations = Arc::new(moltis_mcp::PendingElicitations::new(timeout));
+        self
+    }
+
+    /// Pending elicitations, shared with the MCP host.
+    pub fn elicitations(&self) -> Arc<moltis_mcp::PendingElicitations> {
+        Arc::clone(&self.elicitations)
     }
 
     /// Store a reference to the shared tool registry so MCP mutations
@@ -394,4 +410,123 @@ impl McpService for LiveMcpService {
         self.manager.set_request_timeout_secs(request_timeout_secs);
         Ok(serde_json::json!({ "ok": true }))
     }
+
+    async fn features(&self, _params: Value) -> ServiceResult {
+        Ok(serde_json::json!({
+            "servers": self.manager.server_summaries().await,
+            "roots": self.manager.roots(),
+        }))
+    }
+
+    async fn resources_list(&self, params: Value) -> ServiceResult {
+        let Some(server) = params.get("server").and_then(Value::as_str) else {
+            return Ok(serde_json::json!({ "servers": self.manager.list_all_resources().await }));
+        };
+        let (resources, templates) = tokio::join!(
+            self.manager.list_resources(server),
+            self.manager.list_resource_templates(server)
+        );
+        Ok(serde_json::json!({
+            "server": server,
+            "resources": resources.map_err(service_error)?,
+            "templates": templates.map_err(service_error)?,
+        }))
+    }
+
+    async fn resource_read(&self, params: Value) -> ServiceResult {
+        let (server, uri) = server_and_uri(&params)?;
+        let read = self
+            .manager
+            .read_resource(server, uri)
+            .await
+            .map_err(service_error)?;
+        Ok(serde_json::to_value(read)?)
+    }
+
+    async fn resource_subscribe(&self, params: Value) -> ServiceResult {
+        let (server, uri) = server_and_uri(&params)?;
+        self.manager
+            .subscribe_resource(server, uri)
+            .await
+            .map_err(service_error)?;
+        Ok(serde_json::json!({ "ok": true }))
+    }
+
+    async fn resource_unsubscribe(&self, params: Value) -> ServiceResult {
+        let (server, uri) = server_and_uri(&params)?;
+        self.manager
+            .unsubscribe_resource(server, uri)
+            .await
+            .map_err(service_error)?;
+        Ok(serde_json::json!({ "ok": true }))
+    }
+
+    async fn prompts_list(&self, _params: Value) -> ServiceResult {
+        Ok(serde_json::json!({ "commands": self.manager.prompt_commands().await }))
+    }
+
+    async fn prompt_get(&self, params: Value) -> ServiceResult {
+        let server = required_str(&params, "server")?;
+        let name = required_str(&params, "name")?;
+        let arguments: HashMap<String, String> = match params.get("arguments") {
+            Some(value) if !value.is_null() => serde_json::from_value(value.clone())
+                .map_err(|_| "'arguments' must map names to strings".to_string())?,
+            _ => HashMap::new(),
+        };
+        let prompt = self
+            .manager
+            .get_prompt(server, name, arguments)
+            .await
+            .map_err(service_error)?;
+        Ok(serde_json::to_value(prompt)?)
+    }
+
+    async fn elicitation_list(&self, params: Value) -> ServiceResult {
+        let session_key = params.get("sessionKey").and_then(Value::as_str);
+        Ok(serde_json::json!({ "requests": self.elicitations.list(session_key).await }))
+    }
+
+    async fn elicitation_resolve(&self, params: Value) -> ServiceResult {
+        let id = required_str(&params, "requestId")?;
+        let result: moltis_mcp::protocol::ElicitResult =
+            serde_json::from_value(serde_json::json!({
+                "action": params.get("action").cloned().unwrap_or(Value::Null),
+                "content": params.get("content").cloned().filter(|v| !v.is_null()),
+            }))
+            .map_err(|_| "'action' must be accept, decline or cancel".to_string())?;
+        self.elicitations
+            .resolve(id, result)
+            .await
+            .map_err(ServiceError::from)?;
+        Ok(serde_json::json!({ "ok": true }))
+    }
+
+    async fn ui_resource_read(&self, params: Value) -> ServiceResult {
+        let (server, uri) = server_and_uri(&params)?;
+        let resource = self
+            .manager
+            .read_ui_resource(server, uri)
+            .await
+            .map_err(service_error)?;
+        Ok(serde_json::to_value(resource)?)
+    }
+}
+
+fn service_error(error: moltis_mcp::Error) -> ServiceError {
+    ServiceError::from(error.to_string())
+}
+
+fn required_str<'a>(params: &'a Value, key: &str) -> Result<&'a str, ServiceError> {
+    params
+        .get(key)
+        .and_then(Value::as_str)
+        .filter(|value| !value.is_empty())
+        .ok_or_else(|| ServiceError::from(format!("missing '{key}' parameter")))
+}
+
+fn server_and_uri(params: &Value) -> Result<(&str, &str), ServiceError> {
+    Ok((
+        required_str(params, "server")?,
+        required_str(params, "uri")?,
+    ))
 }

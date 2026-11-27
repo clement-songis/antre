@@ -78,6 +78,7 @@
   - [`mcp`](#mcp)
   - [`mcp.servers.<name>`](#mcpserversname)
   - [`mcp.servers.<name>.oauth`](#mcpserversnameoauth)
+  - [`mcp.servers.<name>.sampling`](#mcpserversnamesampling)
   - [`external_agents`](#external-agents)
   - [`external_agents.agents.<kind>`](#external-agentsagentskind)
 - **Memory**
@@ -616,7 +617,8 @@ Default `tool_overrides` entries:
 | agent_max_auto_continues | integer | `2` | Maximum auto-continue nudges when the model stops mid-task (0 = disabled). |
 | agent_auto_continue_min_tool_calls | integer | `3` | Minimum tool calls in the current run before auto-continue can trigger. |
 | max_tool_result_bytes | integer | `50000` (50 KB) | Maximum bytes for a single tool result before truncation. |
-| registry_mode | string (enum) | `"full"` | How tool schemas are presented to the model. One of: `full` (all schemas sent every turn), `lazy` (only `tool_search` sent; model discovers tools on demand). |
+| registry_mode | string (enum) | `"full"` | How tool schemas are presented to the model. One of: `full` (all schemas sent every turn), `lazy` (only `tool_search` sent; model discovers tools on demand), `auto` (built-in tools sent in full; MCP tools behind `tool_search` once there are more than `lazy_mcp_threshold`). |
+| lazy_mcp_threshold | integer | `20` | With `registry_mode = "auto"`, the number of MCP tools above which they are deferred. |
 | agent_loop_detector_window | integer | `2` | Window size for the tool-call reflex-loop detector. When this many consecutive tool calls share the same tool + (args or error), the runner injects a directive intervention message. Set to 0 to disable. |
 | agent_loop_detector_strip_tools_on_second_fire | bool | `true` | When the loop detector fires a second time (stage 2), strip the tool schema list for a single LLM turn so the model is forced to respond in text. |
 
@@ -691,6 +693,8 @@ Each channel account (`channels.<channel_type>.<account_name>`) is an arbitrary 
 |-----|------|---------|-------------|
 | `request_timeout_secs` | integer | `30` | Default timeout for MCP requests in seconds. |
 | `servers` | map of McpServerEntry | `{}` | Configured MCP servers, keyed by server name. |
+| `elicitation_timeout_secs` | integer | `300` | How long a server-initiated question waits for the user before it is cancelled. |
+| `apps_enabled` | bool | `false` | Advertise the MCP Apps extension (`ui://` resources). Rendering is not available yet. |
 
 
 ### `mcp.servers.<name>` — McpServerEntry
@@ -707,6 +711,19 @@ Each channel account (`channels.<channel_type>.<account_name>`) is an arbitrary 
 | `headers` | map of string | `{}` | Custom headers for remote HTTP/SSE transport. |
 | `oauth` | optional McpOAuthOverrideEntry | `None` | Manual OAuth override for servers that don't support standard discovery. |
 | `display_name` | optional string | `None` | Custom display name for the server (shown in UI instead of technical ID). |
+| `trust` | string (enum) | `"trusted"` | `trusted`, `ask` (approve every tool call and sampling request) or `untrusted` (approve every tool call; no sampling, elicitation or roots; results marked as untrusted). |
+| `sampling` | McpSamplingConfig | see below | Lets the server ask the session's model for completions, with spend limits. |
+
+
+### `mcp.servers.<name>.sampling` — McpSamplingConfig
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `enabled` | bool | `false` | Allow `sampling/createMessage` from this server. Ignored for untrusted servers. |
+| `max_tokens_per_request` | integer | `1024` | Cap applied to each request's `maxTokens`. |
+| `max_requests_per_session` | integer | `20` | Requests allowed per chat session (in memory, reset on restart). |
+| `max_tokens_per_session` | integer | `50000` | Input + output tokens allowed per chat session. |
+| `model` | optional string | `None` | Model id used instead of the session's model. |
 
 
 ### `mcp.servers.<name>.oauth` — McpOAuthOverrideEntry
