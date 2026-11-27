@@ -8,9 +8,9 @@ use crate::{
     bench::{self, BenchOutput},
     cli::Mode,
     connect::{self, Connection},
+    desktop::{self, MAIN_WINDOW as WINDOW},
+    sidecar::SidecarEvent,
 };
-
-const WINDOW: &str = "main";
 
 /// Keeps the sidecar alive for the app's lifetime.
 #[derive(Default)]
@@ -36,9 +36,17 @@ pub fn run(mode: Mode) -> anyhow::Result<()> {
                     .set_focus()?;
                 Ok(())
             }),
+        // The single-instance plugin must be registered first: a second
+        // launch focuses this window instead of starting a second daemon.
         mode => tauri::Builder::default()
+            .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+                desktop::show_main_window(app);
+            }))
+            .plugin(tauri_plugin_notification::init())
             .manage(Daemon::default())
+            .on_window_event(desktop::on_window_event)
             .setup(move |app| {
+                desktop::install_tray(app.handle())?;
                 let window =
                     WebviewWindowBuilder::new(app, WINDOW, WebviewUrl::App("index.html".into()))
                         .title("Antre")
@@ -49,10 +57,15 @@ pub fn run(mode: Mode) -> anyhow::Result<()> {
                 tauri::async_runtime::spawn(exit_on_signal(handle.clone()));
                 tauri::async_runtime::spawn(async move {
                     let reload = window.clone();
-                    let result = connect::connect(mode, app_data, move || {
-                        if let Ok(url) = reload.url() {
+                    let notifier = handle.clone();
+                    let result = connect::connect(mode, app_data, move |event| {
+                        if event == SidecarEvent::Restarted
+                            && let Ok(url) = reload.url()
+                        {
                             let _ = reload.navigate(url);
                         }
+                        let (title, body) = desktop::sidecar_notice(event);
+                        desktop::notify(&notifier, title, body);
                     })
                     .await;
                     show(&window, result, &handle);
@@ -63,6 +76,10 @@ pub fn run(mode: Mode) -> anyhow::Result<()> {
     .build(tauri::generate_context!())?;
 
     app.run(|handle, event| {
+        #[cfg(target_os = "macos")]
+        if let RunEvent::Reopen { .. } = event {
+            desktop::show_main_window(handle);
+        }
         if let RunEvent::Exit = event
             && let Some(daemon) = handle.try_state::<Daemon>()
             && let Some(connection) = daemon.0.lock().unwrap_or_else(|e| e.into_inner()).take()
@@ -104,7 +121,12 @@ async fn exit_on_signal(handle: tauri::AppHandle) {
 fn show(window: &WebviewWindow, result: anyhow::Result<Connection>, handle: &tauri::AppHandle) {
     match result {
         Ok(connection) => {
-            tracing::info!(url = %connection.url, kind = connection.kind, "showing daemon");
+            // The URL may carry a one-time session ticket: log the origin only.
+            tracing::info!(
+                origin = %connection.url.origin().ascii_serialization(),
+                kind = connection.kind,
+                "showing daemon"
+            );
             if let Err(error) = window.navigate(connection.url.clone()) {
                 tracing::error!(%error, "navigation failed");
             }

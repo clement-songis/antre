@@ -17,10 +17,26 @@ pub struct Health {
     pub protocol: u32,
 }
 
-#[derive(Debug, Deserialize)]
-struct AuthStatus {
-    authenticated: bool,
+/// What a daemon answered when asked to trade the API key for a session.
+#[derive(Debug, PartialEq, Eq)]
+pub enum SessionTicket {
+    /// Navigate the WebView here: it sets the session cookie and redirects
+    /// to the app.
+    Redeem(Url),
+    /// Valid key without `operator.admin`: the user logs in in the WebView.
+    NotAdmin,
+    /// Unknown or revoked key.
+    Rejected,
 }
+
+#[derive(Debug, Deserialize)]
+struct TicketResponse {
+    redeem_path: String,
+}
+
+/// Only this path is ever navigated to: a hostile daemon must not steer the
+/// WebView elsewhere through the response.
+const REDEEM_PATH_PREFIX: &str = "/api/auth/session-ticket/redeem?ticket=";
 
 fn client() -> anyhow::Result<reqwest::Client> {
     Ok(reqwest::Client::builder().timeout(PROBE_TIMEOUT).build()?)
@@ -36,17 +52,23 @@ pub async fn health(base: &Url) -> anyhow::Result<Health> {
     Ok(response.json().await?)
 }
 
-/// Whether the daemon accepts `api_key` (`GET /api/auth/status` with a Bearer
-/// token reports `authenticated`).
-pub async fn api_key_accepted(base: &Url, api_key: &SecretString) -> anyhow::Result<bool> {
+/// `POST /api/auth/session-ticket` with the API key as Bearer token.
+pub async fn session_ticket(base: &Url, api_key: &SecretString) -> anyhow::Result<SessionTicket> {
     let response = client()?
-        .get(base.join("api/auth/status")?)
+        .post(base.join("api/auth/session-ticket")?)
         .bearer_auth(api_key.expose_secret())
         .send()
-        .await?
-        .error_for_status()?;
-    let status: AuthStatus = response.json().await?;
-    Ok(status.authenticated)
+        .await?;
+    match response.status() {
+        reqwest::StatusCode::UNAUTHORIZED => return Ok(SessionTicket::Rejected),
+        reqwest::StatusCode::FORBIDDEN => return Ok(SessionTicket::NotAdmin),
+        _ => {},
+    }
+    let ticket: TicketResponse = response.error_for_status()?.json().await?;
+    if !ticket.redeem_path.starts_with(REDEEM_PATH_PREFIX) {
+        anyhow::bail!("unexpected redeem path from {base}");
+    }
+    Ok(SessionTicket::Redeem(base.join(&ticket.redeem_path)?))
 }
 
 /// Poll `/health` until it answers or `timeout` elapses.
@@ -74,6 +96,10 @@ mod tests {
 
     /// A one-route HTTP server answering every request with `body`.
     async fn serve(body: &'static str) -> Url {
+        serve_status("200 OK", body).await
+    }
+
+    async fn serve_status(status: &'static str, body: &'static str) -> Url {
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
         let port = listener.local_addr().unwrap().port();
         tokio::spawn(async move {
@@ -81,7 +107,7 @@ mod tests {
                 let mut buffer = [0_u8; 2048];
                 let _ = socket.read(&mut buffer).await;
                 let response = format!(
-                    "HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: \
+                    "HTTP/1.1 {status}\r\ncontent-type: application/json\r\ncontent-length: \
                      {}\r\nconnection: close\r\n\r\n{body}",
                     body.len()
                 );
@@ -101,11 +127,45 @@ mod tests {
         assert_eq!(health.protocol, 4);
     }
 
+    fn key() -> SecretString {
+        SecretString::new("mk_x".into())
+    }
+
     #[tokio::test]
-    async fn reads_api_key_verdict() {
-        let base = serve(r#"{"authenticated":false,"setup_required":false}"#).await;
-        let key = SecretString::new("mk_x".into());
-        assert!(!api_key_accepted(&base, &key).await.unwrap());
+    async fn a_ticket_becomes_a_same_origin_redeem_url() {
+        let base = serve(
+            r#"{"ticket":"t1","expires_in":60,"redeem_path":"/api/auth/session-ticket/redeem?ticket=t1"}"#,
+        )
+        .await;
+        let SessionTicket::Redeem(url) = session_ticket(&base, &key()).await.unwrap() else {
+            panic!("expected a redeem URL");
+        };
+        assert_eq!(url.origin(), base.origin());
+        assert_eq!(url.path(), "/api/auth/session-ticket/redeem");
+        assert_eq!(url.query(), Some("ticket=t1"));
+    }
+
+    #[tokio::test]
+    async fn a_hostile_redeem_path_is_refused() {
+        let base =
+            serve(r#"{"ticket":"t","expires_in":60,"redeem_path":"//evil.example/x"}"#).await;
+        assert!(session_ticket(&base, &key()).await.is_err());
+        let base = serve(r#"{"ticket":"t","expires_in":60,"redeem_path":"/elsewhere"}"#).await;
+        assert!(session_ticket(&base, &key()).await.is_err());
+    }
+
+    #[tokio::test]
+    async fn key_verdicts_map_to_outcomes() {
+        let rejected = serve_status("401 Unauthorized", "{}").await;
+        assert_eq!(
+            session_ticket(&rejected, &key()).await.unwrap(),
+            SessionTicket::Rejected
+        );
+        let reader = serve_status("403 Forbidden", "{}").await;
+        assert_eq!(
+            session_ticket(&reader, &key()).await.unwrap(),
+            SessionTicket::NotAdmin
+        );
     }
 
     #[tokio::test]

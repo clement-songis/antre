@@ -7,6 +7,7 @@ mod app;
 mod bench;
 mod cli;
 mod connect;
+mod desktop;
 #[cfg(feature = "embedded")]
 mod embedded;
 mod probe;

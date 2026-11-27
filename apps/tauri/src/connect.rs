@@ -7,7 +7,7 @@ use {anyhow::Context, url::Url};
 use crate::{
     cli::{Mode, SidecarOptions},
     probe,
-    sidecar::{self, IsolatedDirs, Sidecar},
+    sidecar::{self, IsolatedDirs, Sidecar, SidecarEvent},
 };
 
 /// The daemon the window is pointed at, and what keeps it alive.
@@ -18,13 +18,16 @@ pub struct Connection {
 }
 
 /// `app_data` is the shell's own data directory (isolated sidecars live
-/// there). `on_restart` runs when a crashed sidecar is healthy again.
+/// there). `on_event` hears about sidecar crash recoveries.
 pub async fn connect(
     mode: Mode,
     app_data: PathBuf,
-    on_restart: impl Fn() + Send + 'static,
+    on_event: impl Fn(SidecarEvent) + Send + 'static,
 ) -> anyhow::Result<Connection> {
     match mode {
+        // The default is a sidecar on the user's own config. A daemon
+        // already running on that config is reused: two daemons cannot share
+        // one database.
         Mode::Auto => {
             if let Some(url) = running_local_daemon().await {
                 return Ok(Connection {
@@ -33,21 +36,33 @@ pub async fn connect(
                     sidecar: None,
                 });
             }
-            spawn_sidecar(SidecarOptions::default(), &app_data, on_restart).await
+            spawn_sidecar(SidecarOptions::default(), &app_data, on_event).await
         },
-        Mode::Sidecar(options) => spawn_sidecar(options, &app_data, on_restart).await,
+        Mode::Sidecar(options) => spawn_sidecar(options, &app_data, on_event).await,
         Mode::Remote { url, api_key } => {
             let health = probe::health(&url)
                 .await
                 .with_context(|| format!("{url} does not answer /health"))?;
-            if let Some(api_key) = &api_key
-                && !probe::api_key_accepted(&url, api_key).await?
-            {
-                anyhow::bail!("{url} rejected the API key");
-            }
             tracing::info!(%url, version = health.version, "remote daemon reachable");
+            // With a key, open the UI already signed in; without one (or with
+            // a non-admin key) the user logs in once in the WebView.
+            let target = match &api_key {
+                None => url,
+                Some(api_key) => match probe::session_ticket(&url, api_key).await? {
+                    probe::SessionTicket::Redeem(redeem) => redeem,
+                    probe::SessionTicket::NotAdmin => {
+                        tracing::warn!(
+                            "the API key lacks operator.admin; log in in the window instead"
+                        );
+                        url
+                    },
+                    probe::SessionTicket::Rejected => {
+                        anyhow::bail!("{url} rejected the API key")
+                    },
+                },
+            };
             Ok(Connection {
-                url,
+                url: target,
                 kind: "remote daemon",
                 sidecar: None,
             })
@@ -73,7 +88,7 @@ async fn running_local_daemon() -> Option<Url> {
 async fn spawn_sidecar(
     options: SidecarOptions,
     app_data: &std::path::Path,
-    on_restart: impl Fn() + Send + 'static,
+    on_event: impl Fn(SidecarEvent) + Send + 'static,
 ) -> anyhow::Result<Connection> {
     let beside_exe = std::env::current_exe()
         .ok()
@@ -86,7 +101,7 @@ async fn spawn_sidecar(
     )
     .context("no `moltis` binary found (pass --moltis PATH or set MOLTIS_BIN)")?;
     let dirs = options.isolated.then(|| isolated_dirs(app_data));
-    let sidecar = sidecar::start(binary, dirs, on_restart).await?;
+    let sidecar = sidecar::start(binary, dirs, on_event).await?;
     Ok(Connection {
         url: sidecar.base.clone(),
         kind: "sidecar daemon",

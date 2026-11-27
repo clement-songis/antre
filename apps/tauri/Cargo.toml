@@ -39,8 +39,10 @@ reqwest            = { default-features = false, features = ["rustls"], version 
 secrecy            = "0.8"
 serde              = { features = ["derive"], version = "1" }
 serde_json         = "1"
-tauri              = { features = [], version = "2.12" }
+tauri              = { features = ["tray-icon"], version = "2.12" }
 tauri-build        = { features = [], version = "2.7" }
+tauri-plugin-notification = "2.8"
+tauri-plugin-single-instance = "2.5"
 tempfile           = "3"
 tokio              = { features = ["macros", "net", "process", "rt-multi-thread", "signal", "sync", "time"], version = "1" }
 tracing            = "0.1"
@@ -58,6 +60,8 @@ secrecy            = { workspace = true }
 serde              = { workspace = true }
 serde_json         = { workspace = true }
 tauri              = { workspace = true }
+tauri-plugin-notification = { workspace = true }
+tauri-plugin-single-instance = { workspace = true }
 tokio              = { workspace = true }
 tracing            = { workspace = true }
 tracing-subscriber = { workspace = true }

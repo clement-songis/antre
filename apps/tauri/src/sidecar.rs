@@ -19,8 +19,8 @@ use {
 
 use crate::probe;
 
-// A cold daemon can take minutes: startup waits on the Docker sandbox probe.
-const STARTUP_TIMEOUT: Duration = Duration::from_secs(300);
+// Generous: a cold debug daemon migrates databases and probes runtimes.
+const STARTUP_TIMEOUT: Duration = Duration::from_secs(120);
 const MAX_RESTARTS: u32 = 5;
 
 /// Directories for an isolated daemon (not the user's `~/.moltis`).
@@ -127,12 +127,21 @@ pub fn gateway_args(port: u16, dirs: Option<&IsolatedDirs>) -> Vec<OsString> {
     args
 }
 
-/// Start the daemon and wait until it answers `/health`. `on_restart` runs
-/// after each crash recovery, once the daemon is healthy again.
+/// What the supervisor reports after the initial start.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SidecarEvent {
+    /// The daemon crashed and is healthy again.
+    Restarted,
+    /// The daemon crashed too often; it stays down.
+    GaveUp,
+}
+
+/// Start the daemon and wait until it answers `/health`. `on_event` reports
+/// crash recoveries and the supervisor giving up.
 pub async fn start(
     binary: PathBuf,
     dirs: Option<IsolatedDirs>,
-    on_restart: impl Fn() + Send + 'static,
+    on_event: impl Fn(SidecarEvent) + Send + 'static,
 ) -> anyhow::Result<Sidecar> {
     if let Some(dirs) = &dirs {
         std::fs::create_dir_all(&dirs.config)?;
@@ -167,6 +176,7 @@ pub async fn start(
                     tracing::warn!(?status, restarts, "sidecar daemon exited");
                     if restarts >= MAX_RESTARTS {
                         tracing::error!("sidecar daemon keeps crashing; giving up");
+                        on_event(SidecarEvent::GaveUp);
                         return;
                     }
                     restarts += 1;
@@ -175,11 +185,12 @@ pub async fn start(
                         Ok(child) => child,
                         Err(error) => {
                             tracing::error!(%error, "could not restart the sidecar daemon");
+                            on_event(SidecarEvent::GaveUp);
                             return;
                         },
                     };
                     match wait_ready(&mut child, &supervised_base).await {
-                        Ok(_) => on_restart(),
+                        Ok(_) => on_event(SidecarEvent::Restarted),
                         Err(error) => tracing::warn!(%error, "restarted sidecar daemon is not healthy"),
                     }
                 },
@@ -313,7 +324,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let binary = executable(dir.path(), "moltis");
         let result =
-            tokio::time::timeout(Duration::from_secs(10), start(binary, None, || {})).await;
+            tokio::time::timeout(Duration::from_secs(10), start(binary, None, |_| {})).await;
         let error = result.unwrap().err().unwrap();
         assert!(
             error.to_string().contains("exited during startup"),
