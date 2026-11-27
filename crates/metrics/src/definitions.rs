@@ -230,6 +230,22 @@ pub mod plugins {
     pub const GIT_CLONE_FALLBACK_TOTAL: &str = "moltis_plugin_git_clone_fallback_total";
 }
 
+/// Mod SDK runtime metrics
+pub mod mods {
+    /// Installed mods
+    pub const INSTALLED: &str = "moltis_mods_installed";
+    /// Install attempts, labelled by outcome
+    pub const INSTALLS_TOTAL: &str = "moltis_mods_installs_total";
+    /// Calls into mod components, labelled by mod and kind
+    pub const CALLS_TOTAL: &str = "moltis_mods_calls_total";
+    /// Mod call duration in seconds
+    pub const CALL_DURATION_SECONDS: &str = "moltis_mods_call_duration_seconds";
+    /// Failed or trapped mod calls
+    pub const CALL_ERRORS_TOTAL: &str = "moltis_mods_call_errors_total";
+    /// Host calls refused because a capability was not granted
+    pub const CAPABILITY_DENIALS_TOTAL: &str = "moltis_mods_capability_denials_total";
+}
+
 /// Cron job metrics
 pub mod cron {
     /// Number of scheduled cron jobs

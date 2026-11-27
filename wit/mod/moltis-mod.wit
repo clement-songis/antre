@@ -1,0 +1,83 @@
+package moltis:mods@0.1.0;
+
+/// Shared types for mod components.
+interface types {
+  enum log-level {
+    trace,
+    debug,
+    info,
+    warn,
+    error,
+  }
+}
+
+/// Host services every mod may import. Each call is checked against the
+/// capabilities the user granted; a denied call returns an error instead of
+/// trapping so a mod can degrade.
+interface host {
+  use types.{log-level};
+
+  log: func(level: log-level, message: string);
+
+  /// Per-mod key/value storage. Requires the `storage` capability.
+  kv-get: func(key: string) -> result<option<string>, string>;
+  kv-set: func(key: string, value: string) -> result<_, string>;
+  kv-delete: func(key: string) -> result<_, string>;
+}
+
+/// Outbound HTTP. Requires `net` capabilities; only granted hosts are
+/// reachable, private and loopback addresses are blocked, redirects are not
+/// followed.
+interface http {
+  record request {
+    method: string,
+    url: string,
+    headers: list<tuple<string, string>>,
+    body: option<list<u8>>,
+    timeout-ms: option<u32>,
+    max-response-bytes: option<u64>,
+  }
+
+  record response {
+    status: u16,
+    headers: list<tuple<string, string>>,
+    body: list<u8>,
+    content-type: option<string>,
+  }
+
+  variant error {
+    denied(string),
+    invalid-url(string),
+    blocked-url(string),
+    timeout(string),
+    network(string),
+    status(u16),
+    too-large(u64),
+    other(string),
+  }
+
+  send: func(request: request) -> result<response, error>;
+}
+
+/// Tools declared in the mod manifest under `[[contributes.tools]]`.
+interface tools {
+  /// Run the tool `name` with JSON parameters. `ok` carries a JSON value,
+  /// `err` a human-readable message shown to the agent.
+  call: func(name: string, params-json: string) -> result<string, string>;
+}
+
+/// Hook handlers declared in the mod manifest under `[[contributes.hooks]]`.
+interface hooks {
+  /// `ok(none)` lets the event continue, `ok(some(json))` replaces the
+  /// payload data, `err(reason)` blocks the event. Observer hooks can only
+  /// continue; the host ignores other answers for them.
+  handle: func(event: string, payload-json: string) -> result<option<string>, string>;
+}
+
+world plugin {
+  import host;
+  import http;
+
+  export tools;
+  export hooks;
+}

@@ -8278,6 +8278,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "moltis-mods"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "hex",
+ "moltis-agents",
+ "moltis-common",
+ "moltis-metrics",
+ "moltis-tools",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "tempfile",
+ "thiserror 2.0.18",
+ "time",
+ "tokio",
+ "toml 0.8.23",
+ "tracing",
+ "walkdir",
+ "wasmtime",
+ "wasmtime-wasi",
+ "wat",
+]
+
+[[package]]
 name = "moltis-msteams"
 version = "0.1.0"
 dependencies = [

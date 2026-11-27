@@ -31,6 +31,11 @@ pub enum ToolSource {
     Mcp { server: McpServerId },
     /// Tool provided by a precompiled WASM component.
     Wasm { component_hash: [u8; 32] },
+    /// Tool contributed by an installed mod's WASM component.
+    Mod {
+        mod_id: String,
+        component_hash: [u8; 32],
+    },
 }
 
 /// The least-trusted audience allowed to use a tool.
@@ -142,6 +147,23 @@ impl ToolRegistry {
         );
     }
 
+    /// Register a trusted-only tool contributed by an installed mod.
+    pub fn register_mod(
+        &mut self,
+        tool: Box<dyn AgentTool>,
+        mod_id: impl Into<String>,
+        component_hash: [u8; 32],
+    ) {
+        self.insert(
+            tool,
+            ToolSource::Mod {
+                mod_id: mod_id.into(),
+                component_hash,
+            },
+            ToolAudience::Trusted,
+        );
+    }
+
     fn insert(&mut self, tool: Box<dyn AgentTool>, source: ToolSource, audience: ToolAudience) {
         let name = tool.name().to_string();
         if let Some(existing) = self.tools.get(&name) {
@@ -188,6 +210,15 @@ impl ToolRegistry {
         let before = self.tools.len();
         self.tools
             .retain(|_, entry| !matches!(entry.source, ToolSource::Mcp { .. }));
+        before - self.tools.len()
+    }
+
+    /// Remove every tool contributed by `mod_id`. Returns the number removed.
+    pub fn unregister_mod(&mut self, mod_id: &str) -> usize {
+        let before = self.tools.len();
+        self.tools.retain(|_, entry| {
+            !matches!(&entry.source, ToolSource::Mod { mod_id: owner, .. } if owner == mod_id)
+        });
         before - self.tools.len()
     }
 
@@ -391,6 +422,14 @@ fn entry_to_schema(e: &ToolEntry) -> serde_json::Value {
             schema["source"] = serde_json::json!("wasm");
             schema["componentHash"] = serde_json::json!(hex_component_hash(*component_hash));
         },
+        ToolSource::Mod {
+            mod_id,
+            component_hash,
+        } => {
+            schema["source"] = serde_json::json!("mod");
+            schema["modId"] = serde_json::json!(mod_id);
+            schema["componentHash"] = serde_json::json!(hex_component_hash(*component_hash));
+        },
     }
     schema
 }
@@ -519,6 +558,64 @@ mod tests {
         assert_eq!(removed, 2);
         assert_eq!(registry.list_schemas().len(), 1);
         assert!(registry.get("exec").is_some());
+    }
+
+    #[test]
+    fn unregister_mod_removes_only_that_mods_tools() {
+        let mut registry = ToolRegistry::new();
+        registry.register(Box::new(DummyTool {
+            name: "exec".to_string(),
+        }));
+        registry.register_mod(
+            Box::new(DummyTool {
+                name: "a_tool".to_string(),
+            }),
+            "acme.a",
+            [1; 32],
+        );
+        registry.register_mod(
+            Box::new(DummyTool {
+                name: "b_tool".to_string(),
+            }),
+            "acme.b",
+            [2; 32],
+        );
+
+        assert_eq!(registry.unregister_mod("acme.a"), 1);
+        assert!(registry.get("a_tool").is_none());
+        assert!(registry.get("b_tool").is_some());
+        assert!(registry.get("exec").is_some());
+
+        let schema = registry
+            .list_schemas()
+            .into_iter()
+            .find(|schema| schema["name"] == "b_tool")
+            .unwrap();
+        assert_eq!(schema["source"], "mod");
+        assert_eq!(schema["modId"], "acme.b");
+        assert_eq!(schema["audience"], "trusted");
+    }
+
+    #[test]
+    fn mod_tool_cannot_shadow_builtin() {
+        let mut registry = ToolRegistry::new();
+        registry.register(Box::new(DummyTool {
+            name: "exec".to_string(),
+        }));
+        registry.register_mod(
+            Box::new(DummyTool {
+                name: "exec".to_string(),
+            }),
+            "acme.evil",
+            [3; 32],
+        );
+        let schema = registry
+            .list_schemas()
+            .into_iter()
+            .find(|schema| schema["name"] == "exec")
+            .unwrap();
+        assert_eq!(schema["source"], "builtin");
+        assert_eq!(registry.unregister_mod("acme.evil"), 0);
     }
 
     #[test]

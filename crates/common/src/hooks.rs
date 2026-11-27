@@ -28,22 +28,33 @@ use {
 /// Lifecycle events that hooks can subscribe to.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum HookEvent {
+    #[serde(alias = "UserPromptSubmit")]
     BeforeAgentStart,
+    #[serde(alias = "Stop")]
     AgentEnd,
+    #[serde(alias = "PreModelCall")]
     BeforeLLMCall,
+    #[serde(alias = "PostModelCall")]
     AfterLLMCall,
+    #[serde(alias = "PreCompact")]
     BeforeCompaction,
+    #[serde(alias = "PostCompact")]
     AfterCompaction,
     MessageReceived,
     MessageSending,
     MessageSent,
+    #[serde(alias = "PreToolUse")]
     BeforeToolCall,
+    #[serde(alias = "PostToolUse")]
     AfterToolCall,
     ToolResultPersist,
     SessionStart,
     SessionEnd,
+    #[serde(alias = "ServerStart")]
     GatewayStart,
+    #[serde(alias = "ServerStop")]
     GatewayStop,
+    #[serde(alias = "SlashCommand")]
     Command,
 }
 
@@ -75,6 +86,18 @@ impl FromStr for HookEvent {
             "GatewayStart" => Ok(Self::GatewayStart),
             "GatewayStop" => Ok(Self::GatewayStop),
             "Command" => Ok(Self::Command),
+            // Claude Code names (docs/src/hooks.md lists the mapping).
+            "UserPromptSubmit" => Ok(Self::BeforeAgentStart),
+            "Stop" => Ok(Self::AgentEnd),
+            "PreModelCall" => Ok(Self::BeforeLLMCall),
+            "PostModelCall" => Ok(Self::AfterLLMCall),
+            "PreCompact" => Ok(Self::BeforeCompaction),
+            "PostCompact" => Ok(Self::AfterCompaction),
+            "PreToolUse" => Ok(Self::BeforeToolCall),
+            "PostToolUse" => Ok(Self::AfterToolCall),
+            "ServerStart" => Ok(Self::GatewayStart),
+            "ServerStop" => Ok(Self::GatewayStop),
+            "SlashCommand" => Ok(Self::Command),
             other => Err(format!("unknown hook event '{other}'")),
         }
     }
@@ -101,6 +124,31 @@ impl HookEvent {
         Self::GatewayStop,
         Self::Command,
     ];
+
+    /// The Claude Code hook name for this event, used by the `claude` shell
+    /// hook protocol. Events without a Claude equivalent keep their own name.
+    #[must_use]
+    pub fn claude_name(&self) -> &'static str {
+        match self {
+            Self::BeforeAgentStart => "UserPromptSubmit",
+            Self::AgentEnd => "Stop",
+            Self::BeforeLLMCall => "PreModelCall",
+            Self::AfterLLMCall => "PostModelCall",
+            Self::BeforeCompaction => "PreCompact",
+            Self::AfterCompaction => "PostCompact",
+            Self::MessageReceived => "MessageReceived",
+            Self::MessageSending => "MessageSending",
+            Self::MessageSent => "MessageSent",
+            Self::BeforeToolCall => "PreToolUse",
+            Self::AfterToolCall => "PostToolUse",
+            Self::ToolResultPersist => "ToolResultPersist",
+            Self::SessionStart => "SessionStart",
+            Self::SessionEnd => "SessionEnd",
+            Self::GatewayStart => "ServerStart",
+            Self::GatewayStop => "ServerStop",
+            Self::Command => "SlashCommand",
+        }
+    }
 
     /// Returns true if this event is read-only and handlers can run in parallel.
     ///
@@ -1070,6 +1118,18 @@ mod tests {
         assert!(HookEvent::ALL.contains(&HookEvent::BeforeLLMCall));
         assert!(HookEvent::ALL.contains(&HookEvent::AfterLLMCall));
         assert_eq!(HookEvent::ALL.len(), 17);
+    }
+
+    #[test]
+    fn claude_names_parse_back_to_the_same_event() {
+        for event in HookEvent::ALL {
+            let parsed: HookEvent = event.claude_name().parse().unwrap();
+            assert_eq!(parsed, *event);
+            let json = format!("\"{}\"", event.claude_name());
+            let from_serde: HookEvent = serde_json::from_str(&json).unwrap();
+            assert_eq!(from_serde, *event);
+        }
+        assert_eq!(HookEvent::BeforeToolCall.to_string(), "BeforeToolCall");
     }
 
     #[test]

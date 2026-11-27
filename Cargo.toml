@@ -39,6 +39,7 @@ default-members = [
   "crates/memory",
   "crates/metrics",
   "crates/model-catalog",
+  "crates/mods",
   "crates/msteams",
   "crates/netbird",
   "crates/network-filter",
@@ -118,6 +119,7 @@ members = [
   "crates/memory-zvec",
   "crates/metrics",
   "crates/model-catalog",
+  "crates/mods",
   "crates/msteams",
   "crates/netbird",
   "crates/node-host",
@@ -397,6 +399,7 @@ shell-words           = "1"
 tar                   = "0.4"
 tempfile              = "3"
 walkdir               = "2"
+wat                   = "1"
 wasmtime              = { features = ["component-model"], version = "36" }
 wasmtime-wasi         = "36"
 which                 = "8"
@@ -448,6 +451,7 @@ moltis-memory             = { path = "crates/memory" }
 moltis-memory-zvec        = { path = "crates/memory-zvec" }
 moltis-metrics            = { path = "crates/metrics" }
 moltis-model-catalog      = { path = "crates/model-catalog" }
+moltis-mods               = { path = "crates/mods" }
 moltis-msteams            = { path = "crates/msteams" }
 moltis-netbird            = { path = "crates/netbird" }
 moltis-network-filter     = { default-features = false, path = "crates/network-filter" }
