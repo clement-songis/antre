@@ -425,10 +425,12 @@ mod tests {
         let temp_dir = tempfile::tempdir().unwrap();
         let started = temp_dir.path().join("started");
         let marker = temp_dir.path().join("should-not-exist");
+        // Touch `started` only after the background job is forked, so the
+        // descendant exists by the time the test kills the tree.
         let script = format!(
-            "touch '{}'; (sleep 1; touch '{}') & cat",
-            started.display(),
-            marker.display()
+            "(sleep 1; touch '{}') & touch '{}'; cat",
+            marker.display(),
+            started.display()
         );
         let args = vec!["-c".to_string(), script];
         let transport = StdioTransport::spawn("sh", &args, &HashMap::new())
