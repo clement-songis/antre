@@ -2,7 +2,7 @@
 
 import { clearChatEmptyState } from "../chat-ui";
 import { renderMarkdown } from "../helpers";
-import { appendNode } from "../pages/chat/transcript/actions";
+import { moveFirstQueuedToTranscript } from "../pages/chat/queue";
 import { transcriptItems } from "../pages/chat/transcript/store";
 import { setSessionActiveRunId } from "../sessions";
 import * as S from "../state";
@@ -39,16 +39,8 @@ export function updateSessionHistoryIndex(sessionKey: string, messageIndex: numb
 }
 
 export function moveFirstQueuedToChat(): void {
-	const tray = document.getElementById("queuedMessages");
-	if (!tray) return;
-	const firstQueued = tray.querySelector(".msg.user.queued") as HTMLElement | null;
-	if (!firstQueued) return;
-	firstQueued.classList.remove("queued");
-	const badge = firstQueued.querySelector(".queued-badge");
-	if (badge) badge.remove();
 	clearChatEmptyState();
-	appendNode(firstQueued);
-	if (!tray.querySelector(".msg")) tray.classList.add("hidden");
+	moveFirstQueuedToTranscript(sessionStore.activeSessionKey.value || S.activeSessionKey);
 }
 
 // ── Markdown rendering ────────────────────────────────────────

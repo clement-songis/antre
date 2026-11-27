@@ -349,6 +349,11 @@ pub trait ChatService: Send + Sync {
 
     async fn abort(&self, params: Value) -> ServiceResult;
     async fn cancel_queued(&self, params: Value) -> ServiceResult;
+    /// Move the queued message `seq` to the front and stop the running
+    /// reply, so that message is answered next.
+    async fn steer(&self, _params: Value) -> ServiceResult {
+        Err("steering queued messages is not supported".into())
+    }
     async fn history(&self, params: Value) -> ServiceResult;
     async fn inject(&self, params: Value) -> ServiceResult;
     async fn clear(&self, params: Value) -> ServiceResult;

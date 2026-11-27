@@ -743,6 +743,18 @@ pub(super) fn register(reg: &mut MethodRegistry) {
         }),
     );
     reg.register(
+        "chat.steer",
+        Box::new(|ctx| {
+            Box::pin(async move {
+                ctx.state
+                    .chat()
+                    .steer(ctx.params.clone())
+                    .await
+                    .map_err(ErrorShape::from)
+            })
+        }),
+    );
+    reg.register(
         "chat.history",
         Box::new(|ctx| {
             Box::pin(async move {

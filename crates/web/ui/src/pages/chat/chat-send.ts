@@ -1,7 +1,7 @@
 // ── Chat send logic ──────────────────────────────────────────
 
 import { chatAddMsg, scrollChatToBottom, setComposerStopButton } from "../../chat-ui";
-import { renderMarkdown, sendRpc, warmAudioPlayback } from "../../helpers";
+import { sendRpc, warmAudioPlayback } from "../../helpers";
 import {
 	getPendingAttachments,
 	hasPendingAttachments,
@@ -23,10 +23,10 @@ import {
 import * as S from "../../state";
 import { modelStore } from "../../stores/model-store";
 import type { RpcResponse } from "../../types/rpc";
+import { enqueueMessage } from "./queue";
 import { handleSlashCommand, parseSlashCommand, shouldHandleSlashLocally, slashHideMenu } from "./slash-commands";
 import { addNotice, addUserMessage, type UserMessageFields } from "./transcript/actions";
-import type { UserItem } from "./transcript/model";
-import { getItem, removeItem, removeItems } from "./transcript/store";
+import { removeItem, removeItems } from "./transcript/store";
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -143,6 +143,7 @@ export function handleChatSendRpcResponse(
 	res: RpcResponse<ChatSendPayload>,
 	userItemId: string | null,
 	sessionKey: string,
+	queued: { seq: number; text: string },
 ): void {
 	if (res.ok && res.payload?.runId) setSessionActiveRunId(sessionKey, res.payload.runId);
 	if (res.ok) {
@@ -152,7 +153,7 @@ export function handleChatSendRpcResponse(
 		});
 	}
 	if (res.payload?.queued) {
-		forActiveSession(sessionKey, () => markMessageQueued(userItemId, sessionKey));
+		markMessageQueued(userItemId, sessionKey, queued.seq, queued.text);
 		return;
 	}
 	if (!res.ok && res.error) {
@@ -185,41 +186,10 @@ async function attachPendingFiles(
 	return { images, documents };
 }
 
-function queuedTrayElement(item: UserItem | undefined): HTMLElement {
-	const el = document.createElement("div");
-	el.className = "msg user";
-	if (item?.text) {
-		// Safe: renderMarkdown escapes its input before adding tags.
-		el.innerHTML = renderMarkdown(item.text); // eslint-disable-line no-unsanitized/property
-	}
-	return el;
-}
-
-function markMessageQueued(userItemId: string | null, sessionKey: string): void {
-	const tray = document.getElementById("queuedMessages");
-	if (!(tray && userItemId)) return;
-	const item = getItem(userItemId, "user");
-	removeItem(userItemId);
-	const el = queuedTrayElement(item);
-	el.classList.add("queued");
-	const badge = document.createElement("div");
-	badge.className = "queued-badge";
-	const label = document.createElement("span");
-	label.className = "queued-label";
-	label.textContent = "Queued";
-	const btn = document.createElement("button");
-	btn.className = "queued-cancel";
-	btn.title = "Cancel all queued";
-	btn.textContent = "\u2715";
-	btn.addEventListener("click", (e: MouseEvent) => {
-		e.stopPropagation();
-		sendRpc("chat.cancel_queued", { sessionKey });
-	});
-	badge.appendChild(label);
-	badge.appendChild(btn);
-	el.appendChild(badge);
-	tray.appendChild(el);
-	tray.classList.remove("hidden");
+/** The server queued the message behind the running reply: move it to the tray. */
+function markMessageQueued(userItemId: string | null, sessionKey: string, seq: number, text: string): void {
+	if (userItemId) removeItem(userItemId);
+	enqueueMessage({ seq, sessionKey, text });
 }
 
 export interface OutgoingMessage {
@@ -277,7 +247,7 @@ export async function dispatchChatMessage(msg: OutgoingMessage): Promise<RpcResp
 	} catch {
 		res = { ok: false, error: { code: "UNAVAILABLE", message: "Request failed" } };
 	}
-	handleChatSendRpcResponse(res, userItemId, sessionKey);
+	handleChatSendRpcResponse(res, userItemId, sessionKey, { seq: params._seq, text: shown || msg.text });
 	forActiveSession(sessionKey, () => maybeRefreshFullContextFn?.());
 	return res;
 }

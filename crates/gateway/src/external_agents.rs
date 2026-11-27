@@ -915,6 +915,10 @@ impl ChatService for ExternalAgentChatService {
         self.inner.cancel_queued(params).await
     }
 
+    async fn steer(&self, params: Value) -> ServiceResult {
+        self.inner.steer(params).await
+    }
+
     async fn history(&self, params: Value) -> ServiceResult {
         self.inner.history(params).await
     }

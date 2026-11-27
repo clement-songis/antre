@@ -208,6 +208,28 @@
     color: var(--error);
     border-color: var(--error);
   }
+  .queued-action {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 1px 6px;
+    font-size: 0.72rem;
+  }
+  .queued-action:hover {
+    color: var(--text);
+    border-color: var(--text);
+  }
+  .queued-action:disabled,
+  .queued-cancel:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+  .queued-text {
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
   .msg.assistant {
     align-self: flex-start;
     background: var(--assistant-bg);

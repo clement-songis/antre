@@ -1,6 +1,7 @@
 //! `LiveChatService` struct, constructors, and helper methods.
 
 mod chat_impl;
+mod queue;
 mod types;
 
 use types::QueuedMessage;

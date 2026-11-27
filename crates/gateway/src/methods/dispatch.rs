@@ -215,6 +215,7 @@ const WRITE_METHODS: &[&str] = &[
     "chat.abort",
     "chat.cancel_queued",
     "chat.cancel_quota_wait",
+    "chat.steer",
     "external_agents.bind",
     "external_agents.unbind",
     "chat.clear",

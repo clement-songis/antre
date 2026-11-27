@@ -929,20 +929,6 @@ async fn admit_queued_turn(
     }
 }
 
-pub(in crate::service) fn cancel_queued_messages(
-    queues: &mut HashMap<String, SessionMessageQueue>,
-    session_key: &str,
-) -> Vec<QueuedMessage> {
-    match queues.get_mut(session_key) {
-        Some(queue) if queue.draining => queue.messages.drain(..).collect(),
-        Some(_) => queues
-            .remove(session_key)
-            .map(|queue| queue.messages.into_iter().collect())
-            .unwrap_or_default(),
-        None => Vec::new(),
-    }
-}
-
 pub(in crate::service) fn merge_context_sections(
     project_context: Option<String>,
     command_context: Option<String>,
@@ -963,7 +949,7 @@ mod tests {
             ActiveAssistantDraft, EventForwarder, LiveChatService, QueuedMessage,
             RunHandleDisposition, SessionMessageQueue, TurnAdmission, admit_queued_turn,
             build_persisted_assistant_message, build_tool_call_assistant_message,
-            cancel_queued_messages, commit_successful_turn, merge_context_sections,
+            commit_successful_turn, merge_context_sections,
         },
         crate::types::AssistantTurnOutput,
         moltis_sessions::PersistedMessage,
@@ -1363,22 +1349,6 @@ mod tests {
         let cleanup_permit = cleanup_waiter.await.unwrap();
         drop(cleanup_permit);
         assert!(semaphore.try_acquire_owned().is_ok());
-    }
-
-    #[test]
-    fn cancellation_keeps_in_progress_replay_reserved() {
-        let mut queues = HashMap::from([("s".to_string(), SessionMessageQueue {
-            messages: [QueuedMessage {
-                params: json!({"text": "cancel"}),
-            }]
-            .into_iter()
-            .collect(),
-            draining: true,
-        })]);
-        let removed = cancel_queued_messages(&mut queues, "s");
-        assert_eq!(removed.len(), 1);
-        assert!(queues["s"].draining);
-        assert!(queues["s"].messages.is_empty());
     }
 
     #[test]

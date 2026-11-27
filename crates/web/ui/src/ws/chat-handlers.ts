@@ -12,6 +12,7 @@ import {
 import { localizeStructuredError, renderMarkdown } from "../helpers";
 import { t } from "../i18n";
 import { maybeRefreshFullContext, renderCompactCard } from "../pages/ChatPage";
+import { clearQueuedMessages, handleQueueItemRemoved } from "../pages/chat/queue";
 import {
 	addNotice,
 	addUserMessage,
@@ -646,15 +647,17 @@ function handleChatNotice(p: ChatPayload, isActive: boolean, isChatPage: boolean
 	});
 }
 
-function handleChatQueueCleared(_p: ChatPayload, isActive: boolean, isChatPage: boolean): void {
-	if (!(isActive && isChatPage)) return;
-	const tray = document.getElementById("queuedMessages");
-	if (tray) {
-		const count = tray.querySelectorAll(".msg").length;
-		console.debug("[queued] queue_cleared: removing all from tray", { count });
-		while (tray.firstChild) tray.removeChild(tray.firstChild);
-		tray.classList.add("hidden");
-	}
+function handleChatQueueCleared(_p: ChatPayload, _isActive: boolean, _isChatPage: boolean, eventSession: string): void {
+	clearQueuedMessages(eventSession);
+}
+
+function handleChatQueueItemRemoved(
+	p: ChatPayload,
+	_isActive: boolean,
+	_isChatPage: boolean,
+	eventSession: string,
+): void {
+	if (typeof p.seq === "number") handleQueueItemRemoved(eventSession, p.seq);
 }
 
 function handleChatSessionCleared(_p: ChatPayload, isActive: boolean, isChatPage: boolean, eventSession: string): void {
@@ -717,6 +720,7 @@ export const chatHandlers: Record<string, ChatHandler> = {
 	aborted: handleChatAborted,
 	notice: handleChatNotice,
 	queue_cleared: handleChatQueueCleared,
+	queue_item_removed: handleChatQueueItemRemoved,
 	session_cleared: handleChatSessionCleared,
 };
 
@@ -735,7 +739,8 @@ export function handleChatEvent(p: ChatPayload): void {
 			p.state === "aborted" ||
 			p.state === "notice" ||
 			p.state === "session_cleared" ||
-			p.state === "queue_cleared";
+			p.state === "queue_cleared" ||
+			p.state === "queue_item_removed";
 		if (!allowDuringSwitch) {
 			return;
 		}

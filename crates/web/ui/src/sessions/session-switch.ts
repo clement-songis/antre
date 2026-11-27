@@ -165,11 +165,6 @@ function finishSessionRefresh(key: string): void {
 function resetSwitchViewState(): void {
 	hideSessionLoadIndicator();
 	clearTranscript();
-	const tray = document.getElementById("queuedMessages");
-	if (tray) {
-		while (tray.firstChild) tray.removeChild(tray.firstChild);
-		tray.classList.add("hidden");
-	}
 	S.setStreamEl(null);
 	S.setStreamText("");
 	S.setLastToolOutput("");

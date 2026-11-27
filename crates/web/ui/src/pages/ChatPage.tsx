@@ -50,6 +50,7 @@ import {
 	renderContextTokensSection,
 	renderContextToolsSection,
 } from "./chat/context-card";
+import { QueueTray } from "./chat/QueueTray";
 import { RewindDialog, reportRewindError } from "./chat/RewindDialog";
 import { fetchRewindPoints, rewindPickerOpen } from "./chat/rewind";
 // ── Sub-module imports ──────────────────────────────────────
@@ -637,12 +638,14 @@ function mountApprovalControls(): void {
 	if (dockMount) render(<ApprovalDock />, dockMount);
 	const rewindMount = S.$("rewindDialogMount");
 	if (rewindMount) render(<RewindDialog />, rewindMount);
+	const queueMount = S.$("queuedMessages");
+	if (queueMount) render(<QueueTray host={queueMount} />, queueMount);
 	const badgeMount = S.$("approvalsBadgeMount");
 	if (badgeMount) render(<ApprovalsBadge />, badgeMount);
 }
 
 function unmountApprovalControls(): void {
-	for (const id of ["approvalDockMount", "approvalsBadgeMount", "rewindDialogMount"]) {
+	for (const id of ["approvalDockMount", "approvalsBadgeMount", "rewindDialogMount", "queuedMessages"]) {
 		const mount = S.$(id);
 		if (mount) render(null, mount);
 	}

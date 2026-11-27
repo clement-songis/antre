@@ -48,7 +48,8 @@ use crate::{
 };
 
 use super::{
-    types::{RunHandleDisposition, cancel_queued_messages},
+    queue::{cancel_one_queued_message, cancel_queued_messages, promote_queued_message},
+    types::RunHandleDisposition,
     *,
 };
 
@@ -228,9 +229,15 @@ impl ChatService for LiveChatService {
             .and_then(|v| v.as_str())
             .ok_or_else(|| "missing 'sessionKey'".to_string())?;
 
+        let seq = params.get("seq").and_then(Value::as_u64);
         let removed: Vec<QueuedMessage> = {
             let mut queues = self.message_queue.write().await;
-            cancel_queued_messages(&mut queues, session_key)
+            match seq {
+                Some(seq) => cancel_one_queued_message(&mut queues, session_key, seq)
+                    .into_iter()
+                    .collect(),
+                None => cancel_queued_messages(&mut queues, session_key),
+            }
         };
         let count = removed.len();
         info!(session = %session_key, count, "cancel_queued: cleared message queue");
@@ -248,19 +255,46 @@ impl ChatService for LiveChatService {
                 .await;
         }
 
-        broadcast(
-            &self.state,
-            "chat",
-            serde_json::json!({
+        let event = match seq {
+            Some(seq) => serde_json::json!({
+                "sessionKey": session_key,
+                "state": "queue_item_removed",
+                "seq": seq,
+                "count": count,
+            }),
+            None => serde_json::json!({
                 "sessionKey": session_key,
                 "state": "queue_cleared",
                 "count": count,
             }),
-            BroadcastOpts::default(),
-        )
-        .await;
+        };
+        broadcast(&self.state, "chat", event, BroadcastOpts::default()).await;
 
-        Ok(serde_json::json!({ "cleared": count }))
+        let removed_params = removed.first().map(|message| message.params.clone());
+        Ok(serde_json::json!({ "cleared": count, "removed": removed_params }))
+    }
+
+    async fn steer(&self, params: Value) -> ServiceResult {
+        let session_key = params
+            .get("sessionKey")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| "missing 'sessionKey'".to_string())?;
+        let seq = params
+            .get("seq")
+            .and_then(Value::as_u64)
+            .ok_or_else(|| "missing 'seq'".to_string())?;
+        let promoted = {
+            let mut queues = self.message_queue.write().await;
+            promote_queued_message(&mut queues, session_key, seq)
+        };
+        if !promoted {
+            return Err(format!("no queued message with seq {seq}").into());
+        }
+        // Aborting ends the run; the queue drain then replays the promoted
+        // message first.
+        self.abort(serde_json::json!({ "sessionKey": session_key }))
+            .await?;
+        Ok(serde_json::json!({ "steered": true, "seq": seq }))
     }
 
     async fn history(&self, params: Value) -> ServiceResult {
