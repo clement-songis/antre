@@ -329,8 +329,7 @@ fn build_sub_agent_prompt(
     let mut prompt = String::new();
 
     // Prefer workspace identity for the target agent; fall back to preset fields.
-    let workspace_identity =
-        preset_name.and_then(|name| moltis_config::load_identity_for_agent(name));
+    let workspace_identity = preset_name.and_then(moltis_config::load_identity_for_agent);
     let identity_name = workspace_identity
         .as_ref()
         .and_then(|id| id.name.as_deref())
