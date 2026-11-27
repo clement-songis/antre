@@ -933,6 +933,16 @@ Per-model overrides that apply across all providers. Provider-scoped overrides (
 context_window = 1_000_000
 ```
 
+### `catalog` — CatalogConfig
+
+Where the [model catalog](model-catalog.md) refreshes its models.dev data.
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `refresh` | bool | `true` | Refresh the catalog in the background; `false` keeps the bundled snapshot. |
+| `refresh_urls` | array of strings | models.dev, then the fork's committed snapshot | Sources tried in order until one returns a valid catalog (http/https only). |
+| `refresh_interval_hours` | integer | `12` | Minimum hours between downloads. |
+
 
 ### `providers.<name>.policy`
 
