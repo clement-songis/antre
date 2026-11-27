@@ -309,6 +309,7 @@ async fn execute_mode(
                 chat_id: "123".into(),
                 message_id: None,
                 thread_id: None,
+                direct_chat: false,
             });
         let tool_calls = Arc::new(Mutex::new(0));
         let mut registry = moltis_agents::tool_registry::ToolRegistry::new();

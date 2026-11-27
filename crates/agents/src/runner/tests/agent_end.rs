@@ -124,6 +124,7 @@ async fn check_agent_end(streaming: bool, with_tools: bool, fail: bool) {
                     })
                     .collect(),
                 usage: Usage::default(),
+                reasoning: None,
             }));
         }
     }
@@ -135,6 +136,7 @@ async fn check_agent_end(streaming: bool, with_tools: bool, fail: bool) {
             text: Some(format!("  {final_text}  ")),
             tool_calls: vec![],
             usage: Usage::default(),
+            reasoning: None,
         })
     });
     let provider = Arc::new(ScriptedProvider {
