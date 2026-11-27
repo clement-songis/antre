@@ -15,7 +15,6 @@ use {
 };
 
 const KEYWORDS: [&str; 4] = ["dark", "spicy", "duplicate", "forget"];
-static DATA_DIR_TEST_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 
 struct MockEmbedder;
 
@@ -185,7 +184,7 @@ async fn setup_agent_memory(
 
 #[tokio::test]
 async fn memory_forget_deletes_selected_scoped_chunk() {
-    let _lock = DATA_DIR_TEST_LOCK.lock().await;
+    let _lock = crate::test_support::DATA_DIR_LOCK.acquire().await.unwrap();
     let (manager, _tmp, memory_path, _restore) = setup_agent_memory(
         "writer",
         "Color preference dark mode\nFood preference spicy food\n",
@@ -233,7 +232,7 @@ async fn memory_forget_deletes_selected_scoped_chunk() {
 
 #[tokio::test]
 async fn memory_forget_refuses_ambiguous_exact_text() {
-    let _lock = DATA_DIR_TEST_LOCK.lock().await;
+    let _lock = crate::test_support::DATA_DIR_LOCK.acquire().await.unwrap();
     let (manager, _tmp, memory_path, _restore) = setup_agent_memory(
         "writer",
         "duplicate memory line\nduplicate memory line\n",
@@ -276,7 +275,7 @@ fn count_exact_occurrences_accepts_line_ending_variants() {
 
 #[tokio::test]
 async fn memory_forget_reports_unreadable_files_as_issues() {
-    let _lock = DATA_DIR_TEST_LOCK.lock().await;
+    let _lock = crate::test_support::DATA_DIR_LOCK.acquire().await.unwrap();
     let (manager, _tmp, memory_path, _restore) =
         setup_agent_memory("writer", "Color preference dark mode\n", 4).await;
 

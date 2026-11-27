@@ -20,6 +20,8 @@ mod service;
 mod streaming;
 #[cfg(test)]
 mod test_runtime;
+#[cfg(test)]
+mod test_support;
 mod types;
 
 pub mod chat_error;

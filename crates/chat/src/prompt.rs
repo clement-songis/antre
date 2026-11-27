@@ -826,11 +826,11 @@ mod tests {
         assert_eq!(context["_channel"]["outbound_to"], "-100123:42");
     }
 
-    #[test]
-    fn resolve_prompt_agent_id_falls_back_to_runtime_default_not_hardcoded_main() {
+    #[tokio::test]
+    async fn resolve_prompt_agent_id_falls_back_to_runtime_default_not_hardcoded_main() {
+        let _lock = crate::test_support::DATA_DIR_LOCK.acquire().await.unwrap();
         let tmp = tempfile::tempdir().unwrap();
-        // Shared guard: serializes with other data-dir tests and restores prior override.
-        let _guard = moltis_config::TestDataDirGuard::set(tmp.path().to_path_buf());
+        let _restore = moltis_config::TestDataDirRestore::set(tmp.path().to_path_buf());
         std::fs::write(tmp.path().join("default_agent_id"), "content-writer").unwrap();
 
         assert_eq!(runtime_default_agent_id(), "content-writer");
