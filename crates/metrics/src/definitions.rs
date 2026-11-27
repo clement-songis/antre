@@ -331,6 +331,16 @@ pub mod canvas {
     pub const WEBSOCKET_ERRORS_TOTAL: &str = "moltis_canvas_websocket_errors_total";
     /// Content size in bytes
     pub const CONTENT_SIZE_BYTES: &str = "moltis_canvas_content_size_bytes";
+    /// Designs created
+    pub const DESIGNS_CREATED_TOTAL: &str = "moltis_canvas_designs_created_total";
+    /// Design versions appended
+    pub const VERSIONS_CREATED_TOTAL: &str = "moltis_canvas_versions_created_total";
+    /// Render-origin requests refused (bad token, traversal, missing file)
+    pub const REQUESTS_REJECTED_TOTAL: &str = "moltis_canvas_requests_rejected_total";
+    /// Exports by format
+    pub const EXPORTS_TOTAL: &str = "moltis_canvas_exports_total";
+    /// Headless render (PNG/PDF) duration in seconds
+    pub const RENDER_DURATION_SECONDS: &str = "moltis_canvas_render_duration_seconds";
 }
 
 /// Media pipeline metrics

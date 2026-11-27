@@ -9,6 +9,8 @@ use {
 
 #[path = "schema/agents.rs"]
 mod agents;
+#[path = "schema/canvas.rs"]
+mod canvas;
 #[path = "schema/catalog.rs"]
 mod catalog;
 #[path = "schema/chat.rs"]
@@ -37,8 +39,8 @@ mod tools;
 mod voice;
 
 pub use {
-    agents::*, catalog::*, chat::*, code_index::*, hooks::*, instrumentation::*, memory::*,
-    modes::*, phone::*, providers::*, runtime::*, system::*, tools::*, voice::*,
+    agents::*, canvas::*, catalog::*, chat::*, code_index::*, hooks::*, instrumentation::*,
+    memory::*, modes::*, phone::*, providers::*, runtime::*, system::*, tools::*, voice::*,
 };
 
 // ── Reasoning effort ──────────────────────────────────────────────────────
@@ -335,6 +337,8 @@ pub struct MoltisConfig {
     pub auxiliary: AuxiliaryModelsConfig,
     /// Code-index configuration for codebase search tools.
     pub code_index: CodeIndexTomlConfig,
+    /// Design artifacts and their sandboxed render origin.
+    pub canvas: CanvasConfig,
     /// Per-model overrides that apply across all providers.
     ///
     /// Keys are normalized model IDs. Provider-scoped overrides

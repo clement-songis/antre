@@ -663,6 +663,27 @@ loopback_http = true                # Plain HTTP on loopback binds: http://local
 # scopes = ["mcp:read"]
 
 # ══════════════════════════════════════════════════════════════════════════════
+# DESIGN CANVAS
+# ══════════════════════════════════════════════════════════════════════════════
+#
+# Design artifacts (data_dir/designs/<id>/) are served from a separate render
+# origin with a strict CSP: no network access, no forms, no top navigation,
+# scripts only inline or from the vendored /_vendor/ set. See docs/src/canvas.md.
+
+# [canvas]
+# enabled = true                    # Design tools, canvas.* API, render origin
+# bind = "127.0.0.1"                # Render origin address (default: server.bind)
+# port = 18790                      # Render origin port (default: free port at startup)
+# public_url = "https://designs.example.com"  # When behind a proxy or own hostname
+# token_ttl_secs = 3600             # Lifetime of signed preview links
+# script_sources = []               # Extra https:// origins for script-src (opt-in CDN)
+# allow_eval = false                # Allow eval/new Function (in-browser JSX)
+# max_file_bytes = 10485760         # Largest file served or exported
+# render_sandbox = false            # Render PNG/PDF in a browser container
+# render_timeout_secs = 30          # Timeout of one PNG/PDF render
+# seed_design_systems = true        # Seed starter design-system skills
+
+# ══════════════════════════════════════════════════════════════════════════════
 # METRICS
 # ══════════════════════════════════════════════════════════════════════════════
 

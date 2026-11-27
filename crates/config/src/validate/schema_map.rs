@@ -765,6 +765,22 @@ pub(super) fn build_schema_map() -> KnownKeys {
             ])),
         ),
         (
+            "canvas",
+            Struct(HashMap::from([
+                ("enabled", Leaf),
+                ("bind", Leaf),
+                ("port", Leaf),
+                ("public_url", Leaf),
+                ("token_ttl_secs", Leaf),
+                ("script_sources", Array(Box::new(Leaf))),
+                ("allow_eval", Leaf),
+                ("max_file_bytes", Leaf),
+                ("render_sandbox", Leaf),
+                ("render_timeout_secs", Leaf),
+                ("seed_design_systems", Leaf),
+            ])),
+        ),
+        (
             "code_index",
             Struct(HashMap::from([
                 ("enabled", Leaf),

@@ -154,6 +154,25 @@ pub(super) fn check_semantic_warnings(config: &MoltisConfig, diagnostics: &mut V
         });
     }
 
+    for source in config.canvas.invalid_script_sources() {
+        diagnostics.push(Diagnostic {
+            severity: Severity::Warning,
+            category: "security",
+            path: "canvas.script_sources".into(),
+            message: format!(
+                "ignoring \"{source}\": script sources must be https://host[:port] origins"
+            ),
+        });
+    }
+    if config.canvas.public_url_is_invalid() {
+        diagnostics.push(Diagnostic {
+            severity: Severity::Warning,
+            category: "invalid-value",
+            path: "canvas.public_url".into(),
+            message: "canvas.public_url must be an http(s)://host[:port] origin".into(),
+        });
+    }
+
     // TLS cert without key or vice versa
     let has_cert = config.tls.cert_path.is_some();
     let has_key = config.tls.key_path.is_some();
