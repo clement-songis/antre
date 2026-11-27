@@ -199,11 +199,12 @@ used. `deterministic` mode ignores every field except `mode` and
 `threshold_percent` serves two related purposes:
 
 1. **Auto-compact trigger.** When the estimated next request would
-   exceed `threshold_percent × context_window` tokens, `send()` fires a
-   compaction pre-emptively. On a 200 K model with the default `0.95`,
-   compaction starts when the session reaches 190 K tokens. (The
-   default matches the pre-PR-#653 hardcoded trigger so upgrades are
-   behaviour-neutral.)
+   exceed `threshold_percent × input_budget` tokens, `send()` fires a
+   compaction pre-emptively. The input budget is the current model's
+   context window minus room for its reply (its max output, capped at a
+   quarter of the window; an eighth when unknown) and a 2 % safety
+   margin. On a 200 K model with 64 K max output the budget is 146 K, so
+   the default `0.95` compacts at about 139 K tokens.
 2. **Tail-budget multiplier.** For `recency_preserving` and `structured`
    modes, the size of the verbatim tail is
    `threshold_percent × tail_budget_ratio × context_window`. With the
@@ -219,6 +220,19 @@ tight context window.
   blowing through the window on a single large tool result. The config
   validator clamps the effective value to `0.95` as an upper bound so
   auto-compact can't be accidentally disabled.
+
+### Model sizes and model switches
+
+The context window comes from the [model catalog](model-catalog.md) entry of
+the session's *current* model, not from a fixed guess. The estimate of the
+next request counts the stored history as well as the last turn's usage, so
+switching a long session to a model with a smaller window compacts before the
+next request instead of failing with `context_window_exceeded`.
+
+When no source knows a model's window, Moltis budgets with a conservative
+128 K default and the context meter shows `?` and "context window unknown"
+rather than a percentage of a guess. Set the size with
+`[models.<id>] context_window = …` or a provider-scoped override.
 
 Manual `chat.compact` RPC calls ignore `threshold_percent` for the
 trigger check and compact whatever's there, but still use it for the

@@ -124,6 +124,8 @@ interface SeqHistoryMessage extends HistoryMessage {
 /** Token usage counters returned by chat.context RPC. */
 interface TokenUsage {
 	contextWindow?: number;
+	/** False when the window is a default rather than the model's real size. */
+	contextWindowKnown?: boolean;
 	inputTokens?: number;
 	outputTokens?: number;
 	estimatedNextInputTokens?: number;
@@ -405,6 +407,7 @@ export function postHistoryLoadActions(
 			if (p.tokenUsage) {
 				const tu = p.tokenUsage;
 				S.setSessionContextWindow(tu.contextWindow || 0);
+				S.setSessionContextWindowKnown(tu.contextWindowKnown !== false);
 				S.setSessionTokens({
 					input: tu.inputTokens || 0,
 					output: tu.outputTokens || 0,

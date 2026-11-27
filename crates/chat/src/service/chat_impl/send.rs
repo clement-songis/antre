@@ -951,13 +951,20 @@ impl LiveChatService {
         // validation missed a typo; the default (0.95) is loaded via
         // the session persona and matches the pre-PR-#653 hardcoded trigger.
         let compaction_cfg = &persona.config.chat.compaction;
+        // The budget comes from the *current* model's catalog limits, and the
+        // estimate also counts the stored history, so switching to a model
+        // with a smaller window compacts before the request instead of
+        // failing with `context_window_exceeded`.
+        let context_limits = provider.context_limits();
         let context_window = provider.context_window() as u64;
+        let input_budget = usable_input_budget(context_window, context_limits.max_output);
         let token_usage = session_token_usage_from_messages(&history);
         let estimated_next_input = token_usage
             .current_request_input_tokens
+            .max(estimate_history_tokens(&history))
             .saturating_add(estimate_text_tokens(&text));
         let compact_threshold =
-            compute_auto_compact_threshold(context_window, compaction_cfg.threshold_percent);
+            compute_auto_compact_threshold(input_budget, compaction_cfg.threshold_percent);
 
         if private_context && !ephemeral && estimated_next_input >= compact_threshold {
             let pre_compact_msg_count = history.len();
@@ -969,6 +976,7 @@ impl LiveChatService {
                 session = %session_key,
                 estimated_next_input,
                 context_window,
+                input_budget,
                 threshold_percent = compaction_cfg.threshold_percent,
                 compact_threshold,
                 "auto-compact triggered (estimated next request over chat.compaction.threshold_percent)"
@@ -988,6 +996,8 @@ impl LiveChatService {
                     "sessionInputTokens": token_usage.session_input_tokens,
                     "sessionOutputTokens": token_usage.session_output_tokens,
                     "contextWindow": context_window,
+                    "contextWindowKnown": context_limits.window.is_some(),
+                    "inputBudget": input_budget,
                 }),
                 BroadcastOpts::default(),
             )

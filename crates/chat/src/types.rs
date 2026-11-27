@@ -333,10 +333,35 @@ mod tests {
     use {
         super::{
             ReplyMedium, UsageSnapshot, assistant_message_is_visible, build_assistant_turn_output,
-            build_chat_final_broadcast, session_token_usage_from_messages,
+            build_chat_final_broadcast, compute_auto_compact_threshold, estimate_history_tokens,
+            session_token_usage_from_messages, usable_input_budget,
         },
         moltis_agents::model::Usage,
     };
+
+    #[test]
+    fn usable_input_budget_reserves_reply_and_margin() {
+        // 200K window, 64K max output capped at a quarter (50K), 2 % margin.
+        assert_eq!(usable_input_budget(200_000, Some(64_000)), 146_000);
+        // Small max output reserves only what the model can produce.
+        assert_eq!(usable_input_budget(1_000_000, Some(128_000)), 852_000);
+        // Unknown max output reserves an eighth.
+        assert_eq!(usable_input_budget(128_000, None), 109_440);
+        assert_eq!(usable_input_budget(0, None), 1);
+    }
+
+    #[test]
+    fn smaller_model_lowers_the_compaction_trigger_below_history() {
+        let history: Vec<serde_json::Value> = (0..40)
+            .map(|_| serde_json::json!({"role": "user", "content": "x".repeat(4_000)}))
+            .collect();
+        let history_tokens = estimate_history_tokens(&history);
+        assert_eq!(history_tokens, 40_000);
+        let large = compute_auto_compact_threshold(usable_input_budget(1_000_000, None), 0.95);
+        let small = compute_auto_compact_threshold(usable_input_budget(32_768, None), 0.95);
+        assert!(history_tokens < large);
+        assert!(history_tokens >= small);
+    }
 
     #[test]
     fn assistant_message_with_tool_calls_is_visible() {
@@ -543,6 +568,33 @@ pub(crate) fn estimate_text_tokens(text: &str) -> u64 {
     }
     let bytes = trimmed.len() as u64;
     bytes.div_ceil(4).max(1)
+}
+
+/// Estimated tokens of a stored history (message `content` strings), used
+/// when the last turn's usage does not reflect the current model, such as
+/// right after switching to a model with a smaller window.
+#[must_use]
+pub(crate) fn estimate_history_tokens(history: &[Value]) -> u64 {
+    history
+        .iter()
+        .filter_map(|message| message.get("content").and_then(Value::as_str))
+        .map(estimate_text_tokens)
+        .sum()
+}
+
+/// Input tokens a request may use: the window minus room for the reply
+/// (the model's max output, capped at a quarter of the window) and a 2 %
+/// safety margin for tokenizer drift. Unknown max output reserves an eighth.
+#[must_use]
+pub(crate) fn usable_input_budget(context_window_tokens: u64, max_output: Option<u32>) -> u64 {
+    let reply = max_output
+        .map_or(context_window_tokens / 8, u64::from)
+        .min(context_window_tokens / 4);
+    let margin = context_window_tokens / 50;
+    context_window_tokens
+        .saturating_sub(reply)
+        .saturating_sub(margin)
+        .max(1)
 }
 
 /// Compute the auto-compact trigger threshold for a given context window

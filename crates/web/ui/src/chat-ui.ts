@@ -1,6 +1,7 @@
 // ── Chat UI ─────────────────────────────────────────────────
 
 import { formatTokens, parseErrorMessage, renderDocument, sendRpc, updateCountdown } from "./helpers";
+import { t } from "./i18n";
 import * as S from "./state";
 
 interface ErrorCardData {
@@ -476,11 +477,18 @@ export function updateTokenBar(): void {
 	const total =
 		S.sessionCurrentContextTokens || S.sessionCurrentInputTokens || S.sessionTokens.input + S.sessionTokens.output;
 	let text = formatTokens(total);
-	if (S.sessionContextWindow > 0) {
+	if (!S.sessionContextWindowKnown) {
+		if (total > 0) text += " (?)";
+	} else if (S.sessionContextWindow > 0) {
 		const pct = Math.min(100, Math.max(0, Math.round((total / S.sessionContextWindow) * 100)));
 		text += ` (${pct}%)`;
 	}
-	bar.title = total > 0 ? "Context tokens used by the latest assistant turn" : "";
+	bar.title =
+		total > 0
+			? S.sessionContextWindowKnown
+				? "Context tokens used by the latest assistant turn"
+				: `Context tokens used by the latest assistant turn; ${t("common:labels.contextUnknown")}`
+			: "";
 	if (text === "0 (0%)") {
 		text = "";
 	}

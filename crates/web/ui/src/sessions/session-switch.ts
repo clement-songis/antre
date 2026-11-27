@@ -175,6 +175,7 @@ function resetSwitchViewState(): void {
 	S.setSessionCurrentInputTokens(0);
 	S.setSessionCurrentContextTokens(0);
 	S.setSessionContextWindow(0);
+	S.setSessionContextWindowKnown(true);
 	setComposerStopButton(false);
 	updateTokenBar();
 }

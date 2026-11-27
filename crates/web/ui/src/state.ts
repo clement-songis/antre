@@ -79,6 +79,8 @@ export let sessionSwitchInProgress = false;
 // real-time events that duplicate already-rendered history entries.
 export let lastHistoryIndex = -1;
 export let sessionContextWindow = 0;
+/** False when no source knows the current model's window (it is then a default). */
+export let sessionContextWindowKnown = true;
 export let sessionToolsEnabled = true;
 export let sessionExecMode = "host";
 export let sessionExecPromptSymbol = "$";
@@ -288,6 +290,9 @@ export function setLastHistoryIndex(v: number): void {
 }
 export function setSessionContextWindow(v: number): void {
 	sessionContextWindow = v;
+}
+export function setSessionContextWindowKnown(v: boolean): void {
+	sessionContextWindowKnown = v;
 }
 export function setSessionToolsEnabled(v: boolean): void {
 	sessionToolsEnabled = v;

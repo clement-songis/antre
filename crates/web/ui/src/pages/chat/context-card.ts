@@ -2,6 +2,7 @@
 
 import { smartScrollToBottom } from "../../chat-ui";
 import { formatBytes, formatTokens } from "../../helpers";
+import { t } from "../../i18n";
 import * as S from "../../state";
 import { slashInjectStyles } from "./slash-commands";
 
@@ -55,6 +56,7 @@ export interface TokenUsageData {
 	currentTotal?: number;
 	estimatedNextInputTokens?: number;
 	contextWindow?: number;
+	contextWindowKnown?: boolean;
 }
 
 export interface WorkspaceFile {
@@ -299,7 +301,9 @@ export function renderContextTokensSection(card: HTMLElement, data: ContextData)
 	sec.appendChild(ctxRow("Current total", formatTokens(currentTotal), true));
 	sec.appendChild(ctxRow("Estimated next input", formatTokens(estimatedNextInput), true));
 	const contextWindow = tu.contextWindow ?? 0;
-	if (contextWindow > 0) {
+	if (tu.contextWindowKnown === false) {
+		sec.appendChild(ctxRow("Context left", t("common:labels.contextUnknown"), true));
+	} else if (contextWindow > 0) {
 		const pct = Math.max(0, 100 - Math.round((estimatedNextInput / contextWindow) * 100));
 		sec.appendChild(ctxRow("Context left", `${pct}% of ${formatTokens(contextWindow)}`, true));
 	}

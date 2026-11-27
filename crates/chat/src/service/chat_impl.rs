@@ -457,7 +457,9 @@ impl ChatService for LiveChatService {
             .filter_map(|m| m.get("content").and_then(Value::as_str))
             .map(|text| u32::try_from(estimate_text_tokens(text)).unwrap_or(u32::MAX))
             .sum();
-        let context_window = provider_arc.as_deref().map(|p| p.context_window());
+        let context_window = provider_arc
+            .as_deref()
+            .map(|p| (p.context_window(), p.context_limits().window.is_some()));
         let mut compact_payload = serde_json::json!({
             "sessionKey": session_key,
             "state": "compact",
@@ -465,10 +467,11 @@ impl ChatService for LiveChatService {
             "messageCount": history.len(),
             "totalTokens": pre_compact_total_tokens,
         });
-        if let Some(window) = context_window
+        if let Some((window, known)) = context_window
             && let Some(obj) = compact_payload.as_object_mut()
         {
             obj.insert("contextWindow".to_string(), serde_json::json!(window));
+            obj.insert("contextWindowKnown".to_string(), serde_json::json!(known));
         }
         if let (Some(obj), Some(meta)) = (
             compact_payload.as_object_mut(),
@@ -668,15 +671,19 @@ impl ChatService for LiveChatService {
             + usage.current_request_cache_read_tokens
             + usage.current_request_cache_write_tokens;
 
-        // Context window from the session's provider
-        let context_window = {
+        // Context window of the session's current model, from the catalog.
+        // `context_window_known = false` makes the meter say the size is
+        // unknown instead of presenting a guess as fact.
+        let (context_window, context_window_known) = {
             let reg = self.providers.read().await;
             let session_model = session_entry.as_ref().and_then(|e| e.model.as_deref());
-            if let Some(id) = session_model {
-                reg.get(id).map(|p| p.context_window()).unwrap_or(200_000)
-            } else {
-                reg.first().map(|p| p.context_window()).unwrap_or(200_000)
-            }
+            let provider = match session_model {
+                Some(id) => reg.get(id),
+                None => reg.first(),
+            };
+            provider.map_or((moltis_agents::model::UNKNOWN_CONTEXT_WINDOW, false), |p| {
+                (p.context_window(), p.context_limits().window.is_some())
+            })
         };
 
         // Sandbox info
@@ -795,6 +802,7 @@ impl ChatService for LiveChatService {
                 "currentTotal": current_total_tokens,
                 "estimatedNextInputTokens": usage.current_request_input_tokens,
                 "contextWindow": context_window,
+                "contextWindowKnown": context_window_known,
             },
         }))
     }

@@ -18,6 +18,7 @@ import {
 } from "../chat-ui";
 import { SessionHeader } from "../components/SessionHeader";
 import { formatTokens, sendRpc } from "../helpers";
+import { t } from "../i18n";
 import { initMediaDrop, teardownMediaDrop } from "../media-drop";
 import { bindModelComboEvents, fetchModels, modelDisplayLabel, modelTitle } from "../models";
 import { bindNodeComboEvents, fetchNodes, unbindNodeEvents } from "../nodes-selector";
@@ -154,6 +155,7 @@ interface CompactCardData {
 	totalTokens?: number;
 	estimatedNextInputTokens?: number;
 	contextWindow?: number;
+	contextWindowKnown?: boolean;
 	compactionTotalTokens?: number;
 	compactionInputTokens?: number;
 	compactionOutputTokens?: number;
@@ -202,7 +204,9 @@ export function renderCompactCard(data: CompactCardData): void {
 	if (data.totalTokens) statsSec.appendChild(ctxRow("Total tokens", formatTokens(data.totalTokens || 0)));
 	if (data.estimatedNextInputTokens)
 		statsSec.appendChild(ctxRow("Estimated next input", formatTokens(data.estimatedNextInputTokens), true));
-	if (data.contextWindow) {
+	if (data.contextWindowKnown === false) {
+		statsSec.appendChild(ctxRow("Context usage", t("common:labels.contextUnknown")));
+	} else if (data.contextWindow) {
 		const basis = data.estimatedNextInputTokens || data.totalTokens || 0;
 		const pctUsed = Math.round((basis / data.contextWindow) * 100);
 		statsSec.appendChild(ctxRow("Context usage", `${pctUsed}% of ${formatTokens(data.contextWindow)}`));
