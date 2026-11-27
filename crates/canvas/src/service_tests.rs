@@ -211,15 +211,16 @@ async fn revert_restores_files_as_a_new_version() {
         .map(|v| v.version)
         .collect();
     assert_eq!(history, vec![3, 2, 1]);
-    let events = sink.events.lock().unwrap();
-    assert!(matches!(
-        events.last(),
-        Some(CanvasEvent::VersionCreated {
-            reverted_from: Some(1),
-            ..
-        })
-    ));
-    drop(events);
+    {
+        let events = sink.events.lock().unwrap();
+        assert!(matches!(
+            events.last(),
+            Some(CanvasEvent::VersionCreated {
+                reverted_from: Some(1),
+                ..
+            })
+        ));
+    }
 
     // Reverting to the content already current records nothing new.
     assert_eq!(service.revert(id, 3, None).await.unwrap().version, 3);

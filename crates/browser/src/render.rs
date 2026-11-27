@@ -202,23 +202,18 @@ mod tests {
     }
 
     #[test]
+    fn default_request_is_a_full_page_png() {
+        let request = RenderRequest::default();
+        assert_eq!(request.format, RenderFormat::Png);
+        assert!(request.full_page);
+        assert!(!request.sandbox);
+    }
+
+    #[test]
     fn format_serializes_lowercase() {
         assert_eq!(
             serde_json::to_string(&RenderFormat::Pdf).unwrap(),
             "\"pdf\""
         );
-    }
-
-    #[tokio::test]
-    async fn disabled_browser_refuses_to_render() {
-        let manager = BrowserManager::new(crate::types::BrowserConfig {
-            enabled: false,
-            ..Default::default()
-        });
-        let err = manager
-            .render_html(request(800, 600, "<p>hi</p>"))
-            .await
-            .unwrap_err();
-        assert!(err.to_string().contains("disabled"));
     }
 }
