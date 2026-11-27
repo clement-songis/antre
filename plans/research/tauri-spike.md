@@ -393,6 +393,18 @@ scroll and animate at 60 Hz where a native SwiftUI list runs at 120 Hz.
   what a Tauri iOS app is, with less tooling risk; decide after a Tauri iOS
   prototype.
 
+## Follow-up: what `claude/desktop-fixes` changed
+
+| Gap found by the spike | Status |
+|---|---|
+| Docker probe blocks startup for minutes | Fixed: every runtime probe is killed after 5 s and detection falls through to the next backend. |
+| Trusted-network proxy on fixed `0.0.0.0:18791` | Fixed: ephemeral port by default (`[tools.exec.sandbox] proxy_port` pins it); backends get the bound port. Still bound on all interfaces (containers reach it through the host gateway). |
+| Silent import of `~/.codex/auth.json` | Fixed: read only with `[providers] external_credentials = ["codex-cli"]`, or copied by the explicit `providers.import_external` RPC. |
+| `ulimit -u 256` in restricted-host | Fixed: process cap only when `pids_max` is set. |
+| Remote auth (API key vs cookie) | Fixed: `POST /api/auth/session-ticket` + redeem URL; the shell opens the UI signed in. |
+| Shell product basics | Single instance, tray (close hides), native notifications for daemon incidents, sidecar bundling script. |
+| Canvas iframe throttling, chat notifications | Open questions in `plans/questions.md`. |
+
 ## 4. Recommendation
 
 **Go for "web UI + thin Tauri 2 shell" on desktop**, as the single product
