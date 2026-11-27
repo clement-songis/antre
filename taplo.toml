@@ -20,3 +20,9 @@ include = ["**/Cargo.toml"]
 keys    = ["package.metadata.deb"]
 [rule.formatting]
 reorder_arrays = false
+
+# The model lists in recommended.toml are ranked: their order is the data.
+[[rule]]
+include = ["crates/model-catalog/data/recommended.toml"]
+[rule.formatting]
+reorder_arrays = false

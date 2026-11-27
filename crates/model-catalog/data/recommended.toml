@@ -6,76 +6,82 @@
 # replace model ids that features used to hard-code.
 
 [[role]]
+kind     = "image"
+models   = ["gpt-image-2.6-flare", "gpt-image-2.6-sunburst"]
 provider = "openai"
-kind = "image"
-models = ["gpt-image-2.6-flare", "gpt-image-2.6-sunburst"]
 
 [[role]]
+kind     = "tts"
+models   = ["gpt-4o-mini-tts"]
 provider = "openai"
-kind = "tts"
-models = ["gpt-4o-mini-tts"]
 
 [[role]]
+kind     = "stt"
+models   = ["gpt-transcribe"]
 provider = "openai"
-kind = "stt"
-models = ["gpt-transcribe"]
 
 [[role]]
+kind     = "stt"
+models   = ["voxtral-small-transcribe-latest"]
 provider = "mistral"
-kind = "stt"
-models = ["voxtral-small-transcribe-latest"]
 
 [[role]]
+kind     = "tts"
+models   = ["gemini-3.8-flash-tts"]
 provider = "gemini"
-kind = "tts"
-models = ["gemini-3.8-flash-tts"]
 
 [[role]]
+kind     = "stt"
+models   = ["gemini-3.5-transcribe"]
 provider = "gemini"
-kind = "stt"
-models = ["gemini-3.5-transcribe"]
 
 [[role]]
+kind     = "chat"
+models   = ["claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-5-5", "claude-fable-5-2"]
 provider = "anthropic"
-kind = "chat"
-models = ["claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-5-5", "claude-fable-5-2"]
 
 [[role]]
+kind     = "chat"
+models   = ["gpt-6.2-sol", "gpt-6.2-astra", "gpt-6.1-terra", "gpt-6-luna"]
 provider = "openai"
-kind = "chat"
-models = ["gpt-6.2-sol", "gpt-6.2-astra", "gpt-6.1-terra", "gpt-6-luna"]
 
 [[role]]
+kind = "chat"
+models = [
+  "gemini-4-carbon",
+  "gemini-4-argon",
+  "gemini-3.8-flash",
+  "gemini-4-neon",
+  "gemini-4-hydrogen",
+]
 provider = "gemini"
-kind = "chat"
-models = ["gemini-4-carbon", "gemini-4-argon", "gemini-3.8-flash", "gemini-4-neon", "gemini-4-hydrogen"]
 
 [[role]]
+kind     = "chat"
+models   = ["grok-4.7", "grok-4.3"]
 provider = "xai"
-kind = "chat"
-models = ["grok-4.7", "grok-4.3"]
 
 [[role]]
+kind     = "chat"
+models   = ["openai/gpt-oss-120b", "openai/gpt-oss-20b"]
 provider = "groq"
-kind = "chat"
-models = ["openai/gpt-oss-120b", "openai/gpt-oss-20b"]
 
 [[role]]
+kind     = "chat"
+models   = ["gpt-oss-120b", "qwen-3.8-27b"]
 provider = "cerebras"
-kind = "chat"
-models = ["gpt-oss-120b", "qwen-3.8-27b"]
 
 [[role]]
+kind     = "chat"
+models   = ["deepseek-flash", "deepseek-v4-pro"]
 provider = "deepseek"
-kind = "chat"
-models = ["deepseek-flash", "deepseek-v4-pro"]
 
 [[role]]
+kind     = "chat"
+models   = ["glm-5.3", "glm-5.3-flash"]
 provider = "zai-code"
-kind = "chat"
-models = ["glm-5.3", "glm-5.3-flash"]
 
 [[role]]
+kind     = "chat"
+models   = ["kimi-k3"]
 provider = "moonshot"
-kind = "chat"
-models = ["kimi-k3"]

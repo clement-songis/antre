@@ -51,6 +51,7 @@ moltis-media              = { workspace = true }
 moltis-memory             = { workspace = true }
 moltis-memory-zvec        = { optional = true, workspace = true }
 moltis-metrics            = { optional = true, workspace = true }
+moltis-model-catalog      = { workspace = true }
 moltis-msteams            = { optional = true, workspace = true }
 moltis-netbird            = { optional = true, workspace = true }
 moltis-network-filter     = { features = ["proxy", "service"], optional = true, workspace = true }
@@ -64,7 +65,6 @@ moltis-projects           = { workspace = true }
 moltis-protocol           = { workspace = true }
 moltis-provider-setup     = { workspace = true }
 moltis-providers          = { workspace = true }
-moltis-model-catalog      = { workspace = true }
 moltis-qmd                = { optional = true, workspace = true }
 moltis-routing            = { workspace = true }
 moltis-secret-store       = { workspace = true }
