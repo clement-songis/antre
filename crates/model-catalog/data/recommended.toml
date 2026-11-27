@@ -85,3 +85,43 @@ provider = "zai-code"
 kind     = "chat"
 models   = ["kimi-k3"]
 provider = "moonshot"
+
+# Utility tier: cheap models for background side tasks (learning review,
+# curation). No newest-model fallback: a provider without an entry falls back
+# to the session's own model.
+
+[[role]]
+kind     = "chat"
+models   = ["claude-haiku-5-5"]
+provider = "anthropic"
+tier     = "utility"
+
+[[role]]
+kind     = "chat"
+models   = ["gpt-6-luna"]
+provider = "openai"
+tier     = "utility"
+
+[[role]]
+kind     = "chat"
+models   = ["gemini-3.8-flash"]
+provider = "gemini"
+tier     = "utility"
+
+[[role]]
+kind     = "chat"
+models   = ["openai/gpt-oss-20b"]
+provider = "groq"
+tier     = "utility"
+
+[[role]]
+kind     = "chat"
+models   = ["deepseek-flash"]
+provider = "deepseek"
+tier     = "utility"
+
+[[role]]
+kind     = "chat"
+models   = ["glm-5.3-flash"]
+provider = "zai-code"
+tier     = "utility"

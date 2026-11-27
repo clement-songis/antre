@@ -10,11 +10,24 @@ use crate::{
 
 const RECOMMENDED: &str = include_str!("../data/recommended.toml");
 
+/// Which slot of a provider's picks a role fills.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RoleTier {
+    /// The provider's best models for the kind.
+    #[default]
+    Default,
+    /// Cheap, fast models for background side tasks (reviews, curation).
+    Utility,
+}
+
 /// A curated, ordered list of picks for one provider and kind.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct RoleEntry {
     pub provider: String,
     pub kind: ModelKind,
+    #[serde(default)]
+    pub tier: RoleTier,
     pub models: Vec<String>,
 }
 
@@ -38,12 +51,37 @@ impl RoleTable {
     /// Curated ids for a provider and kind, best first.
     #[must_use]
     pub fn recommended(&self, provider: &str, kind: ModelKind) -> &[String] {
+        self.recommended_tier(provider, kind, RoleTier::Default)
+    }
+
+    /// Curated ids for a provider, kind and tier, best first.
+    #[must_use]
+    pub fn recommended_tier(&self, provider: &str, kind: ModelKind, tier: RoleTier) -> &[String] {
         self.entries
             .iter()
-            .find(|entry| entry.provider == provider && entry.kind == kind)
+            .find(|entry| entry.provider == provider && entry.kind == kind && entry.tier == tier)
             .map(|entry| entry.models.as_slice())
             .unwrap_or_default()
     }
+}
+
+/// Resolve a utility role: the first curated cheap pick the catalog knows as
+/// that kind and not deprecated. Unlike [`pick`] there is no newest-model
+/// fallback, which would land on a flagship.
+#[must_use]
+pub fn pick_utility(
+    catalog: &ModelCatalog,
+    roles: &RoleTable,
+    provider: &str,
+    kind: ModelKind,
+) -> Option<ResolvedModel> {
+    roles
+        .recommended_tier(provider, kind, RoleTier::Utility)
+        .iter()
+        .find_map(|id| {
+            let model = catalog.resolve(provider, id, None);
+            (model.kind() == kind && !model.status().is_deprecated()).then_some(model)
+        })
 }
 
 /// Resolve a role: the first curated pick the catalog knows as that kind and

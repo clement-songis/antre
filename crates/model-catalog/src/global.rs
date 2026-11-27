@@ -6,7 +6,7 @@ use std::sync::{OnceLock, RwLock};
 use crate::{
     catalog::{ModelCatalog, ResolvedModel},
     macros::log_warn,
-    roles::{RoleTable, pick},
+    roles::{RoleTable, pick, pick_utility},
     types::ModelKind,
 };
 
@@ -51,6 +51,12 @@ pub fn pick_role(provider: &str, kind: ModelKind) -> Option<ResolvedModel> {
     read(|catalog| pick(catalog, roles(), provider, kind))
 }
 
+/// The cheap chat model curated for a provider's background tasks.
+#[must_use]
+pub fn pick_utility_chat(provider: &str) -> Option<ResolvedModel> {
+    read(|catalog| pick_utility(catalog, roles(), provider, ModelKind::Chat))
+}
+
 /// Id of a role's pick, or `fallback` when the catalog has none.
 #[must_use]
 pub fn role_id_or(provider: &str, kind: ModelKind, fallback: &str) -> String {
@@ -73,5 +79,18 @@ mod tests {
             "fallback"
         );
         assert!(read(|catalog| !catalog.known_ids("anthropic").is_empty()));
+    }
+
+    #[test]
+    fn utility_tier_is_separate_from_default_picks() {
+        assert_eq!(
+            pick_utility_chat("anthropic").map(|model| model.spec.id),
+            Some("claude-haiku-5-5".to_string())
+        );
+        assert_eq!(
+            role_id_or("anthropic", ModelKind::Chat, "x"),
+            "claude-opus-5-5"
+        );
+        assert!(pick_utility_chat("moonshot").is_none());
     }
 }
