@@ -187,13 +187,13 @@ pub fn resolve_sync_workspace(
     id: &SandboxId,
 ) -> Option<PathBuf> {
     use super::{
-        paths::{detected_container_cli, sandbox_home_persistence_host_dir},
-        types::sanitize_path_component,
+        paths::guest_visible_sandbox_home_persistence_host_dir, types::sanitize_path_component,
     };
 
-    let cli = detected_container_cli(config);
-    // If home persistence is configured, use that directory.
-    if let Some(path) = sandbox_home_persistence_host_dir(config, cli, id) {
+    // The workspace is tarred and patched by this process, so it needs the
+    // path as Moltis sees it. The Docker host translation
+    // (`host_visible_path`) is only for bind mounts given to a local daemon.
+    if let Some(path) = guest_visible_sandbox_home_persistence_host_dir(config, id) {
         return Some(path);
     }
     // Fallback: dedicated sync directory for isolated backends.
@@ -813,6 +813,53 @@ mod tests {
             .unwrap();
 
         archive.into_inner().and_then(|enc| enc.finish()).unwrap()
+    }
+
+    fn sync_id(key: &str) -> SandboxId {
+        SandboxId {
+            scope: crate::sandbox::types::SandboxScope::Session,
+            key: key.into(),
+        }
+    }
+
+    /// Sync tars and patches the workspace from this process: the path must
+    /// be the one Moltis sees, never the Docker-host translation, and
+    /// resolving it must not shell out to a container runtime.
+    #[test]
+    fn sync_workspace_ignores_docker_host_translation() {
+        use crate::sandbox::types::{HomePersistence, SandboxConfig};
+
+        let config = SandboxConfig {
+            host_data_dir: Some(PathBuf::from("/host/moltis-data")),
+            home_persistence: HomePersistence::Shared,
+            ..SandboxConfig::default()
+        };
+        let path = resolve_sync_workspace(&config, &sync_id("s1")).unwrap();
+        assert_eq!(
+            path,
+            moltis_config::data_dir()
+                .join("sandbox")
+                .join("home")
+                .join("shared")
+        );
+    }
+
+    #[test]
+    fn sync_workspace_falls_back_to_sync_dir_without_persistence() {
+        use crate::sandbox::types::{HomePersistence, SandboxConfig};
+
+        let config = SandboxConfig {
+            home_persistence: HomePersistence::Off,
+            ..SandboxConfig::default()
+        };
+        let path = resolve_sync_workspace(&config, &sync_id("a/b")).unwrap();
+        assert_eq!(
+            path,
+            moltis_config::data_dir()
+                .join("sandbox")
+                .join("sync")
+                .join("a-b")
+        );
     }
 
     #[test]
