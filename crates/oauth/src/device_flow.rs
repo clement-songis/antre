@@ -5,6 +5,7 @@ use {
 
 use crate::{
     Error, Result,
+    endpoint::secure_endpoint_url,
     types::{OAuthConfig, OAuthTokens},
 };
 
@@ -45,7 +46,10 @@ pub async fn request_device_code_with_headers(
     }
 
     let mut req = client
-        .post(&config.auth_url)
+        .post(secure_endpoint_url(
+            &config.auth_url,
+            "device authorization",
+        )?)
         .header("Accept", "application/json")
         .form(&form);
 
@@ -104,7 +108,7 @@ pub async fn poll_for_token_with_headers(
         }
 
         let mut req = client
-            .post(&config.token_url)
+            .post(secure_endpoint_url(&config.token_url, "token")?)
             .header("Accept", "application/json")
             .form(&form);
 

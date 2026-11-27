@@ -4,6 +4,7 @@ mod config_dir;
 pub mod defaults;
 pub mod device_flow;
 pub mod discovery;
+mod endpoint;
 pub mod error;
 pub mod flow;
 pub mod kimi;

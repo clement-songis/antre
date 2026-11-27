@@ -12,6 +12,7 @@ use moltis_metrics::{counter, oauth as oauth_metrics};
 
 use crate::{
     Error, Result,
+    endpoint::secure_endpoint_url,
     pkce::{generate_pkce, generate_state},
     types::{OAuthConfig, OAuthTokens, PkceChallenge},
 };
@@ -102,7 +103,7 @@ impl OAuthFlow {
 
         let result = self
             .client
-            .post(&self.config.token_url)
+            .post(secure_endpoint_url(&self.config.token_url, "token")?)
             .form(&form)
             .send()
             .await?
@@ -146,7 +147,7 @@ impl OAuthFlow {
 
         let result = self
             .client
-            .post(&self.config.token_url)
+            .post(secure_endpoint_url(&self.config.token_url, "token")?)
             .form(&form)
             .send()
             .await?
