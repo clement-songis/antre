@@ -249,6 +249,19 @@ pub(super) fn register(reg: &mut MethodRegistry) {
         }),
     );
     reg.register(
+        "projects.files",
+        Box::new(|ctx| {
+            Box::pin(async move {
+                ctx.state
+                    .services
+                    .project
+                    .files(ctx.params.clone())
+                    .await
+                    .map_err(ErrorShape::from)
+            })
+        }),
+    );
+    reg.register(
         "projects.context",
         Box::new(|ctx| {
             Box::pin(async move {

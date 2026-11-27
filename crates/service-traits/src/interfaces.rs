@@ -1190,6 +1190,10 @@ pub trait ProjectService: Send + Sync {
     async fn detect(&self, params: Value) -> ServiceResult;
     async fn complete_path(&self, params: Value) -> ServiceResult;
     async fn context(&self, params: Value) -> ServiceResult;
+    /// Files of a project matching a fuzzy query (`@file` mentions).
+    async fn files(&self, _params: Value) -> ServiceResult {
+        Ok(serde_json::json!({ "files": [] }))
+    }
 }
 
 pub struct NoopProjectService;

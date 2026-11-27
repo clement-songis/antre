@@ -50,6 +50,7 @@ import {
 	renderContextTokensSection,
 	renderContextToolsSection,
 } from "./chat/context-card";
+import { FileMentionMenu, mentionHandleInput, mentionHandleKeydown, resetMentions } from "./chat/FileMentions";
 import { QueueTray } from "./chat/QueueTray";
 import { RewindDialog, reportRewindError } from "./chat/RewindDialog";
 import { fetchRewindPoints, rewindPickerOpen } from "./chat/rewind";
@@ -640,12 +641,27 @@ function mountApprovalControls(): void {
 	if (rewindMount) render(<RewindDialog />, rewindMount);
 	const queueMount = S.$("queuedMessages");
 	if (queueMount) render(<QueueTray host={queueMount} />, queueMount);
+	const inputLine = S.chatInput?.parentElement;
+	if (inputLine) {
+		inputLine.classList.add("relative");
+		const mentionMount = document.createElement("div");
+		mentionMount.id = "fileMentionMount";
+		inputLine.appendChild(mentionMount);
+		render(<FileMentionMenu />, mentionMount);
+	}
 	const badgeMount = S.$("approvalsBadgeMount");
 	if (badgeMount) render(<ApprovalsBadge />, badgeMount);
 }
 
 function unmountApprovalControls(): void {
-	for (const id of ["approvalDockMount", "approvalsBadgeMount", "rewindDialogMount", "queuedMessages"]) {
+	resetMentions();
+	for (const id of [
+		"approvalDockMount",
+		"approvalsBadgeMount",
+		"rewindDialogMount",
+		"queuedMessages",
+		"fileMentionMount",
+	]) {
 		const mount = S.$(id);
 		if (mount) render(null, mount);
 	}
@@ -688,8 +704,10 @@ function bindChatComposer(): void {
 	chatInput.addEventListener("input", () => {
 		chatAutoResize();
 		slashHandleInput();
+		mentionHandleInput();
 	});
 	chatInput.addEventListener("keydown", (e: KeyboardEvent) => {
+		if (mentionHandleKeydown(e)) return;
 		if (slashHandleKeydown(e)) return;
 		if (e.key === "Escape" && S.commandModeEnabled && !chatInput.value.trim()) {
 			e.preventDefault();

@@ -8516,6 +8516,7 @@ name = "moltis-projects"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "ignore",
  "moltis-metrics",
  "serde",
  "serde_json",

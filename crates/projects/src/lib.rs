@@ -8,6 +8,7 @@ pub mod complete;
 pub mod context;
 pub mod detect;
 pub mod error;
+pub mod files;
 pub mod store;
 pub mod types;
 pub mod worktree;

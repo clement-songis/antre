@@ -90,6 +90,7 @@ const READ_METHODS: &[&str] = &[
     "projects.get",
     "projects.context",
     "projects.complete_path",
+    "projects.files",
     "cron.list",
     "cron.status",
     "cron.runs",
