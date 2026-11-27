@@ -69,6 +69,26 @@ impl CheckpointManager {
         }
     }
 
+    /// Store checkpoints directly under `base_dir` instead of
+    /// `<data_dir>/checkpoints`, for callers that keep their own history.
+    #[must_use]
+    pub fn with_base_dir(base_dir: PathBuf) -> Self {
+        Self { base_dir }
+    }
+
+    /// Location of a checkpoint's snapshot on disk (`None` when the source did
+    /// not exist when the checkpoint was taken).
+    pub async fn snapshot_path(&self, id: &str) -> Result<Option<PathBuf>> {
+        validate_checkpoint_id(id)?;
+        let checkpoint_dir = self.base_dir.join(id);
+        tokio::task::spawn_blocking(move || {
+            let record = read_manifest(&checkpoint_dir)?;
+            Ok(record.backup_path.map(|rel| checkpoint_dir.join(rel)))
+        })
+        .await
+        .map_err(|error| Error::message(format!("checkpoint lookup task failed: {error}")))?
+    }
+
     pub async fn checkpoint_path(&self, source: &Path, reason: &str) -> Result<CheckpointRecord> {
         let base_dir = self.base_dir.clone();
         let source = source.to_path_buf();
@@ -627,5 +647,29 @@ mod tests {
 
         let error = manager.restore("../../etc/passwd").await.unwrap_err();
         assert!(error.to_string().contains("invalid checkpoint id"));
+    }
+
+    #[tokio::test]
+    async fn custom_base_dir_exposes_directory_snapshot() {
+        let tmp = tempfile::tempdir().unwrap();
+        let base = tmp.path().join("history");
+        let manager = CheckpointManager::with_base_dir(base.clone());
+        let dir = tmp.path().join("design");
+        fs::create_dir_all(&dir).unwrap();
+        fs::write(dir.join("index.html"), "<p>v1</p>").unwrap();
+
+        let checkpoint = manager.checkpoint_path(&dir, "v1").await.unwrap();
+        let snapshot = manager
+            .snapshot_path(&checkpoint.id)
+            .await
+            .unwrap()
+            .unwrap();
+
+        assert!(snapshot.starts_with(base.join(&checkpoint.id)));
+        assert_eq!(
+            fs::read_to_string(snapshot.join("index.html")).unwrap(),
+            "<p>v1</p>"
+        );
+        assert!(manager.snapshot_path("../x").await.is_err());
     }
 }
