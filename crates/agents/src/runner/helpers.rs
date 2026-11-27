@@ -379,6 +379,7 @@ pub(crate) async fn dispatch_before_agent_start_hook(
 
 // Only successful loop completion reaches this helper. Errors carry no
 // AgentRunResult, so they must not synthesize AgentEnd totals.
+#[tracing::instrument(skip_all, fields(session_key = %session_key, iterations = iterations, tool_calls_made = tool_calls_made))]
 pub(crate) async fn finish_agent_run(
     final_text: String,
     iterations: usize,

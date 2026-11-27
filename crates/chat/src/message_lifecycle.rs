@@ -14,6 +14,7 @@ pub(crate) fn buffers_text(hooks: Option<&HookRegistry>) -> bool {
     hooks.is_some_and(|hooks| hooks.has_handlers(HookEvent::MessageSending))
 }
 
+#[tracing::instrument(skip(hooks, content))]
 async fn rewrite(
     hooks: Option<&HookRegistry>,
     session_key: &str,
@@ -45,6 +46,7 @@ async fn rewrite(
     }
 }
 
+#[tracing::instrument(skip(hooks, state, content, terminal_runs))]
 pub(crate) async fn prepare(
     hooks: Option<&HookRegistry>,
     state: &Arc<dyn ChatRuntime>,
@@ -82,6 +84,7 @@ pub(crate) async fn prepare(
     }
 }
 
+#[tracing::instrument(skip(hooks, content))]
 pub(crate) async fn sent(hooks: Option<&HookRegistry>, session_key: &str, content: String) {
     if let Some(hooks) = hooks
         && let Err(error) = hooks
