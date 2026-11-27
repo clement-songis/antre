@@ -268,6 +268,7 @@ sqlx migrations, each crate owns its `migrations/` directory. See `docs/sqlite-m
 | `moltis-cron` | `cron_jobs`, `cron_runs` |
 | `moltis-gateway` | `auth_*`, `passkeys`, `api_keys`, `env_variables`, `message_log`, `channels` |
 | `moltis-memory` | `files`, `chunks`, `embedding_cache`, `chunks_fts` |
+| `moltis-canvas` | `canvas_designs`, `canvas_design_versions` |
 
 New migration: `crates/<crate>/migrations/YYYYMMDDHHMMSS_description.sql` (use `IF NOT EXISTS`).
 New crate: add `run_migrations()` to `lib.rs`, call from `server.rs` in dependency order.

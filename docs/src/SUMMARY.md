@@ -50,6 +50,7 @@
   - [Signal](signal.md)
   - [Telephony (Phone Calls)](channels/telephony.md)
 - [Browser Automation](browser-automation.md)
+- [Design Canvas](canvas.md)
 - [Connectors](connectors.md)
   - [Email Connectors](email-connectors.md)
 - [CalDAV (Calendars)](caldav.md)
