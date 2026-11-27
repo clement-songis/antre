@@ -14,6 +14,7 @@ pub mod env_subst;
 pub mod error;
 pub mod loader;
 pub mod migrate;
+pub mod process_probe;
 pub mod provider_env;
 pub mod schema;
 pub mod template;

@@ -3,10 +3,11 @@
 use std::{
     collections::HashSet,
     path::{Path, PathBuf},
-    process::Command,
 };
 
 use tracing::debug;
+
+use crate::process_probe::{RUNTIME_COMMAND_TIMEOUT, output_within};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct ContainerMount {
@@ -117,9 +118,9 @@ fn resolve_host_path_from_mounts(guest_path: &Path, mounts: &[ContainerMount]) -
 
 #[must_use]
 fn inspect_container_mounts(cli: &str, reference: &str) -> Vec<ContainerMount> {
-    let output = match Command::new(cli).args(["inspect", reference]).output() {
-        Ok(output) if output.status.success() => output,
-        Ok(output) => {
+    let output = match output_within(cli, &["inspect", reference], RUNTIME_COMMAND_TIMEOUT) {
+        Some(output) if output.status.success() => output,
+        Some(output) => {
             let stderr = String::from_utf8_lossy(&output.stderr);
             debug!(
                 cli,
@@ -129,12 +130,10 @@ fn inspect_container_mounts(cli: &str, reference: &str) -> Vec<ContainerMount> {
             );
             return Vec::new();
         },
-        Err(error) => {
+        None => {
             debug!(
                 cli,
-                reference,
-                %error,
-                "could not inspect container while auto-detecting host data dir"
+                reference, "could not inspect container while auto-detecting host data dir"
             );
             return Vec::new();
         },
@@ -144,9 +143,9 @@ fn inspect_container_mounts(cli: &str, reference: &str) -> Vec<ContainerMount> {
 
 #[must_use]
 fn running_container_references(cli: &str) -> Vec<String> {
-    let output = match Command::new(cli).args(["ps", "-q", "--no-trunc"]).output() {
-        Ok(output) if output.status.success() => output,
-        Ok(output) => {
+    let output = match output_within(cli, &["ps", "-q", "--no-trunc"], RUNTIME_COMMAND_TIMEOUT) {
+        Some(output) if output.status.success() => output,
+        Some(output) => {
             let stderr = String::from_utf8_lossy(&output.stderr);
             debug!(
                 cli,
@@ -155,10 +154,9 @@ fn running_container_references(cli: &str) -> Vec<String> {
             );
             return Vec::new();
         },
-        Err(error) => {
+        None => {
             debug!(
                 cli,
-                %error,
                 "could not list containers while auto-detecting host data dir"
             );
             return Vec::new();

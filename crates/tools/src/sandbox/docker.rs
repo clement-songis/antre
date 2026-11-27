@@ -1341,12 +1341,16 @@ pub(crate) fn parse_docker_daemon_arch(output: &str) -> DaemonArch {
 }
 
 /// Query the Docker daemon's architecture via `docker info`. Never panics;
-/// returns `Unknown` on any failure (docker missing, non-UTF8 output, etc.).
+/// returns `Unknown` on any failure (docker missing, daemon unresponsive past
+/// the probe deadline, non-UTF8 output, etc.).
 pub(crate) fn docker_daemon_arch() -> DaemonArch {
-    let Ok(output) = std::process::Command::new("docker")
-        .args(["info", "--format", "{{.Architecture}}"])
-        .output()
-    else {
+    use moltis_config::process_probe::{RUNTIME_COMMAND_TIMEOUT, output_within};
+
+    let Some(output) = output_within(
+        "docker",
+        &["info", "--format", "{{.Architecture}}"],
+        RUNTIME_COMMAND_TIMEOUT,
+    ) else {
         return DaemonArch::Unknown;
     };
     parse_docker_daemon_arch(&String::from_utf8_lossy(&output.stdout))
