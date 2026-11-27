@@ -2,6 +2,7 @@
 
 mod catalog_bridge;
 mod core;
+mod genai;
 pub mod registration;
 #[cfg(test)]
 mod tests;
