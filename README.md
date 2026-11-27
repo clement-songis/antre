@@ -54,7 +54,7 @@ cargo install moltis --git https://github.com/moltis-org/moltis
 | Local checkout size\* | ~1.1M app LoC | ~152K app LoC | **~270K Rust LoC** |
 | Architecture | Broad gateway, channel, node, and app ecosystem | CLI/gateway agent with learning loop and research tooling | **Persistent personal agent server with modular crates** |
 | Crates/modules | npm packages, extensions, apps | Python packages, plugins, tools, TUI | **59 Rust workspace crates** |
-| Sandbox/backends | App-level permissions, browser/node tools | Local, Docker, SSH, Daytona, Singularity, Modal | **Docker/Podman + Apple Container + WASM** |
+| Sandbox/backends | App-level permissions, browser/node tools | Local, Docker, SSH, Daytona, Singularity, Modal | **Docker/Podman + Apple Container + WASM + Seatbelt/bubblewrap** |
 | Auth/access | Pairing and local gateway controls | CLI and messaging gateway setup | **Password + Passkey + API keys + Vault** |
 | Voice I/O | Voice wake and talk modes | Voice memo transcription | **Built-in STT + TTS providers** |
 | MCP | Plugin/integration support | MCP integration | **stdio + HTTP/SSE** |
@@ -107,7 +107,7 @@ Use `--no-default-features --features lightweight` for constrained devices (Rasp
 ## Security
 
 - **Small unsafe surface** — core agent/gateway code stays safe Rust; unsafe is isolated to Swift FFI, local model wrappers, and precompiled WASM boundaries
-- **Sandboxed execution** — Docker + Apple Container, per-session isolation
+- **Sandboxed execution** — Docker + Apple Container, per-session isolation, and an OS-level sandbox (macOS Seatbelt, Linux bubblewrap) when no container runtime is installed
 - **Secret handling** — `secrecy::Secret`, zeroed on drop, redacted from tool output
 - **Authentication** — password + passkey (WebAuthn), rate-limited, per-IP throttle
 - **SSRF protection** — DNS-resolved, blocks loopback/private/link-local

@@ -5,7 +5,9 @@ use async_trait::async_trait;
 use tracing::debug;
 
 use {
-    super::types::{Sandbox, SandboxConfig, SandboxId, truncate_output_for_display},
+    super::types::{
+        ResourceLimits, Sandbox, SandboxConfig, SandboxId, truncate_output_for_display,
+    },
     crate::{
         error::{Error, Result},
         exec::{ExecOpts, ExecResult},
@@ -188,37 +190,46 @@ impl RestrictedHostSandbox {
     pub fn new(config: SandboxConfig) -> Self {
         Self { config }
     }
+}
 
-    /// Wrap a command with shell `ulimit` calls for resource isolation.
-    fn build_ulimit_wrapped_command(&self, command: &str) -> String {
-        let limits = &self.config.resource_limits;
-        let mut preamble = Vec::new();
+/// Wrap a command with shell `ulimit` calls for resource isolation.
+///
+/// `RLIMIT_NPROC` counts every process of the real user, not just the
+/// sandboxed tree, so `default_nproc` (used when `pids_max` is unset) can
+/// make fork fail on a busy desktop; pass `None` to only apply an explicit
+/// `pids_max`.
+pub(crate) fn ulimit_wrapped_command(
+    limits: &ResourceLimits,
+    default_nproc: Option<u64>,
+    command: &str,
+) -> String {
+    let mut preamble = Vec::new();
 
-        // Max user processes.
-        let nproc = limits.pids_max.map(u64::from).unwrap_or(256);
+    // Max user processes.
+    if let Some(nproc) = limits.pids_max.map(u64::from).or(default_nproc) {
         preamble.push(format!("ulimit -u {nproc} 2>/dev/null"));
-
-        // Max open file descriptors.
-        preamble.push("ulimit -n 1024 2>/dev/null".to_string());
-
-        // CPU time in seconds.
-        let cpu_secs = limits
-            .cpu_quota
-            .map(|q| q.ceil() as u64 * 60)
-            .unwrap_or(300);
-        preamble.push(format!("ulimit -t {cpu_secs} 2>/dev/null"));
-
-        // Virtual memory (in KB for ulimit -v).
-        let mem_bytes = limits
-            .memory_limit
-            .as_deref()
-            .and_then(parse_memory_limit)
-            .unwrap_or(512 * 1024 * 1024);
-        let mem_kb = mem_bytes / 1024;
-        preamble.push(format!("ulimit -v {mem_kb} 2>/dev/null"));
-
-        format!("{}; {command}", preamble.join("; "))
     }
+
+    // Max open file descriptors.
+    preamble.push("ulimit -n 1024 2>/dev/null".to_string());
+
+    // CPU time in seconds.
+    let cpu_secs = limits
+        .cpu_quota
+        .map(|q| q.ceil() as u64 * 60)
+        .unwrap_or(300);
+    preamble.push(format!("ulimit -t {cpu_secs} 2>/dev/null"));
+
+    // Virtual memory (in KB for ulimit -v).
+    let mem_bytes = limits
+        .memory_limit
+        .as_deref()
+        .and_then(parse_memory_limit)
+        .unwrap_or(512 * 1024 * 1024);
+    let mem_kb = mem_bytes / 1024;
+    preamble.push(format!("ulimit -v {mem_kb} 2>/dev/null"));
+
+    format!("{}; {command}", preamble.join("; "))
 }
 
 /// Parse a human-readable memory limit like "512M" or "1G" into bytes.
@@ -257,7 +268,7 @@ impl Sandbox for RestrictedHostSandbox {
 
     async fn exec(&self, _id: &SandboxId, command: &str, opts: &ExecOpts) -> Result<ExecResult> {
         // Wrap the command with shell ulimit calls for resource isolation.
-        let wrapped = self.build_ulimit_wrapped_command(command);
+        let wrapped = ulimit_wrapped_command(&self.config.resource_limits, Some(256), command);
 
         let mut cmd = tokio::process::Command::new("sh");
         cmd.args(["-c", &wrapped]);

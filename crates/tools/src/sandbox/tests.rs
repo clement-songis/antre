@@ -277,6 +277,8 @@ mod docker_router;
 #[cfg(target_os = "linux")]
 mod linux;
 mod network;
+#[cfg(feature = "os-sandbox")]
+mod os;
 mod platform;
 mod restricted_host;
 #[cfg(feature = "wasm")]

@@ -5,9 +5,11 @@ version.workspace = true
 
 [features]
 bundled-skills        = ["moltis-skills/bundled-skills"]
-default               = ["firecrawl", "fs-tools", "metrics", "provider-openai-codex", "vercel-sandbox", "wasm"]
+default               = ["firecrawl", "fs-tools", "metrics", "os-sandbox", "provider-openai-codex", "vercel-sandbox", "wasm"]
 embedded-wasm         = []
 firecrawl             = []
+# OS-level sandbox backends: Seatbelt (macOS) and bubblewrap (Linux).
+os-sandbox            = []
 provider-openai-codex = ["moltis-providers/provider-openai-codex"]
 vercel-sandbox        = []
 # Native filesystem tools (Read, Write, Edit, MultiEdit, Glob, Grep).

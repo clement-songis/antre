@@ -82,6 +82,8 @@ pub enum SandboxBackendId {
     Vercel,
     Daytona,
     Firecracker,
+    Seatbelt,
+    Bubblewrap,
     None,
 }
 
@@ -98,6 +100,8 @@ impl SandboxBackendId {
             "vercel" => Self::Vercel,
             "daytona" => Self::Daytona,
             "firecracker" => Self::Firecracker,
+            "seatbelt" => Self::Seatbelt,
+            "bubblewrap" => Self::Bubblewrap,
             _ => Self::None,
         }
     }
@@ -215,8 +219,10 @@ pub struct SandboxConfig {
     /// Domains allowed through the proxy in `Trusted` mode.
     pub trusted_domains: Vec<String>,
     /// Backend: `"auto"` (default), `"docker"`, `"podman"`, `"apple-container"`,
+    /// `"seatbelt"`, `"bubblewrap"`, `"os"` (the native OS sandbox),
     /// `"restricted-host"`, or `"wasm"`.
-    /// `"auto"` prefers Apple Container on macOS, then Podman, then Docker, then restricted-host.
+    /// `"auto"` prefers Apple Container on macOS, then Podman, then Docker,
+    /// then the OS sandbox, then restricted-host.
     pub backend: String,
     pub resource_limits: ResourceLimits,
     /// GPU device passthrough for Docker/Podman backends (e.g. "all", "device=0").
@@ -276,6 +282,14 @@ pub struct SandboxConfig {
     pub firecracker_vcpus: Option<u32>,
     /// Memory in MiB per Firecracker VM.
     pub firecracker_memory_mb: Option<u32>,
+
+    // ── OS sandbox configuration (Seatbelt / bubblewrap) ────────────────
+    /// Extra host paths readable by OS-sandboxed commands.
+    /// Relative paths are resolved against `data_dir()`.
+    pub os_read_paths: Vec<PathBuf>,
+    /// Extra host paths readable and writable by OS-sandboxed commands.
+    /// Relative paths are resolved against `data_dir()`.
+    pub os_write_paths: Vec<PathBuf>,
 }
 
 impl Default for SandboxConfig {
@@ -320,6 +334,8 @@ impl Default for SandboxConfig {
             firecracker_ssh_key: None,
             firecracker_vcpus: None,
             firecracker_memory_mb: None,
+            os_read_paths: Vec::new(),
+            os_write_paths: Vec::new(),
         }
     }
 }
@@ -400,6 +416,8 @@ impl From<&moltis_config::schema::SandboxConfig> for SandboxConfig {
             firecracker_ssh_key: cfg.firecracker_ssh_key.as_deref().map(PathBuf::from),
             firecracker_vcpus: cfg.firecracker_vcpus,
             firecracker_memory_mb: cfg.firecracker_memory_mb,
+            os_read_paths: cfg.os_read_paths.iter().map(PathBuf::from).collect(),
+            os_write_paths: cfg.os_write_paths.iter().map(PathBuf::from).collect(),
         }
     }
 }
@@ -510,6 +528,16 @@ pub trait Sandbox: Send + Sync {
     /// restrictions when true filesystem isolation is unavailable.
     fn provides_fs_isolation(&self) -> bool {
         false
+    }
+
+    /// Whether commands see the host filesystem layout, so host paths (working
+    /// directory, managed Files, data dir) are valid inside the sandbox.
+    ///
+    /// True for backends without filesystem isolation and for OS-level
+    /// sandboxes (Seatbelt, bubblewrap), which confine a host process instead
+    /// of providing a separate filesystem.
+    fn runs_on_host(&self) -> bool {
+        !self.provides_fs_isolation()
     }
 
     /// Whether commands in this backend can access the managed Files mount.

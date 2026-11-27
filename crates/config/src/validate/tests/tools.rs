@@ -335,3 +335,24 @@ request_timeout_secs = 0
         result.diagnostics
     );
 }
+
+#[test]
+fn os_sandbox_backends_and_paths_accepted() {
+    for backend in ["os", "seatbelt", "bubblewrap"] {
+        let toml = format!(
+            r#"
+[tools.exec.sandbox]
+backend = "{backend}"
+os_read_paths = ["/opt/docs"]
+os_write_paths = ["projects/demo"]
+"#
+        );
+        let result = validate_toml_str(&toml);
+        let flagged: Vec<_> = result
+            .diagnostics
+            .iter()
+            .filter(|d| d.path.starts_with("tools.exec.sandbox"))
+            .collect();
+        assert!(flagged.is_empty(), "{backend}: {flagged:?}");
+    }
+}

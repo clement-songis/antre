@@ -715,9 +715,10 @@ pub struct SandboxConfig {
     #[serde(default)]
     pub trusted_domains: Vec<String>,
     /// Backend: "auto" (default), "docker", "podman", "apple-container",
+    /// "seatbelt" (macOS), "bubblewrap" (Linux), "os" (native OS sandbox),
     /// "restricted-host", or "wasm".
     /// "auto" prefers Apple Container on macOS, then Podman, then Docker,
-    /// then restricted-host. "wasm" uses Wasmtime + WASI for real sandboxed
+    /// then the OS sandbox, then restricted-host. "wasm" uses Wasmtime + WASI for real sandboxed
     /// execution.
     pub backend: String,
     pub resource_limits: ResourceLimitsConfig,
@@ -816,6 +817,14 @@ pub struct SandboxConfig {
     /// Memory in MiB per Firecracker VM.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub firecracker_memory_mb: Option<u32>,
+    /// Extra host paths readable by commands in the OS sandbox (Seatbelt,
+    /// bubblewrap). Relative paths are resolved against the data directory.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub os_read_paths: Vec<String>,
+    /// Extra host paths readable and writable by commands in the OS sandbox.
+    /// Relative paths are resolved against the data directory.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub os_write_paths: Vec<String>,
 }
 
 /// Default packages installed in sandbox containers.
@@ -1036,6 +1045,8 @@ impl Default for SandboxConfig {
             firecracker_ssh_key: None,
             firecracker_vcpus: None,
             firecracker_memory_mb: None,
+            os_read_paths: Vec::new(),
+            os_write_paths: Vec::new(),
         }
     }
 }

@@ -137,6 +137,19 @@ impl Sandbox for FailoverSandbox {
         }
     }
 
+    fn runs_on_host(&self) -> bool {
+        if self
+            .use_fallback
+            .try_read()
+            .map(|guard| *guard)
+            .unwrap_or(true)
+        {
+            self.fallback.runs_on_host()
+        } else {
+            self.primary.runs_on_host()
+        }
+    }
+
     fn exposes_managed_files(&self) -> bool {
         if self
             .use_fallback
@@ -382,6 +395,18 @@ pub(crate) fn select_backend(config: SandboxConfig) -> Arc<dyn Sandbox> {
             tracing::info!("sandbox backend: restricted-host (env clearing, rlimits)");
             Arc::new(RestrictedHostSandbox::new(config))
         },
+        "os" | "seatbelt" | "bubblewrap" => {
+            let name = config.backend.clone();
+            let requested = (name != "os").then_some(name.as_str());
+            create_os_backend(config.clone(), requested).unwrap_or_else(|| {
+                tracing::warn!(
+                    requested = name,
+                    "OS sandbox requested but not available on this host; using restricted-host \
+                     (no filesystem isolation, every command needs approval)"
+                );
+                Arc::new(RestrictedHostSandbox::new(config))
+            })
+        },
         "wasm" | "wasmtime" => create_wasm_backend(config),
         #[cfg(feature = "vercel-sandbox")]
         "vercel" => create_vercel_backend(config),
@@ -390,6 +415,50 @@ pub(crate) fn select_backend(config: SandboxConfig) -> Arc<dyn Sandbox> {
         "firecracker" => create_firecracker_backend(config),
         _ => auto_detect_backend(config),
     }
+}
+
+/// Create the native OS sandbox (Seatbelt on macOS, bubblewrap on Linux) when
+/// it works on this host. `requested` pins a specific mechanism.
+#[cfg(feature = "os-sandbox")]
+pub(crate) fn create_os_backend(
+    config: SandboxConfig,
+    requested: Option<&str>,
+) -> Option<Arc<dyn Sandbox>> {
+    use super::os::{OsSandbox, OsSandboxKind};
+
+    let kind = OsSandboxKind::detect()?;
+    if requested.is_some_and(|name| name != kind.backend_name()) {
+        return None;
+    }
+    let sandbox = OsSandbox::new(config, kind);
+    tracing::info!(
+        backend = sandbox.backend_name(),
+        protection = %sandbox.protection_summary(),
+        "sandbox backend: OS sandbox"
+    );
+    Some(Arc::new(sandbox))
+}
+
+/// Backend name of the OS sandbox usable on this host (`"seatbelt"` or
+/// `"bubblewrap"`), probed once per process.
+pub fn os_sandbox_backend_name() -> Option<&'static str> {
+    #[cfg(feature = "os-sandbox")]
+    {
+        static DETECTED: std::sync::OnceLock<Option<&'static str>> = std::sync::OnceLock::new();
+        *DETECTED.get_or_init(|| super::os::OsSandboxKind::detect().map(|kind| kind.backend_name()))
+    }
+    #[cfg(not(feature = "os-sandbox"))]
+    {
+        None
+    }
+}
+
+#[cfg(not(feature = "os-sandbox"))]
+pub(crate) fn create_os_backend(
+    _config: SandboxConfig,
+    _requested: Option<&str>,
+) -> Option<Arc<dyn Sandbox>> {
+    None
 }
 
 /// Create a WASM sandbox backend, falling back to `RestrictedHostSandbox` if
@@ -566,6 +635,15 @@ fn maybe_wrap_with_failover(primary: Arc<dyn Sandbox>, config: &SandboxConfig) -
         ));
     }
 
+    if let Some(os_backend) = create_os_backend(config.clone(), None) {
+        tracing::info!(
+            primary = primary_name,
+            fallback = os_backend.backend_name(),
+            "sandbox backend failover enabled (OS sandbox)"
+        );
+        return Arc::new(FailoverSandbox::new(primary, os_backend));
+    }
+
     // Use restricted-host as fallback if no OCI runtime is available.
     tracing::info!(
         primary = primary_name,
@@ -646,9 +724,14 @@ pub fn auto_detect_backend(config: SandboxConfig) -> Arc<dyn Sandbox> {
         return create_daytona_backend(config);
     }
 
+    if let Some(os_backend) = create_os_backend(config.clone(), None) {
+        return os_backend;
+    }
+
     // Use restricted-host sandbox as last resort.
-    tracing::info!(
-        "sandbox backend: restricted-host (env clearing, rlimits; no container runtime available)"
+    tracing::warn!(
+        "sandbox backend: restricted-host (env clearing, rlimits only; no container runtime \
+         or OS sandbox available, so commands are not isolated and need approval)"
     );
     Arc::new(RestrictedHostSandbox::new(config))
 }

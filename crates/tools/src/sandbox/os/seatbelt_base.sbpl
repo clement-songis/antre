@@ -1,0 +1,127 @@
+(version 1)
+
+; Base Seatbelt profile for the Moltis OS sandbox.
+; Adapted from OpenAI Codex (codex-rs/sandboxing, Apache-2.0), itself inspired
+; by Chromium's macOS sandbox policies. Filesystem and network grants are
+; appended per session by seatbelt.rs.
+
+(deny default)
+
+; Children inherit this profile.
+(allow process-exec)
+(allow process-fork)
+(allow signal (target same-sandbox))
+(allow process-info* (target same-sandbox))
+
+(allow sysctl-read
+  (sysctl-name "hw.activecpu")
+  (sysctl-name "hw.byteorder")
+  (sysctl-name "hw.cacheconfig")
+  (sysctl-name "hw.cachelinesize_compat")
+  (sysctl-name "hw.cpufamily")
+  (sysctl-name "hw.cpufrequency")
+  (sysctl-name "hw.cpufrequency_compat")
+  (sysctl-name "hw.cputype")
+  (sysctl-name "hw.logicalcpu")
+  (sysctl-name "hw.logicalcpu_max")
+  (sysctl-name "hw.machine")
+  (sysctl-name "hw.memsize")
+  (sysctl-name "hw.model")
+  (sysctl-name "hw.ncpu")
+  (sysctl-name "hw.nperflevels")
+  (sysctl-name "hw.packages")
+  (sysctl-name "hw.pagesize")
+  (sysctl-name "hw.pagesize_compat")
+  (sysctl-name "hw.physicalcpu")
+  (sysctl-name "hw.physicalcpu_max")
+  (sysctl-name "hw.tbfrequency_compat")
+  (sysctl-name "hw.vectorunit")
+  (sysctl-name-prefix "hw.optional.")
+  (sysctl-name-prefix "hw.perflevel")
+  (sysctl-name "machdep.cpu.brand_string")
+  (sysctl-name "kern.argmax")
+  (sysctl-name "kern.hostname")
+  (sysctl-name "kern.maxfilesperproc")
+  (sysctl-name "kern.maxproc")
+  (sysctl-name "kern.osproductversion")
+  (sysctl-name "kern.osrelease")
+  (sysctl-name "kern.ostype")
+  (sysctl-name "kern.osvariant_status")
+  (sysctl-name "kern.osversion")
+  (sysctl-name "kern.secure_kernel")
+  (sysctl-name "kern.sysv.semmns")
+  (sysctl-name "kern.usrstack64")
+  (sysctl-name "kern.version")
+  (sysctl-name "sysctl.proc_cputype")
+  (sysctl-name "vm.loadavg")
+  (sysctl-name-prefix "kern.proc.pgrp.")
+  (sysctl-name-prefix "kern.proc.pid.")
+)
+
+; Java reads CPU info through a sysctl write buffer.
+(allow sysctl-write (sysctl-name "kern.grade_cputype"))
+
+(allow iokit-open (iokit-registry-entry-class "RootDomainUserClient"))
+
+; User/group lookups, logging, notifications and certificate trust.
+(allow mach-lookup
+  (global-name "com.apple.bsd.dirhelper")
+  (global-name "com.apple.logd")
+  (global-name "com.apple.system.DirectoryService.libinfo_v1")
+  (global-name "com.apple.system.logger")
+  (global-name "com.apple.system.notification_center")
+  (global-name "com.apple.system.opendirectoryd.libinfo")
+  (global-name "com.apple.system.opendirectoryd.membership")
+  (global-name "com.apple.trustd")
+  (global-name "com.apple.trustd.agent")
+  (global-name "com.apple.PowerManagement.control")
+)
+
+; Python multiprocessing semaphores and OpenMP runtime registration.
+(allow ipc-posix-sem)
+(allow ipc-posix-shm-read-data
+  ipc-posix-shm-write-create
+  ipc-posix-shm-write-unlink
+  (ipc-posix-name-regex #"^/__KMP_REGISTERED_LIB_[0-9]+$"))
+(allow ipc-posix-shm-read* (ipc-posix-name "apple.shm.notification_center"))
+
+; Guarded vnodes and the sandbox container check done by libsystem.
+(allow system-mac-syscall (mac-policy-name "vnguard"))
+(allow system-mac-syscall
+  (require-all
+    (mac-policy-name "Sandbox")
+    (mac-syscall-number 67)))
+(allow system-fsctl (fsctl-command FSIOC_CAS_BSDFLAGS))
+
+; Standard system symlinks and firmlink parents.
+(allow file-read-metadata
+  (literal "/etc")
+  (literal "/tmp")
+  (literal "/var")
+  (literal "/private")
+  (literal "/private/var")
+  (literal "/System/Volumes")
+  (literal "/System/Volumes/Data")
+  (path-ancestors "/System/Volumes/Data/private"))
+(allow file-read* (literal "/"))
+
+; Device files.
+(allow file-read* file-write-data
+  (literal "/dev/null")
+  (literal "/dev/zero"))
+(allow file-read*
+  (literal "/dev/random")
+  (literal "/dev/urandom")
+  (literal "/dev/autofs_nowait"))
+(allow file-read-data file-write-data (subpath "/dev/fd"))
+(allow file-read* file-write* file-ioctl
+  (literal "/dev/tty")
+  (literal "/dev/ptmx")
+  (literal "/dev/dtracehelper"))
+(allow file-read-metadata (literal "/dev") (regex #"^/dev/"))
+(allow pseudo-tty)
+(allow file-read* file-write* file-ioctl (regex #"^/dev/ttys[0-9]+$"))
+
+; Mutating files through read-only descriptors (F_MAKECOMPRESSED,
+; F_TRANSFEREXTENTS) bypasses file-write*.
+(deny system-fcntl (fcntl-command 80 110))

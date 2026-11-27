@@ -108,6 +108,8 @@ pub(super) fn build_schema_map() -> KnownKeys {
             ("wasm_fuel_limit", Leaf),
             ("wasm_epoch_interval_ms", Leaf),
             ("wasm_tool_limits", wasm_tool_limits()),
+            ("os_read_paths", Array(Box::new(Leaf))),
+            ("os_write_paths", Array(Box::new(Leaf))),
             ("tools_policy", tool_policy_entry()),
         ]))
     };

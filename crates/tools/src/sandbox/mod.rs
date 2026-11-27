@@ -12,6 +12,8 @@ pub(crate) mod file_system;
 #[cfg(target_os = "linux")]
 pub(crate) mod firecracker;
 pub(crate) mod host;
+#[cfg(feature = "os-sandbox")]
+pub mod os;
 pub(crate) mod paths;
 pub(crate) mod platform;
 pub mod router;
@@ -33,6 +35,8 @@ pub use firecracker::{
     FirecrackerSandbox, FirecrackerSandboxConfig, firecracker_bin_available,
     resolve_firecracker_bin,
 };
+#[cfg(feature = "os-sandbox")]
+pub use os::{OsSandbox, OsSandboxKind};
 #[cfg(target_os = "linux")]
 pub use platform::CgroupSandbox;
 #[cfg(feature = "vercel-sandbox")]
@@ -53,7 +57,10 @@ pub use {
     host::{HostProvisionResult, is_debian_host, provision_host_packages},
     paths::shared_home_dir_path,
     platform::{RestrictedHostSandbox, is_wasm_sandbox_available},
-    router::{FailoverSandbox, SandboxEvent, SandboxRouter, auto_detect_backend, create_sandbox},
+    router::{
+        FailoverSandbox, SandboxEvent, SandboxRouter, auto_detect_backend, create_sandbox,
+        os_sandbox_backend_name,
+    },
     types::{
         BuildImageResult, DEFAULT_SANDBOX_IMAGE, HomePersistence, ManagedFilesMount, NetworkPolicy,
         ResourceLimits, SANDBOX_FILES_DIR, Sandbox, SandboxBackendId, SandboxConfig, SandboxId,

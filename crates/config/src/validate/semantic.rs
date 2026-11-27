@@ -696,6 +696,9 @@ pub(super) fn check_semantic_warnings(config: &MoltisConfig, diagnostics: &mut V
         "docker",
         "podman",
         "apple-container",
+        "seatbelt",
+        "bubblewrap",
+        "os",
         "restricted-host",
         "wasm",
     ];

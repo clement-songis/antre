@@ -483,7 +483,11 @@ loopback_http = true                # Plain HTTP on loopback binds: http://local
 # workspace_mount = "ro"            # "ro" | "rw" | "none"
 # managed_files_mount = "ro"        # Managed Files: "ro" | "rw" | "none"
 # home_persistence = "shared"       # "off" | "session" | "shared"
-# backend = "auto"                  # "auto" | "docker" | "podman" | "apple-container" | "restricted-host" | "wasm"
+# backend = "auto"                  # "auto" | "docker" | "podman" | "apple-container" | "os" | "seatbelt" | "bubblewrap" | "restricted-host" | "wasm"
+                                    # "auto": containers if available, else the OS sandbox
+                                    # (Seatbelt on macOS, bubblewrap on Linux), else restricted-host
+# os_read_paths = []                # Extra host paths readable in the OS sandbox
+# os_write_paths = []               # Extra host paths writable in the OS sandbox
 # no_network = true                 # Disable network access in sandbox
 # image = "custom-image:tag"        # Custom Docker image (default: auto-built)
 # packages = [...]                  # Packages installed in sandbox containers

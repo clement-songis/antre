@@ -201,6 +201,7 @@ portable = [
   "ngrok",
   "nostr",
   "openclaw-import",
+  "os-sandbox",
   "otlp",
   "prometheus",
   "provider-github-copilot",
@@ -273,6 +274,7 @@ netbird = ["moltis-httpd/netbird", "moltis-web?/netbird"]
 ngrok = ["moltis-httpd/ngrok", "moltis-web?/ngrok"]
 nostr = ["moltis-httpd/nostr"]
 openclaw-import = ["dep:moltis-openclaw-import", "moltis-gateway/openclaw-import"]
+os-sandbox = ["moltis-tools/os-sandbox"]
 otlp = ["moltis-gateway/otlp"]
 prometheus = ["moltis-httpd/prometheus"]
 provider-github-copilot = [
