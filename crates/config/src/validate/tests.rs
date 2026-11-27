@@ -21,6 +21,8 @@ mod defaults;
 mod instrumentation;
 #[path = "tests/memory.rs"]
 mod memory;
+#[path = "tests/mods.rs"]
+mod mods;
 #[path = "tests/providers.rs"]
 mod providers;
 #[path = "tests/security.rs"]

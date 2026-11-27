@@ -532,3 +532,113 @@ fn pinning_can_be_turned_off() {
         HookAdmission::Allowed
     );
 }
+
+/// The real demo mod (`examples/mods/word-stats`), when built with
+/// `just mod-demo`. Skipped otherwise, like the bundled WASM tool tests.
+fn demo_component() -> Option<Vec<u8>> {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../target/wasm32-wasip2/release/moltis_mod_word_stats.wasm");
+    match fs::read(&path) {
+        Ok(bytes) => Some(bytes),
+        Err(_) => {
+            eprintln!("skipping demo mod test: build it with `just mod-demo`");
+            None
+        },
+    }
+}
+
+fn demo_package(env: &Env, bytes: &[u8], manifest: &str) -> PathBuf {
+    let dir = env.packages.join("word-stats");
+    fs::create_dir_all(dir.join("server")).unwrap();
+    fs::write(dir.join(MANIFEST_FILE), manifest).unwrap();
+    fs::write(dir.join("server/word_stats.wasm"), bytes).unwrap();
+    dir
+}
+
+const DEMO_MANIFEST: &str = include_str!("../../../examples/mods/word-stats/moltis-mod.toml");
+
+#[tokio::test(flavor = "multi_thread")]
+async fn demo_mod_runs_end_to_end() {
+    let Some(bytes) = demo_component() else {
+        return;
+    };
+    let env = Env::new();
+    let service = ModService::open(ModsSettings {
+        limits: HostLimits::default(),
+        ..env.settings()
+    })
+    .unwrap();
+    let path = demo_package(&env, &bytes, DEMO_MANIFEST);
+    let hash = pending_hash(&service.install_local(&path).unwrap());
+    let id = ModId::parse("moltis-examples.word-stats").unwrap();
+    service.grant(&id, &hash, InstallMode::Interactive).unwrap();
+    service.enable(&id).unwrap();
+
+    let mut tools = ToolRegistry::new();
+    service.sync_tools(&mut tools);
+    let tool = tools.get("word_stats").unwrap();
+    let first = tool
+        .execute(serde_json::json!({"text": "hello mod world\nbye"}))
+        .await
+        .unwrap();
+    assert_eq!(first["words"], 4);
+    assert_eq!(first["lines"], 2);
+    assert_eq!(first["total_calls"], 1);
+    let second = tool.execute(serde_json::json!({"text": ""})).await.unwrap();
+    assert_eq!(second["total_calls"], 2);
+    let err = tool.execute(serde_json::json!({})).await.unwrap_err();
+    assert!(
+        err.to_string().contains("missing string parameter"),
+        "{err}"
+    );
+
+    let mut registry = HookRegistry::new();
+    for handler in service.hook_handlers() {
+        registry.register(handler);
+    }
+    let action = registry
+        .dispatch(&HookPayload::SessionStart {
+            session_key: "s".into(),
+            channel: None,
+        })
+        .await
+        .unwrap();
+    assert!(matches!(action, HookAction::Continue));
+    let kv = fs::read_to_string(env.mods_dir.join("kv/moltis-examples.word-stats.json")).unwrap();
+    assert!(kv.contains("\"sessions_seen\":\"1\""), "{kv}");
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn demo_mod_without_storage_grant_degrades() {
+    let Some(bytes) = demo_component() else {
+        return;
+    };
+    let env = Env::new();
+    let service = ModService::open(ModsSettings {
+        limits: HostLimits::default(),
+        ..env.settings()
+    })
+    .unwrap();
+    let manifest = DEMO_MANIFEST.replace("[capabilities]\nstorage = \"4KiB\"\n", "");
+    assert_ne!(manifest, DEMO_MANIFEST);
+    let path = demo_package(&env, &bytes, &manifest);
+    let hash = pending_hash(&service.install_local(&path).unwrap());
+    let id = ModId::parse("moltis-examples.word-stats").unwrap();
+    service.grant(&id, &hash, InstallMode::Interactive).unwrap();
+    service.enable(&id).unwrap();
+    let mut tools = ToolRegistry::new();
+    service.sync_tools(&mut tools);
+    let out = tools
+        .get("word_stats")
+        .unwrap()
+        .execute(serde_json::json!({"text": "a b"}))
+        .await
+        .unwrap();
+    assert_eq!(out["words"], 2);
+    assert!(out.get("total_calls").is_none());
+    assert!(
+        !env.mods_dir
+            .join("kv/moltis-examples.word-stats.json")
+            .exists()
+    );
+}

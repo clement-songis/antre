@@ -543,6 +543,8 @@ mod heartbeat_patch;
 mod instrumentation;
 pub(crate) mod mcp_features;
 mod modes;
+#[cfg(feature = "mods")]
+mod mods;
 mod sessions;
 mod system;
 #[cfg(feature = "voice")]
@@ -555,6 +557,8 @@ pub(super) fn register(reg: &mut MethodRegistry) {
     canvas::register(reg);
     modes::register(reg);
     checkpoints::register(reg);
+    #[cfg(feature = "mods")]
+    mods::register(reg);
     sessions::register(reg);
     channels::register(reg);
     #[cfg(feature = "connectors")]
@@ -569,7 +573,7 @@ pub(super) fn register(reg: &mut MethodRegistry) {
     voice_personas::register(reg);
     voicecall::register(reg);
 }
-async fn reload_hooks(state: &Arc<crate::state::GatewayState>) {
+pub(crate) async fn reload_hooks(state: &Arc<crate::state::GatewayState>) {
     let disabled = state.inner.read().await.disabled_hooks.clone();
     let session_store = state.services.session_store.as_ref();
     let (new_registry, new_info) = crate::server::discover_and_build_hooks_with(

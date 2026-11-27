@@ -32,6 +32,7 @@
   - [Moltis vs OpenClaw](memory-comparison.md)
 - [Managed Files](managed-files.md)
 - [Hooks](hooks.md)
+- [Mods](mods.md)
 - [Local LLMs](local-llm.md)
 - [Sandbox](sandbox.md)
   - [Windows Sandboxing](sandbox-windows.md)

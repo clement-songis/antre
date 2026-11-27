@@ -26,6 +26,44 @@ pub(crate) fn seed_example_hook() {
     }
 }
 
+/// Approve the hooks Moltis seeds itself (example, dcg-guard) for content
+/// pinning, but only while their files are exactly what Moltis writes, so a
+/// seeder refresh after an upgrade does not hold them back and a user edit
+/// is not approved behind the user's back.
+#[cfg(feature = "mods")]
+pub(crate) async fn approve_seeded_hooks() {
+    let hooks_dir = moltis_config::data_dir().join("hooks");
+    let seeded: [(&str, &[(&str, &str)]); 2] = [
+        ("example", &[("HOOK.md", EXAMPLE_HOOK_MD)]),
+        ("dcg-guard", &[
+            ("HOOK.md", DCG_GUARD_HOOK_MD),
+            ("handler.sh", DCG_GUARD_HANDLER_SH),
+        ]),
+    ];
+    for (name, files) in seeded {
+        let dir = hooks_dir.join(name);
+        if !seeded_files_match(&dir, files) {
+            continue;
+        }
+        if let Err(error) = crate::mods::approve_shell_hook(name, dir).await {
+            tracing::debug!(hook = name, %error, "could not approve seeded hook");
+        }
+    }
+}
+
+#[cfg(feature = "mods")]
+fn seeded_files_match(dir: &std::path::Path, files: &[(&str, &str)]) -> bool {
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return false;
+    };
+    if entries.count() != files.len() {
+        return false;
+    }
+    files.iter().all(|(file, expected)| {
+        std::fs::read_to_string(dir.join(file)).is_ok_and(|content| content == *expected)
+    })
+}
+
 /// Marker string that must be present in an up-to-date seeded `handler.sh`.
 pub(crate) const DCG_GUARD_HANDLER_FINGERPRINT: &str = "export PATH=";
 
@@ -263,12 +301,14 @@ pub(crate) async fn discover_and_build_hooks_with(
 
     let mut registry = moltis_common::hooks::HookRegistry::new();
     let mut info_list = Vec::with_capacity(discovered.len());
+    let approvals = shell_hook_approvals(&discovered).await;
 
     for (parsed, source) in &discovered {
         let meta = &parsed.metadata;
         let elig = check_hook_eligibility(meta);
         let is_disabled = disabled.contains(&meta.name);
-        let is_enabled = elig.eligible && !is_disabled;
+        let needs_approval = approvals.get(&meta.name).cloned();
+        let is_enabled = elig.eligible && !is_disabled && needs_approval.is_none();
 
         if !elig.eligible {
             info!(
@@ -310,6 +350,7 @@ pub(crate) async fn discover_and_build_hooks_with(
             call_count: 0,
             failure_count: 0,
             avg_latency_ms: 0,
+            needs_approval,
         });
 
         if is_enabled && let Some(ref command) = meta.command {
@@ -320,7 +361,8 @@ pub(crate) async fn discover_and_build_hooks_with(
                 std::time::Duration::from_secs(meta.timeout),
                 meta.env.clone(),
                 Some(parsed.source_path.clone()),
-            );
+            )
+            .with_protocol(meta.protocol);
             registry.register(Arc::new(handler));
         }
     }
@@ -388,6 +430,7 @@ pub(crate) async fn discover_and_build_hooks_with(
                 call_count: 0,
                 failure_count: 0,
                 avg_latency_ms: 0,
+                needs_approval: None,
             });
 
             if is_enabled {
@@ -407,23 +450,28 @@ pub(crate) async fn discover_and_build_hooks_with(
     // ── Built-in hooks (compiled Rust, always active) ──────────────────
     {
         let data = moltis_config::data_dir();
+        let mut builtin: Vec<(&str, Arc<dyn moltis_common::hooks::HookHandler>)> = Vec::new();
 
         let log_path =
             CommandLoggerHook::default_path().unwrap_or_else(|| data.join("logs/commands.log"));
-        let logger = CommandLoggerHook::new(log_path);
-        registry.register(Arc::new(logger));
+        builtin.push((
+            "hook.command-logger",
+            Arc::new(CommandLoggerHook::new(log_path)),
+        ));
 
         if let Some(store) = session_store
             && !matches!(session_export_mode, moltis_config::SessionExportMode::Off)
         {
             let memory_hook = SessionMemoryHook::new(data.clone(), Arc::clone(store));
-            registry.register(Arc::new(memory_hook));
+            builtin.push(("hook.session-memory", Arc::new(memory_hook)));
         }
 
         // Auto-checkpoint: snapshot files before Write/Edit/MultiEdit tool calls.
         let checkpoint_manager = Arc::new(moltis_tools::checkpoints::CheckpointManager::new(data));
         let auto_cp = moltis_tools::auto_checkpoint::AutoCheckpointHook::new(checkpoint_manager);
-        registry.register(Arc::new(auto_cp));
+        builtin.push(("hook.auto-checkpoint", Arc::new(auto_cp)));
+
+        register_builtin_and_mod_hooks(&mut registry, &mut info_list, builtin, disabled);
         for handler in extra_builtin {
             registry.register(handler);
         }
@@ -458,6 +506,7 @@ pub(crate) async fn discover_and_build_hooks_with(
             call_count: 0,
             failure_count: 0,
             avg_latency_ms: 0,
+            needs_approval: None,
         });
     }
 
@@ -473,4 +522,116 @@ pub(crate) async fn discover_and_build_hooks_with(
     }
 
     (Some(Arc::new(registry)), info_list)
+}
+
+type Discovered = [(
+    moltis_plugins::hook_metadata::ParsedHook,
+    moltis_plugins::hook_discovery::HookSource,
+)];
+
+/// Filesystem shell hooks held back by content pinning (`name → reason`).
+#[cfg(feature = "mods")]
+async fn shell_hook_approvals(
+    discovered: &Discovered,
+) -> std::collections::HashMap<String, String> {
+    let hooks = discovered
+        .iter()
+        .map(|(parsed, _)| (parsed.metadata.name.clone(), parsed.source_path.clone()))
+        .collect();
+    crate::mods::shell_hook_approvals(hooks).await
+}
+
+#[cfg(not(feature = "mods"))]
+async fn shell_hook_approvals(
+    _discovered: &Discovered,
+) -> std::collections::HashMap<String, String> {
+    std::collections::HashMap::new()
+}
+
+/// Register built-in hooks through the mods contribution registry (as
+/// `core/*`, next to mod hooks) when the runtime is on, directly otherwise.
+fn register_builtin_and_mod_hooks(
+    registry: &mut moltis_common::hooks::HookRegistry,
+    info_list: &mut Vec<crate::state::DiscoveredHookInfo>,
+    builtin: Vec<(&str, Arc<dyn moltis_common::hooks::HookHandler>)>,
+    disabled: &HashSet<String>,
+) {
+    #[cfg(feature = "mods")]
+    if let Some(service) = crate::mods::service() {
+        match service.replace_core_hooks(builtin.clone()) {
+            Ok(()) => {
+                // Built-in hooks stay always active; mod hooks follow the
+                // Hooks page enable/disable switch like shell hooks.
+                for handler in service.hook_handlers() {
+                    if !disabled.contains(handler.name()) {
+                        registry.register(handler);
+                    }
+                }
+                info_list.extend(mod_hook_infos(&service, disabled));
+                return;
+            },
+            Err(error) => warn!(%error, "could not register built-in hooks through mods"),
+        }
+    }
+    let _ = (&info_list, disabled);
+    for (_, handler) in builtin {
+        registry.register(handler);
+    }
+}
+
+#[cfg(feature = "mods")]
+fn mod_hook_infos(
+    service: &moltis_mods::service::ModService,
+    disabled: &HashSet<String>,
+) -> Vec<crate::state::DiscoveredHookInfo> {
+    service
+        .registry()
+        .hooks()
+        .into_iter()
+        .filter(|(id, _)| matches!(id.owner(), moltis_mods::Owner::Mod(_)))
+        .map(|(id, handler)| crate::state::DiscoveredHookInfo {
+            name: handler.name().to_string(),
+            description: format!("WASM hook contributed by mod {}", id.owner()),
+            emoji: None,
+            events: handler.events().iter().map(ToString::to_string).collect(),
+            command: None,
+            timeout: 0,
+            priority: handler.priority(),
+            source: "mod".to_string(),
+            source_path: id.to_string(),
+            eligible: true,
+            missing_os: false,
+            missing_bins: vec![],
+            missing_env: vec![],
+            enabled: !disabled.contains(handler.name()),
+            body: String::new(),
+            body_html: "<p><em>Hook provided by an installed mod.</em></p>".to_string(),
+            call_count: 0,
+            failure_count: 0,
+            avg_latency_ms: 0,
+            needs_approval: None,
+        })
+        .collect()
+}
+
+#[allow(clippy::unwrap_used)]
+#[cfg(all(test, feature = "mods"))]
+mod seeded_tests {
+    use super::seeded_files_match;
+
+    #[test]
+    fn seeded_files_must_match_exactly() {
+        let dir = tempfile::tempdir().unwrap();
+        let files: &[(&str, &str)] = &[("HOOK.md", "seed"), ("handler.sh", "run")];
+        assert!(!seeded_files_match(dir.path(), files));
+        std::fs::write(dir.path().join("HOOK.md"), "seed").unwrap();
+        std::fs::write(dir.path().join("handler.sh"), "run").unwrap();
+        assert!(seeded_files_match(dir.path(), files));
+        std::fs::write(dir.path().join("handler.sh"), "run; curl evil").unwrap();
+        assert!(!seeded_files_match(dir.path(), files));
+        std::fs::write(dir.path().join("handler.sh"), "run").unwrap();
+        std::fs::write(dir.path().join("extra.sh"), "x").unwrap();
+        assert!(!seeded_files_match(dir.path(), files));
+        assert!(!seeded_files_match(&dir.path().join("missing"), files));
+    }
 }

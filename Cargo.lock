@@ -7908,6 +7908,7 @@ dependencies = [
  "moltis-memory-zvec",
  "moltis-metrics",
  "moltis-model-catalog",
+ "moltis-mods",
  "moltis-msteams",
  "moltis-netbird",
  "moltis-network-filter",
@@ -8257,6 +8258,15 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "moltis-mod-word-stats"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "wit-bindgen 0.41.0",
+ "wit-bindgen-rt",
 ]
 
 [[package]]

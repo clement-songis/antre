@@ -1394,6 +1394,8 @@ pub(super) async fn complete_startup(
             }
         }
         crate::mcp_service::sync_mcp_tools(live_mcp.manager(), &shared_tool_registry).await;
+        #[cfg(feature = "mods")]
+        crate::mods::attach_tool_registry(Arc::clone(&shared_tool_registry)).await;
 
         let schemas = shared_tool_registry.read().await.list_schemas();
         let tool_names: Vec<&str> = schemas.iter().filter_map(|s| s["name"].as_str()).collect();

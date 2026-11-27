@@ -1,0 +1,30 @@
+description = "Counts words, lines and characters, and remembers how many times it ran."
+id          = "moltis-examples.word-stats"
+license     = "MIT"
+name        = "Word stats"
+schema      = 1
+sdk         = "0.1"
+version     = "0.1.0"
+
+[server]
+component = "server/word_stats.wasm"
+
+[capabilities]
+storage = "4KiB"
+
+[[contributes.tools]]
+description = "Count words, lines and characters in a text."
+name        = "word_stats"
+
+[contributes.tools.parameters]
+required = ["text"]
+type     = "object"
+
+[contributes.tools.parameters.properties.text]
+description = "The text to analyse"
+type        = "string"
+
+[[contributes.hooks]]
+events = ["SessionStart"]
+id     = "count-sessions"
+mode   = "observe"

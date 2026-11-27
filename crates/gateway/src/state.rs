@@ -248,6 +248,10 @@ pub struct DiscoveredHookInfo {
     pub call_count: u64,
     pub failure_count: u64,
     pub avg_latency_ms: u64,
+    /// Set when a filesystem hook is held back until approved: `new`,
+    /// `changed` or `unreadable`. Re-enabling the hook approves it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub needs_approval: Option<String>,
 }
 
 // ── Client registry (separate lock for WS client operations) ────────────────

@@ -625,6 +625,18 @@ pub(super) fn build_schema_map() -> KnownKeys {
             )])),
         ),
         (
+            "mods",
+            Struct(HashMap::from([
+                ("enabled", Leaf),
+                ("fuel", Leaf),
+                ("memory_mb", Leaf),
+                ("timeout_ms", Leaf),
+                ("epoch_interval_ms", Leaf),
+                ("max_output_kb", Leaf),
+                ("pin_shell_hooks", Leaf),
+            ])),
+        ),
+        (
             "memory",
             Struct(HashMap::from([
                 ("style", Leaf),

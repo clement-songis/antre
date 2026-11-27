@@ -361,6 +361,50 @@ fi
 exit 0
 ```
 
+### Claude Code protocol
+
+Set `protocol = "claude"` in the `HOOK.md` frontmatter to reuse hooks written
+for Claude Code. The hook then receives Claude field names on stdin
+(`hook_event_name`, `session_id`, `tool_name`, `tool_input`, `tool_response`)
+and answers the Claude way:
+
+| Exit Code | Stdout | Result |
+|-----------|--------|--------|
+| `0` | (empty or unknown JSON) | Continue normally |
+| `0` | `{"decision":"block","reason":"…"}` | Block |
+| `0` | `{"continue":false,"stopReason":"…"}` | Block |
+| `0` | `{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":"…"}}` | Block |
+| `0` | `{"hookSpecificOutput":{"updatedInput":{…}}}` | Replace payload data (new tool arguments) |
+| `2` | — | Block (stderr = reason) |
+| other | — | Error (logged, counts toward the circuit breaker) |
+
+Claude Code event names are accepted everywhere an event is named, as aliases:
+
+| Claude name | Moltis event |
+|---|---|
+| `UserPromptSubmit` | `BeforeAgentStart` |
+| `Stop` | `AgentEnd` |
+| `PreToolUse` / `PostToolUse` | `BeforeToolCall` / `AfterToolCall` |
+| `PreCompact` / `PostCompact` | `BeforeCompaction` / `AfterCompaction` |
+| `PreModelCall` / `PostModelCall` | `BeforeLLMCall` / `AfterLLMCall` |
+| `ServerStart` / `ServerStop` | `GatewayStart` / `GatewayStop` |
+| `SlashCommand` | `Command` |
+
+## Content pinning
+
+Shell hooks run with your permissions. When the mod runtime is enabled
+(`[mods] pin_shell_hooks = true`, the default), Moltis records a hash of each
+hook folder:
+
+- the first time it starts with mods, every existing hook is pinned as
+  *migrated* and keeps running;
+- a hook whose folder content changes later, or a hook folder that appears
+  later, is listed with `needs_approval` (`changed`, `new`) and does not run;
+- enabling the hook from the Hooks page (`hooks.enable`) or saving it from
+  the editor (`hooks.save`) approves its current content.
+
+See [Mods](mods.md) for WASM hooks, which run sandboxed and need no pinning.
+
 ## Hook Discovery
 
 Hooks are discovered from `HOOK.md` files and `moltis.toml` config entries:

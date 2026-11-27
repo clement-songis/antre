@@ -19,6 +19,7 @@ mod chat;
 mod code_index;
 #[path = "schema/hooks.rs"]
 mod hooks;
+mod mods;
 
 mod instrumentation;
 #[path = "schema/memory.rs"]
@@ -40,7 +41,8 @@ mod voice;
 
 pub use {
     agents::*, canvas::*, catalog::*, chat::*, code_index::*, hooks::*, instrumentation::*,
-    memory::*, modes::*, phone::*, providers::*, runtime::*, system::*, tools::*, voice::*,
+    memory::*, modes::*, mods::*, phone::*, providers::*, runtime::*, system::*, tools::*,
+    voice::*,
 };
 
 // ── Reasoning effort ──────────────────────────────────────────────────────
@@ -322,6 +324,8 @@ pub struct MoltisConfig {
     pub identity: AgentIdentity,
     pub user: UserProfile,
     pub hooks: Option<HooksConfig>,
+    /// Mod runtime limits and shell-hook pinning.
+    pub mods: ModsConfig,
     pub memory: MemoryEmbeddingConfig,
     pub tailscale: TailscaleConfig,
     pub netbird: NetbirdConfig,

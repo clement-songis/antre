@@ -155,6 +155,7 @@ bundled-skills = ["moltis-gateway/bundled-skills", "moltis-web?/bundled-skills"]
 default = ["full"]
 full = ["portable", "zvec"]
 llm-compaction = ["moltis-gateway/llm-compaction"]
+mods = ["moltis-gateway/mods", "moltis-web?/mods"]
 portable = [
   "acp",
   "agent",
@@ -198,6 +199,7 @@ portable = [
   "matrix",
   "mdns",
   "metrics",
+  "mods",
   "msteams",
   "netbird",
   "ngrok",

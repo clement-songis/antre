@@ -131,6 +131,32 @@ pub(super) fn check_provider_names(
 pub(super) fn check_semantic_warnings(config: &MoltisConfig, diagnostics: &mut Vec<Diagnostic>) {
     let is_localhost = crate::is_loopback_bind(&config.server.bind);
 
+    let mods = &config.mods;
+    for (field, is_zero) in [
+        ("fuel", mods.fuel == 0),
+        ("memory_mb", mods.memory_mb == 0),
+        ("timeout_ms", mods.timeout_ms == 0),
+        ("epoch_interval_ms", mods.epoch_interval_ms == 0),
+        ("max_output_kb", mods.max_output_kb == 0),
+    ] {
+        if is_zero {
+            diagnostics.push(Diagnostic {
+                severity: Severity::Warning,
+                category: "mods",
+                path: format!("mods.{field}"),
+                message: "zero makes every mod call fail".into(),
+            });
+        }
+    }
+    if mods.epoch_interval_ms > mods.timeout_ms {
+        diagnostics.push(Diagnostic {
+            severity: Severity::Warning,
+            category: "mods",
+            path: "mods.epoch_interval_ms".into(),
+            message: "epoch interval is longer than the call timeout".into(),
+        });
+    }
+
     // auth.disabled + non-localhost
     if config.auth.disabled && !is_localhost {
         diagnostics.push(Diagnostic {

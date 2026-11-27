@@ -47,6 +47,8 @@ pub mod mcp_service;
 pub mod mdns;
 pub mod message_log_store;
 pub mod methods;
+#[cfg(feature = "mods")]
+pub mod mods;
 #[cfg(feature = "netbird")]
 pub mod netbird;
 pub mod network_audit;

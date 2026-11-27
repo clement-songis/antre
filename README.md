@@ -100,6 +100,7 @@ Current Rust workspace: ~270K LoC across 59 crates. The table below groups the m
 | Setup and import | `moltis-provider-setup`, `moltis-openclaw-import`, `moltis-onboarding` | 11.7K |
 | Native and node hosts | `moltis-swift-bridge`, `moltis-node-host`, `moltis-courier` | 5.7K |
 | WASM tools | `moltis-wasm-precompile`, `moltis-wasm-calc`, `moltis-wasm-web-fetch`, `moltis-wasm-web-search` | 1.4K |
+| Mods | `moltis-mods` | 5.7K |
 | Supporting crates | `moltis-media`, `moltis-metrics`, `moltis-tailscale`, `moltis-routing`, `moltis-canvas`, `moltis-schema-export`, `benchmarks` | 2.1K |
 
 Use `--no-default-features --features lightweight` for constrained devices (Raspberry Pi, etc.).
@@ -129,7 +130,8 @@ Verify releases with `gh attestation verify <artifact> -R moltis-org/moltis` or 
 - **Managed Files** - Authenticated nested file management in Settings, with an agent-advertised host path and independent read-only-by-default mounts for Docker, Podman, and Apple Container sandboxes
 - **Design Canvas** — Agent-built HTML designs with append-only versions and revert, starter design systems as skills, a sandboxed render origin (CSP sandbox, no network, vendored scripts only), single-file HTML/ZIP/PNG/PDF export and private-by-default publishing
 - **Safer Agent Editing** — Automatic checkpoints before built-in skill and memory mutations, restore tooling, session branching
-- **Extensibility** — MCP servers (stdio + HTTP/SSE) with resources, prompts, roots, sampling with spend limits, elicitation, per-server trust tiers and deferred tool schemas, skill system, 15 lifecycle hook events with circuit breaker, destructive command guard
+- **Extensibility** — MCP servers (stdio + HTTP/SSE) with resources, prompts, roots, sampling with spend limits, elicitation, per-server trust tiers and deferred tool schemas, skill system, 15 lifecycle hook events with circuit breaker (Claude Code hook format accepted), destructive command guard
+- **Mods** — sandboxed WASM mods that add tools and hooks, with capability manifests, a consent hash re-asked when an update widens access, and content-pinned shell hooks
 - **Agent Client Protocol** — drives external ACP agents (`codex-acp`, `claude-agent-acp`, Cursor), and serves Moltis to ACP clients over stdio via `moltis acp`
 - **First Run** — Opens onboarding in your browser with the setup code pre-filled, serves certificate-free `http://localhost`, offers once to trust a name-constrained local CA for LAN HTTPS, and pins the web UI URL below the terminal logs (with an `ssh -L` hint over SSH)
 - **Security** — Encryption-at-rest vault (XChaCha20-Poly1305 + Argon2id), password + passkey + API key auth, sandbox isolation, SSRF/CSWSH protection

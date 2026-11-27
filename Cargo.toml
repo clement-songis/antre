@@ -159,6 +159,7 @@ members = [
   "crates/web",
   "crates/webhooks",
   "crates/whatsapp",
+  "examples/mods/word-stats",
 ]
 resolver = "2"
 
@@ -399,9 +400,9 @@ shell-words           = "1"
 tar                   = "0.4"
 tempfile              = "3"
 walkdir               = "2"
-wat                   = "1"
 wasmtime              = { features = ["component-model"], version = "36" }
 wasmtime-wasi         = "36"
+wat                   = "1"
 which                 = "8"
 wiremock              = "0.6"
 wit-bindgen           = "0.41"

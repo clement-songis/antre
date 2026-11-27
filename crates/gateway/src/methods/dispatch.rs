@@ -143,6 +143,10 @@ const READ_METHODS: &[&str] = &[
     "memory.search",
     "memory.qmd.status",
     "hooks.list",
+    #[cfg(feature = "mods")]
+    "mods.list",
+    #[cfg(feature = "mods")]
+    "mods.get",
     "network.audit.list",
     "network.audit.tail",
     "network.audit.stats",

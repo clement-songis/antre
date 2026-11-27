@@ -52,6 +52,7 @@ moltis-memory             = { workspace = true }
 moltis-memory-zvec        = { optional = true, workspace = true }
 moltis-metrics            = { optional = true, workspace = true }
 moltis-model-catalog      = { workspace = true }
+moltis-mods               = { optional = true, workspace = true }
 moltis-msteams            = { optional = true, workspace = true }
 moltis-netbird            = { optional = true, workspace = true }
 moltis-network-filter     = { features = ["proxy", "service"], optional = true, workspace = true }
@@ -218,6 +219,7 @@ metrics = [
   "moltis-observability/metrics",
   "moltis-signal?/metrics",
 ]
+mods = ["dep:moltis-mods", "wasm"]
 msteams = ["dep:moltis-msteams"]
 netbird = ["dep:moltis-netbird"]
 nostr = ["dep:moltis-nostr"]

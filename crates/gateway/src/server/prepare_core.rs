@@ -1321,6 +1321,10 @@ pub async fn prepare_gateway_core_with_profile(
     super::hooks::seed_example_skill();
     super::hooks::seed_example_hook();
     super::hooks::seed_dcg_guard_hook().await;
+    #[cfg(feature = "mods")]
+    if crate::mods::init(&config.mods).await.is_some() {
+        super::hooks::approve_seeded_hooks().await;
+    }
     let persisted_disabled = crate::methods::load_disabled_hooks();
     let (hook_registry, discovered_hooks_info) = crate::server::discover_and_build_hooks_with(
         &persisted_disabled,

@@ -893,6 +893,23 @@ loopback_http = true                # Plain HTTP on loopback binds: http://local
 # webhook_url = "https://your-domain.com"   # Public URL for Plivo callbacks
 
 # ══════════════════════════════════════════════════════════════════════════════
+# MODS
+# ══════════════════════════════════════════════════════════════════════════════
+# Mods are WASM components with a moltis-mod.toml manifest. Installs never
+# grant capabilities: a person approves each capability set (consent hash),
+# and an update that asks for more waits for approval. Installed mods live in
+# <data_dir>/mods/. See docs/src/mods.md.
+
+[mods]
+# enabled = true                    # Load installed mods and expose mods.* / /api/mods
+# fuel = 50000000                   # Fuel per call (roughly WASM instructions)
+# memory_mb = 32                    # Memory limit per call
+# timeout_ms = 10000                # Wall-clock limit per call
+# epoch_interval_ms = 50            # Tick used to enforce timeout_ms
+# max_output_kb = 1024              # Largest string a mod may return per call
+# pin_shell_hooks = true            # Shell hooks that change or appear later need approval
+
+# ══════════════════════════════════════════════════════════════════════════════
 # EXTERNAL AGENTS
 # ══════════════════════════════════════════════════════════════════════════════
 # Connect Moltis chat sessions to external CLI coding agents.

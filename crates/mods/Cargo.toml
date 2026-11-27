@@ -32,8 +32,8 @@ wasmtime-wasi  = { optional = true, workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }
-wat      = { workspace = true }
 tokio    = { features = ["macros", "rt-multi-thread"], workspace = true }
+wat      = { workspace = true }
 
 [lints]
 workspace = true

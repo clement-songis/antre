@@ -1243,6 +1243,24 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                     .and_then(|v| v.as_str())
                     .ok_or_else(|| ErrorShape::new(error_codes::INVALID_REQUEST, "missing name"))?;
 
+                #[cfg(feature = "mods")]
+                {
+                    let held_back = ctx
+                        .state
+                        .inner
+                        .read()
+                        .await
+                        .discovered_hooks
+                        .iter()
+                        .find(|hook| hook.name == name && hook.needs_approval.is_some())
+                        .map(|hook| PathBuf::from(&hook.source_path));
+                    if let Some(dir) = held_back {
+                        crate::mods::approve_shell_hook(name, dir)
+                            .await
+                            .map_err(|error| ErrorShape::new(error.code(), error.message))?;
+                    }
+                }
+
                 ctx.state.inner.write().await.disabled_hooks.remove(name);
 
                 // Persist disabled hooks list.
@@ -1325,6 +1343,16 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                         format!("failed to write HOOK.md: {e}"),
                     )
                 })?;
+
+                // The operator just edited this hook, so its new content is
+                // approved for content pinning.
+                #[cfg(feature = "mods")]
+                if PathBuf::from(&source_path).is_dir()
+                    && let Err(error) =
+                        crate::mods::approve_shell_hook(name, PathBuf::from(&source_path)).await
+                {
+                    warn!(hook = %name, %error, "could not approve edited hook");
+                }
 
                 // Reload hooks to pick up the changes.
                 reload_hooks(&ctx.state).await;

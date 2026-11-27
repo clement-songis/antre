@@ -11,3 +11,5 @@ mod voice;
 
 pub(crate) use dispatch::load_disabled_hooks;
 pub use dispatch::{HandlerFn, MethodContext, MethodRegistry, MethodResult, authorize_method};
+#[cfg(feature = "mods")]
+pub(crate) use services::reload_hooks;

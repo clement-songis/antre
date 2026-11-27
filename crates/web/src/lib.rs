@@ -11,6 +11,8 @@ mod container_management;
 pub mod error;
 pub mod gon;
 mod image_input;
+#[cfg(feature = "mods")]
+mod mods_api;
 pub mod oauth;
 mod sandbox_backends;
 pub mod share;
@@ -228,6 +230,9 @@ fn build_api_routes() -> Router<AppState> {
         .route("/api/logs/download", get(api::api_logs_download_handler))
         .nest("/api/files", moltis_httpd::files_routes::files_router())
         .nest("/api/data", moltis_httpd::data_routes::data_router());
+
+    #[cfg(feature = "mods")]
+    let protected = protected.merge(mods_api::routes());
 
     // Add metrics API routes (protected).
     #[cfg(feature = "metrics")]

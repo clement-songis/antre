@@ -91,6 +91,15 @@ wasm-tools:
 build-wasm-artifacts: wasm-tools
     @echo "Built target/wasm32-wasip2/release/{moltis_wasm_calc,moltis_wasm_web_fetch,moltis_wasm_web_search}.{wasm,cwasm}"
 
+# Build the demo mod and assemble an installable package in target/mods/word-stats.
+mod-demo:
+    cargo build --target wasm32-wasip2 -p moltis-mod-word-stats --release
+    rm -rf target/mods/word-stats
+    mkdir -p target/mods/word-stats/server
+    cp examples/mods/word-stats/moltis-mod.toml target/mods/word-stats/
+    cp target/wasm32-wasip2/release/moltis_mod_word_stats.wasm target/mods/word-stats/server/word_stats.wasm
+    @echo "Install with: mods.install {\"path\": \"$(pwd)/target/mods/word-stats\"}"
+
 # Build release after ensuring embedded WASM artifacts are present.
 build-release-with-wasm: build-wasm-artifacts
     ./scripts/cargo-build-moltis.sh --release
