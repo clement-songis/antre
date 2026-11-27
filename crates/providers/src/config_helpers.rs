@@ -153,14 +153,71 @@ pub(crate) fn configured_models_for_provider(
 ) -> Vec<String> {
     let configured = config
         .get(provider)
-        .map(|entry| entry.models.clone())
+        .map(static_model_specs)
         .unwrap_or_default();
 
     normalize_unique_models(
         configured
             .into_iter()
-            .map(|model| configured_model_for_provider(model.trim()).to_string()),
+            .map(|model| configured_model_for_provider(model.id.trim()).to_string()),
     )
+}
+
+/// A provider's statically declared models: `models` entries, then the rows
+/// of `models_file` (entries win field by field). An unreadable file is
+/// logged and ignored so one bad path does not take the provider down.
+pub(crate) fn static_model_specs(
+    entry: &moltis_config::schema::ProviderEntry,
+) -> Vec<moltis_model_catalog::ModelSpec> {
+    let file_rows = entry
+        .models_file
+        .as_deref()
+        .map(|path| {
+            moltis_model_catalog::static_models::load_models_file(path).unwrap_or_else(|error| {
+                tracing::warn!(path = %path.display(), %error, "ignoring unreadable models_file");
+                Vec::new()
+            })
+        })
+        .unwrap_or_default();
+    moltis_model_catalog::static_models::merge_static_entries(&entry.models, file_rows)
+}
+
+/// A provider's configured extra headers. Invalid names or values are
+/// logged and skipped rather than failing every request.
+pub(crate) fn provider_headers(
+    entry: &moltis_config::schema::ProviderEntry,
+) -> reqwest::header::HeaderMap {
+    let mut headers = reqwest::header::HeaderMap::new();
+    for (name, value) in &entry.headers {
+        match (
+            reqwest::header::HeaderName::from_bytes(name.as_bytes()),
+            reqwest::header::HeaderValue::from_str(value),
+        ) {
+            (Ok(name), Ok(value)) => {
+                headers.insert(name, value);
+            },
+            _ => tracing::warn!(header = %name, "ignoring invalid provider header"),
+        }
+    }
+    headers
+}
+
+/// Endpoint of an OpenAI-compatible `custom-*` provider. The key is
+/// optional: a local server without auth gets an empty key, and no
+/// `Authorization` header is sent.
+pub(crate) fn custom_openai_endpoint(
+    entry: &moltis_config::schema::ProviderEntry,
+) -> Option<(secrecy::Secret<String>, String)> {
+    let base_url = entry
+        .base_url
+        .as_ref()
+        .filter(|url| !url.trim().is_empty())?
+        .clone();
+    let key = entry
+        .api_key
+        .clone()
+        .unwrap_or_else(|| secrecy::Secret::new(String::new()));
+    Some((key, base_url))
 }
 
 pub(crate) fn normalize_unique_models(models: impl IntoIterator<Item = String>) -> Vec<String> {
@@ -177,7 +234,62 @@ pub(crate) fn normalize_unique_models(models: impl IntoIterator<Item = String>) 
 }
 
 pub(crate) fn should_fetch_models(config: &ProvidersConfig, provider: &str) -> bool {
-    config.get(provider).is_none_or(|entry| entry.fetch_models)
+    config.get(provider).is_none_or(|entry| {
+        entry.fetch_models && !matches!(entry.catalog, moltis_model_catalog::CatalogMode::Static)
+    })
+}
+
+/// The models to register for a provider under its `catalog` mode.
+pub(crate) fn models_for_catalog_mode(
+    config: &ProvidersConfig,
+    provider: &str,
+    discovered: Vec<crate::DiscoveredModel>,
+) -> Vec<crate::DiscoveredModel> {
+    let preferred = configured_models_for_provider(config, provider);
+    let mode = config
+        .get(provider)
+        .map(|entry| entry.catalog)
+        .unwrap_or_default();
+    match mode {
+        moltis_model_catalog::CatalogMode::Static => {
+            crate::discovered_model::merge_preferred_and_discovered_models(preferred, Vec::new())
+        },
+        moltis_model_catalog::CatalogMode::Live => {
+            crate::discovered_model::merge_preferred_and_discovered_models(preferred, discovered)
+        },
+        moltis_model_catalog::CatalogMode::LiveStatic if discovered.is_empty() => {
+            tracing::warn!(
+                provider,
+                "live+static catalog: discovery returned nothing, using the static models"
+            );
+            crate::discovered_model::merge_preferred_and_discovered_models(preferred, Vec::new())
+        },
+        moltis_model_catalog::CatalogMode::LiveStatic => {
+            let served: Vec<String> = discovered.iter().map(|model| model.id.clone()).collect();
+            let merged =
+                moltis_model_catalog::static_models::merge_live_and_static(&preferred, &served);
+            if !merged.missing.is_empty() {
+                tracing::warn!(provider, models = ?merged.missing, "static models no longer served by the provider; dropped");
+            }
+            if !merged.unknown.is_empty() {
+                tracing::warn!(provider, models = ?merged.unknown, "provider serves models without a static entry; added with live metadata");
+            }
+            crate::registry::record_catalog_mismatch(provider, &merged);
+            let mut by_id: HashMap<String, crate::DiscoveredModel> = discovered
+                .into_iter()
+                .map(|model| (model.id.clone(), model))
+                .collect();
+            merged
+                .ids
+                .into_iter()
+                .map(|id| {
+                    by_id
+                        .remove(&id)
+                        .unwrap_or_else(|| crate::DiscoveredModel::new(id.clone(), id))
+                })
+                .collect()
+        },
+    }
 }
 
 pub(crate) fn subscription_preference_rank(provider_name: &str) -> usize {
@@ -272,6 +384,110 @@ mod tests {
         let auth =
             resolve_custom_anthropic_auth(&config, "custom-claude", &entry).expect("api key");
         assert!(!auth.is_subscription_token());
+    }
+
+    fn custom_entry(
+        models: Vec<&str>,
+        catalog: moltis_model_catalog::CatalogMode,
+    ) -> ProvidersConfig {
+        let mut config = ProvidersConfig::default();
+        config
+            .providers
+            .insert("custom-box".into(), moltis_config::schema::ProviderEntry {
+                base_url: Some("http://box:8000/v1".into()),
+                models: models.into_iter().map(Into::into).collect(),
+                catalog,
+                ..Default::default()
+            });
+        config
+    }
+
+    fn ids(models: &[crate::DiscoveredModel]) -> Vec<&str> {
+        models.iter().map(|m| m.id.as_str()).collect()
+    }
+
+    #[test]
+    fn catalog_modes_decide_the_model_list() {
+        use moltis_model_catalog::CatalogMode;
+        let served = || {
+            vec![
+                crate::DiscoveredModel::new("b", "B"),
+                crate::DiscoveredModel::new("c", "C"),
+            ]
+        };
+        let config = custom_entry(vec!["a", "b"], CatalogMode::Static);
+        assert!(!should_fetch_models(&config, "custom-box"));
+        assert_eq!(
+            ids(&models_for_catalog_mode(&config, "custom-box", served())),
+            ["a", "b"]
+        );
+
+        let config = custom_entry(vec!["a", "b"], CatalogMode::Live);
+        assert!(should_fetch_models(&config, "custom-box"));
+        assert_eq!(
+            ids(&models_for_catalog_mode(&config, "custom-box", served())),
+            ["a", "b", "c"]
+        );
+
+        let config = custom_entry(vec!["a", "b"], CatalogMode::LiveStatic);
+        let merged = models_for_catalog_mode(&config, "custom-box", served());
+        assert_eq!(ids(&merged), ["b", "c"]);
+        assert_eq!(merged[1].display_name, "C");
+        assert_eq!(
+            ids(&models_for_catalog_mode(&config, "custom-box", Vec::new())),
+            ["a", "b"]
+        );
+    }
+
+    #[test]
+    fn models_file_rows_join_configured_models() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("greenpt-models.json");
+        std::fs::write(
+            &path,
+            r#"{"models": [{"id": "deepseek-v4.1-flash", "contextWindow": 1000000}, {"id": "a"}]}"#,
+        )
+        .unwrap();
+        let mut config = custom_entry(vec!["a"], moltis_model_catalog::CatalogMode::Static);
+        if let Some(entry) = config.providers.get_mut("custom-box") {
+            entry.models_file = Some(path);
+        }
+        assert_eq!(configured_models_for_provider(&config, "custom-box"), [
+            "a",
+            "deepseek-v4.1-flash"
+        ]);
+        let specs = static_model_specs(&config.providers["custom-box"]);
+        assert_eq!(specs[1].context_window, Some(1_000_000));
+
+        if let Some(entry) = config.providers.get_mut("custom-box") {
+            entry.models_file = Some(dir.path().join("missing.json"));
+        }
+        assert_eq!(configured_models_for_provider(&config, "custom-box"), ["a"]);
+    }
+
+    #[test]
+    fn provider_headers_skip_invalid_entries() {
+        let entry = moltis_config::schema::ProviderEntry {
+            headers: HashMap::from([
+                ("User-Agent".to_string(), "claude-code/2.1.280".to_string()),
+                ("bad header".to_string(), "x".to_string()),
+                ("X-Bad-Value".to_string(), "line\nbreak".to_string()),
+            ]),
+            ..Default::default()
+        };
+        let headers = provider_headers(&entry);
+        assert_eq!(headers.len(), 1);
+        assert_eq!(headers["user-agent"], "claude-code/2.1.280");
+    }
+
+    #[test]
+    fn custom_endpoint_key_is_optional() {
+        let config = custom_entry(vec![], moltis_model_catalog::CatalogMode::Live);
+        let (key, base_url) = custom_openai_endpoint(&config.providers["custom-box"]).unwrap();
+        assert!(key.expose_secret().is_empty());
+        assert_eq!(base_url, "http://box:8000/v1");
+        let no_url = moltis_config::schema::ProviderEntry::default();
+        assert!(custom_openai_endpoint(&no_url).is_none());
     }
 
     #[test]

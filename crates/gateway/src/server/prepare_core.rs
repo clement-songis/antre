@@ -220,6 +220,16 @@ pub async fn prepare_gateway_core_with_profile(
     }
     let (provider_summary, providers_available_at_startup) = {
         let reg = registry.read().await;
+        tokio::spawn(moltis_providers::registry::run_context_probes(
+            effective_providers.clone(),
+            reg.list_models()
+                .iter()
+                .map(|model| {
+                    let raw = moltis_providers::model_id::raw_model_id(&model.id).to_string();
+                    (model.provider.clone(), raw)
+                })
+                .collect(),
+        ));
         super::model_catalog::restrict_remote_catalog(
             reg.list_models()
                 .iter()

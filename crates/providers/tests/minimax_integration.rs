@@ -49,7 +49,7 @@ fn make_registry(key: Secret<String>, models: Vec<String>) -> ProviderRegistry {
     config.providers.insert("minimax".into(), ProviderEntry {
         api_key: Some(key),
         base_url: Some(MINIMAX_BASE_URL.into()),
-        models,
+        models: models.into_iter().map(Into::into).collect(),
         ..ProviderEntry::default()
     });
     ProviderRegistry::from_config_with_static_catalogs(&config, &HashMap::new(), HashMap::new())

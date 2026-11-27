@@ -356,22 +356,16 @@ pub async fn fetch_discoverable_models(
             }
             continue;
         }
-        let Some(api_key) = entry
-            .api_key
-            .as_ref()
-            .filter(|k| !k.expose_secret().is_empty())
-        else {
-            continue;
-        };
-        let Some(base_url) = entry.base_url.as_ref().filter(|u| !u.trim().is_empty()) else {
+        let Some((api_key, base_url)) = crate::config_helpers::custom_openai_endpoint(entry) else {
             continue;
         };
         if should_fetch_models(config, name) {
             tasks.push((
                 name.clone(),
-                Box::pin(openai::fetch_models_from_api(
-                    api_key.clone(),
-                    base_url.clone(),
+                Box::pin(openai::fetch_models_with_headers(
+                    api_key,
+                    base_url,
+                    crate::config_helpers::provider_headers(entry),
                 )),
             ));
         }
@@ -1010,6 +1004,7 @@ impl ProviderRegistry {
         global_cw_overrides: HashMap<String, u32>,
     ) -> Self {
         let mut reg = Self::empty();
+        super::catalog_bridge::record_static_models(config);
         super::catalog_bridge::record_context_overrides(
             &global_cw_overrides,
             &config
@@ -1213,21 +1208,21 @@ impl ProviderRegistry {
                 }
                 continue;
             }
-            let Some(api_key) = entry
-                .api_key
-                .as_ref()
-                .filter(|k| !k.expose_secret().is_empty())
+            let Some((api_key, base_url)) = crate::config_helpers::custom_openai_endpoint(entry)
             else {
                 continue;
             };
-            let Some(base_url) = entry.base_url.as_ref().filter(|u| !u.trim().is_empty()) else {
-                continue;
-            };
             let has_explicit_models = !configured_models_for_provider(config, name).is_empty();
-            if !has_explicit_models && should_fetch_models(config, name) {
+            let live_static =
+                matches!(entry.catalog, moltis_model_catalog::CatalogMode::LiveStatic);
+            if (!has_explicit_models || live_static) && should_fetch_models(config, name) {
                 pending.push((
                     name.clone(),
-                    openai::start_model_discovery(api_key.clone(), base_url.clone()),
+                    openai::start_model_discovery_with_headers(
+                        api_key,
+                        base_url,
+                        crate::config_helpers::provider_headers(entry),
+                    ),
                 ));
             }
         }

@@ -257,6 +257,22 @@ loopback_http = true                # Plain HTTP on loopback binds: http://local
 # base_url = "https://api.x.ai/v1"
 # alias = "xai"
 
+# ── Custom OpenAI-compatible endpoint, described statically ───
+# [providers.custom-my-vllm]
+# base_url = "http://gpu-box:8000/v1"          # api_key optional for local servers
+# catalog = "static"                           # "live" (default) | "static" | "live+static"
+# models_file = "/path/to/models.json"         # OpenClaw-shaped {{ "models": [...] }}
+# headers = {{ "User-Agent" = "my-agent/1.0" }}  # Sent with every request
+# probe_context_window = false                 # Probe windows the endpoint does not publish
+# [[providers.custom-my-vllm.models]]
+# id = "qwen3.8-27b"
+# display_name = "Qwen 3.8 27B (box)"
+# context_window = 131072
+# max_output = 16384
+# tools = true
+# reasoning = ["low", "medium", "high"]
+# kind = "chat"                                # "embedding" models stay out of chat pickers
+
 # ── OpenRouter (multi-provider gateway) ───────────────────────
 # [providers.openrouter]
 # enabled = true

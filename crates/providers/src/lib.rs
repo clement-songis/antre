@@ -4,6 +4,7 @@ pub mod anthropic;
 pub mod async_openai_provider;
 mod client;
 pub mod config_helpers;
+pub mod context_probe;
 pub mod discovered_model;
 pub mod error;
 #[cfg(feature = "provider-genai")]

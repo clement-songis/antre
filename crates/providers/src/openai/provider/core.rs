@@ -58,6 +58,7 @@ impl OpenAiProvider {
             context_window_global: std::collections::HashMap::new(),
             context_window_provider: std::collections::HashMap::new(),
             probe_timeout_secs: None,
+            extra_headers: reqwest::header::HeaderMap::new(),
         }
     }
 
@@ -116,6 +117,26 @@ impl OpenAiProvider {
         self
     }
 
+    /// Send these headers with every request (a provider's `headers`).
+    #[must_use]
+    pub fn with_extra_headers(mut self, headers: reqwest::header::HeaderMap) -> Self {
+        self.extra_headers = headers;
+        self
+    }
+
+    /// Authorization (unless the key is empty: keyless local servers) and
+    /// the configured extra headers.
+    pub(crate) fn request_headers(&self) -> reqwest::header::HeaderMap {
+        let mut headers = self.extra_headers.clone();
+        let key = self.api_key.expose_secret().trim();
+        if !key.is_empty()
+            && let Ok(value) = reqwest::header::HeaderValue::from_str(&format!("Bearer {key}"))
+        {
+            headers.insert(reqwest::header::AUTHORIZATION, value);
+        }
+        headers
+    }
+
     /// Create a copy of this provider with a fresh metadata cache.
     ///
     /// Centralises the field-by-field copy so callers like
@@ -140,6 +161,7 @@ impl OpenAiProvider {
             context_window_global: self.context_window_global.clone(),
             context_window_provider: self.context_window_provider.clone(),
             probe_timeout_secs: self.probe_timeout_secs,
+            extra_headers: self.extra_headers.clone(),
         }
     }
 
@@ -210,7 +232,7 @@ impl OpenAiProvider {
             let response = self
                 .client
                 .post(&url)
-                .header("Authorization", self.bearer_auth_header())
+                .headers(self.request_headers())
                 .header("content-type", "application/json")
                 .json(body)
                 .send()

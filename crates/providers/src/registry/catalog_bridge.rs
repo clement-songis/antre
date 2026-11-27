@@ -50,12 +50,69 @@ pub(crate) fn record_context_overrides(
     global::write(|catalog| {
         catalog.set_provider_rows(Source::Override, ANY_PROVIDER, to_rows(global_overrides));
         for (provider, overrides) in provider_overrides {
-            let mut rows = catalog.provider_rows(Source::Override, provider);
-            rows.retain(|row| !overrides.contains_key(&row.id));
-            rows.extend(to_rows(overrides));
+            for row in to_rows(overrides) {
+                catalog.upsert_provider_row(Source::Override, provider, row);
+            }
+        }
+    });
+}
+
+/// Feed statically declared models (`models` objects and `models_file`
+/// rows) into the override layer, replacing the provider's previous rows.
+/// Call before [`record_context_overrides`] so explicit context-window
+/// overrides win.
+pub(crate) fn record_static_models(config: &moltis_config::schema::ProvidersConfig) {
+    global::write(|catalog| {
+        for (provider, entry) in &config.providers {
+            let rows: Vec<ModelSpec> = crate::config_helpers::static_model_specs(entry)
+                .into_iter()
+                .filter(|spec| !spec.is_empty())
+                .collect();
             catalog.set_provider_rows(Source::Override, provider, rows);
         }
     });
+}
+
+static CATALOG_MISMATCHES: OnceLock<std::sync::Mutex<HashMap<String, CatalogMismatch>>> =
+    OnceLock::new();
+
+/// Static models a `live+static` provider no longer serves, and served
+/// models it has no static entry for, for the providers settings page.
+#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CatalogMismatch {
+    pub missing: Vec<String>,
+    pub unknown: Vec<String>,
+}
+
+fn mismatches() -> &'static std::sync::Mutex<HashMap<String, CatalogMismatch>> {
+    CATALOG_MISMATCHES.get_or_init(|| std::sync::Mutex::new(HashMap::new()))
+}
+
+pub(crate) fn record_catalog_mismatch(
+    provider: &str,
+    merged: &moltis_model_catalog::static_models::MergedModels,
+) {
+    let mismatch = CatalogMismatch {
+        missing: merged.missing.clone(),
+        unknown: merged.unknown.clone(),
+    };
+    let mut map = mismatches().lock().unwrap_or_else(|e| e.into_inner());
+    if mismatch == CatalogMismatch::default() {
+        map.remove(provider);
+    } else {
+        map.insert(provider.to_string(), mismatch);
+    }
+}
+
+/// The last `live+static` mismatch recorded for a provider.
+#[must_use]
+pub fn catalog_mismatch(provider: &str) -> Option<CatalogMismatch> {
+    mismatches()
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .get(provider)
+        .cloned()
 }
 
 /// Let `custom-*` providers inherit metadata from the models.dev provider
@@ -94,6 +151,65 @@ pub(crate) fn record_live_models(provider: &str, models: &[DiscoveredModel]) {
         }
     }
     global::write(|catalog| catalog.set_provider_rows(Source::Live, provider, rows));
+}
+
+/// Probe the context window of every model of `custom-*` providers with
+/// `probe_context_window = true`, record the results in the catalog's probe
+/// layer and persist them next to the live cache. Earlier results are
+/// loaded first, so a restart does not wait for the probe.
+pub async fn run_context_probes(
+    config: moltis_config::schema::ProvidersConfig,
+    models: Vec<(String, String)>,
+) {
+    for (provider, entry) in &config.providers {
+        if !entry.probe_context_window || !provider.starts_with("custom-") {
+            continue;
+        }
+        let cache_key = format!("probe-{provider}");
+        if let Some(snapshot) = LIVE_CACHE
+            .get()
+            .and_then(|cache| cache.load(&cache_key).ok().flatten())
+        {
+            global::write(|catalog| {
+                catalog.set_provider_rows(Source::Probe, provider, snapshot.models)
+            });
+        }
+        let Some((api_key, base_url)) = crate::config_helpers::custom_openai_endpoint(entry) else {
+            continue;
+        };
+        let headers = crate::config_helpers::provider_headers(entry);
+        let mut rows = Vec::new();
+        for (_, model) in models.iter().filter(|(p, _)| p == provider) {
+            let probed = crate::context_probe::probe_context_window(
+                crate::shared_http_client(),
+                &base_url,
+                &api_key,
+                headers.clone(),
+                model,
+            )
+            .await;
+            if let Some(window) = probed {
+                tracing::info!(provider = %provider, model = %model, window, "probed context window");
+                rows.push(ModelSpec {
+                    context_window: Some(window),
+                    ..ModelSpec::new(model.clone())
+                });
+            }
+        }
+        if rows.is_empty() {
+            continue;
+        }
+        if let Some(cache) = LIVE_CACHE.get() {
+            let snapshot = LiveSnapshot {
+                fetched_at: time::OffsetDateTime::now_utc(),
+                models: rows.clone(),
+            };
+            if let Err(error) = cache.save(&cache_key, &snapshot) {
+                tracing::debug!(%error, "failed to persist probe results");
+            }
+        }
+        global::write(|catalog| catalog.set_provider_rows(Source::Probe, provider, rows));
+    }
 }
 
 /// Last good live results for providers whose discovery did not answer this
@@ -137,6 +253,9 @@ pub struct ModelCatalogDetails {
     pub deprecated: bool,
     /// `YYYY-MM-DD`.
     pub retires_at: Option<String>,
+    /// For `live+static` providers: static models no longer served and
+    /// served models without a static entry.
+    pub provider_mismatch: Option<CatalogMismatch>,
 }
 
 /// Look up the details of a registered model.
@@ -155,6 +274,7 @@ pub fn model_catalog_details(info: &ModelInfo) -> ModelCatalogDetails {
             .spec
             .retires_at
             .and_then(|date| date.format(&date_format).ok()),
+        provider_mismatch: catalog_mismatch(&info.provider),
         wire_id,
     }
 }
@@ -281,6 +401,66 @@ mod tests {
         let sonnet = resolve("anthropic", "claude-sonnet-5-5", None);
         assert_eq!(sonnet.known_context_window(), Some(64_000));
         assert_eq!(sonnet.context_source, Some(Source::Override));
+    }
+
+    #[test]
+    fn static_models_feed_overrides_and_context_overrides_win() {
+        let mut config = moltis_config::schema::ProvidersConfig::default();
+        config.providers.insert(
+            "custom-static-test".into(),
+            moltis_config::schema::ProviderEntry {
+                models: vec![
+                    "bare-id".into(),
+                    moltis_model_catalog::ModelEntry::Spec(Box::new(ModelSpec {
+                        display_name: Some("Qwen Box".into()),
+                        context_window: Some(131_072),
+                        kind: Some(ModelKind::Chat),
+                        ..ModelSpec::new("qwen-box")
+                    })),
+                    moltis_model_catalog::ModelEntry::Spec(Box::new(ModelSpec {
+                        kind: Some(ModelKind::Embedding),
+                        ..ModelSpec::new("embed-box")
+                    })),
+                ],
+                ..Default::default()
+            },
+        );
+        record_static_models(&config);
+        let qwen = resolve("custom-static-test", "qwen-box", None);
+        assert_eq!(qwen.known_context_window(), Some(131_072));
+        assert_eq!(qwen.context_source, Some(Source::Override));
+
+        let mut embed = info("custom-static-test", "embed-box", "embed-box");
+        assert!(!enrich_model_info(&mut embed, "embed-box"));
+        let mut named = info("custom-static-test", "qwen-box", "qwen-box");
+        assert!(enrich_model_info(&mut named, "qwen-box"));
+        assert_eq!(named.display_name, "Qwen Box");
+
+        record_context_overrides(&HashMap::new(), &[(
+            "custom-static-test".to_string(),
+            HashMap::from([("qwen-box".to_string(), 65_536)]),
+        )]);
+        let qwen = resolve("custom-static-test", "qwen-box", None);
+        assert_eq!(qwen.known_context_window(), Some(65_536));
+        assert_eq!(qwen.spec.display_name.as_deref(), Some("Qwen Box"));
+    }
+
+    #[test]
+    fn catalog_mismatches_are_recorded_and_cleared() {
+        let merged =
+            moltis_model_catalog::static_models::merge_live_and_static(&["a".to_string()], &[
+                "b".to_string()
+            ]);
+        record_catalog_mismatch("custom-mismatch-test", &merged);
+        let mismatch = catalog_mismatch("custom-mismatch-test").unwrap();
+        assert_eq!(mismatch.missing, ["a"]);
+        assert_eq!(mismatch.unknown, ["b"]);
+        let clean =
+            moltis_model_catalog::static_models::merge_live_and_static(&["a".to_string()], &[
+                "a".to_string()
+            ]);
+        record_catalog_mismatch("custom-mismatch-test", &clean);
+        assert!(catalog_mismatch("custom-mismatch-test").is_none());
     }
 
     #[test]

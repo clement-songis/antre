@@ -10,6 +10,37 @@ use moltis_providers::model_id::raw_model_id;
 
 // ── Model normalization helpers ────────────────────────────────────────────
 
+/// Like [`normalize_model_list`] for config entries: deduplicated by raw id
+/// in first-seen order, and a full description wins over a bare id.
+pub(crate) fn normalize_model_entries(
+    models: impl IntoIterator<Item = moltis_model_catalog::ModelEntry>,
+) -> Vec<moltis_model_catalog::ModelEntry> {
+    use moltis_model_catalog::ModelEntry;
+    let mut out: Vec<ModelEntry> = Vec::new();
+    for entry in models {
+        let normalized = raw_model_id(entry.id().trim()).trim().to_string();
+        if normalized.is_empty() {
+            continue;
+        }
+        let entry = match entry {
+            ModelEntry::Id(_) => ModelEntry::Id(normalized.clone()),
+            ModelEntry::Spec(mut spec) => {
+                spec.id.clone_from(&normalized);
+                ModelEntry::Spec(spec)
+            },
+        };
+        match out.iter_mut().find(|existing| existing.id() == normalized) {
+            Some(existing) => {
+                if existing.spec().is_none() && entry.spec().is_some() {
+                    *existing = entry;
+                }
+            },
+            None => out.push(entry),
+        }
+    }
+    out
+}
+
 pub(crate) fn normalize_model_list(models: impl IntoIterator<Item = String>) -> Vec<String> {
     let mut out = Vec::new();
     for model in models {
@@ -697,5 +728,32 @@ mod tests {
             "  anthropic/claude-sonnet-4-5  ".into(),
         ]);
         assert_eq!(models, vec!["gpt-5.2", "anthropic/claude-sonnet-4-5"]);
+    }
+}
+
+#[cfg(test)]
+mod model_entry_tests {
+    use {
+        super::normalize_model_entries,
+        moltis_model_catalog::{ModelEntry, ModelSpec},
+    };
+
+    #[test]
+    fn entries_dedupe_by_raw_id_and_keep_descriptions() {
+        let spec = ModelEntry::Spec(Box::new(ModelSpec {
+            context_window: Some(8_192),
+            ..ModelSpec::new("glm-5.3")
+        }));
+        let merged = normalize_model_entries(vec![
+            ModelEntry::from("zai::glm-5.3"),
+            ModelEntry::from(" "),
+            spec,
+            ModelEntry::from("kimi-k3"),
+            ModelEntry::from("kimi-k3"),
+        ]);
+        assert_eq!(merged.len(), 2);
+        assert_eq!(merged[0].id(), "glm-5.3");
+        assert_eq!(merged[0].spec().and_then(|s| s.context_window), Some(8_192));
+        assert_eq!(merged[1], "kimi-k3");
     }
 }

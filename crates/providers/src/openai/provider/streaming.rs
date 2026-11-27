@@ -45,7 +45,7 @@ impl OpenAiProvider {
             let resp = match self
                 .client
                 .post(&url)
-                .header("Authorization", self.bearer_auth_header())
+                .headers(self.request_headers())
                 .header("content-type", "application/json")
                 .json(&body)
                 .send()

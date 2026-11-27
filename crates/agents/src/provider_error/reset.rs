@@ -326,7 +326,9 @@ fn parse_body(body: &str) -> ParsedBody {
     }
 }
 
-fn context_limit(message: &str) -> Option<u32> {
+/// The window a provider states when rejecting an oversized request.
+#[must_use]
+pub fn context_limit(message: &str) -> Option<u32> {
     // "maximum context length is 131072 tokens" / "maximum context length of 32768"
     let lower = message.to_ascii_lowercase();
     let index = lower.find("context length")?;

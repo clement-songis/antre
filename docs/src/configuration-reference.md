@@ -916,7 +916,11 @@ Each channel account (`channels.<channel_type>.<account_name>`) is an arbitrary 
 | `enabled` | bool | `true` | Whether this provider is enabled. |
 | `api_key` | optional string (secret) | — | Override the API key. Env var takes precedence if set. |
 | `base_url` | optional string | — | Override the base URL. Alias: `url`. |
-| `models` | array of string | `[]` | Preferred model IDs shown first in model pickers. |
+| `models` | array of string or model object | `[]` | Preferred models shown first in model pickers: bare ids or full descriptions (see [Describing models statically](providers.md#describing-models-statically)). |
+| `models_file` | optional path | — | OpenClaw-shaped `{ "models": [...] }` JSON file describing the models; `models` entries win field by field. |
+| `catalog` | enum (`live`, `static`, `live+static`) | `"live"` | How the model list is decided: configured plus discovered, configured only, or discovery with static descriptions. |
+| `headers` | map of string | `{}` | Extra HTTP headers sent with every request to this provider. |
+| `probe_context_window` | bool | `false` | Probe `custom-*` model context windows at startup with a request the server rejects. |
 | `fetch_models` | bool | `true` | Whether to fetch provider model catalogs dynamically. |
 | `stream_transport` | enum (`sse`, `websocket`, `auto`) | `"sse"` | Streaming transport for this provider. |
 | `wire_api` | enum (`chat-completions`, `responses`) | `"chat-completions"` | Wire format for this provider's HTTP API. |

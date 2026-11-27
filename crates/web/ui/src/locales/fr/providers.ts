@@ -1,6 +1,10 @@
 // ── Providers page English strings ──────────────────────────
 
 export default {
+	catalogMismatch: {
+		missing: "Modèles statiques qui ne sont plus servis (retirés) : {{models}}",
+		unknown: "Modèles servis sans entrée statique (ajoutés) : {{models}}",
+	},
 	title: "LLMs",
 	addLlm: "Add LLM",
 	description:

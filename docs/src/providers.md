@@ -53,6 +53,58 @@ base_url = "https://my-service.example.com/v1"
 models = ["my-model"]
 ```
 
+`api_key` is optional: a local server without authentication (llama.cpp,
+vLLM, LM Studio) gets no `Authorization` header.
+
+#### Describing models statically
+
+A `models` entry can be a bare id or a full description, so a config
+generator (a Nix module, Ansible, a plain file) can describe every model
+without any network access. Field names follow the
+[model catalog](model-catalog.md); OpenClaw's camelCase names
+(`contextWindow`, `maxTokens`, `input`, `cacheRead`...) are accepted too.
+
+```toml
+[providers.custom-my-vllm]
+base_url = "http://gpu-box:8000/v1"
+catalog = "static"            # "static" | "live" | "live+static"
+headers = { "User-Agent" = "my-agent/1.0" }
+
+[[providers.custom-my-vllm.models]]
+id = "qwen3.8-27b"
+display_name = "Qwen 3.8 27B (box)"
+context_window = 131072
+max_output = 16384
+tools = true
+reasoning = ["low", "medium", "high"]
+
+[[providers.custom-my-vllm.models]]
+id = "nomic-embed-text"
+kind = "embedding"            # never offered in chat pickers
+```
+
+- `models_file = "/nix/store/…/greenpt-models.json"` loads an OpenClaw-shaped
+  `{ "models": [...] }` file as-is; `models` entries win field by field. A
+  name that only repeats the id plus the provider (`"kimi-k3 (Kimi)"`) is
+  dropped, since the UI shows the provider separately.
+- `catalog` decides which models exist: `live` (default) lists configured
+  models first, then what `/models` returns; `static` uses only the
+  configured models and skips discovery; `live+static` lets `/models`
+  decide, keeps the static description of served models, adds served models
+  you did not describe, and drops described models the server no longer
+  serves. The last two cases are logged and shown on the providers page.
+- `headers` are sent with every request, including discovery (some
+  endpoints check the User-Agent). They only ever come from your config.
+- `probe_context_window = true` probes each model's window at startup for
+  endpoints that publish none: a request with an absurd `max_tokens` is
+  rejected before inference with "maximum context length is N". The probe
+  runs three times and keeps the largest answer (replicas can differ), and
+  the result is cached under `data_dir()/model-catalog/live/`. Only enable it
+  for servers that validate `max_tokens`; one that accepts the request is
+  detected and left alone.
+- Prices stay in USD per million tokens; `cost_note` can record the
+  currency and tax assumptions behind them.
+
 ### Custom Anthropic instances (`wire_api = "anthropic"`)
 
 A `custom-*` provider can speak the Anthropic Messages API instead, which

@@ -4,8 +4,8 @@ pub mod provider;
 pub use {
     crate::DiscoveredModel,
     catalog::{
-        available_models, default_model_catalog, fetch_models_from_api, live_models,
-        start_model_discovery,
+        available_models, default_model_catalog, fetch_models_from_api, fetch_models_with_headers,
+        live_models, start_model_discovery, start_model_discovery_with_headers,
     },
 };
 
@@ -138,4 +138,6 @@ pub struct OpenAiProvider {
     /// Optional override for the completion-based probe timeout (seconds).
     /// `None` uses the trait default (30s).
     probe_timeout_secs: Option<u64>,
+    /// Extra headers from the provider's config (`headers`).
+    extra_headers: reqwest::header::HeaderMap,
 }

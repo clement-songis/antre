@@ -1,6 +1,10 @@
 // ── Providers page Traditional Chinese (Taiwan) strings ─────
 
 export default {
+	catalogMismatch: {
+		missing: "不再提供的靜態模型（已移除）：{{models}}",
+		unknown: "沒有靜態條目的已提供模型（已加入）：{{models}}",
+	},
 	title: "LLMs",
 	addLlm: "新增 LLM",
 	description: "設定 LLM 供應商，用於聊天與 AI 助理任務。可新增多個供應商並在模型之間切換。",

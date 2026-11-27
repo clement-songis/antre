@@ -1,6 +1,10 @@
 // ── Providers page English strings ──────────────────────────
 
 export default {
+	catalogMismatch: {
+		missing: "Static models no longer served (dropped): {{models}}",
+		unknown: "Served models without a static entry (added): {{models}}",
+	},
 	title: "LLMs",
 	addLlm: "Add LLM",
 	description:

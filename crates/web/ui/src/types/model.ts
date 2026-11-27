@@ -16,6 +16,8 @@ export interface ModelCatalogDetails {
 	deprecated: boolean;
 	/** `YYYY-MM-DD`. */
 	retiresAt: string | null;
+	/** `live+static` providers: static models no longer served, served models without an entry. */
+	providerMismatch?: { missing: string[]; unknown: string[] } | null;
 }
 
 /**

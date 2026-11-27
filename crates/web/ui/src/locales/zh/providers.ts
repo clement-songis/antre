@@ -1,6 +1,10 @@
 // ── Providers page Chinese (Simplified) strings ─────────────
 
 export default {
+	catalogMismatch: {
+		missing: "不再提供的静态模型（已移除）：{{models}}",
+		unknown: "没有静态条目的已提供模型（已添加）：{{models}}",
+	},
 	title: "大语言模型",
 	addLlm: "添加 LLM",
 	description: "配置聊天和代理任务的 LLM 供应商。你可以添加多个供应商并在模型之间切换。",

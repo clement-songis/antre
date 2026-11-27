@@ -33,7 +33,6 @@ use crate::{
     model_capabilities::*, model_catalogs::*, model_id::*, ollama::*, openai, opencode_zen,
 };
 
-const CUSTOM_REASONING_CONTENT_MODEL_PREFIXES: &[&str] = &["kimi-", "deepseek-v4"];
 const OPENAI_DEFAULT_BASE_URL: &str = "https://api.openai.com/v1";
 
 fn resolve_openai_base_url(
@@ -368,56 +367,29 @@ impl ProviderRegistry {
                 }
                 continue;
             }
-            let Some(models) = fetched.get(name.as_str()) else {
+            let Some(fetched_models) = fetched.get(name.as_str()) else {
                 continue;
             };
-            let Some(api_key) = entry
-                .api_key
-                .as_ref()
-                .filter(|k| !k.expose_secret().is_empty())
-            else {
+            let Some((api_key, base_url)) = custom_openai_endpoint(entry) else {
                 continue;
             };
-            let Some(base_url) = entry.base_url.as_ref().filter(|u| !u.trim().is_empty()) else {
-                continue;
-            };
-            let custom_tool_mode = entry.tool_mode;
+            let models = models_for_catalog_mode(config, name, fetched_models.clone());
 
-            for model in models {
+            for model in &models {
                 let caps = model
                     .capabilities
                     .unwrap_or_else(|| ModelCapabilities::infer(&model.id));
                 if self.has_provider_model(name, &model.id) {
                     continue;
                 }
-                let mut oai = openai::OpenAiProvider::new_with_name(
-                    api_key.clone(),
+                let oai = self.custom_openai_provider(
+                    name,
+                    entry,
+                    &api_key,
+                    &base_url,
                     model.id.clone(),
-                    base_url.clone(),
-                    name.clone(),
-                )
-                .with_stream_transport(entry.stream_transport)
-                .with_cache_retention(entry.cache_retention)
-                .with_model_capabilities(caps)
-                .with_capabilities(openai::OpenAiProviderCapabilities {
-                    reasoning_content_model_prefixes: CUSTOM_REASONING_CONTENT_MODEL_PREFIXES,
-                    qwen_models_require_single_leading_system: true,
-                    ..openai::OpenAiProviderCapabilities::DEFAULT
-                })
-                .with_context_window_overrides(
-                    self.global_cw_overrides.clone(),
-                    extract_cw_overrides(&entry.model_overrides),
+                    caps,
                 );
-                if !matches!(entry.wire_api, moltis_config::WireApi::ChatCompletions) {
-                    oai = oai.with_wire_api(entry.wire_api);
-                }
-                if !matches!(custom_tool_mode, moltis_config::ToolMode::Auto) {
-                    oai = oai.with_tool_mode(custom_tool_mode);
-                }
-                if let Some(strict) = entry.strict_tools {
-                    oai = oai.with_strict_tools(strict);
-                }
-                oai = oai.with_probe_timeout_secs(entry.probe_timeout_secs);
                 self.register(
                     ModelInfo {
                         id: model.id.clone(),
@@ -1051,13 +1023,12 @@ impl ProviderRegistry {
                         .clone()
                         .filter(|url| !url.trim().is_empty())
                         .unwrap_or_else(|| "https://api.anthropic.com".into());
-                    let preferred = configured_models_for_provider(config, name);
                     let discovered = if should_fetch_models(config, name) {
                         prefetched.get(name.as_str()).cloned().unwrap_or_default()
                     } else {
                         Vec::new()
                     };
-                    let models = merge_preferred_and_discovered_models(preferred, discovered);
+                    let models = models_for_catalog_mode(config, name, discovered);
                     if models.is_empty() {
                         tracing::debug!(
                             provider = %name,
@@ -1078,31 +1049,18 @@ impl ProviderRegistry {
                 continue;
             }
 
-            let Some(api_key) = entry
-                .api_key
-                .as_ref()
-                .filter(|k| !k.expose_secret().is_empty())
-            else {
+            let Some((api_key, base_url)) = custom_openai_endpoint(entry) else {
                 continue;
             };
-
-            let Some(base_url) = entry.base_url.as_ref().filter(|u| !u.trim().is_empty()) else {
-                continue;
-            };
-
-            let preferred = configured_models_for_provider(config, name);
 
             // Use pre-fetched results from parallel discovery.
             let discovered = if should_fetch_models(config, name) {
-                match prefetched.get(name.as_str()) {
-                    Some(models) => models.clone(),
-                    None => Vec::new(),
-                }
+                prefetched.get(name.as_str()).cloned().unwrap_or_default()
             } else {
                 Vec::new()
             };
 
-            let models = merge_preferred_and_discovered_models(preferred, discovered);
+            let models = models_for_catalog_mode(config, name, discovered);
             if models.is_empty() {
                 tracing::debug!(
                     provider = %name,
@@ -1111,7 +1069,6 @@ impl ProviderRegistry {
                 continue;
             }
 
-            let custom_tool_mode = entry.tool_mode;
             for model in models {
                 let caps = model
                     .capabilities
@@ -1125,34 +1082,14 @@ impl ProviderRegistry {
                 if self.has_provider_model(name, &model_id) {
                     continue;
                 }
-                let mut oai = openai::OpenAiProvider::new_with_name(
-                    api_key.clone(),
+                let oai = self.custom_openai_provider(
+                    name,
+                    entry,
+                    &api_key,
+                    &base_url,
                     model_id.clone(),
-                    base_url.clone(),
-                    name.clone(),
-                )
-                .with_stream_transport(entry.stream_transport)
-                .with_cache_retention(entry.cache_retention)
-                .with_model_capabilities(caps)
-                .with_capabilities(openai::OpenAiProviderCapabilities {
-                    reasoning_content_model_prefixes: CUSTOM_REASONING_CONTENT_MODEL_PREFIXES,
-                    qwen_models_require_single_leading_system: true,
-                    ..openai::OpenAiProviderCapabilities::DEFAULT
-                })
-                .with_context_window_overrides(
-                    self.global_cw_overrides.clone(),
-                    extract_cw_overrides(&entry.model_overrides),
+                    caps,
                 );
-                if !matches!(entry.wire_api, moltis_config::WireApi::ChatCompletions) {
-                    oai = oai.with_wire_api(entry.wire_api);
-                }
-                if !matches!(custom_tool_mode, moltis_config::ToolMode::Auto) {
-                    oai = oai.with_tool_mode(custom_tool_mode);
-                }
-                if let Some(strict) = entry.strict_tools {
-                    oai = oai.with_strict_tools(strict);
-                }
-                oai = oai.with_probe_timeout_secs(entry.probe_timeout_secs);
                 let provider = Arc::new(oai);
                 self.register(
                     ModelInfo {

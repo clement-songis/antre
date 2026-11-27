@@ -82,3 +82,44 @@ fn quota_wait_section_is_known_and_validated() {
     assert!(defaults.chat.quota_wait.enabled);
     assert!((defaults.chat.quota_wait.max_wait_hours - 6.0).abs() < f64::EPSILON);
 }
+
+#[test]
+fn static_custom_provider_fields_validate_cleanly() {
+    let result = validate_toml_str(
+        r#"
+[providers.custom-my-vllm]
+base_url = "http://gpu-box:8000/v1"
+catalog = "live+static"
+models_file = "/nix/store/x-greenpt-models.json"
+headers = { "User-Agent" = "claude-code/2.1.280" }
+probe_context_window = true
+models = [
+  "kimi-k3",
+  { id = "qwen3.8-27b", display_name = "Qwen 3.8 27B", context_window = 131072, maxTokens = 16384, reasoning = ["low", "high"] },
+]
+"#,
+    );
+    assert!(
+        !result
+            .diagnostics
+            .iter()
+            .any(|d| d.path.starts_with("providers.custom-my-vllm")),
+        "unexpected diagnostics: {:?}",
+        result.diagnostics
+    );
+    let config: MoltisConfig = toml::from_str(
+        r#"
+[providers.custom-my-vllm]
+catalog = "static"
+models = ["a", { id = "b", contextWindow = 4096 }]
+"#,
+    )
+    .unwrap();
+    let entry = &config.providers.providers["custom-my-vllm"];
+    assert_eq!(entry.catalog, moltis_model_catalog::CatalogMode::Static);
+    assert_eq!(entry.models[0], "a");
+    assert_eq!(
+        entry.models[1].spec().and_then(|s| s.context_window),
+        Some(4096)
+    );
+}

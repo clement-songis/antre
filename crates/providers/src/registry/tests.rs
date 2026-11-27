@@ -458,3 +458,76 @@ async fn custom_anthropic_provider_uses_plain_api_key_without_identity() -> anyh
     assert_eq!(body["system"], Value::Null);
     Ok(())
 }
+
+#[tokio::test]
+async fn keyless_static_custom_provider_sends_configured_headers() -> anyhow::Result<()> {
+    let mut server = mockito::Server::new_async().await;
+    let completion = server
+        .mock("POST", "/v1/chat/completions")
+        .match_header("authorization", mockito::Matcher::Missing)
+        .match_header("user-agent", "claude-code/2.1.280")
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body(
+            serde_json::json!({
+                "choices": [{"message": {"role": "assistant", "content": "ok"}, "finish_reason": "stop"}],
+                "usage": {"prompt_tokens": 1, "completion_tokens": 1}
+            })
+            .to_string(),
+        )
+        .expect(1)
+        .create_async()
+        .await;
+
+    let mut config = ProvidersConfig::default();
+    config.providers.insert("custom-box".into(), ProviderEntry {
+        base_url: Some(format!("{}/v1", server.url())),
+        catalog: moltis_model_catalog::CatalogMode::Static,
+        headers: HashMap::from([("User-Agent".to_string(), "claude-code/2.1.280".to_string())]),
+        models: vec![
+            moltis_model_catalog::ModelEntry::Spec(Box::new(moltis_model_catalog::ModelSpec {
+                display_name: Some("Box Chat".into()),
+                context_window: Some(32_768),
+                ..moltis_model_catalog::ModelSpec::new("box-chat")
+            })),
+            moltis_model_catalog::ModelEntry::Spec(Box::new(moltis_model_catalog::ModelSpec {
+                kind: Some(moltis_model_catalog::ModelKind::Embedding),
+                ..moltis_model_catalog::ModelSpec::new("box-embed")
+            })),
+        ],
+        ..ProviderEntry::default()
+    });
+
+    let registry = ProviderRegistry::from_config_with_prefetched(
+        &config,
+        &HashMap::new(),
+        &HashMap::new(),
+        HashMap::new(),
+    );
+    let ids: Vec<&str> = registry
+        .list_models()
+        .iter()
+        .filter(|model| model.provider == "custom-box")
+        .map(|model| model.id.as_str())
+        .collect();
+    assert_eq!(ids, ["custom-box::box-chat"]);
+    let info = registry
+        .list_models()
+        .iter()
+        .find(|model| model.id == "custom-box::box-chat")
+        .context("registered model")?;
+    assert_eq!(info.display_name, "Box Chat");
+
+    let provider = registry
+        .get("custom-box::box-chat")
+        .context("custom model is registered")?;
+    assert_eq!(provider.context_window(), 32_768);
+    assert_eq!(provider.context_limits().window, Some(32_768));
+    let response = provider
+        .complete(&[ChatMessage::user("ping")], &[])
+        .await
+        .context("completion succeeds")?;
+    assert_eq!(response.text.as_deref(), Some("ok"));
+    completion.assert_async().await;
+    Ok(())
+}

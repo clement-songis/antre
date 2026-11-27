@@ -13,6 +13,7 @@ import { testModel } from "../provider-validation";
 import { openModelSelectorForProvider, openProviderModal } from "../providers";
 import { connected } from "../signals";
 import * as S from "../state";
+import type { ModelCatalogDetails } from "../types/model";
 import { ConfirmDialog, requestConfirm } from "../ui";
 
 // ── Types ───────────────────────────────────────────────────
@@ -31,6 +32,7 @@ interface ConfiguredModelEntry {
 	unsupportedReason?: string | null;
 	supportsTools?: boolean;
 	providerOnly?: boolean;
+	catalog?: ModelCatalogDetails;
 	[key: string]: unknown;
 }
 
@@ -149,6 +151,26 @@ function handleModelsUpdatedEvent(payload: unknown): void {
 		detectingModels.value = false;
 		detectError.value = data.error || t("providers:modelDetectionFailed");
 	}
+}
+
+interface CatalogMismatchNoticeProps {
+	models: ConfiguredModelEntry[];
+}
+
+/** Warn when a `live+static` provider's static models and its served models disagree. */
+function CatalogMismatchNotice({ models }: CatalogMismatchNoticeProps): VNode | null {
+	const mismatch = models.find((model) => model.catalog?.providerMismatch)?.catalog?.providerMismatch;
+	if (!mismatch) return null;
+	return (
+		<div className="mt-1 text-xs text-[var(--warn,#b45309)] catalog-mismatch">
+			{mismatch.missing.length > 0 ? (
+				<div>{t("providers:catalogMismatch.missing", { models: mismatch.missing.join(", ") })}</div>
+			) : null}
+			{mismatch.unknown.length > 0 ? (
+				<div>{t("providers:catalogMismatch.unknown", { models: mismatch.unknown.join(", ") })}</div>
+			) : null}
+		</div>
+	);
 }
 
 function fetchProviders(): Promise<void> {
@@ -428,6 +450,7 @@ function ProviderSection({ group }: { group: ProviderGroup }): VNode {
 					{providerTestResult.ok ? t("providers:testSuccess") : providerTestResult.error}
 				</div>
 			) : null}
+			<CatalogMismatchNotice models={group.models} />
 			<div className="mt-2 border-b border-[var(--border)]" />
 			{group.models.length === 0 ? (
 				<div className="mt-2 text-xs text-[var(--muted)]">{t("providers:noActiveModels")}</div>

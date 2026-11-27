@@ -242,17 +242,29 @@ pub async fn fetch_models_from_api(
     api_key: secrecy::Secret<String>,
     base_url: String,
 ) -> anyhow::Result<Vec<DiscoveredModel>> {
+    fetch_models_with_headers(api_key, base_url, reqwest::header::HeaderMap::new()).await
+}
+
+/// Like [`fetch_models_from_api`], with extra request headers (a custom
+/// provider's `headers`). An empty key sends no `Authorization` header.
+pub async fn fetch_models_with_headers(
+    api_key: secrecy::Secret<String>,
+    base_url: String,
+    headers: reqwest::header::HeaderMap,
+) -> anyhow::Result<Vec<DiscoveredModel>> {
     let client = crate::shared_http_client();
-    let response = client
+    let mut request = client
         .get(models_endpoint(&base_url))
         .timeout(Duration::from_secs(15))
-        .header(
+        .header("Accept", "application/json")
+        .headers(headers);
+    if !api_key.expose_secret().trim().is_empty() {
+        request = request.header(
             "Authorization",
             format!("Bearer {}", api_key.expose_secret()),
-        )
-        .header("Accept", "application/json")
-        .send()
-        .await?;
+        );
+    }
+    let response = request.send().await?;
     let status = response.status();
     let body = response.text().await?;
     if !status.is_success() {
@@ -272,13 +284,22 @@ pub fn start_model_discovery(
     api_key: secrecy::Secret<String>,
     base_url: String,
 ) -> mpsc::Receiver<anyhow::Result<Vec<DiscoveredModel>>> {
+    start_model_discovery_with_headers(api_key, base_url, reqwest::header::HeaderMap::new())
+}
+
+/// Like [`start_model_discovery`], with extra request headers.
+pub fn start_model_discovery_with_headers(
+    api_key: secrecy::Secret<String>,
+    base_url: String,
+    headers: reqwest::header::HeaderMap,
+) -> mpsc::Receiver<anyhow::Result<Vec<DiscoveredModel>>> {
     let (tx, rx) = mpsc::sync_channel(1);
     std::thread::spawn(move || {
         let result = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
             .map_err(anyhow::Error::from)
-            .and_then(|rt| rt.block_on(fetch_models_from_api(api_key, base_url)));
+            .and_then(|rt| rt.block_on(fetch_models_with_headers(api_key, base_url, headers)));
         let _ = tx.send(result);
     });
     rx

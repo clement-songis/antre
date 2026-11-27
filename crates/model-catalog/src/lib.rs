@@ -15,12 +15,14 @@ pub mod providers;
 pub mod refresh;
 pub mod roles;
 pub mod snapshot;
+pub mod static_models;
 pub mod types;
 
 pub use {
     catalog::{ModelCatalog, ResolvedModel, Source},
     error::{Error, Result},
     names::{PrettyName, prettify_id},
+    static_models::{CatalogMode, ModelEntry},
     types::{
         Cost, Modality, ModelKind, ModelSpec, ModelStatus, RateLimitTz, Reasoning, ReasoningLevel,
     },

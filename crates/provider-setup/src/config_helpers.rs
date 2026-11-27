@@ -10,7 +10,7 @@ use secrecy::{ExposeSecret, Secret};
 use {moltis_config::schema::ProvidersConfig, moltis_oauth::TokenStore};
 
 use crate::{
-    key_store::{KeyStore, ProviderConfig, normalize_model_list},
+    key_store::{KeyStore, ProviderConfig, normalize_model_entries, normalize_model_list},
     known_providers::{AuthType, known_providers},
     oauth::{codex_cli_auth_has_access_token, codex_cli_auth_path},
 };
@@ -128,7 +128,7 @@ pub fn config_with_saved_keys(
                 dst.base_url = Some(base_url);
             }
             if dst.models.is_empty() && !entry.models.is_empty() {
-                dst.models = normalize_model_list(entry.models);
+                dst.models = normalize_model_entries(entry.models);
             }
         }
     }
@@ -177,9 +177,10 @@ pub fn config_with_saved_keys(
         if !saved.models.is_empty() {
             // Merge: saved models (from "Choose model" UI) go first, then
             // config models. normalize_model_list deduplicates.
-            let mut merged = saved.models;
+            let mut merged: Vec<moltis_model_catalog::ModelEntry> =
+                saved.models.into_iter().map(Into::into).collect();
             merged.append(&mut entry.models);
-            entry.models = normalize_model_list(merged);
+            entry.models = normalize_model_entries(merged);
         }
     }
 
@@ -190,7 +191,10 @@ pub fn config_with_saved_keys(
         // Keep provider models in sync so model pickers can prioritize these.
         let entry = config.providers.entry("local".into()).or_default();
         if entry.models.is_empty() {
-            entry.models = normalize_model_list(config.local_models.clone());
+            entry.models = normalize_model_list(config.local_models.clone())
+                .into_iter()
+                .map(Into::into)
+                .collect();
         }
     }
 
@@ -205,7 +209,10 @@ pub fn has_explicit_provider_settings(config: &ProvidersConfig) -> bool {
             .api_key
             .as_ref()
             .is_some_and(|k| !k.expose_secret().trim().is_empty())
-            || entry.models.iter().any(|model| !model.trim().is_empty())
+            || entry
+                .models
+                .iter()
+                .any(|model| !model.id().trim().is_empty())
             || entry
                 .base_url
                 .as_deref()

@@ -185,7 +185,7 @@ impl OpenAiProvider {
         let http_resp = self
             .client
             .post(&url)
-            .header("Authorization", self.bearer_auth_header())
+            .headers(self.request_headers())
             .header("content-type", "application/json")
             .json(&body)
             .send()
@@ -236,7 +236,7 @@ impl OpenAiProvider {
             .client
             .get(&url)
             .timeout(Duration::from_secs(15))
-            .header("Authorization", self.bearer_auth_header())
+            .headers(self.request_headers())
             .header("Accept", "application/json")
             .send()
             .await;
@@ -438,7 +438,7 @@ impl OpenAiProvider {
         let http_resp = self
             .client
             .post(&url)
-            .header("Authorization", self.bearer_auth_header())
+            .headers(self.request_headers())
             .header("content-type", "application/json")
             .json(&body)
             .send()

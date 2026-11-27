@@ -140,7 +140,7 @@ impl LiveProviderSetupService {
                 enabled: true,
                 api_key: api_key.map(|k| Secret::new(k.to_string())),
                 base_url: normalized_base_url,
-                models: preferred_models,
+                models: preferred_models.into_iter().map(Into::into).collect(),
                 ..Default::default()
             },
         );
