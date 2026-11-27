@@ -21,10 +21,10 @@ you explicitly trust.
 ```
 ┌──────────────┐      CONNECT        ┌────────────┐       ┌──────────────┐
 │   Sandbox    │ ──────────────────▶  │   Proxy    │ ────▶ │  github.com  │ ✓
-│  Container   │                      │ :18791     │       └──────────────┘
+│  Container   │                      │ :<port>    │       └──────────────┘
 │              │      CONNECT         │            │       ┌──────────────┐
 │  HTTP_PROXY  │ ──────────────────▶  │  Domain    │ ──✗─▶ │  evil.com    │ ✗
-│  = proxy:18791                      │  Filter    │       └──────────────┘
+│  = proxy:<port>                     │  Filter    │       └──────────────┘
 └──────────────┘                      └────────────┘
 ```
 
@@ -79,10 +79,12 @@ The `trusted_domains` list supports three pattern types:
 
 ## How the proxy works
 
-When `network = "trusted"`, the gateway starts an HTTP CONNECT proxy on
-`127.0.0.1:18791` at startup. Sandbox containers are configured to route
-traffic through this proxy via `HTTP_PROXY` / `HTTPS_PROXY` environment
-variables.
+When `network = "trusted"`, the gateway starts an HTTP CONNECT proxy at
+startup. Its port is ephemeral by default (picked when the gateway starts,
+so several gateways can run on one machine); set
+`[tools.exec.sandbox] proxy_port = 18791` to pin it. Sandbox containers are
+configured to route traffic through this proxy via `HTTP_PROXY` /
+`HTTPS_PROXY` environment variables, using the port actually bound.
 
 For each connection the proxy:
 
@@ -212,8 +214,10 @@ denied domains — add them to the allowlist only if they are legitimate.
 ## Troubleshooting
 
 **Proxy not starting**: Check the gateway startup log for
-`trusted-network proxy started on port 18791`. If missing, verify
-`network = "trusted"` is set in `moltis.toml`.
+`trusted-network proxy started` (it shows the `proxy_url` with the bound
+port). If missing, verify `network = "trusted"` is set in `moltis.toml`. If
+the log says the proxy could not bind, a pinned `proxy_port` is already in
+use (another gateway?); sandboxed HTTP access then fails closed.
 
 **Connections timing out**: Some tools don't respect `HTTP_PROXY`. Verify
 the tool uses the proxy by checking the audit log — if no entries appear

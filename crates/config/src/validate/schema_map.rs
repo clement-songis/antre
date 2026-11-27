@@ -103,6 +103,7 @@ pub(super) fn build_schema_map() -> KnownKeys {
             ("no_network", Leaf),
             ("network", Leaf),
             ("trusted_domains", Array(Box::new(Leaf))),
+            ("proxy_port", Leaf),
             ("backend", Leaf),
             ("resource_limits", resource_limits()),
             ("gpus", Leaf),

@@ -52,10 +52,7 @@ fn apply_web_fetch_network_policy(
     let proxy = if profile.is_headless() {
         "http://127.0.0.1:0".to_string()
     } else {
-        format!(
-            "http://127.0.0.1:{}",
-            moltis_network_filter::DEFAULT_PROXY_PORT
-        )
+        format!("http://127.0.0.1:{}", sandbox.proxy_port)
     };
     tool.with_proxy(proxy)
 }
@@ -985,7 +982,49 @@ pub async fn prepare_gateway_core_with_profile(
     services = services.with_webhooks(live_webhooks);
 
     // Build sandbox router from config.
-    let sandbox_config = moltis_tools::sandbox::SandboxConfig::from(&config.tools.exec.sandbox);
+    #[cfg_attr(not(feature = "trusted-network"), allow(unused_mut))]
+    let mut sandbox_config = moltis_tools::sandbox::SandboxConfig::from(&config.tools.exec.sandbox);
+
+    // The trusted-network proxy binds before the sandbox backends are built,
+    // so they route through the port it actually got (ephemeral unless
+    // `proxy_port` is set; a fixed port kept two daemons from coexisting).
+    #[cfg(feature = "trusted-network")]
+    let (audit_tx, audit_rx) =
+        tokio::sync::mpsc::channel::<moltis_network_filter::NetworkAuditEntry>(1024);
+    #[cfg(feature = "trusted-network")]
+    let trusted_proxy = if !profile.is_headless()
+        && sandbox_config.network == moltis_network_filter::NetworkPolicy::Trusted
+    {
+        let domain_mgr = Arc::new(
+            moltis_network_filter::domain_approval::DomainApprovalManager::new(
+                &sandbox_config.trusted_domains,
+                std::time::Duration::from_secs(30),
+            ),
+        );
+        let requested_port = config.tools.exec.sandbox.proxy_port.unwrap_or(0);
+        match moltis_network_filter::proxy::NetworkProxyServer::bind(
+            ([0, 0, 0, 0], requested_port).into(),
+            domain_mgr,
+            Some(audit_tx.clone()),
+        )
+        .await
+        {
+            Ok(proxy) => {
+                sandbox_config.proxy_port = proxy.addr().port();
+                Some(proxy)
+            },
+            Err(error) => {
+                tracing::error!(
+                    port = requested_port,
+                    %error,
+                    "trusted-network proxy could not bind; sandboxed HTTP access is disabled"
+                );
+                None
+            },
+        }
+    } else {
+        None
+    };
     let sandbox_router = Arc::new(sandbox::build_sandbox_router(
         &sandbox_config,
         &sandbox_container_prefix,
@@ -1011,48 +1050,32 @@ pub async fn prepare_gateway_core_with_profile(
     let proxy_shutdown_tx: Option<tokio::sync::watch::Sender<bool>>;
     #[cfg(feature = "trusted-network")]
     {
-        use std::net::SocketAddr;
-        let (audit_tx, audit_rx) =
-            tokio::sync::mpsc::channel::<moltis_network_filter::NetworkAuditEntry>(1024);
-
         info!(
             network_policy = ?sandbox_config.network,
             trusted_domains = ?sandbox_config.trusted_domains,
             "trusted-network: evaluating network policy"
         );
 
-        if !profile.is_headless()
-            && sandbox_config.network == moltis_network_filter::NetworkPolicy::Trusted
-        {
-            let domain_mgr = Arc::new(
-                moltis_network_filter::domain_approval::DomainApprovalManager::new(
-                    &sandbox_config.trusted_domains,
-                    std::time::Duration::from_secs(30),
-                ),
-            );
-            let proxy_addr: SocketAddr =
-                ([0, 0, 0, 0], moltis_network_filter::DEFAULT_PROXY_PORT).into();
-            let proxy = moltis_network_filter::proxy::NetworkProxyServer::new(
-                proxy_addr,
-                Arc::clone(&domain_mgr),
-                Some(audit_tx.clone()),
-            );
+        let trusted = !profile.is_headless()
+            && sandbox_config.network == moltis_network_filter::NetworkPolicy::Trusted;
+        if let Some(proxy) = trusted_proxy {
             let (shutdown_tx, proxy_shutdown_rx) = tokio::sync::watch::channel(false);
             tokio::spawn(async move {
                 if let Err(e) = proxy.run(proxy_shutdown_rx).await {
                     tracing::warn!("network proxy exited: {e}");
                 }
             });
-            let url = format!(
-                "http://127.0.0.1:{}",
-                moltis_network_filter::DEFAULT_PROXY_PORT
-            );
+            let url = format!("http://127.0.0.1:{}", sandbox_config.proxy_port);
             info!(
                 proxy_url = %url,
                 "trusted-network proxy started, routing all HTTP tools through proxy"
             );
             moltis_tools::init_shared_http_client(Some(&url));
             proxy_shutdown_tx = Some(shutdown_tx);
+        } else if trusted {
+            // The proxy failed to bind: fail closed rather than bypass policy.
+            moltis_tools::init_shared_http_client(Some("http://127.0.0.1:0"));
+            proxy_shutdown_tx = None;
         } else {
             debug!(
                 network_policy = ?sandbox_config.network,

@@ -382,10 +382,7 @@ impl DockerSandbox {
         if self.config.network != NetworkPolicy::Trusted {
             return Vec::new();
         }
-        let proxy_url = format!(
-            "http://host.docker.internal:{}",
-            moltis_network_filter::DEFAULT_PROXY_PORT
-        );
+        let proxy_url = format!("http://host.docker.internal:{}", self.config.proxy_port);
         let mut args = Vec::new();
         for key in ["HTTP_PROXY", "http_proxy", "HTTPS_PROXY", "https_proxy"] {
             args.extend(["-e".to_string(), format!("{key}={proxy_url}")]);

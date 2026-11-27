@@ -1089,11 +1089,7 @@ impl Sandbox for AppleContainerSandbox {
         // proxy running on the host.
         if self.config.network == NetworkPolicy::Trusted {
             let gateway = self.detect_host_gateway(&name).await;
-            let proxy_url = format!(
-                "http://{}:{}",
-                gateway,
-                moltis_network_filter::DEFAULT_PROXY_PORT
-            );
+            let proxy_url = format!("http://{}:{}", gateway, self.config.proxy_port);
             let escaped_proxy = proxy_url.replace('\'', "'\\''");
             for key in ["HTTP_PROXY", "http_proxy", "HTTPS_PROXY", "https_proxy"] {
                 prefix.push_str(&format!("export {key}='{escaped_proxy}'; "));

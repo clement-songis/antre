@@ -213,9 +213,9 @@ impl OsSandbox {
     #[must_use]
     pub fn with_dirs(config: SandboxConfig, kind: OsSandboxKind, dirs: OsSandboxDirs) -> Self {
         Self {
+            proxy_port: config.proxy_port,
             config,
             kind,
-            proxy_port: moltis_network_filter::DEFAULT_PROXY_PORT,
             dirs,
         }
     }
@@ -461,6 +461,24 @@ mod tests {
         OsSandboxKind::Bubblewrap {
             bwrap: PathBuf::from("/usr/bin/bwrap"),
         }
+    }
+
+    #[test]
+    fn os_sandbox_routes_through_the_configured_proxy_port() {
+        let config = SandboxConfig {
+            network: moltis_network_filter::NetworkPolicy::Trusted,
+            proxy_port: 45678,
+            ..Default::default()
+        };
+        let dirs = OsSandboxDirs {
+            data_dir: PathBuf::from("/tmp/moltis-data"),
+            config_dir: None,
+            user_home: None,
+        };
+        let sandbox = OsSandbox::with_dirs(config, OsSandboxKind::Seatbelt, dirs);
+        assert_eq!(sandbox.requested_network(), OsNetworkAccess::Proxy {
+            port: 45678
+        });
     }
 
     #[test]

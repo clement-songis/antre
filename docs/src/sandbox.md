@@ -362,7 +362,7 @@ working directory, the workspace and managed Files keep their host location.
 | `network` | macOS (Seatbelt) | Linux (bubblewrap) |
 |-----------|------------------|--------------------|
 | `"blocked"` | no network | no network (own network namespace) |
-| `"trusted"` (default) | only TCP to the egress proxy on `127.0.0.1:18791`; `HTTP(S)_PROXY` is set | **no network**: the sandbox's network namespace cannot reach the proxy on the host loopback, so it fails closed |
+| `"trusted"` (default) | only TCP to the egress proxy on `127.0.0.1:<proxy port>` (ephemeral unless `proxy_port` is set); `HTTP(S)_PROXY` is set | **no network**: the sandbox's network namespace cannot reach the proxy on the host loopback, so it fails closed |
 | `"bypass"` | unrestricted IP traffic, including services listening on the host's loopback; Unix sockets of the host (ssh-agent, Docker) stay unreachable | host network, including the host's loopback |
 
 Unix sockets are allowed only inside the sandbox home and temp, so tools such

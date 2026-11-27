@@ -218,6 +218,9 @@ pub struct SandboxConfig {
     pub network: NetworkPolicy,
     /// Domains allowed through the proxy in `Trusted` mode.
     pub trusted_domains: Vec<String>,
+    /// Port of the trusted-network egress proxy on the host. The gateway
+    /// replaces it with the port it actually bound before building backends.
+    pub proxy_port: u16,
     /// Backend: `"auto"` (default), `"docker"`, `"podman"`, `"apple-container"`,
     /// `"seatbelt"`, `"bubblewrap"`, `"os"` (the native OS sandbox),
     /// `"restricted-host"`, or `"wasm"`.
@@ -307,6 +310,7 @@ impl Default for SandboxConfig {
             no_network: false,
             network: NetworkPolicy::default(),
             trusted_domains: Vec::new(),
+            proxy_port: moltis_network_filter::DEFAULT_PROXY_PORT,
             backend: "auto".into(),
             resource_limits: ResourceLimits::default(),
             gpus: None,
@@ -385,6 +389,9 @@ impl From<&moltis_config::schema::SandboxConfig> for SandboxConfig {
                 _ => NetworkPolicy::Trusted,
             },
             trusted_domains: cfg.trusted_domains.clone(),
+            proxy_port: cfg
+                .proxy_port
+                .unwrap_or(moltis_network_filter::DEFAULT_PROXY_PORT),
             backend: cfg.backend.clone(),
             resource_limits: ResourceLimits {
                 memory_limit: cfg.resource_limits.memory_limit.clone(),

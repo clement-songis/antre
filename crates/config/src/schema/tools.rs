@@ -738,6 +738,11 @@ pub struct SandboxConfig {
     /// Domains allowed through the proxy in `trusted` mode.
     #[serde(default)]
     pub trusted_domains: Vec<String>,
+    /// Port of the trusted-network egress proxy. Unset (default): an
+    /// ephemeral port picked at startup, so several daemons can run on one
+    /// machine. Set it when something outside Moltis must know the port.
+    #[serde(default)]
+    pub proxy_port: Option<u16>,
     /// Backend: "auto" (default), "docker", "podman", "apple-container",
     /// "seatbelt" (macOS), "bubblewrap" (Linux), "os" (native OS sandbox),
     /// "restricted-host", or "wasm".
@@ -1042,6 +1047,7 @@ impl Default for SandboxConfig {
             no_network: false,
             network: "trusted".into(),
             trusted_domains: Vec::new(),
+            proxy_port: None,
             backend: "auto".into(),
             resource_limits: ResourceLimitsConfig::default(),
             gpus: None,

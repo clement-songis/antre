@@ -38,11 +38,13 @@ pub use crate::DEFAULT_PROXY_PORT;
 /// is made (or timeout).
 pub struct NetworkProxyServer {
     listener_addr: SocketAddr,
+    listener: Option<TcpListener>,
     filter: Arc<DomainApprovalManager>,
     audit_tx: Option<AuditSender>,
 }
 
 impl NetworkProxyServer {
+    /// A proxy that binds `listener_addr` when [`run`](Self::run) starts.
     pub fn new(
         listener_addr: SocketAddr,
         filter: Arc<DomainApprovalManager>,
@@ -50,14 +52,34 @@ impl NetworkProxyServer {
     ) -> Self {
         Self {
             listener_addr,
+            listener: None,
             filter,
             audit_tx,
         }
     }
 
+    /// Bind now, so callers learn the real port before [`run`](Self::run)
+    /// (port `0` picks an ephemeral one).
+    pub async fn bind(
+        listener_addr: SocketAddr,
+        filter: Arc<DomainApprovalManager>,
+        audit_tx: Option<AuditSender>,
+    ) -> Result<Self> {
+        let listener = TcpListener::bind(listener_addr).await?;
+        Ok(Self {
+            listener_addr: listener.local_addr()?,
+            listener: Some(listener),
+            filter,
+            audit_tx,
+        })
+    }
+
     /// Start the proxy server. This runs until the `shutdown` future completes.
-    pub async fn run(&self, shutdown: tokio::sync::watch::Receiver<bool>) -> Result<()> {
-        let listener = TcpListener::bind(self.listener_addr).await?;
+    pub async fn run(self, shutdown: tokio::sync::watch::Receiver<bool>) -> Result<()> {
+        let listener = match self.listener {
+            Some(listener) => listener,
+            None => TcpListener::bind(self.listener_addr).await?,
+        };
         info!(addr = %self.listener_addr, "network proxy listening");
 
         loop {
@@ -712,6 +734,46 @@ fn url_to_path(url: &str) -> String {
 #[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
+
+    fn approvals() -> Arc<DomainApprovalManager> {
+        Arc::new(DomainApprovalManager::new(
+            &[],
+            std::time::Duration::from_secs(1),
+        ))
+    }
+
+    #[tokio::test]
+    async fn bind_reports_the_ephemeral_port_it_got() {
+        let proxy = NetworkProxyServer::bind(([127, 0, 0, 1], 0).into(), approvals(), None)
+            .await
+            .unwrap();
+        assert_ne!(proxy.addr().port(), 0);
+    }
+
+    /// Two daemons on one machine must each get their own proxy.
+    #[tokio::test]
+    async fn two_proxies_bind_side_by_side() {
+        let first = NetworkProxyServer::bind(([127, 0, 0, 1], 0).into(), approvals(), None)
+            .await
+            .unwrap();
+        let second = NetworkProxyServer::bind(([127, 0, 0, 1], 0).into(), approvals(), None)
+            .await
+            .unwrap();
+        assert_ne!(first.addr().port(), second.addr().port());
+    }
+
+    #[tokio::test]
+    async fn bound_proxy_accepts_connections_once_running() {
+        let proxy = NetworkProxyServer::bind(([127, 0, 0, 1], 0).into(), approvals(), None)
+            .await
+            .unwrap();
+        let addr = proxy.addr();
+        let (stop, stopped) = tokio::sync::watch::channel(false);
+        let task = tokio::spawn(proxy.run(stopped));
+        assert!(TcpStream::connect(addr).await.is_ok());
+        stop.send(true).unwrap();
+        task.await.unwrap().unwrap();
+    }
 
     #[test]
     fn test_parse_host_port() {

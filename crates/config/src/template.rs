@@ -533,6 +533,7 @@ loopback_http = true                # Plain HTTP on loopback binds: http://local
 # os_read_paths = []                # Extra host paths readable in the OS sandbox
 # os_write_paths = []               # Extra host paths writable in the OS sandbox
 # no_network = true                 # Disable network access in sandbox
+# proxy_port = 18791                # Trusted-network egress proxy port (default: ephemeral, picked at startup)
 # image = "custom-image:tag"        # Custom Docker image (default: auto-built)
 # packages = [...]                  # Packages installed in sandbox containers
 # host_data_dir = "/host/moltis-data" # Host path for Moltis data when running Moltis inside Docker

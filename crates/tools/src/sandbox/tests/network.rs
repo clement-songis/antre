@@ -77,6 +77,28 @@ fn test_docker_network_run_args_bypass() {
 }
 
 #[test]
+fn docker_proxy_env_uses_the_bound_proxy_port() {
+    let config = SandboxConfig {
+        network: NetworkPolicy::Trusted,
+        proxy_port: 54321,
+        ..Default::default()
+    };
+    let args = DockerSandbox::new(config).proxy_exec_env_args();
+    assert!(args.contains(&"HTTPS_PROXY=http://host.docker.internal:54321".to_string()));
+}
+
+#[test]
+fn proxy_port_comes_from_config_or_the_legacy_default() {
+    let mut schema = moltis_config::schema::SandboxConfig::default();
+    assert_eq!(
+        SandboxConfig::from(&schema).proxy_port,
+        moltis_network_filter::DEFAULT_PROXY_PORT
+    );
+    schema.proxy_port = Some(40000);
+    assert_eq!(SandboxConfig::from(&schema).proxy_port, 40000);
+}
+
+#[test]
 fn test_docker_proxy_exec_env_args_trusted() {
     let config = SandboxConfig {
         network: NetworkPolicy::Trusted,
