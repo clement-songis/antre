@@ -11,6 +11,7 @@
 //! - **scroll**: Scroll the page or specific elements
 //! - **evaluate**: Execute JavaScript in page context
 //! - **wait**: Wait for elements to appear
+//! - **render**: Render an HTML document to PNG or PDF (`Page.printToPDF`)
 //!
 //! # Example
 //!
@@ -34,6 +35,7 @@ pub mod detect;
 pub mod error;
 pub mod manager;
 pub mod pool;
+pub mod render;
 pub mod snapshot;
 pub mod types;
 
@@ -42,6 +44,7 @@ mod browserless;
 pub use {
     error::Error,
     manager::BrowserManager,
+    render::{RenderFormat, RenderRequest},
     types::{
         BrowserAction, BrowserConfig, BrowserKind, BrowserPreference, BrowserRequest,
         BrowserResponse,

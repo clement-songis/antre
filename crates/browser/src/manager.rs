@@ -40,8 +40,8 @@ fn require_session(session_id: Option<&str>, action: &str) -> Result<String, Err
 
 /// Manage Chrome/Chromium instances with CDP.
 pub struct BrowserManager {
-    pool: Arc<BrowserPool>,
-    config: BrowserConfig,
+    pub(crate) pool: Arc<BrowserPool>,
+    pub(crate) config: BrowserConfig,
 }
 
 impl Default for BrowserManager {

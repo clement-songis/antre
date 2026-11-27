@@ -49,6 +49,9 @@ pub enum Error {
     #[error("invalid action: {0}")]
     InvalidAction(String),
 
+    #[error("PDF rendering failed: {0}")]
+    PdfFailed(String),
+
     #[error("browser error: {source}")]
     Other {
         #[source]
