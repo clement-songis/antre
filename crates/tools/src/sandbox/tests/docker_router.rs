@@ -462,6 +462,8 @@ fn test_sandbox_router_backend_name() {
         name == "docker"
             || name == "podman"
             || name == "apple-container"
+            || name == "seatbelt"
+            || name == "bubblewrap"
             || name == "restricted-host",
         "unexpected backend: {name}"
     );
