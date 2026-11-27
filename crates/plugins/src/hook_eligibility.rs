@@ -87,6 +87,7 @@ mod tests {
             priority: 0,
             env: Default::default(),
             requires: HookRequirements::default(),
+            protocol: Default::default(),
         }
     }
 

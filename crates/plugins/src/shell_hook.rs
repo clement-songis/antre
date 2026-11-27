@@ -19,7 +19,10 @@ use {
 };
 
 use {
-    crate::hooks::{HookAction, HookEvent, HookHandler, HookPayload, ShellHookConfig},
+    crate::{
+        claude_protocol::{HookProtocol, claude_stdin, interpret_claude},
+        hooks::{HookAction, HookEvent, HookHandler, HookPayload, ShellHookConfig},
+    },
     moltis_common::{Error as HookError, Result as HookResult},
 };
 
@@ -39,6 +42,7 @@ pub struct ShellHookHandler {
     timeout: Duration,
     env: HashMap<String, String>,
     working_dir: Option<PathBuf>,
+    protocol: HookProtocol,
 }
 
 impl ShellHookHandler {
@@ -57,7 +61,15 @@ impl ShellHookHandler {
             timeout,
             env,
             working_dir,
+            protocol: HookProtocol::Native,
         }
+    }
+
+    /// Speak another wire format (see [`HookProtocol`]).
+    #[must_use]
+    pub fn with_protocol(mut self, protocol: HookProtocol) -> Self {
+        self.protocol = protocol;
+        self
     }
 
     /// Create from a [`ShellHookConfig`].
@@ -86,10 +98,13 @@ impl HookHandler for ShellHookHandler {
         &self.subscribed_events
     }
 
-    async fn handle(&self, _event: HookEvent, payload: &HookPayload) -> HookResult<HookAction> {
-        let payload_json = serde_json::to_string(payload).map_err(|source| {
-            HookError::message(format!("failed to serialize hook payload: {source}"))
-        })?;
+    async fn handle(&self, event: HookEvent, payload: &HookPayload) -> HookResult<HookAction> {
+        let payload_json = match self.protocol {
+            HookProtocol::Native => serde_json::to_string(payload).map_err(|source| {
+                HookError::message(format!("failed to serialize hook payload: {source}"))
+            })?,
+            HookProtocol::Claude => claude_stdin(event, payload)?,
+        };
 
         debug!(
             hook = %self.hook_name,
@@ -155,6 +170,10 @@ impl HookHandler for ShellHookHandler {
             stderr_len = stderr.len(),
             "shell hook completed"
         );
+
+        if self.protocol == HookProtocol::Claude {
+            return interpret_claude(&self.hook_name, exit_code, &stdout, &stderr);
+        }
 
         if exit_code == 1 {
             let reason = match stderr.is_empty() {
@@ -224,6 +243,46 @@ mod tests {
             .await
             .unwrap();
         assert!(matches!(result, HookAction::Continue));
+    }
+
+    #[tokio::test]
+    async fn claude_protocol_blocks_on_exit_two_and_reads_claude_fields() {
+        let handler = ShellHookHandler::new(
+            "claude-guard",
+            r#"input=$(cat); case "$input" in *'"hook_event_name":"SessionStart"'*) echo "seen $input" >&2; exit 2;; esac; exit 0"#,
+            vec![HookEvent::SessionStart],
+            Duration::from_secs(5),
+            HashMap::new(),
+            None,
+        )
+        .with_protocol(HookProtocol::Claude);
+        match handler
+            .handle(HookEvent::SessionStart, &test_payload())
+            .await
+            .unwrap()
+        {
+            HookAction::Block(reason) => assert!(reason.contains("session_id"), "{reason}"),
+            other => panic!("expected block, got {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn claude_protocol_exit_one_is_not_a_block() {
+        let handler = ShellHookHandler::new(
+            "claude-error",
+            "exit 1",
+            vec![HookEvent::SessionStart],
+            Duration::from_secs(5),
+            HashMap::new(),
+            None,
+        )
+        .with_protocol(HookProtocol::Claude);
+        assert!(
+            handler
+                .handle(HookEvent::SessionStart, &test_payload())
+                .await
+                .is_err()
+        );
     }
 
     #[tokio::test]

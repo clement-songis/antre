@@ -8,6 +8,7 @@
 //! events = ["BeforeToolCall"]
 //! command = "./handler.sh"
 //! timeout = 5
+//! protocol = "claude"   # optional, default "native"
 //!
 //! [requires]
 //! os = ["darwin", "linux"]
@@ -57,6 +58,9 @@ pub struct HookMetadata {
     pub env: HashMap<String, String>,
     #[serde(default)]
     pub requires: HookRequirements,
+    /// Wire format: `native` (default) or `claude`.
+    #[serde(default)]
+    pub protocol: crate::claude_protocol::HookProtocol,
 }
 
 fn default_timeout() -> u64 {
