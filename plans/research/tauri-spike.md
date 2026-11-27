@@ -7,7 +7,33 @@ Rust daemon, be the single product surface on Windows, Linux, macOS, Android
 and iOS? Context: `compare-oss-landscape.md` §6 recommended web UI + Tauri,
 conditional on this spike.
 
-<!-- MEASUREMENTS -->
+## TL;DR
+
+- **Go**, with conditions. The web UI in a Tauri 2 shell on macOS streams a
+  4,000-token Markdown reply at 400 tok/s with no dropped frames, opens a
+  2,000-message transcript in ~0.3 s and scrolls it without a dropped frame,
+  using less memory than Chromium for the same pages. The shell itself is
+  ~770 lines of Rust (plus ~300 lines of tests) and builds in 45 s.
+- **Two WebKit limits** showed up, both outside our code:
+  1. WKWebView runs `requestAnimationFrame` at **60 Hz** on this 120 Hz Mac
+     (Chromium: 120 Hz). Smooth, but not ProMotion-smooth.
+  2. WKWebView **throttles sandboxed (opaque-origin) iframes to ~20 fps** as
+     long as the user has not interacted with them, whatever their content: a
+     near-empty page gets 20 fps too, and the same heavy design served
+     same-origin runs at 60 fps. Canvas/artifact/MCP-App animations will
+     look choppy until clicked. Static designs are unaffected.
+- **Not measured:** WebKitGTK (Linux) and Android WebView, the two engines
+  the original recommendation was most worried about. They need a Linux box
+  and an Android device or emulator; this is the main open item.
+- **End to end works**: the shell spawns the daemon, the real web UI loads
+  and connects its WebSocket, and quitting stops the daemon.
+- **Gateway findings that matter for any desktop shell:** a cold daemon took
+  200–300 s to answer here, blocked on an untimed Docker probe while Docker
+  Desktop was hung (3 s without it); the
+  trusted-network proxy binds a fixed port (`0.0.0.0:18791`), so a sidecar and
+  a user service cannot run side by side; an isolated daemon silently imported
+  `~/.codex/auth.json` tokens into its own config dir.
+
 
 ## 1. What was built
 
@@ -35,9 +61,9 @@ Modes:
 |---|---|---|
 | auto (default) | `antre-shell` | Uses the daemon from `~/.moltis/moltis.toml` when it answers over plain HTTP; otherwise starts a sidecar. |
 | sidecar | `antre-shell --sidecar [--moltis PATH] [--isolated]` | Spawns `moltis --bind 127.0.0.1 --port <free> --no-tls --no-open-browser gateway`, waits for `/health`, loads it, restarts it with backoff (5 tries) if it crashes, kills it on exit. `--isolated` uses the shell's app-data dir instead of `~/.moltis`. |
-| embedded | `antre-shell --embedded` (built with `--features embedded`) | Calls `moltis_httpd::server::start_gateway` on a tokio task inside the shell. |
+| embedded | `antre-shell --embedded` (built with `--features embedded`) | Calls `moltis_httpd::server::start_gateway` on its own thread and runtime inside the shell, on the shell's app-data directories. |
 | remote | `ANTRE_API_KEY=… antre-shell --remote https://host:port` | Checks `/health`, checks the key with `GET /api/auth/status` (Bearer), then loads the URL. Plain `http` is refused except to loopback. The key is read from the environment, never from argv (visible in `ps`). |
-| bench | `antre-shell --bench stream|transcript|canvas [--out FILE]` | Loads a bundled bench page, writes its JSON report, exits. |
+| bench | `antre-shell --bench stream\|transcript\|canvas [--out FILE]` | Loads a bundled bench page, writes its JSON report, exits. |
 
 Security choices in the shell:
 
@@ -59,16 +85,192 @@ Security choices in the shell:
   in once in the WebView (cookie persists in the WebView's store). A real fix is
   a small gateway endpoint that trades a scoped API key (or a pairing code) for
   a session cookie. Question filed in `plans/questions.md`.
-- **Embedded mode** works from the code side (`start_gateway` is public) but
-  costs: the shell workspace must copy the root `[patch.crates-io]` entries
+- **Embedded mode** works (verified, §2.6) but costs: the shell workspace must copy the root `[patch.crates-io]` entries
   (sqlx fork, vendored ACP) to resolve at all, and compiling the gateway into
   the shell is a full gateway build in a second target directory
-  (see §2.5). `start_gateway` also assumes it owns the process (global config
-  dir, signal handling, tracing set up by the CLI). The sidecar is simpler and
+  (see §2.5). `start_gateway` also assumes it owns the process: process-wide
+  config/data dir overrides, and its future is not `Send`, so it needs a
+  dedicated thread and runtime. The sidecar is simpler and
   keeps the daemon's crash domain separate from the UI.
+- **Daemon cold start.** A fresh isolated daemon took 200–300+ s to answer
+  `/health` on this Mac, all of it between "vault ready" and "sandbox
+  backend: docker". Docker Desktop was hung (`docker info` did not answer in
+  30 s) and the sandbox backend probe waits on it with no timeout. With
+  `[tools.exec.sandbox] backend = "restricted-host"` the same daemon answers
+  in **3 s**. The shell waits up to 5 minutes; the real fix is in the gateway
+  (time-box the probe, listen first, §4).
+- **Fixed ports.** The trusted-network proxy listens on `0.0.0.0:18791`
+  whatever the gateway port, so a sidecar cannot run next to a running user
+  service, and it listens on all interfaces.
+- **Credential import.** An `--isolated` daemon still auto-imported the
+  Codex CLI tokens from `~/.codex/auth.json` into its own config directory
+  (`~/Library/Application Support/org.antre.shell.spike/daemon/config/oauth_tokens.json`
+  on this Mac). Isolation for a desktop shell should include not reading
+  other tools' credentials without asking.
 - **Graceful stop.** The sidecar is stopped with SIGKILL (`tokio` child kill);
   SQLite in WAL mode survives that, but a SIGTERM path (via a safe signal crate)
   should come before shipping.
+
+## 2. Measurements (macOS, WKWebView vs Chromium)
+
+### 2.1 Method
+
+- Machine: this Mac (Apple Silicon, macOS 27 / Darwin 27.2, 120 Hz display,
+  device pixel ratio 2), plugged in, display kept awake with
+  `caffeinate -d -u`, nothing else heavy running.
+- Engines: WKWebView inside the Tauri shell (`antre-shell --bench …`,
+  Tauri 2.12.7, debug build of the shell; the shell's build profile does not
+  affect page JS) vs Playwright's Chromium 145 (headed, 1280×860 viewport,
+  DPR 2). Playwright was used instead of the `moltis-browser` crate: same
+  engine, and it ships the harness plumbing.
+- Pages (`apps/tauri/bench/src/`): the chat's own Markdown path, copied from
+  `helpers.ts`/`ws/shared.ts` (same `marked` options and renderer), the app's
+  real `style.css`, the app's real `code-highlight.ts` (Shiki). Content is
+  generated with a seeded PRNG, so both engines render identical bytes.
+  - **stream**: a 16.7 KB reply (≈4,165 tokens at 4 chars/token: headings,
+    lists, tables, 10 code blocks), delivered in 3-token deltas. Every delta
+    re-renders the whole accumulated text and scrolls to the bottom, exactly
+    like `handleChatDelta`. Three runs inside one page: flat out (render +
+    forced layout per delta, back to back), paced 100 tok/s, paced 400 tok/s
+    (each delta a separate task, like WebSocket messages), then Shiki on the
+    final message.
+  - **transcript**: 2,000 messages (674 KB of Markdown, 198 code blocks, 28k
+    DOM nodes) rendered at once, then Shiki on all code blocks, then an 8 s
+    programmatic scroll from top to bottom, then 40 jumps to positions.
+  - **canvas**: a 788 KB generated design (5,110 elements: gradients, shadows,
+    `backdrop-filter`, CSS animations, 240 SVG sparklines, an animated
+    `<canvas>`) in `<iframe sandbox="allow-scripts" srcdoc=…>`, the way canvas,
+    artifacts and MCP Apps are embedded. Measures load, idle animation frames
+    and scrolling inside the iframe (the iframe counts its own frames and posts
+    them back), 5 remounts with new content, and two variants (a near-empty
+    page in the same sandbox; the heavy design with `allow-same-origin`).
+- Frames: `requestAnimationFrame` timestamps; refresh period measured on an
+  idle page first; a frame is "dropped" when a gap spans more than one
+  refresh. WebKit coarsens `performance.now()` to 1 ms; Chromium to 0.1 ms.
+- Memory: peak RSS sampled from `ps` every 200 ms, from outside: WKWebView's
+  `com.apple.WebKit.WebContent` (and GPU) processes started by the run;
+  Chromium's renderer (and GPU) processes. RSS is a rough proxy (shared pages
+  are counted), good for an order of magnitude only.
+- Runs: 3 per engine and page; tables show medians. Raw JSON:
+  `apps/tauri/bench/results/2026-11-27/` (`matrix/` for stream and
+  transcript; `canvas/` for the canvas page, re-run after fixing a
+  double-counted host frame counter and adding the variants; the canvas files
+  in `matrix/` predate that fix). Reproduce: `apps/tauri/README.md`.
+
+### 2.2 Streaming a long reply
+
+| Metric | WKWebView (Tauri) | Chromium 145 |
+|---|---:|---:|
+| Refresh rate seen by rAF (Hz) | 59 | 120 |
+| Flat out: max tokens/s (render + layout per delta) | 1,628 | 2,218 |
+| Flat out: per-delta ms, first 10% of reply | 0.23 | 0.25 |
+| Flat out: per-delta ms, last 10% of reply | 3.2 | 2.36 |
+| Flat out: per-delta ms p95 | 4 | 2.5 |
+| 100 tok/s: rendered tok/s | 100 | 100 |
+| 100 tok/s: fps / dropped frames | 60 / 0% | 120 / 0% |
+| 100 tok/s: worst frame (ms) | 32 | 9.4 |
+| 400 tok/s: rendered tok/s | 399.9 | 399.9 |
+| 400 tok/s: fps / dropped frames | 60 / 0% | 120 / 0% |
+| 400 tok/s: worst frame (ms) | 22 | 9.4 |
+| 400 tok/s: delta handler p95 (ms) | 3 | 3.2 |
+| Shiki after the stream (ms, incl. init) | 168 | 456 |
+| Peak page process RSS (MB) | 276 | 369 |
+| Peak GPU process RSS (MB) | 32 | 120 |
+
+Reading: both engines keep up with 400 tok/s (faster than any hosted model
+streams today) with no dropped frames. The cost per delta grows linearly
+with the reply because the UI re-parses the whole message on every delta
+(0.2 ms at the start, 3 ms at the end of a 4k-token reply): at ~16k tokens
+it would reach ~12 ms per delta and start eating a 60 Hz frame budget. That
+is a UI algorithm issue, identical in every engine; incremental rendering
+(re-parse only the last block) would remove it.
+
+### 2.3 A 2,000-message transcript
+
+| Metric | WKWebView (Tauri) | Chromium 145 |
+|---|---:|---:|
+| Markdown for 2,000 messages (ms) | 48 | 29 |
+| DOM insert + layout (ms) | 119 | 140 |
+| Time to first paint (ms) | 304 | 217 |
+| Shiki on 198 code blocks (ms) | 377 | 1,285 |
+| Scroll 8 s top→bottom: fps / dropped | 60 / 0% | 120 / 0% |
+| Scroll: worst frame (ms) | 19 | 9.4 |
+| Jump to a position, p95 (ms to 2nd frame) | 34 | 18 |
+| Peak page process RSS (MB) | 460 | 584 |
+| Peak GPU process RSS (MB) | 65 | 104 |
+
+Reading: no virtualisation is needed at 2,000 messages on this hardware in
+either engine. Jump latency is two frames in both (34 ms = 2 × 16.7 ms).
+
+### 2.4 Heavy design in a sandboxed `srcdoc` iframe
+
+| Metric | WKWebView (Tauri) | Chromium 145 |
+|---|---:|---:|
+| First mount: design script runs (ms) | 28 | 39 |
+| Remount with new content, mean of 5 (ms) | 22 | 37 |
+| Idle animations 3 s: iframe fps (dropped) | 21.6 (65%) | 120 (0%) |
+| Scroll inside the design 4 s: iframe fps (dropped) | 23.1 (61%) | 120 (0%) |
+| Scroll: iframe worst frame (ms) | 64 | 9 |
+| Host page fps meanwhile | 58.3 | 120 |
+| **Variant: near-empty page, same sandbox: iframe fps** | **20.5** | 120 |
+| **Variant: heavy design, `allow-same-origin`: iframe fps** | **60** | 120 |
+| Peak page process RSS (MB) | 119 | 2,193 |
+| Peak GPU process RSS (MB) | 76 | 194 |
+
+Reading: loading is fast everywhere (under 40 ms for 788 KB). The ~20 fps in
+WKWebView is not rendering cost: an almost empty page in the same sandbox
+gets the same 20 fps, and the heavy design runs at the full 60 fps once it is
+same-origin. This matches WebKit's throttling of `requestAnimationFrame` in
+cross-origin frames the user has not interacted with (an anti-ad/energy
+measure); the sandbox without `allow-same-origin` gives the frame an opaque
+origin, which counts as cross-origin. WebKit lifts it after a user gesture in
+the frame (not verified here: the harness cannot produce a trusted click).
+`allow-same-origin` is not an acceptable fix for untrusted designs: combined
+with `allow-scripts` it lets the frame remove its own sandbox. Options:
+accept it (designs become smooth once touched), or serve canvas content from
+a dedicated origin and test whether a first-party separate origin is treated
+the same way, or patch the WKWebView preference through a small Tauri plugin
+(private WebKit preference, App Store risk). The Chromium RSS figure looks
+too high to take at face value (it may include tile memory for the animated
+1600×640 canvas at DPR 2 over six mounts); it is reported as measured.
+
+### 2.5 Build cost
+
+- Default shell (sidecar/remote): 45 s from scratch, 9–20 s incremental, on
+  this Mac; binary is a debug build (release not measured).
+- `--features embedded`: requires copying the root `[patch.crates-io]` (sqlx
+  fork, vendored ACP) into the shell workspace just to resolve, and the
+  generated web assets (`just build-web-assets`) because `moltis-web` refuses
+  to build without them. First build: **~7 min wall clock, ~19 CPU-minutes**
+  (the whole gateway compiled a second time in the shell's target directory);
+  incremental shell-only rebuilds ~20 s. Debug binary: 760 MB (vs a few MB
+  of shell code without it).
+- `start_gateway`'s future is **not `Send`** (it holds tracing values across
+  awaits), so it cannot run on the shell's runtime with `tokio::spawn`; the
+  embedded mode gives it its own thread and runtime.
+
+### 2.6 End-to-end with the real web UI
+
+`antre-shell --sidecar --isolated --moltis target/debug/moltis` (the
+debug daemon from the main checkout):
+
+- The shell found a free port, spawned the daemon, waited for `/health`
+  (4 s with the Docker probe disabled; 275 s, and once over 300 s, with the
+  hung Docker Desktop, see "Daemon cold start"), then navigated the WKWebView
+  to it. The real web UI loaded, opened its
+  WebSocket (`/health` reported `connections: 1`, the daemon persisted the
+  browser timezone from the page) and showed onboarding.
+- Quitting with SIGTERM first left the daemon orphaned (signals bypass
+  Tauri's `RunEvent::Exit`); the shell now turns SIGTERM/SIGINT into a normal
+  exit, which shuts the sidecar down (verified: no daemon left). A shell **crash** still orphans it:
+  the daemon should exit when its parent dies (stdin pipe closed, or a
+  `--parent-pid` watchdog) before shipping.
+- Embedded (`--features embedded -- --embedded`, on the shell's own
+  directories): gateway answered in 8 s, the web UI connected
+  (`connections: 1`), shell RSS 302 MB with the gateway inside, and the
+  gateway stopped with the shell.
+- Not tried: the remote mode against a real remote TLS daemon (the probes and
+  URL rules are unit-tested against a local fake server).
 
 ## 3. Platforms
 
@@ -78,9 +280,9 @@ Security choices in the shell:
   column in §2, so rendering and performance should track Chrome closely,
   including 120 Hz+ `requestAnimationFrame` (Chromium does not cap it).
 - Runtime: preinstalled on Windows 11 and current Windows 10. Tauri's bundler
-  can embed the bootstrapper (`webviewInstallMode: downloadBootstrapper`, the
-  default), embed the offline installer (+~127 MB), or use a fixed runtime
-  shipped with the app (+~180 MB, full control over the version).
+  can download the bootstrapper at install time (the default), embed the
+  offline installer, or ship a fixed runtime with the app (well over 100 MB,
+  full control over the version). Sizes per the Tauri docs, not measured.
 - Packages: NSIS `.exe` and WiX `.msi` from `tauri build` on a Windows runner
   (cross-compiling from macOS/Linux works for NSIS only, experimental).
 - Sidecar: `moltis.exe` declared as `bundle.externalBin` (target-triple
@@ -90,8 +292,8 @@ Security choices in the shell:
   is the natural default.
 - Signing: Authenticode through `bundle.windows.signCommand` (works with Azure
   Trusted Signing, a cloud HSM, or `signtool`). An EV certificate is no longer
-  needed to avoid SmartScreen warnings with Azure Trusted Signing; reputation
-  still builds over time.
+  needed with Azure Trusted Signing; SmartScreen reputation still builds over
+  time (not verified here).
 
 ### 3.2 Linux (WebKitGTK)
 
@@ -191,4 +393,69 @@ scroll and animate at 60 Hz where a native SwiftUI list runs at 120 Hz.
   what a Tauri iOS app is, with less tooling risk; decide after a Tauri iOS
   prototype.
 
-<!-- RECOMMENDATION -->
+## 4. Recommendation
+
+**Go for "web UI + thin Tauri 2 shell" on desktop**, as the single product
+surface, with the daemon supervised as a sidecar (not embedded). **Defer the
+mobile decision** until WebKitGTK and Android WebView are measured and a
+Tauri iOS remote-client prototype exists.
+
+Why go:
+
+- On macOS the system WebView is good enough for the chat: 400 tok/s
+  streaming with no dropped frames, 2,000 messages in 0.3 s, smooth scroll,
+  less memory than Chromium. The bottlenecks found (per-delta full re-render,
+  no virtualisation) are UI algorithms that would hurt in any engine,
+  including gpui if it re-parsed the same way.
+- Every surface that matters for Antre (canvas, artifacts, MCP Apps, mods)
+  is HTML and works in the shell with no extra code; gpui would need a
+  WebView anyway.
+- The shell stays tiny and replaceable: ~770 lines, no IPC exposed to daemon
+  pages, the UI is still served by the daemon (browser, PWA and shell share
+  one build and update without a shell release).
+
+Why sidecar, not embedded:
+
+- Same binary as the server/CLI install, separate crash domain, no second
+  copy of the gateway's dependency patches, fast shell builds. Embedding buys
+  one process less at the cost of all of that.
+
+Conditions before committing (in order):
+
+1. **Measure WebKitGTK and Android WebView** with the same bench (it is
+   engine-agnostic: `bench/run.mjs` + the shell's `--bench` mode; on Linux
+   run the shell, on Android load `dist/` in a WebView or Chrome Android).
+   No-go trigger: scroll or 400 tok/s streaming below ~45 fps on a mid-range
+   Linux laptop with a stock distro WebKitGTK and no compositing workarounds.
+   Fallback if WebKitGTK fails: Tauri 3's CEF runtime on Linux only, or
+   Electron on Linux only.
+2. **Fix the daemon's cold start** (time-box the Docker probe, listen first,
+   initialise sandboxes in the background) and make fixed
+   ports (`18791` proxy) configurable or ephemeral, so a sidecar can coexist
+   with a user service, and make the daemon exit when its parent shell dies. Independent of the shell, but the shell makes the
+   wait visible.
+3. **Remote auth**: an API-key or pairing-code → session-cookie exchange in
+   the gateway (needed for remote desktop mode and for every mobile client).
+4. **Decide the canvas iframe origin model** knowing WKWebView throttles
+   opaque-origin frames to ~20 fps until interaction (and iOS WKWebView does
+   the same and caps at 60 Hz).
+5. **Incremental Markdown rendering** for streaming (re-parse only the open
+   block) before supporting very long replies.
+
+Risks:
+
+| Risk | Likelihood | Impact | Mitigation |
+|---|---|---|---|
+| WebKitGTK too slow or glitchy on common Linux setups | Medium | High (one of five platforms) | Measure first; Flatpak on the GNOME runtime for a current WebKitGTK; CEF runtime (Tauri 3) or Electron on Linux as fallback. |
+| 60 Hz cap in WKWebView (macOS, iOS) | Certain | Low–medium (feel, not function) | Accept; revisit when WebKit lifts it; a private-preference plugin is possible but risky for the App Store. |
+| Opaque-origin iframe throttling (WebKit) | Certain | Medium for animated canvases | Accept "smooth after first touch", or a dedicated canvas origin if WebKit treats it better (to test). |
+| Tauri mobile gaps (push, background, share extension) | Certain | High for a mobile-first experience | Community push plugins; native Swift/Kotlin plugins; keep the Swift iOS app until parity; mobile is a remote client only. |
+| Tauri 3 migration (alpha now) | Medium | Low | The shell is small; Tauri 3 mostly changes runtime selection. |
+| Daemon assumptions about owning the machine (fixed ports, cold start, credential import) | Certain | Medium | Gateway fixes listed above; isolated sidecar data dir in the shell. |
+| Divergent engines (WebView2 vs WebKit) cause UI bugs | Medium | Medium | Playwright E2E already exists for Chromium; add a WebKit project (Playwright WebKit is close to WKWebView). |
+
+What this spike did not do: package or sign anything, run on Windows,
+Linux, Android or iOS, measure a release build of the shell, test real LLM
+streaming end to end through the shell (the bench uses the UI's renderer on
+synthetic deltas).
+
