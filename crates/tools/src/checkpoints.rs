@@ -732,7 +732,7 @@ mod tests {
         let first = turn("r1", 1, vec![cp1.id.clone()]);
         let second = turn("r2", 2, vec![cp2.id.clone(), cp3.id.clone()]);
 
-        let outcome = manager.restore_turns(&[second.clone()]).await;
+        let outcome = manager.restore_turns(std::slice::from_ref(&second)).await;
         assert_eq!(outcome.restored, 2);
         assert!(outcome.errors.is_empty());
         assert_eq!(fs::read_to_string(&path).unwrap(), "v1\n");
