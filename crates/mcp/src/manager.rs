@@ -130,6 +130,11 @@ impl McpManager {
         self.host.host.set(host);
     }
 
+    /// Install the approver used for tools of `ask` and `untrusted` servers.
+    pub fn set_tool_approver(&self, approver: Arc<dyn crate::host::McpToolApprover>) {
+        self.host.approver.set(approver);
+    }
+
     /// Advertise the MCP Apps extension to servers started from now on.
     pub fn set_apps_enabled(&self, enabled: bool) {
         self.apps_enabled.store(enabled, Ordering::Relaxed);
@@ -794,11 +799,7 @@ impl McpManager {
                 bridges.extend(
                     McpToolBridge::from_slot(name, tool_defs, Arc::clone(slot))
                         .into_iter()
-                        .map(|bridge| {
-                            bridge
-                                .with_trust(trust)
-                                .with_call_contexts(self.host.contexts.clone())
-                        }),
+                        .map(|bridge| bridge.with_trust(trust).with_host(self.host.clone())),
                 );
             }
         }

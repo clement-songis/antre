@@ -173,13 +173,17 @@ pub(crate) async fn run_with_tools(
             persona.config.memory.agent_write_mode,
         );
     }
-    if tools_enabled
-        && matches!(
-            persona.config.tools.registry_mode,
-            moltis_config::ToolRegistryMode::Lazy
-        )
-    {
-        filtered_registry = moltis_agents::lazy_tools::wrap_registry_lazy(filtered_registry);
+    if tools_enabled {
+        filtered_registry = match persona.config.tools.registry_mode {
+            moltis_config::ToolRegistryMode::Full => filtered_registry,
+            moltis_config::ToolRegistryMode::Lazy => {
+                moltis_agents::lazy_tools::wrap_registry_lazy(filtered_registry)
+            },
+            moltis_config::ToolRegistryMode::Auto => moltis_agents::lazy_tools::defer_mcp_tools(
+                filtered_registry,
+                persona.config.tools.lazy_mcp_threshold,
+            ),
+        };
     }
 
     // ── Memory prefetch ────────────────────────────────────────────────

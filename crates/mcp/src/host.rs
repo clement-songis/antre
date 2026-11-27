@@ -164,13 +164,49 @@ impl ServerPolicy {
     }
 }
 
-/// Shared state the manager hands to every server dispatcher.
+/// A tool call from a server whose trust tier requires user approval.
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ToolApprovalRequest {
+    pub server: String,
+    pub tool: String,
+    pub trust: TrustTier,
+    /// Arguments as sent to the server (internal `_` keys removed).
+    pub arguments: Value,
+    pub session_key: Option<String>,
+}
+
+/// Asks the user whether a tool call may run.
+#[async_trait]
+pub trait McpToolApprover: Send + Sync {
+    /// `Ok(true)` runs the call; `Ok(false)` refuses it.
+    async fn approve(&self, request: ToolApprovalRequest) -> Result<bool>;
+}
+
+/// Shared, replaceable tool approver. Empty means calls that need approval
+/// are refused.
+#[derive(Clone, Default)]
+pub struct ApproverCell(Arc<RwLock<Option<Arc<dyn McpToolApprover>>>>);
+
+impl ApproverCell {
+    pub fn set(&self, approver: Arc<dyn McpToolApprover>) {
+        *self.0.write().unwrap_or_else(|e| e.into_inner()) = Some(approver);
+    }
+
+    #[must_use]
+    pub fn get(&self) -> Option<Arc<dyn McpToolApprover>> {
+        self.0.read().unwrap_or_else(|e| e.into_inner()).clone()
+    }
+}
+
+/// Shared state the manager hands to every server dispatcher and tool bridge.
 #[derive(Clone, Default)]
 pub struct HostContext {
     pub host: HostCell,
     pub roots: RootsCell,
     pub contexts: CallContexts,
     pub budget: Arc<SamplingBudget>,
+    pub approver: ApproverCell,
 }
 
 /// Answers requests from one server according to its policy.

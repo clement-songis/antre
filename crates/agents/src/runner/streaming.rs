@@ -109,7 +109,10 @@ pub async fn run_agent_loop_streaming_with_limits(
         .unwrap_or(config.tools.agent_max_iterations);
     let base_max_iterations = resolve_agent_max_iterations(configured_max_iterations);
     // Lazy mode needs extra iterations for tool_search discovery round-trips.
-    let max_iterations = if config.tools.registry_mode == moltis_config::ToolRegistryMode::Lazy {
+    let max_iterations = if matches!(
+        config.tools.registry_mode,
+        moltis_config::ToolRegistryMode::Lazy | moltis_config::ToolRegistryMode::Auto
+    ) {
         base_max_iterations * 3
     } else {
         base_max_iterations

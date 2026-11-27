@@ -41,8 +41,8 @@ pub use {
     elicitation::{ElicitationSchema, ElicitationView, PendingElicitations},
     error::{Context, Error, Result},
     host::{
-        ElicitationRequest, HostContext, McpHost, SamplingRequest, SamplingResponse, ServerPolicy,
-        TrustTier,
+        ElicitationRequest, HostContext, McpHost, McpToolApprover, SamplingRequest,
+        SamplingResponse, ServerPolicy, ToolApprovalRequest, TrustTier,
     },
     manager::McpManager,
     manager_features::McpServerSummary,

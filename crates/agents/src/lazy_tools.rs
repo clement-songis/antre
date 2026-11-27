@@ -7,6 +7,12 @@
 //! `tool_search(name="tool_name")` to activate them (get the full schema).
 //! Activated tools appear in subsequent iterations via the runner's
 //! per-iteration `list_schemas()` call.
+//!
+//! `registry_mode = "auto"` uses [`defer_mcp_tools`]: built-in tools stay in
+//! the prompt and only MCP tools move behind `tool_search`, once there are
+//! more of them than `tools.lazy_mcp_threshold`. The tool list then stays
+//! the same across turns however many MCP servers are connected, which keeps
+//! the prompt prefix cacheable.
 
 use std::sync::Arc;
 
@@ -25,7 +31,12 @@ pub struct ToolSearchTool {
     full_registry: Arc<ToolRegistry>,
     /// Shared activated set — same Arc as the wrapper registry's `activated` field.
     activated: ActivatedTools,
+    description: String,
 }
+
+const LAZY_DESCRIPTION: &str = "Search for available tools by keyword, or activate a specific tool by exact name. \
+     Use `query` to find tools (returns name + description, max 15 results). \
+     Use `name` to activate a tool and get its full parameter schema.";
 
 impl ToolSearchTool {
     fn keyword_search(&self, query: &str) -> Vec<(String, String, u32)> {
@@ -144,9 +155,7 @@ impl AgentTool for ToolSearchTool {
     }
 
     fn description(&self) -> &str {
-        "Search for available tools by keyword, or activate a specific tool by exact name. \
-         Use `query` to find tools (returns name + description, max 15 results). \
-         Use `name` to activate a tool and get its full parameter schema."
+        &self.description
     }
 
     fn parameters_schema(&self) -> serde_json::Value {
@@ -218,11 +227,56 @@ pub fn wrap_registry_lazy(full: ToolRegistry) -> ToolRegistry {
     let search_tool = ToolSearchTool {
         full_registry: full,
         activated,
+        description: LAZY_DESCRIPTION.to_string(),
     };
     // The full registry has already been filtered for this run. Searching it
     // cannot discover or activate a tool above the caller's audience ceiling.
     lazy_registry.register_public(Box::new(search_tool));
     lazy_registry
+}
+
+/// Defer MCP tools behind `tool_search` when there are more than
+/// `threshold` of them; other tools keep their full schemas.
+///
+/// The search tool's description names each deferred server and its tool
+/// count, so the model knows what it can look for without the schemas.
+pub fn defer_mcp_tools(full: ToolRegistry, threshold: usize) -> ToolRegistry {
+    let is_mcp = |source: &ToolSource| matches!(source, ToolSource::Mcp { .. });
+    let deferred = full.clone_allowed_entries(|_, source| is_mcp(source));
+    let deferred_count = deferred.list_names().len();
+    if deferred_count <= threshold {
+        return full;
+    }
+
+    let mut servers = std::collections::BTreeMap::<String, usize>::new();
+    for name in deferred.list_names() {
+        if let Some(ToolSource::Mcp { server }) = deferred.get_source(&name) {
+            *servers.entry(server.as_str().to_string()).or_default() += 1;
+        }
+    }
+    let server_list = servers
+        .iter()
+        .map(|(server, count)| format!("{server} ({count})"))
+        .collect::<Vec<_>>()
+        .join(", ");
+
+    let mut registry = full.clone_allowed_entries(|_, source| !is_mcp(source));
+    let search_tool = ToolSearchTool {
+        full_registry: Arc::new(deferred),
+        activated: Arc::clone(&registry.activated),
+        description: format!(
+            "Find and activate MCP tools, which are not loaded by default. \
+             Connected MCP servers (tool count): {server_list}. \
+             Use `query` with a keyword or server name to list matching tools, \
+             then `name` with the exact `mcp__<server>__<tool>` name to load its schema."
+        ),
+    };
+    debug!(
+        deferred = deferred_count,
+        "MCP tools deferred behind tool_search"
+    );
+    registry.register_public(Box::new(search_tool));
+    registry
 }
 
 #[allow(clippy::unwrap_used, clippy::expect_used)]
@@ -524,6 +578,7 @@ mod tests {
                 },
             ),
             activated: lazy.activated.clone(),
+            description: LAZY_DESCRIPTION.to_string(),
         };
 
         let results = search.keyword_search("matching");
@@ -565,5 +620,76 @@ mod tests {
             .unwrap();
 
         assert_eq!(result["ok"], true);
+    }
+
+    fn registry_with_mcp(count: usize) -> ToolRegistry {
+        let mut registry = ToolRegistry::new();
+        registry.register(Box::new(DummyTool::new("exec", "Execute a shell command")));
+        for index in 0..count {
+            let server = if index % 2 == 0 {
+                "github"
+            } else {
+                "linear"
+            };
+            registry.register_mcp(
+                Box::new(DummyTool::new(
+                    &format!("mcp__{server}__tool_{index}"),
+                    &format!("{server} operation {index}"),
+                )),
+                moltis_config::schema::McpServerId::from(server),
+            );
+        }
+        registry
+    }
+
+    #[test]
+    fn defer_mcp_tools_keeps_small_registries_unchanged() {
+        let registry = defer_mcp_tools(registry_with_mcp(3), 3);
+        assert_eq!(registry.list_names().len(), 4);
+        assert!(registry.get("tool_search").is_none());
+    }
+
+    #[tokio::test]
+    async fn defer_mcp_tools_hides_mcp_schemas_and_activates_on_demand() {
+        let registry = defer_mcp_tools(registry_with_mcp(5), 2);
+        let mut names = registry.list_names();
+        names.sort();
+        assert_eq!(names, vec!["exec".to_string(), "tool_search".to_string()]);
+
+        let search = registry.get("tool_search").unwrap();
+        assert!(search.description().contains("github (3), linear (2)"));
+
+        let found = search
+            .execute(serde_json::json!({"query": "linear"}))
+            .await
+            .unwrap();
+        let results = found["results"].as_array().unwrap();
+        assert_eq!(results.len(), 2);
+        assert!(
+            results
+                .iter()
+                .all(|r| r["name"].as_str().unwrap().starts_with("mcp__linear__")),
+            "built-in tools are not search results: {results:?}"
+        );
+
+        let activated = search
+            .execute(serde_json::json!({"name": "mcp__github__tool_0"}))
+            .await
+            .unwrap();
+        assert_eq!(activated["activated"], true);
+        assert!(registry.get("mcp__github__tool_0").is_some());
+        assert_eq!(
+            registry.get_source("mcp__github__tool_0"),
+            None,
+            "activated tools are not static entries"
+        );
+        let schemas = registry.list_schemas();
+        assert!(schemas.iter().any(|s| s["name"] == "mcp__github__tool_0"));
+        assert!(
+            schemas
+                .iter()
+                .any(|s| s["name"] == "mcp__github__tool_0" && s["source"] == "mcp"),
+            "activated MCP tool keeps its source metadata"
+        );
     }
 }

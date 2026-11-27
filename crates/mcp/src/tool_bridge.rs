@@ -8,8 +8,8 @@ use {
     crate::{
         client_slot::ClientSlot,
         error::{Error, Result},
-        host::TrustTier,
-        sampling::{CallContext, CallContexts},
+        host::{HostContext, ToolApprovalRequest, TrustTier},
+        sampling::CallContext,
         traits::McpClientTrait,
         types::{McpToolDef, ToolContent},
     },
@@ -53,7 +53,7 @@ pub struct McpToolBridge {
     input_schema: serde_json::Value,
     client_slot: Arc<ClientSlot>,
     trust: TrustTier,
-    call_contexts: Option<CallContexts>,
+    host: Option<HostContext>,
 }
 
 impl McpToolBridge {
@@ -86,7 +86,7 @@ impl McpToolBridge {
             input_schema: tool_def.input_schema.clone(),
             client_slot,
             trust: TrustTier::default(),
-            call_contexts: None,
+            host: None,
         }
     }
 
@@ -121,10 +121,12 @@ impl McpToolBridge {
         self
     }
 
-    /// Attribute server requests made during a call to the calling session.
+    /// Attach the host context: server requests made during a call are
+    /// attributed to the calling session, and calls needing approval go
+    /// through its approver.
     #[must_use]
-    pub fn with_call_contexts(mut self, contexts: CallContexts) -> Self {
-        self.call_contexts = Some(contexts);
+    pub fn with_host(mut self, host: HostContext) -> Self {
+        self.host = Some(host);
         self
     }
 
@@ -174,10 +176,13 @@ impl McpAgentTool for McpToolBridge {
             .get("_session_key")
             .and_then(|v| v.as_str())
             .map(str::to_string);
-        let _call_context = self
-            .call_contexts
-            .as_ref()
-            .map(|contexts| contexts.enter(self.server_name.as_str(), CallContext { session_key }));
+        if self.trust.requires_tool_approval() {
+            self.require_approval(&params, session_key.clone()).await?;
+        }
+        let _call_context = self.host.as_ref().map(|host| {
+            host.contexts
+                .enter(self.server_name.as_str(), CallContext { session_key })
+        });
 
         let result = self.call(params).await?;
         if self.trust == TrustTier::Untrusted {
@@ -192,6 +197,43 @@ impl McpAgentTool for McpToolBridge {
 }
 
 impl McpToolBridge {
+    async fn require_approval(
+        &self,
+        params: &serde_json::Value,
+        session_key: Option<String>,
+    ) -> Result<()> {
+        let approver = self.host.as_ref().and_then(|host| host.approver.get());
+        let Some(approver) = approver else {
+            return Err(Error::message(format!(
+                "MCP tool '{}' needs approval (server trust: {}) but no approver is available",
+                self.prefixed_name, self.trust
+            )));
+        };
+        let arguments = match params {
+            serde_json::Value::Object(map) => serde_json::Value::Object(
+                map.iter()
+                    .filter(|(key, _)| !key.starts_with('_'))
+                    .map(|(key, value)| (key.clone(), value.clone()))
+                    .collect(),
+            ),
+            other => other.clone(),
+        };
+        let request = ToolApprovalRequest {
+            server: self.server_name.as_str().to_string(),
+            tool: self.original_name.clone(),
+            trust: self.trust,
+            arguments,
+            session_key,
+        };
+        if approver.approve(request).await? {
+            return Ok(());
+        }
+        Err(Error::message(format!(
+            "MCP tool '{}' was not approved",
+            self.prefixed_name
+        )))
+    }
+
     async fn call(&self, params: serde_json::Value) -> Result<serde_json::Value> {
         // Clean up arguments before forwarding to the MCP server:
         // 1. Strip internal metadata keys (e.g. _session_key) injected by the
@@ -257,6 +299,7 @@ mod tests {
         super::*,
         crate::{
             client::McpClientState,
+            host::{HostContext, TrustTier},
             traits::McpClientTrait,
             types::{McpToolDef, ToolContent, ToolsCallResult},
         },
@@ -569,5 +612,124 @@ mod tests {
         assert!(error.to_string().contains("is not running"));
         assert!(old_received.lock().await.is_none());
         assert!(replacement_received.lock().await.is_none());
+    }
+
+    struct FixedApprover {
+        answer: bool,
+        seen: std::sync::Mutex<Vec<crate::host::ToolApprovalRequest>>,
+    }
+
+    #[async_trait]
+    impl crate::host::McpToolApprover for FixedApprover {
+        async fn approve(&self, request: crate::host::ToolApprovalRequest) -> Result<bool> {
+            self.seen.lock().unwrap().push(request);
+            Ok(self.answer)
+        }
+    }
+
+    fn bridge_with(
+        trust: TrustTier,
+        approver: Option<Arc<FixedApprover>>,
+    ) -> (
+        McpToolBridge,
+        Arc<tokio::sync::Mutex<Option<serde_json::Value>>>,
+    ) {
+        let received = Arc::new(tokio::sync::Mutex::new(None));
+        let client: Arc<RwLock<dyn McpClientTrait>> = Arc::new(RwLock::new(MockMcpClient {
+            received_args: Arc::clone(&received),
+        }));
+        let tool_def = McpToolDef {
+            name: "write".to_string(),
+            input_schema: serde_json::json!({"type": "object"}),
+            ..Default::default()
+        };
+        let host = HostContext::default();
+        if let Some(approver) = approver {
+            host.approver.set(approver);
+        }
+        let bridge = McpToolBridge::new("srv", &tool_def, client)
+            .with_trust(trust)
+            .with_host(host);
+        (bridge, received)
+    }
+
+    #[tokio::test]
+    async fn ask_tier_without_approver_fails_closed() {
+        let (bridge, received) = bridge_with(TrustTier::Ask, None);
+        let error = bridge.execute(serde_json::json!({})).await.unwrap_err();
+        assert!(error.to_string().contains("no approver"));
+        assert!(received.lock().await.is_none(), "server must not be called");
+    }
+
+    #[tokio::test]
+    async fn ask_tier_runs_only_when_approved() {
+        let approver = Arc::new(FixedApprover {
+            answer: true,
+            seen: std::sync::Mutex::default(),
+        });
+        let (bridge, received) = bridge_with(TrustTier::Ask, Some(Arc::clone(&approver)));
+        let result = bridge
+            .execute(serde_json::json!({"path": "a", "_session_key": "s1"}))
+            .await
+            .unwrap();
+        assert_eq!(result, serde_json::json!("ok"));
+        let seen = approver.seen.lock().unwrap();
+        assert_eq!(seen[0].tool, "write");
+        assert_eq!(seen[0].session_key.as_deref(), Some("s1"));
+        assert_eq!(seen[0].arguments, serde_json::json!({"path": "a"}));
+        assert!(received.lock().await.is_some());
+
+        let denier = Arc::new(FixedApprover {
+            answer: false,
+            seen: std::sync::Mutex::default(),
+        });
+        let (bridge, received) = bridge_with(TrustTier::Ask, Some(denier));
+        let error = bridge.execute(serde_json::json!({})).await.unwrap_err();
+        assert!(error.to_string().contains("not approved"));
+        assert!(received.lock().await.is_none());
+    }
+
+    #[tokio::test]
+    async fn trusted_tier_skips_approval_and_untrusted_results_are_marked() {
+        let (bridge, _) = bridge_with(TrustTier::Trusted, None);
+        assert_eq!(bridge.trust(), TrustTier::Trusted);
+        assert_eq!(
+            bridge.execute(serde_json::json!({})).await.unwrap(),
+            serde_json::json!("ok")
+        );
+
+        let approver = Arc::new(FixedApprover {
+            answer: true,
+            seen: std::sync::Mutex::default(),
+        });
+        let (bridge, _) = bridge_with(TrustTier::Untrusted, Some(approver));
+        let result = bridge.execute(serde_json::json!({})).await.unwrap();
+        assert_eq!(result["source"], "untrusted MCP server 'srv'");
+        assert_eq!(result["result"], "ok");
+    }
+
+    #[test]
+    fn app_only_tools_get_no_bridge() {
+        let client: Arc<RwLock<dyn McpClientTrait>> = Arc::new(RwLock::new(MockMcpClient {
+            received_args: Arc::new(tokio::sync::Mutex::new(None)),
+        }));
+        let tools = [
+            McpToolDef {
+                name: "visible".into(),
+                input_schema: serde_json::json!({}),
+                ..Default::default()
+            },
+            McpToolDef {
+                name: "app_only".into(),
+                input_schema: serde_json::json!({}),
+                meta: Some(
+                    serde_json::json!({"ui": {"resourceUri": "ui://x", "visibility": ["app"]}}),
+                ),
+                ..Default::default()
+            },
+        ];
+        let bridges = McpToolBridge::from_client("srv", &tools, client);
+        assert_eq!(bridges.len(), 1);
+        assert_eq!(bridges[0].prefixed_name(), "mcp__srv__visible");
     }
 }
