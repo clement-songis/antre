@@ -310,6 +310,22 @@ export function chatAddErrorCard(err: ErrorCardData): void {
 	smartScrollToBottom();
 }
 
+/** Add a Cancel button to the last error card of a run parked on a quota. */
+export function addQuotaWaitCancelButton(sessionKey: string): void {
+	const lastCard = S.chatMsgBox?.querySelector(".error-card:last-child") as HTMLElement | null;
+	if (!lastCard) return;
+	lastCard.dataset.quotaWaitSession = sessionKey;
+	const btn = document.createElement("button");
+	btn.className = "provider-btn provider-btn-secondary quota-wait-cancel-btn";
+	btn.textContent = t("errors:chat.cancelWait", "Cancel");
+	btn.onclick = () => {
+		btn.disabled = true;
+		sendRpc("chat.cancel_quota_wait", { sessionKey });
+	};
+	const body = lastCard.querySelector(".error-body");
+	if (body) body.appendChild(btn);
+}
+
 export function chatAddErrorMsg(message: string): void {
 	chatAddErrorCard(parseErrorMessage(message));
 }

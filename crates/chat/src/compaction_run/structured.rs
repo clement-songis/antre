@@ -282,6 +282,10 @@ pub(super) async fn run(
                 stream_error = Some(e.to_string());
                 break;
             },
+            StreamEvent::Failure(failure) => {
+                stream_error = Some(failure.message);
+                break;
+            },
             // Tool events aren't expected on a summary stream; drop them.
             StreamEvent::ToolCallStart { .. }
             | StreamEvent::ToolCallArgumentsDelta { .. }

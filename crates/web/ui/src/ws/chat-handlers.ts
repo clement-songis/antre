@@ -1,6 +1,7 @@
 // ── Chat event handler functions ──────────────────────────────
 
 import {
+	addQuotaWaitCancelButton,
 	appendReasoningDisclosure,
 	chatAddErrorCard,
 	chatAddErrorMsg,
@@ -559,6 +560,7 @@ function handleChatError(p: ChatPayload, isActive: boolean, isChatPage: boolean,
 	} else {
 		chatAddErrorMsg(p.message || "unknown");
 	}
+	if (p.error?.canCancel && eventSession) addQuotaWaitCancelButton(eventSession);
 	// Add continue button for max_iterations_reached errors.
 	if (p.error?.canContinue) {
 		const lastCard = S.chatMsgBox?.querySelector(".error-card:last-child") as HTMLElement | null;
@@ -705,6 +707,27 @@ function handleChatSessionCleared(_p: ChatPayload, isActive: boolean, isChatPage
 	updateTokenBar();
 }
 
+// ── Quota waits ───────────────────────────────────────────────
+
+function handleChatQuotaWaitCancelled(
+	_p: ChatPayload,
+	_isActive: boolean,
+	_isChatPage: boolean,
+	eventSession: string,
+): void {
+	const cards = S.chatMsgBox?.querySelectorAll<HTMLElement>(".error-card[data-quota-wait-session]") || [];
+	for (const card of cards) {
+		if (card.dataset.quotaWaitSession !== eventSession) continue;
+		card.querySelector(".quota-wait-cancel-btn")?.remove();
+		card.querySelector(".error-countdown")?.remove();
+		const note = document.createElement("div");
+		note.className = "error-detail quota-wait-cancelled";
+		note.textContent = t("errors:chat.waitCancelled", "Cancelled: the run will not resume.");
+		card.querySelector(".error-body")?.appendChild(note);
+		delete card.dataset.quotaWaitSession;
+	}
+}
+
 // ── Handler map and dispatcher ────────────────────────────────
 
 export const chatHandlers: Record<string, ChatHandler> = {
@@ -722,6 +745,7 @@ export const chatHandlers: Record<string, ChatHandler> = {
 	compact: handleChatCompact,
 	retrying: handleChatRetrying,
 	error: handleChatError,
+	quota_wait_cancelled: handleChatQuotaWaitCancelled,
 	aborted: handleChatAborted,
 	notice: handleChatNotice,
 	queue_cleared: handleChatQueueCleared,

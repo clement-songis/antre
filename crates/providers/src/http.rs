@@ -50,6 +50,40 @@ pub(crate) fn with_retry_after_marker(base: String, retry_after_ms: Option<u64>)
     }
 }
 
+/// Timezone in which `provider` prints offset-less reset times for
+/// `model`, from the model catalog (`rate_limit_tz`); UTC when unknown.
+fn rate_limit_tz(provider: &str, model: &str) -> time::UtcOffset {
+    moltis_model_catalog::global::read(|catalog| catalog.resolve(provider, model, None))
+        .spec
+        .rate_limit_tz
+        .map_or(time::UtcOffset::UTC, |tz| tz.0)
+}
+
+/// Build the typed failure for an HTTP error. `message` is what users and
+/// logs see; it keeps the legacy `retry_after_ms` marker for callers that
+/// still read it.
+pub(crate) fn http_failure(
+    provider: &str,
+    model: &str,
+    status: u16,
+    headers: &reqwest::header::HeaderMap,
+    body: &str,
+    message: String,
+) -> moltis_agents::provider_error::ProviderFailure {
+    let message = with_retry_after_marker(message, retry_after_ms_from_headers(headers));
+    moltis_agents::provider_error::reset::classify_http(
+        moltis_agents::provider_error::reset::HttpFailure {
+            provider,
+            status,
+            headers,
+            body,
+            tz: rate_limit_tz(provider, model),
+            message: Some(message),
+        },
+        time::OffsetDateTime::now_utc(),
+    )
+}
+
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
@@ -58,6 +92,53 @@ mod tests {
         std::{error::Error as _, time::Duration},
         tokio::io::AsyncReadExt,
     };
+
+    #[test]
+    fn http_failure_uses_catalog_timezone_for_glm() {
+        use moltis_agents::provider_error::{ProviderError, QuotaWindow};
+        let body = r#"{"error":{"code":"1308","message":"Usage limit reached for 5 hour. Your limit will reset at 2099-01-01 08:00:00"}}"#;
+        let failure = http_failure(
+            "zai-code",
+            "glm-5.3",
+            429,
+            &reqwest::header::HeaderMap::new(),
+            body,
+            format!("HTTP 429: {body}"),
+        );
+        // Far-future resets are discarded, but the window and kind come through.
+        assert_eq!(failure.error, ProviderError::QuotaExhausted {
+            resets_at: None,
+            window: QuotaWindow::Rolling5h,
+        });
+        assert_eq!(failure.provider, "zai-code");
+        assert_eq!(
+            rate_limit_tz("zai-code", "glm-5.3"),
+            time::macros::offset!(+8)
+        );
+        assert_eq!(rate_limit_tz("openai", "gpt-6.2-sol"), time::UtcOffset::UTC);
+    }
+
+    #[test]
+    fn http_failure_keeps_retry_marker_in_message() {
+        let mut headers = reqwest::header::HeaderMap::new();
+        headers.insert(
+            "retry-after",
+            reqwest::header::HeaderValue::from_static("4"),
+        );
+        let failure = http_failure(
+            "openai",
+            "gpt-6.2-sol",
+            429,
+            &headers,
+            "slow down",
+            "HTTP 429: slow down".into(),
+        );
+        assert_eq!(failure.message, "HTTP 429: slow down (retry_after_ms=4000)");
+        assert!(matches!(
+            failure.error,
+            moltis_agents::provider_error::ProviderError::RateLimited { .. }
+        ));
+    }
 
     #[tokio::test]
     async fn transport_error_keeps_cause_without_request_url() {

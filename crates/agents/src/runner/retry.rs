@@ -189,6 +189,51 @@ pub(crate) fn next_retry_delay_ms(
     None
 }
 
+/// Retry delay for a typed provider failure, or `None` when retrying now
+/// cannot help: quotas, billing, auth and bad requests are not retried, and
+/// a rate limit that resets later than [`RATE_LIMIT_MAX_RETRY_MS`] is left to
+/// the caller (the chat layer parks the run until the reset).
+pub(crate) fn next_typed_retry_delay_ms(
+    failure: &crate::provider_error::ProviderFailure,
+    server_retries_remaining: &mut u8,
+    rate_limit_retries_remaining: &mut u8,
+    rate_limit_backoff_ms: &mut Option<u64>,
+) -> Option<u64> {
+    use crate::provider_error::ProviderError;
+    match &failure.error {
+        ProviderError::RateLimited { retry_after, .. } => {
+            if *rate_limit_retries_remaining == 0 {
+                return None;
+            }
+            let hinted_ms =
+                retry_after.map(|delay| u64::try_from(delay.as_millis()).unwrap_or(u64::MAX));
+            if hinted_ms.is_some_and(|ms| ms > RATE_LIMIT_MAX_RETRY_MS) {
+                return None;
+            }
+            *rate_limit_retries_remaining -= 1;
+            let current_backoff = *rate_limit_backoff_ms;
+            *rate_limit_backoff_ms = Some(next_rate_limit_retry_ms(current_backoff));
+            let delay_ms = hinted_ms
+                .or(*rate_limit_backoff_ms)
+                .unwrap_or(RATE_LIMIT_INITIAL_RETRY_MS);
+            Some(delay_ms.clamp(1, RATE_LIMIT_MAX_RETRY_MS))
+        },
+        ProviderError::Server { .. } | ProviderError::Network => {
+            if *server_retries_remaining == 0 {
+                return None;
+            }
+            *server_retries_remaining -= 1;
+            Some(SERVER_RETRY_DELAY.as_millis() as u64)
+        },
+        ProviderError::QuotaExhausted { .. }
+        | ProviderError::ContextWindowExceeded { .. }
+        | ProviderError::Auth
+        | ProviderError::Billing
+        | ProviderError::InvalidRequest
+        | ProviderError::Other => None,
+    }
+}
+
 /// Fallback loop limit when config is missing or invalid.
 pub(crate) const DEFAULT_AGENT_MAX_ITERATIONS: usize = 25;
 
@@ -201,4 +246,85 @@ pub(crate) fn resolve_agent_max_iterations(configured: usize) -> usize {
         return DEFAULT_AGENT_MAX_ITERATIONS;
     }
     configured
+}
+
+#[cfg(test)]
+mod typed_retry_tests {
+    use {
+        super::*,
+        crate::provider_error::{LimitScope, ProviderError, ProviderFailure, QuotaWindow},
+        std::time::Duration,
+    };
+
+    fn failure(error: ProviderError) -> ProviderFailure {
+        ProviderFailure::new(error, "p", "m")
+    }
+
+    #[test]
+    fn short_rate_limits_retry_with_the_hint() {
+        let (mut server, mut rate, mut backoff) = (2, 2, None);
+        let delay = next_typed_retry_delay_ms(
+            &failure(ProviderError::RateLimited {
+                retry_after: Some(Duration::from_secs(3)),
+                scope: LimitScope::Requests,
+            }),
+            &mut server,
+            &mut rate,
+            &mut backoff,
+        );
+        assert_eq!(delay, Some(3_000));
+        assert_eq!(rate, 1);
+    }
+
+    #[test]
+    fn long_rate_limits_and_quotas_are_left_to_the_caller() {
+        let (mut server, mut rate, mut backoff) = (2, 2, None);
+        let long = failure(ProviderError::RateLimited {
+            retry_after: Some(Duration::from_secs(3_600)),
+            scope: LimitScope::Tokens,
+        });
+        assert_eq!(
+            next_typed_retry_delay_ms(&long, &mut server, &mut rate, &mut backoff),
+            None
+        );
+        assert_eq!(rate, 2);
+        let quota = failure(ProviderError::QuotaExhausted {
+            resets_at: None,
+            window: QuotaWindow::Weekly,
+        });
+        assert_eq!(
+            next_typed_retry_delay_ms(&quota, &mut server, &mut rate, &mut backoff),
+            None
+        );
+        assert_eq!(
+            next_typed_retry_delay_ms(
+                &failure(ProviderError::Auth),
+                &mut server,
+                &mut rate,
+                &mut backoff
+            ),
+            None
+        );
+    }
+
+    #[test]
+    fn unknown_rate_limit_backs_off_then_gives_up() {
+        let (mut server, mut rate, mut backoff) = (0, 1, None);
+        let unknown = failure(ProviderError::RateLimited {
+            retry_after: None,
+            scope: LimitScope::Unknown,
+        });
+        assert!(
+            next_typed_retry_delay_ms(&unknown, &mut server, &mut rate, &mut backoff).is_some()
+        );
+        assert_eq!(
+            next_typed_retry_delay_ms(&unknown, &mut server, &mut rate, &mut backoff),
+            None
+        );
+        let server_error = failure(ProviderError::Server { status: 503 });
+        assert_eq!(
+            next_typed_retry_delay_ms(&server_error, &mut server, &mut rate, &mut backoff),
+            None
+        );
+    }
 }

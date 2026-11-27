@@ -23,6 +23,12 @@ export default {
 		detail: "上游供应商返回了错误。",
 	},
 	chat: {
+		cancelWait: "取消",
+		waitCancelled: "已取消：运行不会恢复。",
+		quotaWait: {
+			title: "等待配额",
+			detail: "配额重置后自动恢复。",
+		},
 		usageLimitReached: {
 			title: "已达使用限制",
 			detail: "你的 {{planType}} 计划限制已达到。",

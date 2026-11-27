@@ -80,6 +80,10 @@ pub enum StreamEvent {
     Done(Usage),
     /// An error occurred.
     Error(String),
+    /// A provider request failed with a typed cause (rate limit, quota,
+    /// context window...). Providers emit this for HTTP failures so callers
+    /// match on the cause instead of the message.
+    Failure(crate::provider_error::ProviderFailure),
 }
 
 /// LLM provider trait (Anthropic, OpenAI, Google, etc.).

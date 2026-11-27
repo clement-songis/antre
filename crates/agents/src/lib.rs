@@ -18,6 +18,7 @@ pub use {
 };
 pub mod lazy_tools;
 pub mod provider_chain;
+pub mod provider_error;
 pub mod response_sanitizer;
 pub mod silent_turn;
 pub mod skills;

@@ -5,7 +5,7 @@ use {futures::StreamExt, tokio_stream::Stream};
 use tracing::{debug, trace};
 
 use crate::{
-    http::{format_transport_error, retry_after_ms_from_headers, with_retry_after_marker},
+    http::format_transport_error,
     openai_compat::{
         ResponsesStreamState, SseLineResult, StreamingToolState, finalize_responses_stream,
         finalize_stream, process_openai_sse_line, process_responses_sse_line,
@@ -54,12 +54,16 @@ impl OpenAiProvider {
                 Ok(r) => {
                     if let Err(e) = r.error_for_status_ref() {
                         let status = e.status().map(|s| s.as_u16()).unwrap_or(0);
-                        let retry_after_ms = retry_after_ms_from_headers(r.headers());
+                        let error_headers = r.headers().clone();
                         let body_text = r.text().await.unwrap_or_default();
-                        yield StreamEvent::Error(with_retry_after_marker(
-                            format!("HTTP {status}: {body_text}"),
-                            retry_after_ms,
-                        ));
+                        yield StreamEvent::Failure(crate::http_failure(
+                &self.provider_name,
+                &self.model,
+                status,
+                &error_headers,
+                &body_text,
+                format!("HTTP {status}: {body_text}"),
+            ));
                         return;
                     }
                     r
@@ -187,12 +191,16 @@ impl OpenAiProvider {
                 Ok(r) => {
                     if let Err(e) = r.error_for_status_ref() {
                         let status = e.status().map(|s| s.as_u16()).unwrap_or(0);
-                        let retry_after_ms = retry_after_ms_from_headers(r.headers());
+                        let error_headers = r.headers().clone();
                         let body_text = r.text().await.unwrap_or_default();
-                        yield StreamEvent::Error(with_retry_after_marker(
-                            format!("HTTP {status}: {body_text}"),
-                            retry_after_ms,
-                        ));
+                        yield StreamEvent::Failure(crate::http_failure(
+                &self.provider_name,
+                &self.model,
+                status,
+                &error_headers,
+                &body_text,
+                format!("HTTP {status}: {body_text}"),
+            ));
                         return;
                     }
                     r

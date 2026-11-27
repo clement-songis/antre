@@ -255,26 +255,30 @@ impl LlmProvider for KimiCodeProvider {
 
         let status = http_resp.status();
         if !status.is_success() {
-            let retry_after_ms = super::retry_after_ms_from_headers(http_resp.headers());
+            let error_headers = http_resp.headers().clone();
             let body_text = http_resp.text().await.unwrap_or_default();
             warn!(status = %status, body_bytes = body_text.len(), "kimi-code API error");
             let hint = build_access_denied_hint(status, &body_text);
             if let Some(hint) = hint {
-                anyhow::bail!(
-                    "{}",
-                    super::with_retry_after_marker(
-                        format!("Kimi Code API error HTTP {status}: {body_text} ({hint})"),
-                        retry_after_ms,
-                    )
-                );
-            }
-            anyhow::bail!(
-                "{}",
-                super::with_retry_after_marker(
-                    format!("Kimi Code API error HTTP {status}: {body_text}"),
-                    retry_after_ms,
+                return Err(crate::http_failure(
+                    "kimi-code",
+                    &self.model,
+                    u16::from(status),
+                    &error_headers,
+                    &body_text,
+                    format!("Kimi Code API error HTTP {status}: {body_text} ({hint})"),
                 )
-            );
+                .into());
+            }
+            return Err(crate::http_failure(
+                "kimi-code",
+                &self.model,
+                u16::from(status),
+                &error_headers,
+                &body_text,
+                format!("Kimi Code API error HTTP {status}: {body_text}"),
+            )
+            .into());
         }
 
         let resp = http_resp.json::<serde_json::Value>().await?;
@@ -356,7 +360,7 @@ impl LlmProvider for KimiCodeProvider {
                 Ok(r) => {
                     if let Err(e) = r.error_for_status_ref() {
                         let status = e.status().map(|s| s.as_u16()).unwrap_or(0);
-                        let retry_after_ms = super::retry_after_ms_from_headers(r.headers());
+                        let error_headers = r.headers().clone();
                         let body_text = r.text().await.unwrap_or_default();
                         let hint = build_access_denied_hint(
                             reqwest::StatusCode::from_u16(status)
@@ -364,15 +368,23 @@ impl LlmProvider for KimiCodeProvider {
                             &body_text,
                         );
                         if let Some(hint) = hint {
-                            yield StreamEvent::Error(super::with_retry_after_marker(
-                                format!("HTTP {status}: {body_text} ({hint})"),
-                                retry_after_ms,
-                            ));
+                            yield StreamEvent::Failure(crate::http_failure(
+                "kimi-code",
+                &self.model,
+                status,
+                &error_headers,
+                &body_text,
+                format!("HTTP {status}: {body_text} ({hint})"),
+            ));
                         } else {
-                            yield StreamEvent::Error(super::with_retry_after_marker(
-                                format!("HTTP {status}: {body_text}"),
-                                retry_after_ms,
-                            ));
+                            yield StreamEvent::Failure(crate::http_failure(
+                "kimi-code",
+                &self.model,
+                status,
+                &error_headers,
+                &body_text,
+                format!("HTTP {status}: {body_text}"),
+            ));
                         }
                         return;
                     }

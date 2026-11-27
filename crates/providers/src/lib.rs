@@ -48,7 +48,7 @@ pub(crate) use discovered_model::{
     merge_discovered_with_fallback_catalog, merge_preferred_and_discovered_models,
 };
 #[allow(unused_imports)]
-pub(crate) use http::{retry_after_ms_from_headers, with_retry_after_marker};
+pub(crate) use http::{http_failure, retry_after_ms_from_headers, with_retry_after_marker};
 #[allow(unused_imports)]
 pub(crate) use model_id::{
     MODEL_ID_NAMESPACE_SEP, REASONING_SUFFIX_SEP, REASONING_SUFFIXES, namespaced_model_id,

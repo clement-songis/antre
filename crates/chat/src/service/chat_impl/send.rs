@@ -68,6 +68,7 @@ impl LiveChatService {
             ephemeral,
             stream_only,
         } = parse(&params, self.has_tools_sync())?;
+        let (quota_resume, resume_params) = (crate::quota_wait::is_resume(&params), params.clone());
 
         // Resolve session key from explicit overrides, public request params, or connection context.
         let session_key = self.resolve_session_key_from_params(&params).await;
@@ -603,6 +604,9 @@ impl LiveChatService {
                 return Err(error);
             },
         };
+        if quota_resume {
+            crate::quota_wait::drop_resumed_user_message(&mut history);
+        }
         let persisted_history_len = history.len();
         if !private_context {
             history = public_context::filter_public_history(history);
@@ -1069,6 +1073,7 @@ impl LiveChatService {
         // Persist the user message now that we know it won't be queued.
         // (Queued messages skip this; they are persisted when replayed.)
         if !ephemeral
+            && !quota_resume
             && let Err(e) = self
                 .session_store
                 .append(&session_key, &user_msg.to_value())
@@ -1085,19 +1090,21 @@ impl LiveChatService {
         // originating web client can suppress the echo it already
         // rendered optimistically. The run ID also links the echo to the
         // persisted user message when a client's history load overlaps a send.
-        broadcast(
-            &self.state,
-            "chat",
-            serde_json::json!({
-                "state": "user_message",
-                "text": text,
-                "runId": run_id,
-                "sessionKey": session_key,
-                "seq": client_seq,
-            }),
-            BroadcastOpts::default(),
-        )
-        .await;
+        if !quota_resume {
+            broadcast(
+                &self.state,
+                "chat",
+                serde_json::json!({
+                    "state": "user_message",
+                    "text": text,
+                    "runId": run_id,
+                    "sessionKey": session_key,
+                    "seq": client_seq,
+                }),
+                BroadcastOpts::default(),
+            )
+            .await;
+        }
 
         // Set preview from the first user message if not already set.
         if !ephemeral
@@ -1280,6 +1287,14 @@ impl LiveChatService {
                 agent_fut.await
             };
 
+            if assistant_text.is_none() {
+                crate::quota_wait::park_noted_run(
+                    &state,
+                    &run_id_clone,
+                    &session_key_clone,
+                    &resume_params,
+                );
+            }
             let completion_result = match assistant_text.as_ref() {
                 Some(output) => Ok(turn_result(output)),
                 None => Err(state

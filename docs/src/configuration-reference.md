@@ -45,6 +45,7 @@
 - **Chat & Agents**
   - [`chat`](#chat)
   - [`chat.compaction`](#chatcompaction)
+  - [`chat.quota_wait`](#chatquota_wait)
   - [`agents`](#agents)
   - [`agents.presets.<name>`](#agentspresetsname)
   - [`modes`](#modes)
@@ -307,6 +308,15 @@ User profile collected during onboarding.
 | `summary_model` | optional string | `null` | Provider-qualified model for LLM summary calls (e.g. `"openrouter/google/gemini-3.8-flash"`). ⚠️ **Not yet implemented** — setting this field triggers a warning. |
 | `max_summary_tokens` | integer | `4096` | Maximum output tokens for LLM summary calls. `0` accepts provider default. ⚠️ **Not yet implemented** — has no effect. |
 | `show_settings_hint` | bool | `true` | Whether the "Change `chat.compaction.mode` in moltis.toml…" hint is included in compaction notifications. |
+
+### `chat.quota_wait` — QuotaWaitConfig
+
+When every provider of a run fails on a rate limit or quota whose reset time is known, the run waits and resumes on its own. See [Rate limits and quotas](rate-limits.md).
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `enabled` | bool | `true` | Park runs until the provider's quota resets instead of failing them. |
+| `max_wait_hours` | float | `6.0` | Longest accepted wait (up to 192 h); a later reset fails the run with the reset time in the error. |
 
 
 ### `agents` — AgentsConfig

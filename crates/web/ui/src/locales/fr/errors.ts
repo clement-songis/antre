@@ -23,6 +23,12 @@ export default {
 		detail: "The upstream provider returned an error.",
 	},
 	chat: {
+		cancelWait: "Annuler",
+		waitCancelled: "Annulé : le run ne reprendra pas.",
+		quotaWait: {
+			title: "En attente du quota",
+			detail: "Reprise automatique à la réinitialisation du quota.",
+		},
 		usageLimitReached: {
 			title: "Usage limit reached",
 			detail: "Your {{planType}} plan limit has been reached.",

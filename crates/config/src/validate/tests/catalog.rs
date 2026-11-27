@@ -63,3 +63,22 @@ fn catalog_unknown_key_is_flagged() {
             .any(|d| d.category == "unknown-field" && d.path == "catalog.refresh_url")
     );
 }
+
+#[test]
+fn quota_wait_section_is_known_and_validated() {
+    let ok = validate_toml_str("[chat.quota_wait]\nenabled = true\nmax_wait_hours = 12\n");
+    assert!(
+        !ok.diagnostics
+            .iter()
+            .any(|d| d.path.starts_with("chat.quota_wait"))
+    );
+    let bad = validate_toml_str("[chat.quota_wait]\nmax_wait_hours = 0\n");
+    assert!(
+        bad.diagnostics
+            .iter()
+            .any(|d| d.path == "chat.quota_wait.max_wait_hours")
+    );
+    let defaults = MoltisConfig::default();
+    assert!(defaults.chat.quota_wait.enabled);
+    assert!((defaults.chat.quota_wait.max_wait_hours - 6.0).abs() < f64::EPSILON);
+}

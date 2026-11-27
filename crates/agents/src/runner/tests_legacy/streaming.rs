@@ -280,6 +280,10 @@ pub async fn run_agent_loop_streaming(
                         .record(duration);
                     }
                 },
+                StreamEvent::Failure(failure) => {
+                    stream_error = Some(failure.message);
+                    break;
+                },
                 StreamEvent::Error(msg) => {
                     stream_error = Some(msg);
                     break;

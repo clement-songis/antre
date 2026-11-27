@@ -5,7 +5,6 @@ use secrecy::ExposeSecret;
 use tracing::{debug, trace, warn};
 
 use crate::{
-    http::{retry_after_ms_from_headers, with_retry_after_marker},
     ollama::normalize_ollama_api_base_url,
     openai_compat::{
         normalize_tool_call_arguments_from_schemas, parse_openai_compat_usage_from_payload,
@@ -79,7 +78,7 @@ impl OpenAiProvider {
 
         let status = http_resp.status();
         if !status.is_success() {
-            let retry_after_ms = retry_after_ms_from_headers(http_resp.headers());
+            let error_headers = http_resp.headers().clone();
             let body_text = http_resp.text().await.unwrap_or_default();
             if should_warn_on_api_error(status, &body_text) {
                 warn!(
@@ -111,13 +110,15 @@ impl OpenAiProvider {
                 return self.probe_ollama_native().await;
             }
 
-            anyhow::bail!(
-                "{}",
-                with_retry_after_marker(
-                    format!("OpenAI API error at {url} HTTP {status}: {body_text}"),
-                    retry_after_ms,
-                )
-            );
+            return Err(crate::http_failure(
+                &self.provider_name,
+                &self.model,
+                u16::from(status),
+                &error_headers,
+                &body_text,
+                format!("OpenAI API error at {url} HTTP {status}: {body_text}"),
+            )
+            .into());
         }
 
         Ok(())
@@ -192,7 +193,7 @@ impl OpenAiProvider {
 
         let status = http_resp.status();
         if !status.is_success() {
-            let retry_after_ms = retry_after_ms_from_headers(http_resp.headers());
+            let error_headers = http_resp.headers().clone();
             let body_text = http_resp.text().await.unwrap_or_default();
             warn!(
                 status = %status,
@@ -201,13 +202,15 @@ impl OpenAiProvider {
                 body_bytes = body_text.len(),
                 "openai responses probe API error"
             );
-            anyhow::bail!(
-                "{}",
-                with_retry_after_marker(
-                    format!("OpenAI API error HTTP {status}: {body_text}"),
-                    retry_after_ms,
-                )
-            );
+            return Err(crate::http_failure(
+                &self.provider_name,
+                &self.model,
+                u16::from(status),
+                &error_headers,
+                &body_text,
+                format!("OpenAI API error HTTP {status}: {body_text}"),
+            )
+            .into());
         }
 
         Ok(())
@@ -349,7 +352,7 @@ impl OpenAiProvider {
 
         let status = http_resp.status();
         if !status.is_success() {
-            let retry_after_ms = retry_after_ms_from_headers(http_resp.headers());
+            let error_headers = http_resp.headers().clone();
             let body_text = http_resp.text().await.unwrap_or_default();
             if should_warn_on_api_error(status, &body_text) {
                 warn!(
@@ -367,13 +370,15 @@ impl OpenAiProvider {
                     "openai model unsupported for chat/completions endpoint"
                 );
             }
-            anyhow::bail!(
-                "{}",
-                with_retry_after_marker(
-                    format!("OpenAI API error HTTP {status}: {body_text}"),
-                    retry_after_ms,
-                )
-            );
+            return Err(crate::http_failure(
+                &self.provider_name,
+                &self.model,
+                u16::from(status),
+                &error_headers,
+                &body_text,
+                format!("OpenAI API error HTTP {status}: {body_text}"),
+            )
+            .into());
         }
 
         let resp = http_resp.json::<serde_json::Value>().await?;
@@ -441,15 +446,17 @@ impl OpenAiProvider {
 
         let status = http_resp.status();
         if !status.is_success() {
-            let retry_after_ms = retry_after_ms_from_headers(http_resp.headers());
+            let error_headers = http_resp.headers().clone();
             let body_text = http_resp.text().await.unwrap_or_default();
-            anyhow::bail!(
-                "{}",
-                with_retry_after_marker(
-                    format!("Responses API error HTTP {status}: {body_text}"),
-                    retry_after_ms,
-                )
-            );
+            return Err(crate::http_failure(
+                &self.provider_name,
+                &self.model,
+                u16::from(status),
+                &error_headers,
+                &body_text,
+                format!("Responses API error HTTP {status}: {body_text}"),
+            )
+            .into());
         }
 
         // Collect SSE events into text + tool calls.

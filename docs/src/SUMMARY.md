@@ -23,6 +23,7 @@
   - [Choosing a Provider](choosing-a-provider.md)
   - [Anthropic OAuth (FAQ)](anthropic-oauth.md)
   - [Model Catalog](model-catalog.md)
+  - [Rate Limits and Quotas](rate-limits.md)
 - [MCP Servers](mcp.md)
 - [External Agents](external-agents.md)
   - [Moltis as an ACP Agent](acp-server.md)

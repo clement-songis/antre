@@ -532,16 +532,18 @@ async fn collect_streamed_completion(
     );
     let status = http_resp.status();
     if !status.is_success() {
-        let retry_after_ms = super::super::retry_after_ms_from_headers(http_resp.headers());
+        let error_headers = http_resp.headers().clone();
         let body_text = http_resp.text().await.unwrap_or_default();
         warn!(status = %status, body_bytes = body_text.len(), "github-copilot enterprise API error");
-        anyhow::bail!(
-            "{}",
-            super::super::with_retry_after_marker(
-                format!("GitHub Copilot API error HTTP {status}: {body_text}"),
-                retry_after_ms,
-            )
-        );
+        return Err(crate::http_failure(
+            "github-copilot",
+            model,
+            u16::from(status),
+            &error_headers,
+            &body_text,
+            format!("GitHub Copilot API error HTTP {status}: {body_text}"),
+        )
+        .into());
     }
 
     let mut byte_stream = http_resp.bytes_stream();
@@ -671,16 +673,18 @@ async fn collect_streamed_responses_completion(
     );
     let status = http_resp.status();
     if !status.is_success() {
-        let retry_after_ms = super::super::retry_after_ms_from_headers(http_resp.headers());
+        let error_headers = http_resp.headers().clone();
         let body_text = http_resp.text().await.unwrap_or_default();
         warn!(status = %status, body_bytes = body_text.len(), "github-copilot enterprise responses API error");
-        anyhow::bail!(
-            "{}",
-            super::super::with_retry_after_marker(
-                format!("GitHub Copilot Responses API error HTTP {status}: {body_text}"),
-                retry_after_ms,
-            )
-        );
+        return Err(crate::http_failure(
+            "github-copilot",
+            model,
+            u16::from(status),
+            &error_headers,
+            &body_text,
+            format!("GitHub Copilot Responses API error HTTP {status}: {body_text}"),
+        )
+        .into());
     }
 
     let mut byte_stream = http_resp.bytes_stream();
@@ -787,6 +791,7 @@ fn stream_events_to_completion(events: Vec<StreamEvent>) -> CompletionResponse {
             },
             StreamEvent::Done(u) => usage = u,
             StreamEvent::Error(_)
+            | StreamEvent::Failure(_)
             | StreamEvent::ProviderRaw(_)
             | StreamEvent::ReasoningDelta(_) => {},
         }
@@ -886,7 +891,7 @@ impl LlmProvider for GitHubCopilotProvider {
         );
         let status = http_resp.status();
         if !status.is_success() {
-            let retry_after_ms = super::super::retry_after_ms_from_headers(http_resp.headers());
+            let error_headers = http_resp.headers().clone();
             let body_text = http_resp.text().await.unwrap_or_default();
 
             if status == reqwest::StatusCode::MISDIRECTED_REQUEST
@@ -915,13 +920,15 @@ impl LlmProvider for GitHubCopilotProvider {
             }
 
             warn!(status = %status, body_bytes = body_text.len(), "github-copilot API error");
-            anyhow::bail!(
-                "{}",
-                super::super::with_retry_after_marker(
-                    format!("GitHub Copilot API error HTTP {status}: {body_text}"),
-                    retry_after_ms,
-                )
-            );
+            return Err(crate::http_failure(
+                "github-copilot",
+                &self.model,
+                u16::from(status),
+                &error_headers,
+                &body_text,
+                format!("GitHub Copilot API error HTTP {status}: {body_text}"),
+            )
+            .into());
         }
 
         let resp = http_resp.json::<serde_json::Value>().await?;
@@ -1031,7 +1038,7 @@ impl GitHubCopilotProvider {
         );
         let status = http_resp.status();
         if !status.is_success() {
-            let retry_after_ms = super::super::retry_after_ms_from_headers(http_resp.headers());
+            let error_headers = http_resp.headers().clone();
             let body_text = http_resp.text().await.unwrap_or_default();
             if status == reqwest::StatusCode::MISDIRECTED_REQUEST
                 && !auth.is_enterprise
@@ -1047,13 +1054,15 @@ impl GitHubCopilotProvider {
                 .await;
             }
             warn!(status = %status, body_bytes = body_text.len(), "github-copilot responses API error");
-            anyhow::bail!(
-                "{}",
-                super::super::with_retry_after_marker(
-                    format!("GitHub Copilot Responses API error HTTP {status}: {body_text}"),
-                    retry_after_ms,
-                )
-            );
+            return Err(crate::http_failure(
+                "github-copilot",
+                &self.model,
+                u16::from(status),
+                &error_headers,
+                &body_text,
+                format!("GitHub Copilot Responses API error HTTP {status}: {body_text}"),
+            )
+            .into());
         }
 
         let resp = http_resp.json::<serde_json::Value>().await?;
@@ -1125,7 +1134,7 @@ impl GitHubCopilotProvider {
                     );
                     if let Err(e) = r.error_for_status_ref() {
                         let status = e.status().map(|s| s.as_u16()).unwrap_or(0);
-                        let retry_after_ms = super::super::retry_after_ms_from_headers(r.headers());
+                        let error_headers = r.headers().clone();
                         let body_text = r.text().await.unwrap_or_default();
                         if status == reqwest::StatusCode::MISDIRECTED_REQUEST.as_u16()
                             && !auth.is_enterprise
@@ -1155,10 +1164,14 @@ impl GitHubCopilotProvider {
                                 },
                             }
                         }
-                        yield StreamEvent::Error(super::super::with_retry_after_marker(
-                            format!("HTTP {status}: {body_text}"),
-                            retry_after_ms,
-                        ));
+                        yield StreamEvent::Failure(crate::http_failure(
+                "github-copilot",
+                &self.model,
+                status,
+                &error_headers,
+                &body_text,
+                format!("HTTP {status}: {body_text}"),
+            ));
                         return;
                     }
                     r
@@ -1302,7 +1315,7 @@ impl GitHubCopilotProvider {
                     );
                     if let Err(e) = r.error_for_status_ref() {
                         let status = e.status().map(|s| s.as_u16()).unwrap_or(0);
-                        let retry_after_ms = super::super::retry_after_ms_from_headers(r.headers());
+                        let error_headers = r.headers().clone();
                         let response_url = r.url().to_string();
                         let body_text = r.text().await.unwrap_or_default();
 
@@ -1335,10 +1348,14 @@ impl GitHubCopilotProvider {
                             return;
                         }
 
-                        yield StreamEvent::Error(super::super::with_retry_after_marker(
-                            format!("HTTP {status}: {body_text}"),
-                            retry_after_ms,
-                        ));
+                        yield StreamEvent::Failure(crate::http_failure(
+                "github-copilot",
+                &self.model,
+                status,
+                &error_headers,
+                &body_text,
+                format!("HTTP {status}: {body_text}"),
+            ));
                         return;
                     }
                     r

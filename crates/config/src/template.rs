@@ -324,6 +324,10 @@ loopback_http = true                # Plain HTTP on loopback binds: http://local
 # CHAT SETTINGS
 # ══════════════════════════════════════════════════════════════════════════════
 
+# [chat.quota_wait]
+# enabled = true                     # Wait for a provider quota reset and resume the run
+# max_wait_hours = 6                 # Longer waits fail with the reset time instead
+
 # [chat]
 # reasoning_default = "high"         # Optional: minimal, low, medium, high, xhigh (alias: extra-high), max.
                                     #   Omit for Off (current behavior); max is distinct from xhigh.

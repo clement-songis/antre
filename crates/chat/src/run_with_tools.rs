@@ -1369,7 +1369,11 @@ pub(crate) async fn run_with_tools(
             let error_str = e.to_string();
             warn!(run_id, error = %error_str, "agent run error");
             state.set_run_error(run_id, error_str.clone()).await;
-            let error_obj = parse_chat_error(&error_str, Some(provider_name));
+            let error_obj = crate::quota_wait::error_obj_for_run(
+                run_id,
+                crate::quota_wait::run_error_failure(&e),
+                || parse_chat_error(&error_str, Some(provider_name)),
+            );
             mark_unsupported_model(state, model_store, model_id, provider_name, &error_obj).await;
             let error_payload = ChatErrorBroadcast {
                 run_id: run_id.to_string(),

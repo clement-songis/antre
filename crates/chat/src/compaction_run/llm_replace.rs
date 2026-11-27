@@ -60,6 +60,9 @@ pub(super) async fn run(
             StreamEvent::Error(e) => {
                 return Err(CompactionRunError::LlmFailed(e.to_string()));
             },
+            StreamEvent::Failure(failure) => {
+                return Err(CompactionRunError::LlmFailed(failure.message));
+            },
             // Tool events aren't expected on a summary stream; drop them.
             StreamEvent::ToolCallStart { .. }
             | StreamEvent::ToolCallArgumentsDelta { .. }

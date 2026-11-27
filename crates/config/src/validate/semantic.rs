@@ -358,6 +358,17 @@ pub(super) fn check_semantic_warnings(config: &MoltisConfig, diagnostics: &mut V
     }
 
     check_catalog(&config.catalog, diagnostics);
+    let quota_wait = &config.chat.quota_wait;
+    if quota_wait.enabled
+        && !(quota_wait.max_wait_hours > 0.0 && quota_wait.max_wait_hours <= 192.0)
+    {
+        diagnostics.push(Diagnostic {
+            severity: Severity::Warning,
+            category: "invalid-value",
+            path: "chat.quota_wait.max_wait_hours".into(),
+            message: "chat.quota_wait.max_wait_hours must be between 0 and 192 (8 days); runs will not wait".into(),
+        });
+    }
 
     // Loop limit must be positive to avoid immediate run failures.
     if config.tools.agent_max_iterations == 0 {

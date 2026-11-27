@@ -13,9 +13,12 @@ mod message;
 mod models;
 pub mod params;
 mod prompt;
+pub mod quota_wait;
 mod run_with_tools;
 mod service;
 mod streaming;
+#[cfg(test)]
+mod test_runtime;
 mod types;
 
 pub mod chat_error;

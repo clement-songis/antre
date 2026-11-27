@@ -21,10 +21,14 @@
 ///   turn, which skips the channel-bound public ceiling in
 ///   [`crate::service`]. This is the only one of the three that *widens*
 ///   privilege, so it is the one that most needs stripping.
-pub const GATEWAY_OWNED_REQUEST_PARAMS: [&str; 3] = [
+/// - `_quota_resume` — marks the replay of a run parked on a provider quota,
+///   which skips persisting the user message; only the chat service's own
+///   resume task sets it.
+pub const GATEWAY_OWNED_REQUEST_PARAMS: [&str; 4] = [
     "channel",
     "_channel_reply_target",
     "_native_channel_request",
+    crate::quota_wait::RESUME_FLAG,
 ];
 
 /// Remove every [`GATEWAY_OWNED_REQUEST_PARAMS`] entry from a request.

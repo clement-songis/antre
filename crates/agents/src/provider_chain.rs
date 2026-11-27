@@ -23,9 +23,12 @@ use {
 #[cfg(feature = "metrics")]
 use moltis_metrics::{counter, histogram, labels, llm as llm_metrics};
 
-use crate::model::{
-    AgentToolControls, ChatMessage, CompletionResponse, LlmProvider, ProviderAttemptEvent,
-    ProviderIdentity, StreamEvent, TrackedStreamEvent,
+use crate::{
+    model::{
+        AgentToolControls, ChatMessage, CompletionResponse, LlmProvider, ProviderAttemptEvent,
+        ProviderIdentity, StreamEvent, TrackedStreamEvent,
+    },
+    provider_error::{ProviderError, ProviderFailure},
 };
 
 /// How a provider error should be handled.
@@ -62,6 +65,20 @@ impl ProviderErrorKind {
     }
 }
 
+impl From<&ProviderError> for ProviderErrorKind {
+    fn from(error: &ProviderError) -> Self {
+        match error {
+            ProviderError::RateLimited { .. } => Self::RateLimit,
+            ProviderError::QuotaExhausted { .. } | ProviderError::Billing => Self::BillingExhausted,
+            ProviderError::ContextWindowExceeded { .. } => Self::ContextWindow,
+            ProviderError::Auth => Self::AuthError,
+            ProviderError::Server { .. } | ProviderError::Network => Self::ServerError,
+            ProviderError::InvalidRequest => Self::InvalidRequest,
+            ProviderError::Other => Self::Unknown,
+        }
+    }
+}
+
 /// Error patterns for context window overflow (reused from runner.rs).
 const CONTEXT_WINDOW_PATTERNS: &[&str] = &[
     "context_length_exceeded",
@@ -79,9 +96,13 @@ const CONTEXT_WINDOW_PATTERNS: &[&str] = &[
     "request_too_large",
 ];
 
-/// Classify an error into a `ProviderErrorKind` based on the error message.
+/// Classify an error. A typed [`ProviderFailure`] decides on its own;
+/// message matching remains only for providers that do not build one yet.
 #[must_use]
 pub fn classify_error(err: &anyhow::Error) -> ProviderErrorKind {
+    if let Some(failure) = ProviderFailure::find(err) {
+        return ProviderErrorKind::from(&failure.error);
+    }
     let msg = err.to_string().to_lowercase();
 
     // Context window — must check first since "request too large" overlaps.
@@ -141,19 +162,94 @@ pub fn classify_error(err: &anyhow::Error) -> ProviderErrorKind {
     ProviderErrorKind::Unknown
 }
 
+/// When every provider in the chain failed on a temporary limit, report the
+/// one that resets first, so the caller can wait for it; otherwise the plain
+/// aggregated message.
+fn exhausted_chain_failure(
+    typed: &[ProviderFailure],
+    total_failures: usize,
+    message: String,
+) -> Result<ProviderFailure, String> {
+    if total_failures == 0 || typed.len() != total_failures {
+        return Err(message);
+    }
+    if !typed
+        .iter()
+        .all(|failure| failure.error.is_temporary_limit())
+    {
+        return Err(message);
+    }
+    let now = time::OffsetDateTime::now_utc();
+    let soonest = typed
+        .iter()
+        .min_by_key(|failure| {
+            failure
+                .error
+                .retry_instant(now)
+                .unwrap_or(time::OffsetDateTime::new_utc(
+                    time::Date::MAX,
+                    time::Time::MIDNIGHT,
+                ))
+        })
+        .ok_or_else(|| message.clone())?;
+    Ok(ProviderFailure::new(
+        soonest.error.clone(),
+        soonest.provider.clone(),
+        message,
+    ))
+}
+
 // ── Circuit breaker (same pattern as embeddings_fallback.rs) ─────────────
 
 /// Circuit breaker state for a single provider.
 struct ProviderState {
     consecutive_failures: AtomicUsize,
     last_failure: Mutex<Option<Instant>>,
+    /// Provider model id, the key of [`blocked_until`] (chains are built per
+    /// request, so the quota block must outlive them).
+    key: String,
+}
+
+/// Providers out of quota, skipped until their reset, process-wide.
+fn blocked_until() -> &'static Mutex<std::collections::HashMap<String, Instant>> {
+    static BLOCKED: std::sync::OnceLock<Mutex<std::collections::HashMap<String, Instant>>> =
+        std::sync::OnceLock::new();
+    BLOCKED.get_or_init(|| Mutex::new(std::collections::HashMap::new()))
 }
 
 impl ProviderState {
-    fn new() -> Self {
+    fn new(key: &str) -> Self {
         Self {
             consecutive_failures: AtomicUsize::new(0),
             last_failure: Mutex::new(None),
+            key: key.to_string(),
+        }
+    }
+
+    /// Record a typed failure: a known reset blocks the provider until then
+    /// instead of the generic 60 s breaker.
+    fn record_typed_failure(&self, failure: &ProviderFailure) {
+        self.record_failure();
+        let now = time::OffsetDateTime::now_utc();
+        if let Some(until) = failure.error.retry_instant(now)
+            && let Ok(wait) = Duration::try_from(until - now)
+        {
+            blocked_until()
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .insert(self.key.clone(), Instant::now() + wait);
+        }
+    }
+
+    fn is_blocked(&self) -> bool {
+        let mut blocked = blocked_until().lock().unwrap_or_else(|e| e.into_inner());
+        match blocked.get(&self.key) {
+            Some(until) if Instant::now() < *until => true,
+            Some(_) => {
+                blocked.remove(&self.key);
+                false
+            },
+            None => false,
         }
     }
 
@@ -169,6 +265,9 @@ impl ProviderState {
     /// Returns `true` when the circuit is open (provider should be skipped).
     /// Trips after 3 consecutive failures; resets after 60s cooldown.
     fn is_tripped(&self) -> bool {
+        if self.is_blocked() {
+            return true;
+        }
         let failures = self.consecutive_failures.load(Ordering::SeqCst);
         if failures < 3 {
             return false;
@@ -204,8 +303,8 @@ impl ProviderChain {
         let chain = providers
             .into_iter()
             .map(|provider| ChainEntry {
+                state: ProviderState::new(provider.id()),
                 provider,
-                state: ProviderState::new(),
             })
             .collect();
         Self { chain }
@@ -228,6 +327,7 @@ impl ProviderChain {
     ) -> Pin<Box<dyn Stream<Item = TrackedStreamEvent> + Send + '_>> {
         Box::pin(async_stream::stream! {
             let mut errors = Vec::new();
+            let mut typed_failures: Vec<ProviderFailure> = Vec::new();
             let force_primary = self.chain.iter().all(|entry| entry.state.is_tripped());
 
             for (index, entry) in self.chain.iter().enumerate() {
@@ -274,6 +374,28 @@ impl ProviderChain {
                             yield TrackedStreamEvent::Event(StreamEvent::Error(error));
                             return;
                         },
+                        StreamEvent::Failure(failure) => {
+                            let kind = ProviderErrorKind::from(&failure.error);
+                            entry.state.record_typed_failure(&failure);
+                            yield TrackedStreamEvent::Attempt(ProviderAttemptEvent::Failed {
+                                identity: identity.clone(),
+                                error: failure.message.clone(),
+                            });
+                            if kind.should_failover() && !emitted_output {
+                                warn!(
+                                    provider = entry.provider.id(),
+                                    error = %failure.message,
+                                    cause = ?failure.error,
+                                    "provider stream failed, trying next in chain"
+                                );
+                                errors.push(format!("{}: {}", entry.provider.id(), failure.message));
+                                typed_failures.push(failure);
+                                retry_next = true;
+                                break;
+                            }
+                            yield TrackedStreamEvent::Event(StreamEvent::Failure(failure));
+                            return;
+                        },
                         StreamEvent::Done(usage) => {
                             entry.state.record_success();
                             yield TrackedStreamEvent::Event(StreamEvent::Done(usage));
@@ -306,10 +428,11 @@ impl ProviderChain {
                 errors.push(format!("{}: {error}", entry.provider.id()));
             }
 
-            yield TrackedStreamEvent::Event(StreamEvent::Error(format!(
-                "all providers in failover chain failed: {}",
-                errors.join("; ")
-            )));
+            let message = format!("all providers in failover chain failed: {}", errors.join("; "));
+            match exhausted_chain_failure(&typed_failures, errors.len(), message) {
+                Ok(failure) => yield TrackedStreamEvent::Event(StreamEvent::Failure(failure)),
+                Err(message) => yield TrackedStreamEvent::Event(StreamEvent::Error(message)),
+            }
         })
     }
 }
@@ -364,6 +487,7 @@ impl LlmProvider for ProviderChain {
         on_attempt: &mut (dyn FnMut(ProviderAttemptEvent) + Send),
     ) -> anyhow::Result<CompletionResponse> {
         let mut errors = Vec::new();
+        let mut typed_failures: Vec<ProviderFailure> = Vec::new();
         let force_primary = self.chain.iter().all(|entry| entry.state.is_tripped());
         #[cfg(feature = "metrics")]
         let start = Instant::now();
@@ -436,7 +560,13 @@ impl LlmProvider for ProviderChain {
                 },
                 Err(e) => {
                     let kind = classify_error(&e);
-                    entry.state.record_failure();
+                    match ProviderFailure::find(&e) {
+                        Some(failure) => {
+                            entry.state.record_typed_failure(failure);
+                            typed_failures.push(failure.clone());
+                        },
+                        None => entry.state.record_failure(),
+                    }
 
                     // Record error metrics
                     #[cfg(feature = "metrics")]
@@ -466,10 +596,14 @@ impl LlmProvider for ProviderChain {
             }
         }
 
-        anyhow::bail!(
+        let message = format!(
             "all providers in failover chain failed: {}",
             errors.join("; ")
-        )
+        );
+        match exhausted_chain_failure(&typed_failures, errors.len(), message) {
+            Ok(failure) => Err(anyhow::Error::new(failure)),
+            Err(message) => Err(anyhow::anyhow!(message)),
+        }
     }
 
     fn stream(
@@ -604,6 +738,151 @@ mod tests {
                 self.error_msg.into(),
             )))
         }
+    }
+
+    /// A mock provider that fails with a typed failure.
+    struct TypedFailingProvider {
+        id: &'static str,
+        failure: ProviderFailure,
+    }
+
+    #[async_trait]
+    impl LlmProvider for TypedFailingProvider {
+        fn name(&self) -> &str {
+            "typed"
+        }
+
+        fn id(&self) -> &str {
+            self.id
+        }
+
+        async fn complete(
+            &self,
+            _messages: &[ChatMessage],
+            _tools: &[serde_json::Value],
+        ) -> anyhow::Result<CompletionResponse> {
+            Err(anyhow::Error::new(self.failure.clone()))
+        }
+
+        fn stream(
+            &self,
+            _messages: Vec<ChatMessage>,
+        ) -> Pin<Box<dyn Stream<Item = StreamEvent> + Send + '_>> {
+            Box::pin(tokio_stream::once(StreamEvent::Failure(
+                self.failure.clone(),
+            )))
+        }
+    }
+
+    fn quota_failure(provider: &str, hours: i64) -> ProviderFailure {
+        ProviderFailure::new(
+            ProviderError::QuotaExhausted {
+                resets_at: Some(time::OffsetDateTime::now_utc() + time::Duration::hours(hours)),
+                window: crate::provider_error::QuotaWindow::Rolling5h,
+            },
+            provider,
+            format!("{provider} usage limit reached"),
+        )
+    }
+
+    #[tokio::test]
+    async fn typed_quota_rotates_and_blocks_provider_until_reset() {
+        let chain = ProviderChain::new(vec![
+            Arc::new(TypedFailingProvider {
+                id: "glm-a",
+                failure: quota_failure("zai-code", 3),
+            }),
+            Arc::new(SuccessProvider { id: "kimi-a" }),
+        ]);
+        let response = chain.complete(&[], &[]).await.unwrap();
+        assert_eq!(response.text.as_deref(), Some("ok"));
+        // One quota failure is enough to skip the provider (no 3-strike wait),
+        // and the block outlives this chain: the next request's chain skips it.
+        assert!(chain.chain[0].state.is_tripped());
+        assert!(!chain.chain[1].state.is_tripped());
+        let next = ProviderChain::new(vec![
+            Arc::new(SuccessProvider {
+                id: "glm-unblocked",
+            }),
+            Arc::new(SuccessProvider { id: "kimi-a" }),
+        ]);
+        assert!(!next.chain[0].state.is_tripped());
+        let same_model = ProviderChain::new(vec![Arc::new(SuccessProvider { id: "glm-a" })]);
+        assert!(same_model.chain[0].state.is_tripped());
+    }
+
+    #[tokio::test]
+    async fn exhausted_chain_reports_soonest_reset_as_typed_failure() {
+        let chain = ProviderChain::new(vec![
+            Arc::new(TypedFailingProvider {
+                id: "glm-b",
+                failure: quota_failure("zai-code", 5),
+            }),
+            Arc::new(TypedFailingProvider {
+                id: "kimi-b",
+                failure: quota_failure("kimi-code", 2),
+            }),
+        ]);
+        let error = chain.complete(&[], &[]).await.unwrap_err();
+        let failure = ProviderFailure::find(&error).expect("typed failure");
+        assert_eq!(failure.provider, "kimi-code");
+        assert!(
+            failure
+                .message
+                .contains("all providers in failover chain failed")
+        );
+
+        let chain = ProviderChain::new(vec![
+            Arc::new(TypedFailingProvider {
+                id: "glm-c",
+                failure: quota_failure("zai-code", 5),
+            }),
+            Arc::new(TypedFailingProvider {
+                id: "kimi-c",
+                failure: quota_failure("kimi-code", 2),
+            }),
+        ]);
+        let events: Vec<StreamEvent> = chain.stream(vec![]).collect().await;
+        let Some(StreamEvent::Failure(failure)) = events.last() else {
+            panic!("expected a typed failure, got {events:?}");
+        };
+        assert_eq!(failure.provider, "kimi-code");
+    }
+
+    #[tokio::test]
+    async fn mixed_failures_keep_the_plain_message() {
+        let chain = ProviderChain::new(vec![
+            Arc::new(TypedFailingProvider {
+                id: "glm-d",
+                failure: quota_failure("zai-code", 5),
+            }),
+            Arc::new(FailingProvider {
+                id: "other",
+                error_msg: "503 service unavailable",
+            }),
+        ]);
+        let error = chain.complete(&[], &[]).await.unwrap_err();
+        assert!(ProviderFailure::find(&error).is_none());
+        assert!(
+            error
+                .to_string()
+                .contains("all providers in failover chain failed")
+        );
+    }
+
+    #[test]
+    fn classify_prefers_typed_failure_over_message() {
+        let failure = ProviderFailure::new(ProviderError::Auth, "p", "429 rate limit wording");
+        assert_eq!(
+            classify_error(&anyhow::Error::new(failure)),
+            ProviderErrorKind::AuthError
+        );
+        let context = ProviderFailure::new(
+            ProviderError::ContextWindowExceeded { limit: None },
+            "p",
+            "boom",
+        );
+        assert!(!classify_error(&anyhow::Error::new(context)).should_failover());
     }
 
     struct EmptyStreamProvider;

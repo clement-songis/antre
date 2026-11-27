@@ -93,6 +93,11 @@ export interface ChatError {
 	type?: string;
 	retryAfterMs?: number;
 	canContinue?: boolean;
+	/** A run parked on a provider quota; the card offers to cancel it. */
+	canCancel?: boolean;
+	/** Epoch milliseconds of the quota reset. */
+	resetsAt?: number | null;
+	provider?: string;
 }
 
 export interface ChannelInfo {

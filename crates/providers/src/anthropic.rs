@@ -157,16 +157,18 @@ impl AnthropicProvider {
 
         let status = http_resp.status();
         if !status.is_success() {
-            let retry_after_ms = retry_after_ms_from_headers(http_resp.headers());
+            let error_headers = http_resp.headers().clone();
             let body_text = http_resp.text().await.unwrap_or_default();
             warn!(status = %status, body_bytes = body_text.len(), "anthropic probe API error");
-            anyhow::bail!(
-                "{}",
-                with_retry_after_marker(
-                    format!("Anthropic API error HTTP {status}: {body_text}"),
-                    retry_after_ms
-                )
-            );
+            return Err(crate::http_failure(
+                self.alias.as_deref().unwrap_or("anthropic"),
+                &self.model,
+                u16::from(status),
+                &error_headers,
+                &body_text,
+                format!("Anthropic API error HTTP {status}: {body_text}"),
+            )
+            .into());
         }
 
         Ok(())
@@ -523,14 +525,6 @@ fn parse_tool_calls(content: &[serde_json::Value]) -> Vec<ToolCall> {
         .collect()
 }
 
-fn retry_after_ms_from_headers(headers: &reqwest::header::HeaderMap) -> Option<u64> {
-    super::retry_after_ms_from_headers(headers)
-}
-
-fn with_retry_after_marker(base: String, retry_after_ms: Option<u64>) -> String {
-    super::with_retry_after_marker(base, retry_after_ms)
-}
-
 /// Convert `ChatMessage` list to Anthropic format.
 ///
 /// Returns `(system_blocks_or_text, anthropic_messages)`. System messages are
@@ -819,16 +813,18 @@ impl LlmProvider for AnthropicProvider {
 
         let status = http_resp.status();
         if !status.is_success() {
-            let retry_after_ms = retry_after_ms_from_headers(http_resp.headers());
+            let error_headers = http_resp.headers().clone();
             let body_text = http_resp.text().await.unwrap_or_default();
             warn!(status = %status, body_bytes = body_text.len(), "anthropic API error");
-            anyhow::bail!(
-                "{}",
-                with_retry_after_marker(
-                    format!("Anthropic API error HTTP {status}: {body_text}"),
-                    retry_after_ms
-                )
-            );
+            return Err(crate::http_failure(
+                self.alias.as_deref().unwrap_or("anthropic"),
+                &self.model,
+                u16::from(status),
+                &error_headers,
+                &body_text,
+                format!("Anthropic API error HTTP {status}: {body_text}"),
+            )
+            .into());
         }
 
         let resp = http_resp.json::<serde_json::Value>().await?;
@@ -968,12 +964,16 @@ impl LlmProvider for AnthropicProvider {
                 Ok(r) => {
                     if let Err(e) = r.error_for_status_ref() {
                         let status = e.status().map(|s| s.as_u16()).unwrap_or(0);
-                        let retry_after_ms = retry_after_ms_from_headers(r.headers());
+                        let error_headers = r.headers().clone();
                         let body_text = r.text().await.unwrap_or_default();
-                        yield StreamEvent::Error(with_retry_after_marker(
-                            format!("HTTP {status}: {body_text}"),
-                            retry_after_ms,
-                        ));
+                        yield StreamEvent::Failure(crate::http_failure(
+                self.alias.as_deref().unwrap_or("anthropic"),
+                &self.model,
+                status,
+                &error_headers,
+                &body_text,
+                format!("HTTP {status}: {body_text}"),
+            ));
                         return;
                     }
                     r

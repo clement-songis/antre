@@ -93,6 +93,8 @@ async fn start_models_mock(
     format!("http://{addr}")
 }
 
+use crate::{retry_after_ms_from_headers, with_retry_after_marker};
+
 #[test]
 fn retry_after_ms_from_headers_parses_seconds() {
     let mut headers = reqwest::header::HeaderMap::new();

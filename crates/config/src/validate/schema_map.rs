@@ -423,6 +423,10 @@ pub(super) fn build_schema_map() -> KnownKeys {
                         ("show_settings_hint", Leaf),
                     ])),
                 ),
+                (
+                    "quota_wait",
+                    Struct(HashMap::from([("enabled", Leaf), ("max_wait_hours", Leaf)])),
+                ),
             ])),
         ),
         (

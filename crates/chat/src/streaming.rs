@@ -505,8 +505,16 @@ pub(crate) async fn run_streaming(
                     output.final_broadcast = Some(payload_val);
                     return Some(output);
                 },
-                StreamEvent::Error(msg) => {
-                    let error_obj = parse_chat_error(&msg, Some(provider_name));
+                StreamEvent::Error(_) | StreamEvent::Failure(_) => {
+                    let (msg, failure) = match event {
+                        StreamEvent::Failure(failure) => (failure.message.clone(), Some(failure)),
+                        StreamEvent::Error(msg) => (msg, None),
+                        _ => (String::new(), None),
+                    };
+                    let error_obj =
+                        crate::quota_wait::error_obj_for_run(run_id, failure.as_ref(), || {
+                            parse_chat_error(&msg, Some(provider_name))
+                        });
                     let has_no_streamed_content = accumulated.trim().is_empty()
                         && accumulated_reasoning.trim().is_empty()
                         && raw_llm_responses.is_empty();

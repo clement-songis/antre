@@ -366,15 +366,28 @@ pub async fn run_agent_loop_with_context_and_limits(
                     step.fail(msg.clone());
                     step.finish();
                 }
-                if is_context_window_error(&msg) {
+                let typed = crate::provider_error::ProviderFailure::find(&e);
+                if typed.map_or_else(
+                    || is_context_window_error(&msg),
+                    |f| matches!(f.error, crate::provider_error::ProviderError::ContextWindowExceeded { .. }),
+                ) {
                     return Err(AgentRunError::ContextWindowExceeded(msg));
                 }
-                if let Some(delay_ms) = next_retry_delay_ms(
-                    &msg,
-                    &mut server_retries_remaining,
-                    &mut rate_limit_retries_remaining,
-                    &mut rate_limit_backoff_ms,
-                ) {
+                let delay = match typed {
+                    Some(failure) => super::retry::next_typed_retry_delay_ms(
+                        failure,
+                        &mut server_retries_remaining,
+                        &mut rate_limit_retries_remaining,
+                        &mut rate_limit_backoff_ms,
+                    ),
+                    None => next_retry_delay_ms(
+                        &msg,
+                        &mut server_retries_remaining,
+                        &mut rate_limit_retries_remaining,
+                        &mut rate_limit_backoff_ms,
+                    ),
+                };
+                if let Some(delay_ms) = delay {
                     iterations -= 1;
                     warn!(
                         error = %msg,

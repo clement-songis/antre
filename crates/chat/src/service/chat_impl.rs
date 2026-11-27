@@ -804,6 +804,10 @@ impl ChatService for LiveChatService {
                 "contextWindow": context_window,
                 "contextWindowKnown": context_window_known,
             },
+            "quotaWait": crate::quota_wait::pending(&session_key).map(|wait| serde_json::json!({
+                "provider": wait.provider,
+                "resetsAt": wait.resets_at.unix_timestamp() * 1000,
+            })),
         }))
     }
 

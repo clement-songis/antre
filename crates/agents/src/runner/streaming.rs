@@ -337,6 +337,7 @@ pub async fn run_agent_loop_streaming_with_limits(
             std::collections::HashMap::new();
         let mut request_usage = Usage::default();
         let mut stream_error: Option<String> = None;
+        let mut stream_failure: Option<crate::provider_error::ProviderFailure> = None;
         let mut finish_reason: Option<String> = None;
         let mut reasoning_tokens: u32 = 0;
 
@@ -502,6 +503,11 @@ pub async fn run_agent_loop_streaming_with_limits(
                     stream_error = Some(msg);
                     break;
                 },
+                TrackedStreamEvent::Event(StreamEvent::Failure(failure)) => {
+                    stream_error = Some(failure.message.clone());
+                    stream_failure = Some(failure);
+                    break;
+                },
             }
         }
 
@@ -521,15 +527,28 @@ pub async fn run_agent_loop_streaming_with_limits(
                 step.set_usage(usage);
                 step.finish();
             }
-            if is_context_window_error(&err) {
+            let typed = stream_failure.take();
+            if typed.as_ref().map_or_else(
+                || is_context_window_error(&err),
+                |f| matches!(f.error, crate::provider_error::ProviderError::ContextWindowExceeded { .. }),
+            ) {
                 return Err(AgentRunError::ContextWindowExceeded(err));
             }
-            if let Some(delay_ms) = next_retry_delay_ms(
-                &err,
-                &mut server_retries_remaining,
-                &mut rate_limit_retries_remaining,
-                &mut rate_limit_backoff_ms,
-            ) {
+            let delay = match &typed {
+                Some(failure) => super::retry::next_typed_retry_delay_ms(
+                    failure,
+                    &mut server_retries_remaining,
+                    &mut rate_limit_retries_remaining,
+                    &mut rate_limit_backoff_ms,
+                ),
+                None => next_retry_delay_ms(
+                    &err,
+                    &mut server_retries_remaining,
+                    &mut rate_limit_retries_remaining,
+                    &mut rate_limit_backoff_ms,
+                ),
+            };
+            if let Some(delay_ms) = delay {
                 // Don't count the failed attempt as an iteration.
                 iterations -= 1;
                 warn!(
@@ -548,7 +567,10 @@ pub async fn run_agent_loop_streaming_with_limits(
                 tokio::time::sleep(std::time::Duration::from_millis(delay_ms)).await;
                 continue;
             }
-            return Err(AgentRunError::Other(anyhow::anyhow!(err)));
+            return Err(AgentRunError::Other(match typed {
+                Some(failure) => anyhow::Error::new(failure),
+                None => anyhow::anyhow!(err),
+            }));
         }
 
         if let Some(mut step) = generation_step.take() {

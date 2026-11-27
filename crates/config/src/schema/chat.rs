@@ -38,6 +38,29 @@ pub struct ChatConfig {
     /// Compaction strategy and tuning knobs. See [`CompactionConfig`].
     #[serde(default)]
     pub compaction: CompactionConfig,
+    /// Waiting for a provider quota to reset. See [`QuotaWaitConfig`].
+    #[serde(default)]
+    pub quota_wait: QuotaWaitConfig,
+}
+
+/// When every provider of a run hits a rate limit or quota with a known
+/// reset time, the run waits and resumes on its own instead of failing.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct QuotaWaitConfig {
+    pub enabled: bool,
+    /// Longest wait accepted; a later reset fails the run with the reset
+    /// time in the error instead.
+    pub max_wait_hours: f64,
+}
+
+impl Default for QuotaWaitConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            max_wait_hours: 6.0,
+        }
+    }
 }
 
 fn default_auto_title() -> bool {
@@ -68,6 +91,7 @@ impl Default for ChatConfig {
             priority_models: Vec::new(),
             allowed_models: Vec::new(),
             compaction: CompactionConfig::default(),
+            quota_wait: QuotaWaitConfig::default(),
         }
     }
 }

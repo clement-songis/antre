@@ -1,8 +1,10 @@
 // ── Session rendering: history messages, welcome card, session list ──
 
 import {
+	addQuotaWaitCancelButton,
 	appendChannelFooter,
 	appendReasoningDisclosure,
+	chatAddErrorCard,
 	chatAddMsg,
 	chatAddMsgWithImages,
 	highlightAndScroll,
@@ -26,6 +28,7 @@ import {
 	tokenSpeedTone,
 	toolCallSummary,
 } from "../helpers";
+import { t } from "../i18n";
 import { appendMessageActions } from "../message-actions";
 import { upsertTtsProviderFooter } from "../message-voice";
 import { navigate } from "../router";
@@ -143,6 +146,8 @@ interface ExecutionInfo {
 /** Payload returned by the chat.context RPC. */
 interface ChatContextPayload {
 	tokenUsage?: TokenUsage;
+	/** A run of this session parked until a provider quota resets. */
+	quotaWait?: { provider: string; resetsAt: number } | null;
 	supportsTools?: boolean;
 	execution?: ExecutionInfo;
 }
@@ -416,6 +421,16 @@ export function postHistoryLoadActions(
 				S.setSessionCurrentContextTokens(tu.currentTotal || tu.estimatedNextInputTokens || tu.currentInputTokens || 0);
 			}
 			S.setSessionToolsEnabled(p.supportsTools !== false);
+			if (p.quotaWait && key === sessionStore.activeSessionKey.value) {
+				chatAddErrorCard({
+					icon: "\u23F3",
+					title: t("errors:chat.quotaWait.title", "Waiting for quota"),
+					detail: t("errors:chat.quotaWait.detail", "Resuming automatically when the quota resets."),
+					provider: p.quotaWait.provider,
+					resetsAt: p.quotaWait.resetsAt,
+				});
+				addQuotaWaitCancelButton(key);
+			}
 			const execution = p.execution || {};
 			const mode = execution.mode === "sandbox" ? "sandbox" : "host";
 			const hostIsRoot = execution.hostIsRoot === true;
