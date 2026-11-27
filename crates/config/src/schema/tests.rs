@@ -300,6 +300,8 @@ fn mcp_server_entry_maps_transport_aliases_to_shared_type() {
             headers: HashMap::new(),
             oauth: None,
             display_name: None,
+            trust: Default::default(),
+            sampling: Default::default(),
         };
 
         assert_eq!(entry.transport_type(), McpTransport::StreamableHttp);

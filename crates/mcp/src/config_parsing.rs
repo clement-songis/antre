@@ -173,6 +173,19 @@ pub fn parse_server_config(
         None => existing.and_then(|cfg| cfg.display_name.clone()),
     };
 
+    let trust = match params.get("trust") {
+        Some(value) if !value.is_null() => serde_json::from_value(value.clone()).map_err(|_| {
+            Error::message("invalid 'trust' parameter; expected trusted, ask or untrusted")
+        })?,
+        _ => existing.map(|cfg| cfg.trust).unwrap_or_default(),
+    };
+
+    let sampling = match params.get("sampling") {
+        Some(value) if !value.is_null() => serde_json::from_value(value.clone())
+            .map_err(|error| Error::message(format!("invalid 'sampling' parameter: {error}")))?,
+        _ => existing.map(|cfg| cfg.sampling.clone()).unwrap_or_default(),
+    };
+
     Ok(McpServerConfig {
         command,
         args,
@@ -191,7 +204,38 @@ pub fn parse_server_config(
         headers,
         oauth,
         display_name,
+        trust,
+        sampling,
     })
+}
+
+impl From<&moltis_config::schema::McpServerEntry> for McpServerConfig {
+    fn from(entry: &moltis_config::schema::McpServerEntry) -> Self {
+        Self {
+            command: entry.command.clone(),
+            args: entry.args.clone(),
+            env: entry.env.clone(),
+            enabled: entry.enabled,
+            request_timeout_secs: entry.request_timeout_secs,
+            transport: entry.transport_type(),
+            url: entry.url.clone().map(Secret::new),
+            headers: entry
+                .headers
+                .iter()
+                .map(|(key, value)| (key.clone(), Secret::new(value.clone())))
+                .collect(),
+            oauth: entry.oauth.as_ref().map(|oauth| McpOAuthConfig {
+                client_id: oauth.client_id.clone(),
+                client_secret: oauth.client_secret.clone(),
+                auth_url: oauth.auth_url.clone(),
+                token_url: oauth.token_url.clone(),
+                scopes: oauth.scopes.clone(),
+            }),
+            display_name: entry.display_name.clone(),
+            trust: entry.trust,
+            sampling: entry.sampling.clone(),
+        }
+    }
 }
 
 fn parse_string_map(value: &Value) -> HashMap<String, String> {
@@ -337,6 +381,8 @@ mod tests {
             },
             oauth: None,
             display_name: Some("My Server".to_string()),
+            trust: Default::default(),
+            sampling: Default::default(),
         };
 
         // Update only display_name, rest should be preserved
@@ -380,6 +426,8 @@ mod tests {
                 scopes: vec!["read".to_string()],
             }),
             display_name: None,
+            trust: Default::default(),
+            sampling: Default::default(),
         };
 
         let cfg = parse_server_config(
@@ -450,6 +498,8 @@ mod tests {
             },
             oauth: None,
             display_name: None,
+            trust: Default::default(),
+            sampling: Default::default(),
         };
 
         // Replace X-Replace, don't mention X-Keep
@@ -493,6 +543,8 @@ mod tests {
             },
             oauth: None,
             display_name: None,
+            trust: Default::default(),
+            sampling: Default::default(),
         };
 
         let cfg = parse_server_config(
@@ -542,6 +594,8 @@ mod tests {
             headers: HashMap::new(),
             oauth: None,
             display_name: None,
+            trust: Default::default(),
+            sampling: Default::default(),
         };
 
         // Omit timeout — should preserve existing
@@ -594,6 +648,8 @@ mod tests {
             headers: HashMap::new(),
             oauth: None,
             display_name: None,
+            trust: Default::default(),
+            sampling: Default::default(),
         };
 
         let cfg = parse_server_config(
@@ -635,6 +691,8 @@ mod tests {
             headers: HashMap::new(),
             oauth: None,
             display_name: None,
+            trust: Default::default(),
+            sampling: Default::default(),
         };
 
         let cfg = parse_server_config(

@@ -31,7 +31,7 @@ use {
     futures::StreamExt,
     secrecy::{ExposeSecret, Secret},
     tokio::{
-        io::AsyncWriteExt,
+        io::{AsyncRead, AsyncWrite, AsyncWriteExt},
         process::Command,
         sync::{Mutex, oneshot},
     },
@@ -42,6 +42,7 @@ use {
 use {
     crate::{
         error::{Context, Error, Result},
+        incoming::{IncomingDispatcher, IncomingMessage, IncomingRouter},
         traits::McpTransport,
         types::{JsonRpcNotification, JsonRpcRequest, JsonRpcResponse},
     },
@@ -51,14 +52,19 @@ use {
 const MAX_MCP_STDOUT_LINE_BYTES: usize = 4 * 1024 * 1024;
 const MAX_MCP_STDERR_LINE_BYTES: usize = 64 * 1024;
 
+type SharedWriter = Arc<Mutex<Box<dyn AsyncWrite + Send + Unpin>>>;
+type PendingMap = Arc<Mutex<HashMap<String, oneshot::Sender<JsonRpcResponse>>>>;
+
 /// Stdio-based transport for an MCP server process.
 pub struct StdioTransport {
-    child: Mutex<OwnedProcessTree>,
-    stdin: Arc<Mutex<tokio::process::ChildStdin>>,
-    pending: Arc<Mutex<HashMap<String, oneshot::Sender<JsonRpcResponse>>>>,
+    /// `None` when the transport runs over in-memory streams (tests).
+    child: Mutex<Option<OwnedProcessTree>>,
+    stdin: SharedWriter,
+    pending: PendingMap,
     next_id: AtomicU64,
     request_timeout: Duration,
     reader_closed: Arc<AtomicBool>,
+    incoming: Arc<IncomingRouter>,
     /// Handle to the reader task so we can abort on drop.
     reader_handle: Mutex<Option<tokio::task::JoinHandle<()>>>,
 }
@@ -66,8 +72,8 @@ pub struct StdioTransport {
 struct PendingRequestGuard {
     id_key: Option<String>,
     request_id: serde_json::Value,
-    pending: Arc<Mutex<HashMap<String, oneshot::Sender<JsonRpcResponse>>>>,
-    stdin: Arc<Mutex<tokio::process::ChildStdin>>,
+    pending: PendingMap,
+    stdin: SharedWriter,
 }
 
 impl PendingRequestGuard {
@@ -103,10 +109,15 @@ impl Drop for PendingRequestGuard {
     }
 }
 
-async fn send_cancellation_notification(
-    request_id: serde_json::Value,
-    stdin: Arc<Mutex<tokio::process::ChildStdin>>,
-) {
+async fn write_line(writer: &SharedWriter, message: &impl serde::Serialize) -> std::io::Result<()> {
+    let mut payload = serde_json::to_string(message).map_err(std::io::Error::other)?;
+    payload.push('\n');
+    let mut writer = writer.lock().await;
+    writer.write_all(payload.as_bytes()).await?;
+    writer.flush().await
+}
+
+async fn send_cancellation_notification(request_id: serde_json::Value, stdin: SharedWriter) {
     let notification = JsonRpcNotification {
         jsonrpc: "2.0".into(),
         method: "notifications/cancelled".into(),
@@ -115,13 +126,7 @@ async fn send_cancellation_notification(
             "reason": "request cancelled by client",
         })),
     };
-    let Ok(mut payload) = serde_json::to_string(&notification) else {
-        return;
-    };
-    payload.push('\n');
-    let mut writer = stdin.lock().await;
-    let _ = writer.write_all(payload.as_bytes()).await;
-    let _ = writer.flush().await;
+    let _ = write_line(&stdin, &notification).await;
 }
 
 impl StdioTransport {
@@ -183,20 +188,6 @@ impl StdioTransport {
         let stdout = child.take_stdout().context("failed to capture stdout")?;
         let stderr = child.take_stderr();
 
-        let pending: Arc<Mutex<HashMap<String, oneshot::Sender<JsonRpcResponse>>>> =
-            Arc::new(Mutex::new(HashMap::new()));
-        let reader_closed = Arc::new(AtomicBool::new(false));
-
-        let transport = Arc::new(Self {
-            child: Mutex::new(child),
-            stdin: Arc::new(Mutex::new(stdin)),
-            pending: Arc::clone(&pending),
-            next_id: AtomicU64::new(1),
-            request_timeout,
-            reader_closed: Arc::clone(&reader_closed),
-            reader_handle: Mutex::new(None),
-        });
-
         // Start stderr reader task (log server errors).
         if let Some(stderr) = stderr {
             tokio::spawn(async move {
@@ -220,50 +211,94 @@ impl StdioTransport {
             });
         }
 
-        // Start stdout reader task.
-        let pending_clone = Arc::clone(&pending);
-        let reader_closed_clone = Arc::clone(&reader_closed);
+        Ok(Self::start(Some(child), Box::new(stdin), stdout, request_timeout).await)
+    }
+
+    /// Run the transport over arbitrary streams: `reader` carries server
+    /// output, `writer` carries client input. Used with in-process servers.
+    pub async fn from_streams<R, W>(reader: R, writer: W, request_timeout: Duration) -> Arc<Self>
+    where
+        R: AsyncRead + Send + Unpin + 'static,
+        W: AsyncWrite + Send + Unpin + 'static,
+    {
+        Self::start(None, Box::new(writer), reader, request_timeout).await
+    }
+
+    async fn start<R>(
+        child: Option<OwnedProcessTree>,
+        writer: Box<dyn AsyncWrite + Send + Unpin>,
+        reader: R,
+        request_timeout: Duration,
+    ) -> Arc<Self>
+    where
+        R: AsyncRead + Send + Unpin + 'static,
+    {
+        let pending: PendingMap = Arc::new(Mutex::new(HashMap::new()));
+        let reader_closed = Arc::new(AtomicBool::new(false));
+        let stdin: SharedWriter = Arc::new(Mutex::new(writer));
+        let incoming = Arc::new(IncomingRouter::default());
+
+        let transport = Arc::new(Self {
+            child: Mutex::new(child),
+            stdin: Arc::clone(&stdin),
+            pending: Arc::clone(&pending),
+            next_id: AtomicU64::new(1),
+            request_timeout,
+            reader_closed: Arc::clone(&reader_closed),
+            incoming: Arc::clone(&incoming),
+            reader_handle: Mutex::new(None),
+        });
+
         let handle = tokio::spawn(async move {
             let mut lines = FramedRead::new(
-                stdout,
+                reader,
                 LinesCodec::new_with_max_length(MAX_MCP_STDOUT_LINE_BYTES),
             );
             while let Some(line) = lines.next().await {
-                match line {
-                    Ok(line) => {
-                        let trimmed = line.trim();
-                        if trimmed.is_empty() {
-                            continue;
-                        }
-                        // Try to parse as response (has id field).
-                        match serde_json::from_str::<JsonRpcResponse>(trimmed) {
-                            Ok(resp) => {
-                                let key = resp.id.to_string();
-                                let mut map = pending_clone.lock().await;
-                                if let Some(tx) = map.remove(&key) {
-                                    let _ = tx.send(resp);
-                                } else {
-                                    warn!(id = %key, "received response for unknown request id");
-                                }
-                            },
-                            Err(e) => {
-                                debug!(error = %e, bytes = trimmed.len(), "MCP server sent non-response line");
-                            },
-                        }
-                    },
+                let line = match line {
+                    Ok(line) => line,
                     Err(error) => {
                         warn!(%error, "MCP server stdout line exceeded transport limit");
                         break;
                     },
+                };
+                let trimmed = line.trim();
+                if trimmed.is_empty() {
+                    continue;
+                }
+                match IncomingMessage::parse(trimmed) {
+                    Ok(IncomingMessage::Response(resp)) => {
+                        let key = resp.id.to_string();
+                        let mut map = pending.lock().await;
+                        if let Some(tx) = map.remove(&key) {
+                            let _ = tx.send(resp);
+                        } else {
+                            warn!(id = %key, "received response for unknown request id");
+                        }
+                    },
+                    Ok(IncomingMessage::Request(request)) => {
+                        let writer = Arc::clone(&stdin);
+                        incoming.route_request(request, move |response| async move {
+                            if let Err(error) = write_line(&writer, &response).await {
+                                warn!(%error, "failed to answer MCP server request");
+                            }
+                        });
+                    },
+                    Ok(IncomingMessage::Notification(notification)) => {
+                        incoming.route_notification(notification);
+                    },
+                    Err(e) => {
+                        debug!(error = %e, bytes = trimmed.len(), "MCP server sent non-JSON-RPC line");
+                    },
                 }
             }
-            reader_closed_clone.store(true, Ordering::Release);
-            pending_clone.lock().await.clear();
+            reader_closed.store(true, Ordering::Release);
+            pending.lock().await.clear();
             debug!("MCP server stdout closed");
         });
 
         *transport.reader_handle.lock().await = Some(handle);
-        Ok(transport)
+        transport
     }
 }
 
@@ -296,31 +331,20 @@ impl McpTransport for StdioTransport {
             stdin: Arc::clone(&self.stdin),
         };
 
-        let mut payload = serde_json::to_string(&req)?;
-        payload.push('\n');
-
         debug!(method = %method, id = %id, "client -> MCP server");
 
-        let write_result = async {
-            let mut stdin = self.stdin.lock().await;
-            stdin.write_all(payload.as_bytes()).await?;
-            stdin.flush().await
-        }
-        .await;
-        if let Err(error) = write_result {
+        if let Err(error) = write_line(&self.stdin, &req).await {
             pending_guard.cancel().await;
             return Err(error.into());
         }
 
-        let received = match tokio::time::timeout(self.request_timeout, rx).await {
-            Ok(received) => received,
-            Err(_) => {
-                pending_guard.cancel().await;
-                return Err(Error::message(format!(
-                    "MCP request '{method}' timed out after {}s (no response from server)",
-                    self.request_timeout.as_secs()
-                )));
-            },
+        self.incoming.touch();
+        let Some(received) = self.incoming.await_active(rx, self.request_timeout).await else {
+            pending_guard.cancel().await;
+            return Err(Error::message(format!(
+                "MCP request '{method}' timed out after {}s (no response from server)",
+                self.request_timeout.as_secs()
+            )));
         };
         let resp = received.with_context(|| {
             format!("MCP reader task dropped while waiting for '{method}' response")
@@ -343,15 +367,8 @@ impl McpTransport for StdioTransport {
             method: method.into(),
             params,
         };
-
-        let mut payload = serde_json::to_string(&notif)?;
-        payload.push('\n');
-
         trace!(method = %method, "client -> MCP server (notification)");
-
-        let mut stdin = self.stdin.lock().await;
-        stdin.write_all(payload.as_bytes()).await?;
-        stdin.flush().await?;
+        write_line(&self.stdin, &notif).await?;
         Ok(())
     }
 
@@ -359,8 +376,10 @@ impl McpTransport for StdioTransport {
         if self.reader_closed.load(Ordering::Acquire) {
             return false;
         }
-        let mut child = self.child.lock().await;
-        matches!(child.try_wait(), Ok(None))
+        match self.child.lock().await.as_mut() {
+            Some(child) => matches!(child.try_wait(), Ok(None)),
+            None => true,
+        }
     }
 
     async fn kill(&self) {
@@ -369,8 +388,17 @@ impl McpTransport for StdioTransport {
         if let Some(handle) = self.reader_handle.lock().await.take() {
             handle.abort();
         }
-        let mut child = self.child.lock().await;
-        let _ = child.kill().await;
+        if let Some(child) = self.child.lock().await.as_mut() {
+            let _ = child.kill().await;
+        }
+    }
+
+    fn set_dispatcher(&self, dispatcher: Arc<dyn IncomingDispatcher>) {
+        self.incoming.set_dispatcher(dispatcher);
+    }
+
+    fn accepts_server_requests(&self) -> bool {
+        true
     }
 }
 

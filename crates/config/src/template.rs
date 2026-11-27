@@ -478,7 +478,9 @@ loopback_http = true                # Plain HTTP on loopback binds: http://local
 # agent_max_auto_continues = 2      # Auto-continue nudges when model stops mid-task (0 = off)
 # agent_auto_continue_min_tool_calls = 3  # Min tool calls before auto-continue can trigger
 # max_tool_result_bytes = 50000     # Max bytes per tool result before truncation (50KB)
-# registry_mode = "full"            # "full" = all schemas every turn, "lazy" = tool_search discovery
+# registry_mode = "full"            # "full" = all schemas every turn, "lazy" = tool_search discovery,
+#                                   # "auto" = built-ins in full, MCP tools behind tool_search
+# lazy_mcp_threshold = 20           # "auto": defer MCP tools above this count
 # agent_loop_detector_window = 2    # Fire intervention after N identical failing tool calls in a row
 # tool_result_compaction_ratio = 75 # % of context_window before oldest tool results are compacted
 # preemptive_overflow_ratio = 90    # % of context_window before hard ContextWindowExceeded error
@@ -636,12 +638,22 @@ loopback_http = true                # Plain HTTP on loopback binds: http://local
 
 # [mcp]
 # request_timeout_secs = 30         # Default timeout for MCP requests
+# elicitation_timeout_secs = 300    # How long a server question waits for an answer
+# apps_enabled = false              # Advertise MCP Apps (ui:// resources); no renderer yet
 
 # [mcp.servers.server-name]
 # command = "npx"                   # Command to run (for stdio transport)
 # args = ["-y", "@package/name"]    # Command arguments
 # env = {{ KEY = "value" }}           # Environment variables
 # transport = "stdio"               # "stdio" | "sse" | "streamable-http"
+# trust = "trusted"                 # "trusted" | "ask" (approve each call) | "untrusted"
+
+# [mcp.servers.server-name.sampling] # Let the server ask the session's model
+# enabled = false
+# max_tokens_per_request = 1024
+# max_requests_per_session = 20
+# max_tokens_per_session = 50000
+# model = "anthropic/claude-haiku-4-5" # Optional model override
 
 # [mcp.servers.server-name.oauth]
 # client_id = "your-client-id"       # Manual OAuth client ID

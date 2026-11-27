@@ -165,6 +165,8 @@ fn check_mcp_servers_disabled_skipped() {
         oauth: None,
         display_name: None,
         request_timeout_secs: None,
+        trust: Default::default(),
+        sampling: Default::default(),
     };
     config.mcp.servers.insert("test".into(), entry);
 
@@ -188,6 +190,8 @@ fn check_mcp_servers_missing_command_fails() {
         oauth: None,
         display_name: None,
         request_timeout_secs: None,
+        trust: Default::default(),
+        sampling: Default::default(),
     };
     config.mcp.servers.insert("broken".into(), entry);
 
@@ -211,6 +215,8 @@ fn check_mcp_servers_sse_with_url_ok() {
         oauth: None,
         display_name: None,
         request_timeout_secs: None,
+        trust: Default::default(),
+        sampling: Default::default(),
     };
     config.mcp.servers.insert("remote".into(), entry);
 
@@ -234,6 +240,8 @@ fn check_mcp_servers_sse_without_url_fails() {
         oauth: None,
         display_name: None,
         request_timeout_secs: None,
+        trust: Default::default(),
+        sampling: Default::default(),
     };
     config.mcp.servers.insert("broken-sse".into(), entry);
 
@@ -261,6 +269,8 @@ fn check_mcp_servers_streamable_http_with_url_ok() {
             oauth: None,
             display_name: None,
             request_timeout_secs: None,
+            trust: Default::default(),
+            sampling: Default::default(),
         };
         config.mcp.servers.insert("remote".into(), entry);
 
@@ -293,6 +303,8 @@ fn check_mcp_servers_streamable_http_without_url_fails() {
         oauth: None,
         display_name: None,
         request_timeout_secs: None,
+        trust: Default::default(),
+        sampling: Default::default(),
     };
     config.mcp.servers.insert("broken-http".into(), entry);
 
@@ -318,6 +330,8 @@ fn check_mcp_servers_streamable_http_with_invalid_url_fails() {
             oauth: None,
             display_name: None,
             request_timeout_secs: None,
+            trust: Default::default(),
+            sampling: Default::default(),
         };
         config.mcp.servers.insert("broken-http".into(), entry);
 
@@ -347,6 +361,8 @@ fn check_mcp_servers_streamable_http_resolves_config_env_url() {
             oauth: None,
             display_name: None,
             request_timeout_secs: None,
+            trust: Default::default(),
+            sampling: Default::default(),
         };
         config.mcp.servers.insert("remote".into(), entry);
 
@@ -370,6 +386,8 @@ fn check_mcp_servers_streamable_http_defers_unavailable_env_url() {
         oauth: None,
         display_name: None,
         request_timeout_secs: None,
+        trust: Default::default(),
+        sampling: Default::default(),
     };
     config.mcp.servers.insert("remote".into(), entry);
 
@@ -397,6 +415,8 @@ fn check_mcp_servers_nonexistent_command_fails() {
         oauth: None,
         display_name: None,
         request_timeout_secs: None,
+        trust: Default::default(),
+        sampling: Default::default(),
     };
     config.mcp.servers.insert("bad".into(), entry);
 

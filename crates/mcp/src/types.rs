@@ -26,6 +26,63 @@ impl JsonRpcRequest {
     }
 }
 
+impl JsonRpcResponse {
+    #[must_use]
+    pub fn success(id: serde_json::Value, result: serde_json::Value) -> Self {
+        Self {
+            jsonrpc: "2.0".into(),
+            id,
+            result: Some(result),
+            error: None,
+        }
+    }
+
+    #[must_use]
+    pub fn failure(id: serde_json::Value, error: JsonRpcError) -> Self {
+        Self {
+            jsonrpc: "2.0".into(),
+            id,
+            result: None,
+            error: Some(error),
+        }
+    }
+}
+
+impl JsonRpcError {
+    pub const INTERNAL_ERROR: i64 = -32603;
+    pub const INVALID_PARAMS: i64 = -32602;
+    pub const METHOD_NOT_FOUND: i64 = -32601;
+    /// MCP convention for a request the user (or host policy) declined.
+    pub const USER_REJECTED: i64 = -1;
+
+    #[must_use]
+    pub fn new(code: i64, message: impl Into<String>) -> Self {
+        Self {
+            code,
+            message: message.into(),
+            data: None,
+        }
+    }
+
+    #[must_use]
+    pub fn method_not_found(method: &str) -> Self {
+        Self::new(
+            Self::METHOD_NOT_FOUND,
+            format!("method not found: {method}"),
+        )
+    }
+
+    #[must_use]
+    pub fn invalid_params(message: impl Into<String>) -> Self {
+        Self::new(Self::INVALID_PARAMS, message)
+    }
+
+    #[must_use]
+    pub fn rejected(message: impl Into<String>) -> Self {
+        Self::new(Self::USER_REJECTED, message)
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JsonRpcResponse {
     pub jsonrpc: String,
@@ -55,12 +112,24 @@ pub struct JsonRpcNotification {
 // ── MCP Protocol Types ──────────────────────────────────────────────
 
 /// Client capabilities sent during initialize.
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
 pub struct ClientCapabilities {
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub roots: Option<serde_json::Value>,
+    pub roots: Option<RootsCapability>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub sampling: Option<serde_json::Value>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub elicitation: Option<serde_json::Value>,
+    /// Protocol extensions keyed by extension id (e.g. MCP Apps).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub extensions: Option<serde_json::Map<String, serde_json::Value>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct RootsCapability {
+    #[serde(default)]
+    pub list_changed: bool,
 }
 
 /// Parameters for the `initialize` request.
@@ -92,9 +161,29 @@ pub struct ServerCapabilities {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tools: Option<ToolsCapability>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub resources: Option<serde_json::Value>,
+    pub resources: Option<ResourcesCapability>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub prompts: Option<serde_json::Value>,
+    pub prompts: Option<PromptsCapability>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub logging: Option<serde_json::Value>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub extensions: Option<serde_json::Map<String, serde_json::Value>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct ResourcesCapability {
+    #[serde(default)]
+    pub subscribe: bool,
+    #[serde(default)]
+    pub list_changed: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct PromptsCapability {
+    #[serde(default)]
+    pub list_changed: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -112,19 +201,30 @@ pub struct ServerInfo {
 }
 
 /// A tool exposed by an MCP server.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct McpToolDef {
     pub name: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     pub input_schema: serde_json::Value,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub output_schema: Option<serde_json::Value>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub annotations: Option<serde_json::Value>,
+    #[serde(rename = "_meta", default, skip_serializing_if = "Option::is_none")]
+    pub meta: Option<serde_json::Value>,
 }
 
 /// Result from `tools/list`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ToolsListResult {
     pub tools: Vec<McpToolDef>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub next_cursor: Option<String>,
 }
 
 /// Parameters for `tools/call`.
@@ -134,8 +234,8 @@ pub struct ToolsCallParams {
     pub arguments: serde_json::Value,
 }
 
-/// A content item returned from `tools/call`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+/// An MCP content block (tool results, prompt messages, sampling).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "type")]
 pub enum ToolContent {
     #[serde(rename = "text")]
@@ -146,9 +246,32 @@ pub enum ToolContent {
         #[serde(rename = "mimeType")]
         mime_type: String,
     },
+    #[serde(rename = "audio")]
+    Audio {
+        data: String,
+        #[serde(rename = "mimeType")]
+        mime_type: String,
+    },
+    #[serde(rename = "resource_link")]
+    ResourceLink {
+        uri: String,
+        #[serde(default)]
+        name: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        description: Option<String>,
+        #[serde(rename = "mimeType", default, skip_serializing_if = "Option::is_none")]
+        mime_type: Option<String>,
+    },
     #[serde(rename = "resource")]
     Resource { resource: serde_json::Value },
+    /// A block type from a newer protocol revision; kept so the rest of the
+    /// result still parses.
+    #[serde(other)]
+    Unknown,
 }
+
+/// Content block shared by prompts, sampling and tool results.
+pub type ContentBlock = ToolContent;
 
 /// Result from `tools/call`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -159,8 +282,13 @@ pub struct ToolsCallResult {
     pub is_error: bool,
 }
 
-/// MCP protocol version we implement.
-pub const PROTOCOL_VERSION: &str = "2024-11-05";
+/// MCP protocol version we request during `initialize`.
+pub const PROTOCOL_VERSION: &str = "2025-11-25";
+
+/// Protocol versions we can talk. A server answering with any of these is
+/// accepted; older revisions simply lack the newer features.
+pub const SUPPORTED_PROTOCOL_VERSIONS: &[&str] =
+    &["2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"];
 
 // ── Transport Errors ──────────────────────────────────────────────────
 

@@ -473,6 +473,15 @@ pub(super) fn check_semantic_warnings(config: &MoltisConfig, diagnostics: &mut V
         });
     }
 
+    if config.mcp.elicitation_timeout_secs == 0 {
+        diagnostics.push(Diagnostic {
+            severity: Severity::Error,
+            category: "invalid-value",
+            path: "mcp.elicitation_timeout_secs".into(),
+            message: "mcp.elicitation_timeout_secs must be at least 1".into(),
+        });
+    }
+
     validate_instrumentation(&config.instrumentation, diagnostics);
 
     for (name, server) in &config.mcp.servers {
@@ -484,6 +493,8 @@ pub(super) fn check_semantic_warnings(config: &MoltisConfig, diagnostics: &mut V
                 message: "mcp server request_timeout_secs must be at least 1".into(),
             });
         }
+
+        check_mcp_sampling(name.as_str(), server, diagnostics);
 
         if !server.transport.is_empty()
             && !matches!(
@@ -1422,5 +1433,48 @@ fn check_catalog(catalog: &crate::schema::CatalogConfig, diagnostics: &mut Vec<D
             path: "catalog.refresh_interval_hours".into(),
             message: "catalog.refresh_interval_hours = 0 downloads the catalog on every check; use at least 1".into(),
         });
+    }
+}
+
+fn check_mcp_sampling(
+    name: &str,
+    server: &crate::schema::McpServerEntry,
+    diagnostics: &mut Vec<Diagnostic>,
+) {
+    let sampling = &server.sampling;
+    if !sampling.enabled {
+        return;
+    }
+    match server.trust {
+        crate::schema::McpTrustTier::Untrusted => diagnostics.push(Diagnostic {
+            severity: Severity::Warning,
+            category: "invalid-value",
+            path: format!("mcp.servers.{name}.sampling.enabled"),
+            message:
+                "sampling is never allowed for untrusted MCP servers; this setting has no effect"
+                    .into(),
+        }),
+        crate::schema::McpTrustTier::Trusted | crate::schema::McpTrustTier::Ask => {},
+    }
+    let zero_limits = [
+        (
+            "max_tokens_per_request",
+            u64::from(sampling.max_tokens_per_request),
+        ),
+        (
+            "max_requests_per_session",
+            u64::from(sampling.max_requests_per_session),
+        ),
+        ("max_tokens_per_session", sampling.max_tokens_per_session),
+    ];
+    for (field, value) in zero_limits {
+        if value == 0 {
+            diagnostics.push(Diagnostic {
+                severity: Severity::Warning,
+                category: "invalid-value",
+                path: format!("mcp.servers.{name}.sampling.{field}"),
+                message: format!("{field} = 0 rejects every sampling request"),
+            });
+        }
     }
 }

@@ -2,7 +2,8 @@
 //!
 //! This crate provides:
 //! - JSON-RPC 2.0 over stdio transport (`transport`)
-//! - MCP client for protocol handshake and tool interactions (`client`)
+//! - MCP client for protocol handshake, tools, resources and prompts (`client`)
+//! - Server-initiated requests: roots, sampling, elicitation (`host`)
 //! - Tool bridge adapting MCP tools to the agent tool interface (`tool_bridge`)
 //! - Server lifecycle management (`manager`)
 //! - Persisted server registry (`registry`)
@@ -12,13 +13,20 @@
 
 pub mod auth;
 pub mod client;
+mod client_features;
 mod client_slot;
 pub mod config_parsing;
+pub mod elicitation;
 pub mod error;
+pub mod host;
+pub mod incoming;
 pub mod legacy_sse_transport;
 pub mod manager;
+mod manager_features;
+pub mod protocol;
 pub mod registry;
 pub mod remote;
+pub mod sampling;
 pub mod sse_transport;
 pub mod tool_bridge;
 pub mod traits;
@@ -27,10 +35,16 @@ pub mod types;
 
 pub use {
     auth::{McpAuthProvider, McpAuthState, McpOAuthOverride, McpOAuthProvider, SharedAuthProvider},
-    client::{McpClient, McpClientState},
+    client::{ClientSetup, McpClient, McpClientState},
     config_parsing::{merge_env_overrides, parse_server_config},
+    elicitation::{ElicitationSchema, ElicitationView, PendingElicitations},
     error::{Context, Error, Result},
+    host::{
+        ElicitationRequest, HostContext, McpHost, SamplingRequest, SamplingResponse, ServerPolicy,
+        TrustTier,
+    },
     manager::McpManager,
+    manager_features::McpServerSummary,
     registry::{McpOAuthConfig, McpRegistry, McpServerConfig, TransportType},
     tool_bridge::{McpAgentTool, McpToolBridge},
     traits::{McpClientTrait, McpTransport},

@@ -249,6 +249,7 @@ pub(super) fn build_schema_map() -> KnownKeys {
             ("agent_auto_continue_min_tool_calls", Leaf),
             ("max_tool_result_bytes", Leaf),
             ("registry_mode", Leaf),
+            ("lazy_mcp_threshold", Leaf),
             ("agent_loop_detector_window", Leaf),
             ("agent_loop_detector_strip_tools_on_second_fire", Leaf),
             ("tool_result_compaction_ratio", Leaf),
@@ -279,6 +280,17 @@ pub(super) fn build_schema_map() -> KnownKeys {
             ("headers", Map(Box::new(Leaf))),
             ("oauth", mcp_oauth_override()),
             ("display_name", Leaf),
+            ("trust", Leaf),
+            (
+                "sampling",
+                Struct(HashMap::from([
+                    ("enabled", Leaf),
+                    ("max_tokens_per_request", Leaf),
+                    ("max_requests_per_session", Leaf),
+                    ("max_tokens_per_session", Leaf),
+                    ("model", Leaf),
+                ])),
+            ),
         ]))
     };
 
@@ -470,6 +482,8 @@ pub(super) fn build_schema_map() -> KnownKeys {
             Struct(HashMap::from([
                 ("request_timeout_secs", Leaf),
                 ("servers", Map(Box::new(mcp_server_entry()))),
+                ("elicitation_timeout_secs", Leaf),
+                ("apps_enabled", Leaf),
             ])),
         ),
         ("channels", {

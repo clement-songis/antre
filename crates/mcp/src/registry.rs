@@ -15,6 +15,10 @@ use crate::error::{Context, Result};
 
 /// MCP transport type shared with static configuration.
 pub type TransportType = moltis_config::schema::McpTransport;
+/// Trust tier shared with static configuration.
+pub type McpTrustTier = moltis_config::schema::McpTrustTier;
+/// Sampling limits shared with static configuration.
+pub type McpSamplingConfig = moltis_config::schema::McpSamplingConfig;
 
 /// Manual OAuth override for MCP servers that don't support standard discovery.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -75,6 +79,22 @@ pub struct McpServerConfig {
     /// Custom display name for the server (shown in UI instead of technical ID).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub display_name: Option<String>,
+    /// Trust tier gating tool approval, sampling, elicitation and roots.
+    #[serde(default)]
+    pub trust: McpTrustTier,
+    /// Sampling permission and spend limits.
+    #[serde(default)]
+    pub sampling: McpSamplingConfig,
+}
+
+impl McpServerConfig {
+    #[must_use]
+    pub fn policy(&self) -> crate::host::ServerPolicy {
+        crate::host::ServerPolicy {
+            trust: self.trust,
+            sampling: self.sampling.clone(),
+        }
+    }
 }
 
 fn default_true() -> bool {
@@ -94,6 +114,8 @@ impl Default for McpServerConfig {
             headers: HashMap::new(),
             oauth: None,
             display_name: None,
+            trust: McpTrustTier::default(),
+            sampling: McpSamplingConfig::default(),
         }
     }
 }

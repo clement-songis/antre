@@ -146,6 +146,15 @@ pub struct McpConfig {
     /// Configured MCP servers, keyed by server ID.
     #[serde(default)]
     pub servers: HashMap<McpServerId, McpServerEntry>,
+    /// How long a server-initiated elicitation waits for the user before it
+    /// is cancelled, in seconds.
+    #[serde(default = "default_mcp_elicitation_timeout_secs")]
+    pub elicitation_timeout_secs: u64,
+    /// Advertise the MCP Apps (`io.modelcontextprotocol/ui`) extension so
+    /// servers attach `ui://` resources to tools. Off until the web UI can
+    /// render them in a sandboxed iframe.
+    #[serde(default)]
+    pub apps_enabled: bool,
 }
 
 impl Default for McpConfig {
@@ -153,12 +162,89 @@ impl Default for McpConfig {
         Self {
             request_timeout_secs: default_mcp_request_timeout_secs(),
             servers: HashMap::new(),
+            elicitation_timeout_secs: default_mcp_elicitation_timeout_secs(),
+            apps_enabled: false,
         }
     }
 }
 
 fn default_mcp_request_timeout_secs() -> u64 {
     30
+}
+
+fn default_mcp_elicitation_timeout_secs() -> u64 {
+    300
+}
+
+/// How much an MCP server is trusted.
+///
+/// The tier gates tool calls (approval), sampling, elicitation and the roots
+/// a server can see. See `docs/src/mcp.md` for the full matrix.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum McpTrustTier {
+    /// Tools run without approval; sampling runs without approval when enabled.
+    #[default]
+    Trusted,
+    /// Every tool call and sampling request needs user approval.
+    Ask,
+    /// Every tool call needs approval, results are marked untrusted, and the
+    /// server gets no roots, sampling or elicitation.
+    Untrusted,
+}
+
+impl McpTrustTier {
+    #[must_use]
+    pub fn requires_tool_approval(self) -> bool {
+        !matches!(self, Self::Trusted)
+    }
+
+    #[must_use]
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Trusted => "trusted",
+            Self::Ask => "ask",
+            Self::Untrusted => "untrusted",
+        }
+    }
+}
+
+impl std::fmt::Display for McpTrustTier {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+/// Limits for MCP `sampling/createMessage` requests from one server.
+///
+/// Counters are kept in memory per chat session (or per server outside a
+/// session) and reset when the gateway restarts.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct McpSamplingConfig {
+    /// Allow the server to ask the session's model for completions.
+    pub enabled: bool,
+    /// Upper bound applied to each request's `maxTokens`.
+    pub max_tokens_per_request: u32,
+    /// Maximum sampling requests per chat session.
+    pub max_requests_per_session: u32,
+    /// Maximum input + output tokens per chat session.
+    pub max_tokens_per_session: u64,
+    /// Model used instead of the session's model (`provider/model` id).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub model: Option<String>,
+}
+
+impl Default for McpSamplingConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            max_tokens_per_request: 1024,
+            max_requests_per_session: 20,
+            max_tokens_per_session: 50_000,
+            model: None,
+        }
+    }
 }
 
 /// Configuration for a single MCP server.
@@ -198,6 +284,12 @@ pub struct McpServerEntry {
     /// Custom display name for the server (shown in UI instead of technical ID).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub display_name: Option<String>,
+    /// Trust tier: "trusted" (default), "ask" or "untrusted".
+    #[serde(default)]
+    pub trust: McpTrustTier,
+    /// Sampling (`sampling/createMessage`) permission and spend limits.
+    #[serde(default)]
+    pub sampling: McpSamplingConfig,
 }
 
 impl McpServerEntry {

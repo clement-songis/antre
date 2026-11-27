@@ -342,6 +342,9 @@ pub enum ToolRegistryMode {
     Full,
     /// Only `tool_search` is sent; the model discovers and activates tools on demand.
     Lazy,
+    /// Built-in tools are sent in full; MCP tools are deferred behind
+    /// `tool_search` once their count exceeds `tools.lazy_mcp_threshold`.
+    Auto,
 }
 
 /// Auxiliary model assignments for side tasks.

@@ -4,7 +4,7 @@ use std::{
     collections::HashMap,
     sync::{
         Arc,
-        atomic::{AtomicU64, Ordering},
+        atomic::{AtomicBool, AtomicU64, Ordering},
     },
     time::Duration,
 };
@@ -17,11 +17,13 @@ use {
 
 use crate::{
     auth::{McpAuthState, McpOAuthOverride, McpOAuthProvider, SharedAuthProvider},
-    client::{McpClient, McpClientState},
+    client::{ClientSetup, McpClient, McpClientState},
     client_slot::{ClientSlot, SharedMcpClient},
     error::{Context, Error, Result},
+    host::{HostContext, McpHost},
     registry::{McpOAuthConfig, McpRegistry, McpServerConfig, TransportType},
     remote::{ResolvedRemoteConfig, header_names, sanitize_url_for_display},
+    sampling::{CallContexts, SamplingBudget},
     tool_bridge::McpToolBridge,
     traits::McpClientTrait,
     transport::StdioLaunchOptions,
@@ -57,13 +59,15 @@ pub struct ServerStatus {
     /// Custom display name for the server (shown in UI).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub display_name: Option<String>,
+    pub trust: crate::registry::McpTrustTier,
+    pub sampling_enabled: bool,
 }
 
 /// Mutable state behind the single `RwLock` on [`McpManager`].
-struct McpManagerInner {
-    clients: HashMap<String, Arc<ClientSlot>>,
-    tools: HashMap<String, Vec<McpToolDef>>,
-    registry: McpRegistry,
+pub(crate) struct McpManagerInner {
+    pub(crate) clients: HashMap<String, Arc<ClientSlot>>,
+    pub(crate) tools: HashMap<String, Vec<McpToolDef>>,
+    pub(crate) registry: McpRegistry,
     /// OAuth auth providers for SSE servers, keyed by server name.
     auth_providers: HashMap<String, SharedAuthProvider>,
     env_overrides: HashMap<String, String>,
@@ -71,8 +75,11 @@ struct McpManagerInner {
 
 /// Manages the lifecycle of multiple MCP server connections.
 pub struct McpManager {
-    inner: RwLock<McpManagerInner>,
+    pub(crate) inner: RwLock<McpManagerInner>,
     request_timeout_secs: AtomicU64,
+    /// Host services shared by every server's request dispatcher.
+    pub(crate) host: HostContext,
+    apps_enabled: AtomicBool,
 }
 
 fn env_names(config: &McpServerConfig) -> Vec<String> {
@@ -112,6 +119,39 @@ impl McpManager {
                 env_overrides,
             }),
             request_timeout_secs: AtomicU64::new(request_timeout_secs),
+            host: HostContext::default(),
+            apps_enabled: AtomicBool::new(false),
+        }
+    }
+
+    /// Install the host that answers sampling and elicitation requests and
+    /// receives server notifications. Running servers pick it up at once.
+    pub fn set_host(&self, host: Arc<dyn McpHost>) {
+        self.host.host.set(host);
+    }
+
+    /// Advertise the MCP Apps extension to servers started from now on.
+    pub fn set_apps_enabled(&self, enabled: bool) {
+        self.apps_enabled.store(enabled, Ordering::Relaxed);
+    }
+
+    /// Active tool-call contexts, used to attribute server requests to a session.
+    #[must_use]
+    pub fn call_contexts(&self) -> CallContexts {
+        self.host.contexts.clone()
+    }
+
+    /// Sampling usage counters.
+    #[must_use]
+    pub fn sampling_budget(&self) -> Arc<SamplingBudget> {
+        Arc::clone(&self.host.budget)
+    }
+
+    fn client_setup(&self, config: &McpServerConfig) -> ClientSetup {
+        ClientSetup {
+            policy: config.policy(),
+            apps_enabled: self.apps_enabled.load(Ordering::Relaxed),
+            host: Some(self.host.clone()),
         }
     }
 
@@ -264,6 +304,8 @@ impl McpManager {
             client.shutdown().await;
         }
 
+        let setup = self.client_setup(config);
+
         // Network work happens outside the lock.
         let (client, auth_provider) = match config.transport {
             TransportType::Sse => {
@@ -300,6 +342,7 @@ impl McpManager {
                         &remote,
                         auth_provider.clone(),
                         self.effective_timeout_for(config),
+                        &setup,
                     )
                     .await
                     {
@@ -335,6 +378,7 @@ impl McpManager {
                                     &remote,
                                     auth_provider.clone(),
                                     self.effective_timeout_for(config),
+                                    &setup,
                                 )
                                 .await?;
                                 (client, Some(auth_provider))
@@ -348,6 +392,7 @@ impl McpManager {
                         name,
                         &remote,
                         self.effective_timeout_for(config),
+                        &setup,
                     )
                     .await
                     {
@@ -383,6 +428,7 @@ impl McpManager {
                                     &remote,
                                     auth_provider.clone(),
                                     self.effective_timeout_for(config),
+                                    &setup,
                                 )
                                 .await?;
                                 (client, Some(auth_provider))
@@ -429,6 +475,7 @@ impl McpManager {
                         &remote,
                         auth_provider.clone(),
                         self.effective_timeout_for(config),
+                        &setup,
                     )
                     .await
                     {
@@ -467,6 +514,7 @@ impl McpManager {
                                     &remote,
                                     auth_provider.clone(),
                                     self.effective_timeout_for(config),
+                                    &setup,
                                 )
                                 .await?;
                                 (client, Some(auth_provider))
@@ -476,8 +524,13 @@ impl McpManager {
                         },
                     }
                 } else {
-                    match McpClient::connect_sse(name, &remote, self.effective_timeout_for(config))
-                        .await
+                    match McpClient::connect_sse(
+                        name,
+                        &remote,
+                        self.effective_timeout_for(config),
+                        &setup,
+                    )
+                    .await
                     {
                         Ok(client) => (client, None),
                         Err(e) => {
@@ -514,6 +567,7 @@ impl McpManager {
                                     &remote,
                                     auth_provider.clone(),
                                     self.effective_timeout_for(config),
+                                    &setup,
                                 )
                                 .await?;
                                 (client, Some(auth_provider))
@@ -532,6 +586,7 @@ impl McpManager {
                     &config.env,
                     self.effective_timeout_for(config),
                     stdio_options,
+                    &setup,
                 )
                 .await?;
                 (client, None)
@@ -712,6 +767,8 @@ impl McpManager {
                 auth_state,
                 auth_url: None,
                 display_name: config.display_name.clone(),
+                trust: config.trust,
+                sampling_enabled: config.policy().sampling_allowed(),
             });
         }
         statuses
@@ -729,7 +786,20 @@ impl McpManager {
 
         for (name, slot) in &inner.clients {
             if let Some(tool_defs) = inner.tools.get(name) {
-                bridges.extend(McpToolBridge::from_slot(name, tool_defs, Arc::clone(slot)));
+                let trust = inner
+                    .registry
+                    .get(name)
+                    .map(|config| config.trust)
+                    .unwrap_or_default();
+                bridges.extend(
+                    McpToolBridge::from_slot(name, tool_defs, Arc::clone(slot))
+                        .into_iter()
+                        .map(|bridge| {
+                            bridge
+                                .with_trust(trust)
+                                .with_call_contexts(self.host.contexts.clone())
+                        }),
+                );
             }
         }
 

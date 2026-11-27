@@ -36,6 +36,10 @@ pub struct ToolsConfig {
     /// How tool schemas are presented to the model. Default "full".
     #[serde(default)]
     pub registry_mode: ToolRegistryMode,
+    /// With `registry_mode = "auto"`, defer MCP tools once more than this
+    /// many are registered. Default 20.
+    #[serde(default = "default_lazy_mcp_threshold")]
+    pub lazy_mcp_threshold: usize,
     /// Window size for the tool-call reflex-loop detector. When this many
     /// consecutive tool calls share the same tool + (args or error), the
     /// runner injects a directive intervention message. Set to 0 to disable.
@@ -64,6 +68,10 @@ pub struct ToolsConfig {
     pub compaction_min_iterations: usize,
 }
 
+fn default_lazy_mcp_threshold() -> usize {
+    20
+}
+
 impl Default for ToolsConfig {
     fn default() -> Self {
         Self {
@@ -79,6 +87,7 @@ impl Default for ToolsConfig {
             agent_auto_continue_min_tool_calls: default_agent_auto_continue_min_tool_calls(),
             max_tool_result_bytes: default_max_tool_result_bytes(),
             registry_mode: ToolRegistryMode::default(),
+            lazy_mcp_threshold: default_lazy_mcp_threshold(),
             agent_loop_detector_window: default_agent_loop_detector_window(),
             agent_loop_detector_strip_tools_on_second_fire: default_agent_loop_detector_strip_tools(
             ),
