@@ -613,12 +613,11 @@ enum CreateError {
 /// Check whether the Apple Container system service is running.
 #[cfg(target_os = "macos")]
 fn is_apple_container_service_running() -> bool {
-    Command::new("container")
-        .args(["system", "status"])
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
-        .status()
-        .is_ok_and(|s| s.success())
+    super::containers::command_succeeds_within(
+        "container",
+        &["system", "status"],
+        super::containers::RUNTIME_PROBE_TIMEOUT,
+    )
 }
 
 /// Try to start the Apple Container system service.

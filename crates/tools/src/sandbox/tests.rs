@@ -280,6 +280,7 @@ mod network;
 #[cfg(feature = "os-sandbox")]
 mod os;
 mod platform;
+mod probe;
 mod restricted_host;
 #[cfg(feature = "wasm")]
 mod wasm;

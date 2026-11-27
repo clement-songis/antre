@@ -1051,23 +1051,62 @@ pub(crate) fn should_use_docker_backend(
     docker_cli_available && docker_daemon_available
 }
 
+/// How long a container runtime may take to answer a probe before startup
+/// treats it as unavailable. A hung Docker Desktop otherwise blocks `docker
+/// info` (and gateway startup) for minutes.
+pub(crate) const RUNTIME_PROBE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5);
+
 pub(crate) fn is_docker_daemon_available() -> bool {
-    std::process::Command::new("docker")
-        .args(["info", "--format", "{{.ServerVersion}}"])
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
-        .status()
-        .is_ok_and(|s| s.success())
+    command_succeeds_within(
+        "docker",
+        &["info", "--format", "{{.ServerVersion}}"],
+        RUNTIME_PROBE_TIMEOUT,
+    )
 }
 
 /// Check whether a CLI tool is available on PATH.
 pub fn is_cli_available(name: &str) -> bool {
-    std::process::Command::new(name)
-        .arg("--version")
+    command_succeeds_within(name, &["--version"], RUNTIME_PROBE_TIMEOUT)
+}
+
+/// Run `program args` with no I/O and report whether it exited successfully
+/// within `timeout`. A command still running at the deadline is killed and
+/// counts as a failure.
+pub(crate) fn command_succeeds_within(
+    program: &str,
+    args: &[&str],
+    timeout: std::time::Duration,
+) -> bool {
+    let spawned = std::process::Command::new(program)
+        .args(args)
+        .stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null())
-        .status()
-        .is_ok_and(|s| s.success())
+        .spawn();
+    let Ok(mut child) = spawned else {
+        return false;
+    };
+    let deadline = std::time::Instant::now() + timeout;
+    loop {
+        match child.try_wait() {
+            Ok(Some(status)) => return status.success(),
+            Ok(None) if std::time::Instant::now() < deadline => {
+                std::thread::sleep(std::time::Duration::from_millis(20));
+            },
+            Ok(None) => {
+                let _ = child.kill();
+                let _ = child.wait();
+                warn!(
+                    program,
+                    ?args,
+                    timeout_secs = timeout.as_secs_f32(),
+                    "runtime probe timed out; treating the runtime as unavailable"
+                );
+                return false;
+            },
+            Err(_) => return false,
+        }
+    }
 }
 
 /// Return the name of the container CLI to use for OCI image operations
