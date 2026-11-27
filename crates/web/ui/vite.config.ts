@@ -10,6 +10,12 @@ export default defineConfig({
       "@": resolve(__dirname, "src"),
     },
   },
+  // The gateway serves the bundle under an asset prefix, not at "/": resolve
+  // lazily loaded assets (KaTeX's stylesheet and fonts) relative to the chunk
+  // that loads them.
+  experimental: {
+    renderBuiltUrl: () => ({ relative: true }),
+  },
   build: {
     outDir: resolve(__dirname, "../src/assets/dist"),
     emptyOutDir: true,

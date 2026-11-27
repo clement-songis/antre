@@ -534,6 +534,29 @@
   }
 }
 
+/* Mermaid diagrams and KaTeX math (rendered lazily from markdown) */
+.mermaid-diagram {
+  margin: 0.5em 0;
+  overflow-x: auto;
+  text-align: center;
+}
+
+.mermaid-diagram svg {
+  max-width: 100%;
+  height: auto;
+}
+
+pre.mermaid-source {
+  display: none;
+}
+
+.math-display {
+  display: block;
+  overflow-x: auto;
+  margin: 0.5em 0;
+  text-align: center;
+}
+
 /* Shiki dual-theme: dark mode uses --shiki-dark colors */
 [data-theme="dark"] .shiki,
 [data-theme="dark"] .shiki span {

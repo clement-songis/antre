@@ -3,6 +3,7 @@
 import { Marked, Renderer, type Token } from "marked";
 import * as gon from "./gon";
 import { hasTranslation, t } from "./i18n";
+import { mathBlockExtension, mathInlineExtension } from "./markdown-math";
 import * as S from "./state";
 import type { RpcResponse } from "./types";
 
@@ -272,6 +273,7 @@ mdRenderer.link = ({ href, text }) => {
 mdRenderer.html = ({ text }) => esc(text);
 
 const markedInstance = new Marked({ renderer: mdRenderer, breaks: true, gfm: true, async: false });
+markedInstance.use({ extensions: [mathBlockExtension, mathInlineExtension] });
 const RPC_TIMEOUT_MS = 5_000;
 
 function rpcTimeoutMs(requested?: number): number {

@@ -9,6 +9,7 @@ import { memo } from "preact/compat";
 import { useEffect, useMemo, useRef } from "preact/hooks";
 import { highlightCodeBlocks } from "../../../code-highlight";
 import { renderMarkdown, splitMarkdownBlocks } from "../../../helpers";
+import { enhanceRichBlocks, hasRichBlocks } from "../../../rich-blocks";
 
 interface BlockProps {
 	raw: string;
@@ -21,7 +22,9 @@ const MarkdownBlock = memo(
 		const ref = useRef<HTMLDivElement>(null);
 		const html = useMemo(() => renderMarkdown(raw), [raw]);
 		useEffect(() => {
-			if (closed && ref.current && raw.includes("```")) void highlightCodeBlocks(ref.current);
+			if (!(closed && ref.current)) return;
+			if (raw.includes("```")) void highlightCodeBlocks(ref.current);
+			if (hasRichBlocks(html)) void enhanceRichBlocks(ref.current);
 		}, [closed, html]);
 		// biome-ignore lint/security/noDangerouslySetInnerHtml: renderMarkdown escapes its input first.
 		return <div ref={ref} className="md-block contents" dangerouslySetInnerHTML={{ __html: html }} />;
