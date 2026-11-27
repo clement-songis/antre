@@ -497,61 +497,13 @@ impl LiveChatService {
             return Ok(serde_json::json!({ "ok": true, "runId": run_id }));
         }
 
-        // Resolve model: explicit → session → agent preset (via prompt agent id) → default.
-        let session_entry_for_model = if explicit_model.is_none() {
-            self.session_metadata.get(&session_key).await
-        } else {
-            None
-        };
-        let session_model = session_entry_for_model
-            .as_ref()
-            .and_then(|e| e.model.clone());
-        let preset_model = if explicit_model.is_none() {
-            crate::prompt::resolve_preset_model_for_session(session_entry_for_model.as_ref())
-        } else {
-            None
-        };
-        let model_id = crate::prompt::resolve_chat_model_id(
-            explicit_model.as_deref(),
-            session_model.as_deref(),
-            preset_model.as_deref(),
-        );
-
-        let provider_result: Result<Arc<dyn moltis_agents::model::LlmProvider>, String> = {
+        let model_id = self
+            .resolve_send_model_id(&session_key, explicit_model.as_deref())
+            .await;
+        let model_id = model_id.as_deref();
+        let provider_result = {
             let reg = self.providers.read().await;
-            let primary_result = model_selection::resolve_primary(
-                &reg,
-                model_id,
-                stream_only,
-                self.config.chat.reasoning_default,
-            );
-
-            match primary_result {
-                Err(error) => Err(error),
-                Ok(primary) => {
-                    let user_selected = model_id.is_some();
-                    let skip_failover = !self.failover_config.enabled
-                        || (self.failover_config.exact_model && user_selected);
-                    if skip_failover {
-                        Ok(primary)
-                    } else {
-                        let fallbacks = if self.failover_config.fallback_models.is_empty() {
-                            reg.fallback_providers_for(primary.id(), primary.name())
-                        } else {
-                            reg.providers_for_models(&self.failover_config.fallback_models)
-                        };
-                        if fallbacks.is_empty() {
-                            Ok(primary)
-                        } else {
-                            let mut chain = vec![primary];
-                            chain.extend(fallbacks);
-                            Ok(Arc::new(moltis_agents::provider_chain::ProviderChain::new(
-                                chain,
-                            )))
-                        }
-                    }
-                },
-            }
+            self.build_send_provider(&reg, model_id, stream_only)
         };
         let provider = match provider_result {
             Ok(provider) => provider,

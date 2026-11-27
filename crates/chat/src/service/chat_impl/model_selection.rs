@@ -5,6 +5,64 @@ use {
     moltis_providers::ProviderRegistry,
 };
 
+use crate::service::LiveChatService;
+
+impl LiveChatService {
+    /// Model for a chat turn: explicit → session → agent preset → `None`
+    /// (registry default).
+    pub(super) async fn resolve_send_model_id(
+        &self,
+        session_key: &str,
+        explicit_model: Option<&str>,
+    ) -> Option<String> {
+        if let Some(model) = explicit_model {
+            return Some(model.to_string());
+        }
+        let session_entry = self.session_metadata.get(session_key).await;
+        let session_model = session_entry.as_ref().and_then(|e| e.model.clone());
+        let preset_model = crate::prompt::resolve_preset_model_for_session(session_entry.as_ref());
+        crate::prompt::resolve_chat_model_id(
+            None,
+            session_model.as_deref(),
+            preset_model.as_deref(),
+        )
+        .map(str::to_string)
+    }
+
+    /// Primary provider for `model_id`, wrapped in a failover chain unless
+    /// failover is off or pinned to the model the user selected.
+    pub(super) fn build_send_provider(
+        &self,
+        registry: &ProviderRegistry,
+        model_id: Option<&str>,
+        stream_only: bool,
+    ) -> Result<Arc<dyn LlmProvider>, String> {
+        let primary = resolve_primary(
+            registry,
+            model_id,
+            stream_only,
+            self.config.chat.reasoning_default,
+        )?;
+        let user_selected = model_id.is_some();
+        if !self.failover_config.enabled || (self.failover_config.exact_model && user_selected) {
+            return Ok(primary);
+        }
+        let fallbacks = if self.failover_config.fallback_models.is_empty() {
+            registry.fallback_providers_for(primary.id(), primary.name())
+        } else {
+            registry.providers_for_models(&self.failover_config.fallback_models)
+        };
+        if fallbacks.is_empty() {
+            return Ok(primary);
+        }
+        let mut chain = vec![primary];
+        chain.extend(fallbacks);
+        Ok(Arc::new(moltis_agents::provider_chain::ProviderChain::new(
+            chain,
+        )))
+    }
+}
+
 pub(super) fn resolve_primary(
     registry: &ProviderRegistry,
     model_id: Option<&str>,
