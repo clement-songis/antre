@@ -39,6 +39,36 @@ async fn test_restricted_host_sandbox_exec_simple_echo() {
     assert_eq!(result.stdout.trim(), "hello");
 }
 
+/// No process cap without `pids_max`: `RLIMIT_NPROC` counts all of the
+/// user's processes, so a default of 256 broke commands on busy desktops.
+#[cfg(unix)]
+#[tokio::test]
+async fn restricted_host_caps_processes_only_when_pids_max_is_set() {
+    let id = SandboxId {
+        scope: SandboxScope::Session,
+        key: "test-rh-nproc".into(),
+    };
+    let unset = RestrictedHostSandbox::new(SandboxConfig::default());
+    let before = unset
+        .exec(&id, "ulimit -u", &ExecOpts::default())
+        .await
+        .unwrap();
+    assert_ne!(before.stdout.trim(), "256");
+
+    let capped = RestrictedHostSandbox::new(SandboxConfig {
+        resource_limits: ResourceLimits {
+            pids_max: Some(1000),
+            ..ResourceLimits::default()
+        },
+        ..SandboxConfig::default()
+    });
+    let result = capped
+        .exec(&id, "ulimit -u", &ExecOpts::default())
+        .await
+        .unwrap();
+    assert_eq!(result.stdout.trim(), "1000");
+}
+
 #[tokio::test]
 async fn test_restricted_host_sandbox_read_file_native() {
     let dir = tempfile::tempdir().unwrap();

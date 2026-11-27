@@ -67,11 +67,10 @@ fn seatbelt_is_detected_on_macos() {
 #[test]
 fn ulimit_nproc_only_when_requested() {
     let limits = ResourceLimits::default();
-    assert!(!ulimit_wrapped_command(&limits, None, "true").contains("ulimit -u"));
-    assert!(ulimit_wrapped_command(&limits, Some(256), "true").contains("ulimit -u 256"));
+    assert!(!ulimit_wrapped_command(&limits, "true").contains("ulimit -u"));
     let explicit = ResourceLimits {
         pids_max: Some(64),
         ..ResourceLimits::default()
     };
-    assert!(ulimit_wrapped_command(&explicit, None, "true").contains("ulimit -u 64"));
+    assert!(ulimit_wrapped_command(&explicit, "true").contains("ulimit -u 64"));
 }

@@ -414,7 +414,9 @@ When the restricted-host sandbox runs a command, it:
 2. **Sets a restricted PATH** — only `/usr/local/bin:/usr/bin:/bin`
 3. **Sets HOME to `/tmp`** — prevents access to the user's home directory
 4. **Applies resource limits** via shell `ulimit`:
-   - `ulimit -u` (max processes) from `pids_max` config (default: 256)
+   - `ulimit -u` (max processes) only when `pids_max` is set: the limit counts
+     every process of your user, not just the sandbox, so a default cap broke
+     commands on busy desktops
    - `ulimit -n 1024` (max open files)
    - `ulimit -t` (CPU seconds) from `cpu_quota` config (default: 300s)
    - `ulimit -v` (virtual memory) from `memory_limit` config (default: 512M)

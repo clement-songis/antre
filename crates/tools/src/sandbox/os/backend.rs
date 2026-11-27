@@ -327,7 +327,7 @@ impl OsSandbox {
         cwd: &Path,
         command: &str,
     ) -> Result<(PathBuf, Vec<String>)> {
-        let wrapped = ulimit_wrapped_command(&self.config.resource_limits, None, command);
+        let wrapped = ulimit_wrapped_command(&self.config.resource_limits, command);
         let shell = vec!["/bin/sh".to_string(), "-c".to_string(), wrapped];
         match &self.kind {
             #[cfg(target_os = "macos")]

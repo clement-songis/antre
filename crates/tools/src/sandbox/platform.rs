@@ -195,18 +195,13 @@ impl RestrictedHostSandbox {
 /// Wrap a command with shell `ulimit` calls for resource isolation.
 ///
 /// `RLIMIT_NPROC` counts every process of the real user, not just the
-/// sandboxed tree, so `default_nproc` (used when `pids_max` is unset) can
-/// make fork fail on a busy desktop; pass `None` to only apply an explicit
-/// `pids_max`.
-pub(crate) fn ulimit_wrapped_command(
-    limits: &ResourceLimits,
-    default_nproc: Option<u64>,
-    command: &str,
-) -> String {
+/// sandboxed tree, so a default cap made fork fail on a busy desktop; the
+/// process limit is applied only when `pids_max` is set.
+pub(crate) fn ulimit_wrapped_command(limits: &ResourceLimits, command: &str) -> String {
     let mut preamble = Vec::new();
 
     // Max user processes.
-    if let Some(nproc) = limits.pids_max.map(u64::from).or(default_nproc) {
+    if let Some(nproc) = limits.pids_max {
         preamble.push(format!("ulimit -u {nproc} 2>/dev/null"));
     }
 
@@ -268,7 +263,7 @@ impl Sandbox for RestrictedHostSandbox {
 
     async fn exec(&self, _id: &SandboxId, command: &str, opts: &ExecOpts) -> Result<ExecResult> {
         // Wrap the command with shell ulimit calls for resource isolation.
-        let wrapped = ulimit_wrapped_command(&self.config.resource_limits, Some(256), command);
+        let wrapped = ulimit_wrapped_command(&self.config.resource_limits, command);
 
         let mut cmd = tokio::process::Command::new("sh");
         cmd.args(["-c", &wrapped]);
