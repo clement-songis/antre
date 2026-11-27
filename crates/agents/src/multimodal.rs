@@ -208,6 +208,26 @@ pub const MAX_IMAGE_EDGE: u32 = 1568;
 /// that they cannot meaningfully threaten the context budget (~64K tokens).
 const DOWNSCALE_SKIP_BELOW_BASE64_LEN: usize = 256 * 1024;
 
+/// Largest width or height accepted for decoding. Image data is untrusted
+/// (channel uploads, tool output), so a tiny file declaring huge dimensions
+/// must not make the decoder allocate gigabytes.
+const MAX_DECODE_EDGE: u32 = 16_384;
+
+/// Upper bound on decoder allocations for a single image.
+const MAX_DECODE_ALLOC: u64 = 256 * 1024 * 1024;
+
+fn decode_with_limits(bytes: &[u8], max_edge: u32) -> Option<image::DynamicImage> {
+    let mut reader = image::ImageReader::new(std::io::Cursor::new(bytes))
+        .with_guessed_format()
+        .ok()?;
+    let mut limits = image::Limits::default();
+    limits.max_image_width = Some(max_edge);
+    limits.max_image_height = Some(max_edge);
+    limits.max_alloc = Some(MAX_DECODE_ALLOC);
+    reader.limits(limits);
+    reader.decode().ok()
+}
+
 /// Downscale an oversized base64 image so it doesn't blow the context window.
 ///
 /// When the decoded image's longest edge exceeds [`MAX_IMAGE_EDGE`], resize it
@@ -228,7 +248,7 @@ pub fn downscale_base64_image(b64: &str) -> Option<(String, String)> {
         return None;
     }
     let bytes = STANDARD.decode(b64).ok()?;
-    let decoded = image::load_from_memory(&bytes).ok()?;
+    let decoded = decode_with_limits(&bytes, MAX_DECODE_EDGE)?;
     if decoded.width().max(decoded.height()) <= MAX_IMAGE_EDGE {
         return None;
     }
@@ -644,6 +664,17 @@ mod tests {
         // Aspect ratio (4:3) preserved within rounding.
         assert_eq!(w, MAX_IMAGE_EDGE);
         assert_eq!(h, 1176);
+    }
+
+    #[test]
+    fn decode_refuses_images_beyond_the_dimension_limit() {
+        let mut out = std::io::Cursor::new(Vec::new());
+        image::DynamicImage::ImageLuma8(image::GrayImage::new(32, 32))
+            .write_to(&mut out, image::ImageFormat::Png)
+            .unwrap();
+        let png = out.into_inner();
+        assert!(decode_with_limits(&png, 32).is_some());
+        assert!(decode_with_limits(&png, 31).is_none());
     }
 
     #[test]
