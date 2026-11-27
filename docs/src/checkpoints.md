@@ -31,6 +31,12 @@ Available in the web UI, all channels (Telegram, Discord, Slack, etc.), and CLI.
 ```
 
 Turns are session-scoped — you only see checkpoints from your current session.
+Restoring a turn undoes its checkpoints newest first, so a file edited several
+times in that turn returns to its state before the turn.
+
+In the web UI, the **Rewind** action on a message you sent restores the files
+changed by every turn from that message on, and can rewind the conversation
+at the same time. See [Web Chat](web-chat.md#rewind-regenerate-edit).
 
 ## Cleanup
 

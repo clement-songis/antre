@@ -409,7 +409,7 @@ not create chat agents, change memory, or affect `spawn_agent` presets.
 |-----|------|---------|-------------|
 | `default_timeout_secs` | integer | `30` | Default wall-clock timeout in seconds for command execution. |
 | `max_output_bytes` | integer | `204800` | Maximum bytes of stdout/stderr captured per command. |
-| `approval_mode` | string | `"on-miss"` | When operator approval is required (`"always"`, `"on-miss"`, `"never"`). |
+| `approval_mode` | string | `"on-miss"` | When operator approval is required (`"always"`, `"on-miss"`, `"never"`). Commands approved with "Always allow" are remembered in `exec-approved-commands.json` in the data directory. |
 | `security_level` | string | `"allowlist"` | Security enforcement level (`"allowlist"`, `"sandbox"`, etc.). |
 | `allowlist` | array | `[]` | List of command globs permitted without sandboxing. |
 | `host` | string | `"local"` | Where to run commands: `"local"`, `"node"`, or `"ssh"`. |
