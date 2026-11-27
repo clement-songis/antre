@@ -20,6 +20,28 @@ pub const LEGACY_CONFIG_FILENAMES: &[&str] =
 /// Main database entry in export archives made by Moltis.
 pub const LEGACY_ARCHIVE_DB_PATH: &str = "db/moltis.db";
 
+/// Keychain items of the desktop app were named `moltis-desktop://<server id>`.
+pub const LEGACY_DESKTOP_KEYCHAIN_SCHEME: &str = "moltis-desktop://";
+
+/// A user service installed under the Moltis name.
+#[derive(Debug, Clone, Copy)]
+pub struct LegacyService {
+    pub launchd_label: &'static str,
+    pub systemd_unit: &'static str,
+}
+
+/// `moltis service install`.
+pub const LEGACY_GATEWAY_SERVICE: LegacyService = LegacyService {
+    launchd_label: "org.moltis.gateway",
+    systemd_unit: "moltis.service",
+};
+
+/// `moltis node install`.
+pub const LEGACY_NODE_SERVICE: LegacyService = LegacyService {
+    launchd_label: "org.moltis.node",
+    systemd_unit: "moltis-node.service",
+};
+
 /// Written in a migrated directory, records where its content came from.
 pub const MIGRATION_MARKER: &str = ".migrated-from-moltis";
 
@@ -284,6 +306,63 @@ pub fn rename_legacy_files(data_dir: &Path) -> Vec<MigrationStep> {
         }
     }
     steps
+}
+
+/// Service files of `service` present under `home`: the launchd agent on
+/// macOS, the systemd user unit elsewhere.
+#[must_use]
+pub fn legacy_service_files(home: &Path, service: &LegacyService) -> Vec<PathBuf> {
+    let candidates = if cfg!(target_os = "macos") {
+        home.join("Library")
+            .join("LaunchAgents")
+            .join(format!("{}.plist", service.launchd_label))
+    } else {
+        home.join(".config")
+            .join("systemd")
+            .join("user")
+            .join(service.systemd_unit)
+    };
+    [candidates]
+        .into_iter()
+        .filter(|path| path.exists())
+        .collect()
+}
+
+/// Stops and removes `service` when it is installed, so it does not run
+/// next to its Antre replacement. Returns the files removed. Stopping is
+/// best effort; a file that cannot be removed is left and not returned.
+pub fn remove_legacy_service(service: &LegacyService) -> Vec<PathBuf> {
+    use std::process::Command;
+
+    let Some(home) = crate::home_dir() else {
+        return Vec::new();
+    };
+    let files = legacy_service_files(&home, service);
+    if files.is_empty() {
+        return files;
+    }
+    if cfg!(target_os = "macos") {
+        for plist in &files {
+            let _ = Command::new("launchctl").arg("unload").arg(plist).output();
+        }
+    } else {
+        for args in [["stop", service.systemd_unit], [
+            "disable",
+            service.systemd_unit,
+        ]] {
+            let _ = Command::new("systemctl").arg("--user").args(args).output();
+        }
+    }
+    let removed: Vec<PathBuf> = files
+        .into_iter()
+        .filter(|path| std::fs::remove_file(path).is_ok())
+        .collect();
+    if !cfg!(target_os = "macos") && !removed.is_empty() {
+        let _ = Command::new("systemctl")
+            .args(["--user", "daemon-reload"])
+            .output();
+    }
+    removed
 }
 
 fn append_marker(dir: &Path, line: &str) {

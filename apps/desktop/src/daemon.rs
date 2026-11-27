@@ -1229,7 +1229,25 @@ impl Drop for Daemon {
 
 async fn read_api_key(profile: &ServerProfile, cx: &mut AsyncApp) -> Option<SecretString> {
     let url = profile.keychain_url();
-    let read = cx.update(|cx: &mut App| cx.read_credentials(&url));
+    if let Some(key) = read_keychain(&url, cx).await {
+        return Some(key);
+    }
+    // Moved once from the pre-rename entry; the old one goes only after the
+    // new one is saved.
+    let legacy = profile.legacy_keychain_url();
+    let key = read_keychain(&legacy, cx).await?;
+    let write = cx.update(|cx: &mut App| {
+        cx.write_credentials(&url, KEYCHAIN_USER, key.expose_secret().as_bytes())
+    });
+    if write.await.is_ok() {
+        let delete = cx.update(|cx: &mut App| cx.delete_credentials(&legacy));
+        let _ = delete.await;
+    }
+    Some(key)
+}
+
+async fn read_keychain(url: &str, cx: &mut AsyncApp) -> Option<SecretString> {
+    let read = cx.update(|cx: &mut App| cx.read_credentials(url));
     let (_, bytes) = read.await.ok()??;
     String::from_utf8(bytes)
         .ok()

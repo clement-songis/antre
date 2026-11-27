@@ -219,3 +219,24 @@ fn steps_display_names_both_paths() {
     let step = MigrationStep::LegacyConfigFile(PathBuf::from("/c/moltis.yaml"));
     assert!(step.to_string().contains("antre.yaml"));
 }
+
+#[test]
+fn legacy_service_files_finds_installed_unit() {
+    let home = tempfile::tempdir().unwrap();
+    assert!(legacy_service_files(home.path(), &LEGACY_GATEWAY_SERVICE).is_empty());
+
+    let path = if cfg!(target_os = "macos") {
+        home.path()
+            .join("Library/LaunchAgents/org.moltis.gateway.plist")
+    } else {
+        home.path().join(".config/systemd/user/moltis.service")
+    };
+    std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+    std::fs::write(&path, "").unwrap();
+
+    assert_eq!(
+        legacy_service_files(home.path(), &LEGACY_GATEWAY_SERVICE),
+        vec![path]
+    );
+    assert!(legacy_service_files(home.path(), &LEGACY_NODE_SERVICE).is_empty());
+}

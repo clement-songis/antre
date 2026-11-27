@@ -16,7 +16,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="antre">
 <link rel="apple-touch-icon" href="{{ asset_prefix }}icons/apple-touch-icon.png">
-<script nonce="{{ nonce }}">!function(){var t=localStorage.getItem("antre-theme")||"system";if(t==="system")t=matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light";document.documentElement.setAttribute("data-theme",t);document.documentElement.style.background=t==="dark"?"#0d1214":"#f5f7f7";document.documentElement.style.color=t==="dark"?"#d3dcdf":"#27343a"}()</script>
+<script nonce="{{ nonce }}">/* rebrand:keep: copies pre-rename keys once */!function(){for(var s=localStorage,a=[],i=0;i<s.length;i++)a.push(s.key(i));a.forEach(function(k){var n=k.replace(/^moltis(?=[-_])/,"antre").replace(/^\/__moltis__\//,"/__antre__/");if(n!==k&&s.getItem(n)===null)s.setItem(n,s.getItem(k))});var t=localStorage.getItem("antre-theme")||"system";if(t==="system")t=matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light";document.documentElement.setAttribute("data-theme",t);document.documentElement.style.background=t==="dark"?"#0d1214":"#f5f7f7";document.documentElement.style.color=t==="dark"?"#d3dcdf":"#27343a"}()</script>
 <title>{{ share_site_name }}</title>
 <meta name="description" content="{{ share_description }}">
 <meta property="og:title" content="{{ share_title }}">

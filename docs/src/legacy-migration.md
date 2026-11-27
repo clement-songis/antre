@@ -14,6 +14,9 @@ what it owns on first start.
 | `docs/moltis/GUIDELINES.md` | `docs/antre/GUIDELINES.md` | renamed inside the data directory |
 | `moltis.toml` / `.yaml` / `.yml` / `.json` | `antre.*` | read as is, with a warning |
 | `MOLTIS_*` environment variables | `ANTRE_*` | accepted, with a warning |
+| `org.moltis.gateway` / `org.moltis.node` launchd agents, `moltis.service` / `moltis-node.service` systemd units | `ai.antre.*`, `antre*.service` | stopped and removed by `antre service install` / `antre node install` |
+| Desktop app keychain items `moltis-desktop://…` | `antre-desktop://…` | copied on first read, then the old item is deleted (macOS may ask once to allow access) |
+| Web UI `moltis-*` localStorage keys | `antre-*` | copied on first page load |
 
 Every step is logged at startup. Nothing is deleted or overwritten:
 
@@ -44,11 +47,9 @@ When both `antre.toml` and `moltis.toml` exist, `antre.toml` wins. When both
 - **Metrics and log filters**: metric names and tracing targets now start
   with `antre`, so dashboards, alerts and `RUST_LOG` filters naming
   `moltis` need the new prefix.
-- **Web UI**: browser-side preferences (theme, layout) were stored under
-  `moltis` keys and start from defaults once. You sign in again once,
-  since the session cookie was renamed.
-- **Background services**: `antre service install` writes new unit files;
-  remove the old `moltis` ones (`moltis.service`, the launchd plist).
+- **Web UI**: browser-side preferences (theme, model, locale…) are copied
+  once from their `moltis-*` keys on the first page load. You sign in again
+  once, since the session cookie is now `antre_session`.
 
 ## Rolling back
 
@@ -56,10 +57,20 @@ Stop Antre, then undo what `.migrated-from-moltis` lists: remove the
 `~/.moltis` symlink, move `~/.antre` back to `~/.moltis` (same for the
 config directory), and rename `antre.db*` back to `moltis.db*`.
 
-## Not renamed yet
+## What starts over
 
-Bundle identifiers (`org.moltis.*`), the launchd labels, the desktop app's
-keychain URL scheme and the `moltis.org` hosts keep their Moltis names for
-now. The repository, release, container image (`ghcr.io/antre-ai/antre`)
-and Homebrew tap (`antre-ai/tap/antre`) links already point at the
-`antre-ai` organization, which has nothing published yet.
+The apps now have `ai.antre.*` identifiers (`ai.antre.app`, `ai.antre.ios`,
+`ai.antre.ios.widget`, App Group `group.ai.antre.ios`, desktop
+`ai.antre.desktop`). The system treats them as new apps:
+
+- the iOS and macOS apps cannot read the keychain or the App Group of the
+  Moltis apps: sign in again, and the widget starts empty;
+- app preferences and notification permissions start from defaults;
+- remove the old Moltis apps once the Antre ones work.
+
+Sandbox containers and images are now named `antre-*` with `ai.antre.*`
+labels: the ones Moltis created are left alone and new ones are built.
+Remove the old ones by hand (`docker ps -a --filter name=moltis-`,
+`docker images 'moltis-*'`, or the podman equivalents).
+
+The `moltis.org` hosts stay until a domain is chosen.

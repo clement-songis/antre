@@ -82,6 +82,11 @@ pub fn install(data_dir: &Path, config: &ServiceConfig) -> Result<()> {
 
     let antre_bin = resolve_binary()?;
     let log_path = data_dir.join("node.log");
+    for path in antre_config::legacy_brand::remove_legacy_service(
+        &antre_config::legacy_brand::LEGACY_NODE_SERVICE,
+    ) {
+        tracing::info!(path = %path.display(), "removed the previous node service");
+    }
 
     if cfg!(target_os = "macos") {
         install_launchd(&antre_bin, config, &log_path)

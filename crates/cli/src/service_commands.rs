@@ -60,6 +60,12 @@ pub fn handle_service(action: ServiceAction) -> Result<()> {
             let log_path = data_dir.join("antre.log");
             let antre_bin = resolve_binary()?;
 
+            for path in antre_config::legacy_brand::remove_legacy_service(
+                &antre_config::legacy_brand::LEGACY_GATEWAY_SERVICE,
+            ) {
+                println!("Removed the previous service {}", path.display());
+            }
+
             let opts = GatewayServiceOpts {
                 bind,
                 port,

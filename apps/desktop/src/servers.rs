@@ -91,6 +91,16 @@ impl ServerProfile {
         format!("antre-desktop://{}", self.id)
     }
 
+    /// Keychain entry the same server had before the rename.
+    #[must_use]
+    pub fn legacy_keychain_url(&self) -> String {
+        format!(
+            "{}{}",
+            antre_config::legacy_brand::LEGACY_DESKTOP_KEYCHAIN_SCHEME,
+            self.id
+        )
+    }
+
     /// Where it is, for display.
     #[must_use]
     pub fn address(&self) -> String {
@@ -340,6 +350,9 @@ mod tests {
     fn keychain_url_and_address() {
         let profile = ServerProfile::direct("x", endpoint("https://h:2"));
         assert!(profile.keychain_url().starts_with("antre-desktop://"));
+        let legacy = profile.legacy_keychain_url();
+        assert!(legacy.starts_with("moltis-desktop://")); // rebrand:keep
+        assert!(legacy.ends_with(&profile.id));
         assert_eq!(profile.address(), "https://h:2");
         assert!(!profile.is_local());
     }
