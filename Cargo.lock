@@ -8044,6 +8044,7 @@ dependencies = [
  "moltis-agents",
  "moltis-auth",
  "moltis-browser",
+ "moltis-canvas",
  "moltis-channels",
  "moltis-client",
  "moltis-code-index",

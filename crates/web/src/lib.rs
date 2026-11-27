@@ -254,6 +254,9 @@ fn build_api_routes() -> Router<AppState> {
 
 /// Add feature-specific routes to API routes.
 fn add_feature_routes(routes: Router<AppState>) -> Router<AppState> {
+    #[cfg(feature = "canvas")]
+    let routes = routes.nest("/api/canvas", moltis_httpd::canvas_routes::canvas_router());
+
     #[cfg(feature = "ngrok")]
     let routes = routes.nest("/api/ngrok", moltis_httpd::ngrok_routes::ngrok_router());
 

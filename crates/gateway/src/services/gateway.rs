@@ -55,6 +55,9 @@ pub struct GatewayServices {
     /// Typed telephony plugin for RPC call initiation/hangup.
     #[cfg(feature = "telephony")]
     pub telephony_plugin: Option<Arc<tokio::sync::RwLock<moltis_telephony::TelephonyPlugin>>>,
+    /// Design canvas (designs, versions, render origin).
+    #[cfg(feature = "canvas")]
+    pub canvas: Option<Arc<moltis_canvas::CanvasService>>,
 }
 
 impl GatewayServices {
@@ -181,6 +184,8 @@ impl GatewayServices {
             agents_config: None,
             #[cfg(feature = "telephony")]
             telephony_plugin: None,
+            #[cfg(feature = "canvas")]
+            canvas: None,
         }
     }
 

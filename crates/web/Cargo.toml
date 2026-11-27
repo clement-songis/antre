@@ -41,6 +41,7 @@ tempfile = { workspace = true }
 [features]
 agent              = ["moltis-gateway/agent"]
 bundled-skills     = ["moltis-skills/bundled-skills"]
+canvas             = ["moltis-httpd/canvas"]
 cloudflare-tunnel  = ["moltis-httpd/cloudflare-tunnel"]
 connectors         = ["moltis-gateway/connectors", "moltis-httpd/connectors"]
 default            = ["embedded-assets"]

@@ -98,6 +98,12 @@ const READ_METHODS: &[&str] = &[
     "webhooks.delivery.payload",
     "webhooks.delivery.actions",
     "feedback.status",
+    "canvas.config",
+    "canvas.list",
+    "canvas.get",
+    "canvas.versions",
+    "canvas.preview_url",
+    "canvas.design_systems",
     "instrumentation.status",
     "heartbeat.status",
     "heartbeat.runs",
@@ -274,6 +280,10 @@ const WRITE_METHODS: &[&str] = &[
     "webhooks.delete",
     // Writes a score against a trace: a mutation, not a read.
     "feedback.submit",
+    "canvas.revert",
+    "canvas.rename",
+    "canvas.publish",
+    "canvas.unpublish",
     "instrumentation.test",
     "heartbeat.update",
     "heartbeat.run",
@@ -529,6 +539,36 @@ mod tests {
             authorize_method("channels.senders.list", "operator", &scopes(&[])),
             "UNAUTHORIZED",
         );
+    }
+
+    #[test]
+    fn canvas_reads_and_writes_are_scoped() {
+        for method in [
+            "canvas.config",
+            "canvas.list",
+            "canvas.get",
+            "canvas.preview_url",
+        ] {
+            assert!(
+                authorize_method(method, "operator", &scopes(&["operator.read"])).is_none(),
+                "{method}"
+            );
+        }
+        for method in [
+            "canvas.revert",
+            "canvas.rename",
+            "canvas.publish",
+            "canvas.unpublish",
+        ] {
+            assert_error_code(
+                authorize_method(method, "operator", &scopes(&["operator.read"])),
+                "UNAUTHORIZED",
+            );
+            assert!(
+                authorize_method(method, "operator", &scopes(&["operator.write"])).is_none(),
+                "{method}"
+            );
+        }
     }
 
     #[test]

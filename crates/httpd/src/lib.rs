@@ -9,6 +9,8 @@
 
 pub mod auth_middleware;
 pub mod auth_routes;
+#[cfg(feature = "canvas")]
+pub mod canvas_routes;
 pub mod channel_webhook_middleware;
 pub mod data_routes;
 pub mod env_routes;

@@ -32,6 +32,7 @@ moltis-matrix         = { optional = true, workspace = true }
 moltis-metrics        = { optional = true, workspace = true }
 moltis-msteams        = { optional = true, workspace = true }
 moltis-portable       = { workspace = true }
+moltis-canvas         = { optional = true, workspace = true }
 moltis-protocol       = { workspace = true }
 moltis-service-traits = { workspace = true }
 moltis-sessions       = { workspace = true }
@@ -66,9 +67,11 @@ webauthn-rs           = { features = ["danger-allow-state-serialisation"], works
 webbrowser            = { workspace = true }
 
 [features]
+canvas = ["dep:moltis-canvas", "moltis-gateway/canvas"]
 cloudflare-tunnel = []
 connectors = ["moltis-gateway/connectors"]
 default = [
+  "canvas",
   "cloudflare-tunnel",
   "connectors",
   "discord",

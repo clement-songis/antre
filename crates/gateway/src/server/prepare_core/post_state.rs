@@ -184,6 +184,8 @@ pub(super) async fn complete_startup(
     } = inputs;
 
     let openclaw_startup_status = deferred_openclaw_status();
+    #[cfg(feature = "canvas")]
+    let canvas_service = services.canvas.clone();
 
     let is_localhost =
         matches!(bind.as_str(), "127.0.0.1" | "::1" | "localhost") || bind.ends_with(".localhost");
@@ -1139,6 +1141,8 @@ pub(super) async fn complete_startup(
         tool_registry.register(Box::new(
             moltis_tools::checkpoints::CheckpointRestoreTool::new(data_dir.clone()),
         ));
+        #[cfg(feature = "canvas")]
+        crate::canvas::register_tools(&mut tool_registry, canvas_service.as_ref());
 
         tool_registry.register(Box::new(moltis_tools::task_list::TaskListTool::new(
             &data_dir,

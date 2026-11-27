@@ -531,6 +531,8 @@ fn list_agent_workspace_files_recursively(
 mod admin;
 mod admin_imports;
 mod agents;
+#[cfg(feature = "canvas")]
+mod canvas;
 mod channels;
 #[cfg(feature = "connectors")]
 mod connectors;
@@ -548,6 +550,8 @@ mod voicecall;
 
 pub(super) fn register(reg: &mut MethodRegistry) {
     agents::register(reg);
+    #[cfg(feature = "canvas")]
+    canvas::register(reg);
     modes::register(reg);
     sessions::register(reg);
     channels::register(reg);
@@ -566,8 +570,12 @@ pub(super) fn register(reg: &mut MethodRegistry) {
 async fn reload_hooks(state: &Arc<crate::state::GatewayState>) {
     let disabled = state.inner.read().await.disabled_hooks.clone();
     let session_store = state.services.session_store.as_ref();
-    let (new_registry, new_info) =
-        crate::server::discover_and_build_hooks(&disabled, session_store).await;
+    let (new_registry, new_info) = crate::server::discover_and_build_hooks_with(
+        &disabled,
+        session_store,
+        crate::server::builtin_service_hooks(&state.services),
+    )
+    .await;
 
     {
         let mut inner = state.inner.write().await;

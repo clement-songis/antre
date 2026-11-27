@@ -1245,6 +1245,18 @@ pub async fn prepare_gateway_core_with_profile(
     services = services.with_session_metadata(Arc::clone(&session_metadata));
     services = services.with_session_store(Arc::clone(&session_store));
     services = services.with_session_share_store(Arc::clone(&session_share_store));
+    #[cfg(feature = "canvas")]
+    {
+        services.canvas = crate::canvas::init(
+            &config,
+            &data_dir,
+            &db_pool,
+            &session_share_store,
+            &deferred_state,
+            &super::helpers::browser_container_prefix(&instance_slug_value),
+        )
+        .await;
+    }
     services = services.with_agent_persona_store(Arc::clone(&agent_persona_store));
     #[cfg(feature = "voice")]
     {
@@ -1274,8 +1286,12 @@ pub async fn prepare_gateway_core_with_profile(
     super::hooks::seed_example_hook();
     super::hooks::seed_dcg_guard_hook().await;
     let persisted_disabled = crate::methods::load_disabled_hooks();
-    let (hook_registry, discovered_hooks_info) =
-        crate::server::discover_and_build_hooks(&persisted_disabled, Some(&session_store)).await;
+    let (hook_registry, discovered_hooks_info) = crate::server::discover_and_build_hooks_with(
+        &persisted_disabled,
+        Some(&session_store),
+        super::hooks::builtin_service_hooks(&services),
+    )
+    .await;
 
     #[cfg(feature = "fs-tools")]
     let shared_fs_state = if config.tools.fs.track_reads {

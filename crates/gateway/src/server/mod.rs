@@ -35,7 +35,7 @@ mod tests_legacy;
 
 pub mod instrumentation;
 
-pub(crate) use hooks::discover_and_build_hooks;
+pub(crate) use hooks::{builtin_service_hooks, discover_and_build_hooks_with};
 pub use {
     helpers::{approval_manager_from_config, sandbox_container_prefix_for_config},
     prepare_core::{prepare_gateway_core, prepare_gateway_core_with_profile},

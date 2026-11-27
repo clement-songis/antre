@@ -216,9 +216,35 @@ fn builtin_hook_metadata() -> Vec<(
 
 /// Discover hooks from the filesystem, check eligibility, and build a
 /// [`HookRegistry`] plus a `Vec<DiscoveredHookInfo>` for the web UI.
+/// Built-in hooks contributed by optional gateway services.
+#[cfg_attr(not(feature = "canvas"), allow(unused_variables))]
+pub(crate) fn builtin_service_hooks(
+    services: &crate::services::GatewayServices,
+) -> Vec<Arc<dyn moltis_common::hooks::HookHandler>> {
+    #[cfg_attr(not(feature = "canvas"), allow(unused_mut))]
+    let mut hooks = Vec::new();
+    #[cfg(feature = "canvas")]
+    hooks.extend(crate::canvas::hooks(services.canvas.as_ref()));
+    hooks
+}
+
+#[cfg(test)]
 pub(crate) async fn discover_and_build_hooks(
     disabled: &HashSet<String>,
     session_store: Option<&Arc<SessionStore>>,
+) -> (
+    Option<Arc<moltis_common::hooks::HookRegistry>>,
+    Vec<crate::state::DiscoveredHookInfo>,
+) {
+    discover_and_build_hooks_with(disabled, session_store, Vec::new()).await
+}
+
+/// [`discover_and_build_hooks`] plus built-in handlers owned by optional
+/// services (e.g. the canvas), which must survive hook reloads.
+pub(crate) async fn discover_and_build_hooks_with(
+    disabled: &HashSet<String>,
+    session_store: Option<&Arc<SessionStore>>,
+    extra_builtin: Vec<Arc<dyn moltis_common::hooks::HookHandler>>,
 ) -> (
     Option<Arc<moltis_common::hooks::HookRegistry>>,
     Vec<crate::state::DiscoveredHookInfo>,
@@ -398,6 +424,9 @@ pub(crate) async fn discover_and_build_hooks(
         let checkpoint_manager = Arc::new(moltis_tools::checkpoints::CheckpointManager::new(data));
         let auto_cp = moltis_tools::auto_checkpoint::AutoCheckpointHook::new(checkpoint_manager);
         registry.register(Arc::new(auto_cp));
+        for handler in extra_builtin {
+            registry.register(handler);
+        }
     }
 
     for (name, description, events, source_file) in builtin_hook_metadata() {

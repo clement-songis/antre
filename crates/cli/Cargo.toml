@@ -135,6 +135,7 @@ acp = [
 ]
 agent = ["moltis-gateway/agent", "moltis-web?/agent"]
 caldav = ["moltis-gateway/caldav"]
+canvas = ["moltis-gateway/canvas", "moltis-httpd/canvas", "moltis-web?/canvas"]
 cloudflare-tunnel = ["moltis-httpd/cloudflare-tunnel", "moltis-web?/cloudflare-tunnel"]
 connectors = [
   "dep:moltis-connectors",
@@ -159,6 +160,7 @@ portable = [
   "agent",
   "bundled-skills",
   "caldav",
+  "canvas",
   "claude-import",
   "cloudflare-tunnel",
   "code-index-builtin",
