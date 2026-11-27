@@ -443,6 +443,14 @@ pub(crate) async fn build_prompt_runtime_context(
             let config = router.config();
             let backend = router.resolve_backend(session_key).await;
             let backend_name = backend.backend_name();
+            // OS sandboxes confine a host process: home is a host path.
+            let home = if backend.runs_on_host() {
+                backend
+                    .workspace_dir_for(&router.sandbox_id_for(session_key))
+                    .await
+            } else {
+                "/home/sandbox".to_string()
+            };
             let workspace_mount = config.workspace_mount.to_string();
             let workspace_path = (workspace_mount != "none").then(|| data_dir_display.clone());
             let exposes_managed_files = matches!(
@@ -457,7 +465,7 @@ pub(crate) async fn build_prompt_runtime_context(
                 backend: Some(backend_name.to_string()),
                 scope: Some(config.scope.to_string()),
                 image: Some(router.resolve_image_nowait(session_key, None).await),
-                home: Some("/home/sandbox".to_string()),
+                home: Some(home),
                 workspace_mount: Some(workspace_mount),
                 workspace_path,
                 files_path: exposes_managed_files

@@ -1377,3 +1377,96 @@ async fn test_custom_max_output_bytes_truncates() {
         stdout.len()
     );
 }
+
+/// Mimics an OS sandbox (Seatbelt, bubblewrap): isolated, but host paths.
+struct ConfinedHostSandbox {
+    home: PathBuf,
+    capture: CaptureWorkingDirSandbox,
+}
+
+#[async_trait]
+impl Sandbox for ConfinedHostSandbox {
+    fn backend_name(&self) -> &'static str {
+        "seatbelt"
+    }
+
+    fn provides_fs_isolation(&self) -> bool {
+        true
+    }
+
+    fn runs_on_host(&self) -> bool {
+        true
+    }
+
+    async fn workspace_dir_for(&self, _id: &SandboxId) -> String {
+        self.home.display().to_string()
+    }
+
+    async fn ensure_ready(&self, _id: &SandboxId, _image_override: Option<&str>) -> Result<()> {
+        Ok(())
+    }
+
+    async fn exec(&self, id: &SandboxId, command: &str, opts: &ExecOpts) -> Result<ExecResult> {
+        self.capture.exec(id, command, opts).await
+    }
+
+    async fn cleanup(&self, _id: &SandboxId) -> Result<()> {
+        Ok(())
+    }
+}
+
+async fn confined_host_working_dir(params: serde_json::Value, home: &Path) -> PathBuf {
+    use crate::sandbox::SandboxScope;
+
+    let sandbox = Arc::new(ConfinedHostSandbox {
+        home: home.to_path_buf(),
+        capture: CaptureWorkingDirSandbox::default(),
+    });
+    let sandbox_dyn: Arc<dyn Sandbox> = Arc::clone(&sandbox) as _;
+    let id = SandboxId {
+        scope: SandboxScope::Session,
+        key: "confined-host".into(),
+    };
+    ExecTool::default()
+        .with_sandbox(sandbox_dyn, id)
+        .execute(params)
+        .await
+        .unwrap();
+    let captured = sandbox
+        .capture
+        .last_working_dir
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .clone();
+    captured.unwrap()
+}
+
+#[tokio::test]
+async fn test_exec_tool_os_sandbox_defaults_to_sandbox_home() {
+    let home = tempfile::tempdir().unwrap();
+    let dir = confined_host_working_dir(serde_json::json!({ "command": "pwd" }), home.path()).await;
+    assert_eq!(dir, home.path());
+}
+
+#[tokio::test]
+async fn test_exec_tool_os_sandbox_ignores_container_paths() {
+    let home = tempfile::tempdir().unwrap();
+    let dir = confined_host_working_dir(
+        serde_json::json!({ "command": "pwd", "working_dir": "/home/sandbox/work" }),
+        home.path(),
+    )
+    .await;
+    assert_eq!(dir, home.path());
+}
+
+#[tokio::test]
+async fn test_exec_tool_os_sandbox_keeps_existing_host_dir() {
+    let home = tempfile::tempdir().unwrap();
+    let project = tempfile::tempdir().unwrap();
+    let dir = confined_host_working_dir(
+        serde_json::json!({ "command": "pwd", "working_dir": project.path() }),
+        home.path(),
+    )
+    .await;
+    assert_eq!(dir, project.path());
+}

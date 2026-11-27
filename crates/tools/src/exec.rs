@@ -559,16 +559,42 @@ impl AgentTool for ExecTool {
         // "sandboxed".  Using /home/sandbox as the working directory would
         // fail with ENOENT on the host, so we must fall back to the host
         // data directory.
-        let (has_container_backend, backend_name) = if let Some(ref router) = self.sandbox_router {
-            let sk = session_key.unwrap_or("main");
-            let backend = router.resolve_backend(sk).await;
-            (backend.provides_fs_isolation(), backend.backend_name())
-        } else {
-            (
-                self.sandbox.provides_fs_isolation(),
-                self.sandbox.backend_name(),
-            )
-        };
+        //
+        // OS sandboxes (Seatbelt, bubblewrap) isolate without a separate
+        // filesystem: they count as isolated for approval but keep host paths.
+        let (has_container_backend, backend_runs_on_host, backend_name, confined_home) =
+            if let Some(ref router) = self.sandbox_router {
+                let sk = session_key.unwrap_or("main");
+                let backend = router.resolve_backend(sk).await;
+                let confined_home = if backend.provides_fs_isolation() && backend.runs_on_host() {
+                    Some(PathBuf::from(
+                        backend.workspace_dir_for(&router.sandbox_id_for(sk)).await,
+                    ))
+                } else {
+                    None
+                };
+                (
+                    backend.provides_fs_isolation(),
+                    backend.runs_on_host(),
+                    backend.backend_name(),
+                    confined_home,
+                )
+            } else {
+                let confined_home = match self.sandbox_id {
+                    Some(ref id)
+                        if self.sandbox.provides_fs_isolation() && self.sandbox.runs_on_host() =>
+                    {
+                        Some(PathBuf::from(self.sandbox.workspace_dir_for(id).await))
+                    },
+                    _ => None,
+                };
+                (
+                    self.sandbox.provides_fs_isolation(),
+                    self.sandbox.runs_on_host(),
+                    self.sandbox.backend_name(),
+                    confined_home,
+                )
+            };
 
         // Resolve working directory.  When sandboxed *with a real container
         // backend* the host CWD doesn't exist inside the container, so default
@@ -588,7 +614,8 @@ impl AgentTool for ExecTool {
             })
             .or_else(|| self.working_dir.clone());
 
-        let runs_on_host = !(is_sandboxed && has_container_backend);
+        let runs_on_host = !is_sandboxed || backend_runs_on_host;
+        let confined_home = confined_home.filter(|_| is_sandboxed);
         let files_dir = if runs_on_host {
             Some(
                 moltis_config::managed_files_dir()
@@ -642,6 +669,9 @@ impl AgentTool for ExecTool {
                 // Use the generic sandbox home as default. Each backend's exec()
                 // method uses its own workspace_dir() if working_dir doesn't exist.
                 Some(PathBuf::from("/home/sandbox"))
+            } else if let Some(ref home) = confined_home {
+                // The real $HOME is unreadable inside an OS sandbox.
+                Some(home.clone())
             } else {
                 Some(host_default_dir())
             }
