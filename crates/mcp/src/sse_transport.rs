@@ -5,28 +5,32 @@
 
 use std::{
     sync::{
-        Arc,
+        Arc, Weak,
         atomic::{AtomicU64, Ordering},
     },
     time::Duration,
 };
 
 use {
+    futures::StreamExt,
     reqwest::{Client, header::HeaderMap},
     secrecy::{ExposeSecret, Secret},
-    tokio::sync::RwLock,
+    tokio::sync::{RwLock, mpsc},
     tracing::{debug, info, warn},
 };
 
 use crate::{
     auth::SharedAuthProvider,
     error::{Context, Error, Result},
+    incoming::{IncomingDispatcher, IncomingMessage, IncomingRouter},
     remote::{ResolvedRemoteConfig, sanitize_reqwest_error},
+    sse_stream::SseDecoder,
     traits::McpTransport,
-    types::{
-        JsonRpcNotification, JsonRpcRequest, JsonRpcResponse, McpTransportError, PROTOCOL_VERSION,
-    },
+    types::{JsonRpcNotification, JsonRpcRequest, JsonRpcResponse, McpTransportError},
 };
+
+/// Reconnect attempts for the server-to-client GET stream before giving up.
+const MAX_LISTENER_RECONNECTS: u32 = 5;
 
 const MCP_PROTOCOL_VERSION_HEADER: &str = "MCP-Protocol-Version";
 const MCP_SESSION_ID_HEADER: &str = "Mcp-Session-Id";
@@ -43,6 +47,12 @@ pub struct SseTransport {
     auth: Option<SharedAuthProvider>,
     /// Session identifier used by streamable HTTP servers.
     session_id: RwLock<Option<String>>,
+    request_timeout: Duration,
+    /// Negotiated protocol version; the header is omitted until known.
+    protocol_version: std::sync::RwLock<Option<String>>,
+    incoming: Arc<IncomingRouter>,
+    listener: std::sync::Mutex<Option<tokio::task::AbortHandle>>,
+    weak_self: Weak<Self>,
 }
 
 impl SseTransport {
@@ -68,20 +78,7 @@ impl SseTransport {
         remote: ResolvedRemoteConfig,
         request_timeout: Duration,
     ) -> Result<Arc<Self>> {
-        let client = Client::builder()
-            .timeout(request_timeout)
-            .build()
-            .context("failed to build HTTP client for SSE transport")?;
-
-        Ok(Arc::new(Self {
-            client,
-            request_url: Secret::new(remote.request_url().to_string()),
-            display_url: remote.display_url().to_string(),
-            default_headers: remote.headers().clone(),
-            next_id: AtomicU64::new(1),
-            auth: None,
-            session_id: RwLock::new(None),
-        }))
+        Self::build(remote, None, request_timeout)
     }
 
     /// Create a new SSE transport with an OAuth auth provider.
@@ -111,20 +108,73 @@ impl SseTransport {
         auth: SharedAuthProvider,
         request_timeout: Duration,
     ) -> Result<Arc<Self>> {
+        Self::build(remote, Some(auth), request_timeout)
+    }
+
+    fn build(
+        remote: ResolvedRemoteConfig,
+        auth: Option<SharedAuthProvider>,
+        request_timeout: Duration,
+    ) -> Result<Arc<Self>> {
+        // No total timeout: response streams stay open while the client
+        // answers server requests. `request_timeout` is enforced per step.
         let client = Client::builder()
-            .timeout(request_timeout)
+            .connect_timeout(request_timeout)
             .build()
             .context("failed to build HTTP client for SSE transport")?;
 
-        Ok(Arc::new(Self {
+        Ok(Arc::new_cyclic(|weak_self| Self {
             client,
             request_url: Secret::new(remote.request_url().to_string()),
             display_url: remote.display_url().to_string(),
             default_headers: remote.headers().clone(),
             next_id: AtomicU64::new(1),
-            auth: Some(auth),
+            auth,
             session_id: RwLock::new(None),
+            request_timeout,
+            protocol_version: std::sync::RwLock::new(None),
+            incoming: Arc::new(IncomingRouter::default()),
+            listener: std::sync::Mutex::new(None),
+            weak_self: weak_self.clone(),
         }))
+    }
+
+    fn apply_protocol_version(&self, req: reqwest::RequestBuilder) -> reqwest::RequestBuilder {
+        let version = self
+            .protocol_version
+            .read()
+            .unwrap_or_else(|e| e.into_inner())
+            .clone();
+        match version {
+            Some(version) => req.header(MCP_PROTOCOL_VERSION_HEADER, version),
+            None => req,
+        }
+    }
+
+    async fn apply_session_and_auth(
+        &self,
+        mut req: reqwest::RequestBuilder,
+    ) -> Result<reqwest::RequestBuilder> {
+        if let Some(session_id) = self.session_id.read().await.clone() {
+            req = req.header(MCP_SESSION_ID_HEADER, session_id);
+        }
+        if let Some(token) = match &self.auth {
+            Some(auth) => auth.access_token().await?,
+            None => None,
+        } {
+            req = req.header("Authorization", format!("Bearer {}", token.expose_secret()));
+        }
+        Ok(req)
+    }
+
+    async fn timed_send(&self, req: reqwest::RequestBuilder) -> Result<reqwest::Response> {
+        match tokio::time::timeout(self.request_timeout, req.send()).await {
+            Ok(result) => Ok(result.map_err(sanitize_reqwest_error)?),
+            Err(_) => Err(Error::message(format!(
+                "no response within {}s",
+                self.request_timeout.as_secs()
+            ))),
+        }
     }
 
     /// Build a request builder with optional Bearer token.
@@ -133,23 +183,10 @@ impl SseTransport {
             .client
             .post(self.request_url.expose_secret())
             .header("Content-Type", "application/json")
-            .header("Accept", STREAMABLE_ACCEPT_HEADER)
-            .header(MCP_PROTOCOL_VERSION_HEADER, PROTOCOL_VERSION);
-
+            .header("Accept", STREAMABLE_ACCEPT_HEADER);
+        req = self.apply_protocol_version(req);
         req = self.apply_default_headers(req);
-
-        if let Some(session_id) = self.session_id.read().await.clone() {
-            req = req.header(MCP_SESSION_ID_HEADER, session_id);
-        }
-
-        if let Some(token) = match &self.auth {
-            Some(auth) => auth.access_token().await?,
-            None => None,
-        } {
-            req = req.header("Authorization", format!("Bearer {}", token.expose_secret()));
-        }
-
-        Ok(req)
+        self.apply_session_and_auth(req).await
     }
 
     async fn store_session_id_from_response(&self, response: &reqwest::Response) {
@@ -197,38 +234,6 @@ impl SseTransport {
             .unwrap_or(false)
     }
 
-    fn parse_event_stream_response(body: &str, method: &str) -> Result<JsonRpcResponse> {
-        let mut data = String::new();
-
-        for line in body.lines() {
-            let trimmed = line.trim_end();
-            if let Some(rest) = trimmed.strip_prefix("data:") {
-                if !data.is_empty() {
-                    data.push('\n');
-                }
-                data.push_str(rest.trim_start());
-                continue;
-            }
-
-            if trimmed.is_empty() && !data.is_empty() {
-                if let Ok(resp) = serde_json::from_str::<JsonRpcResponse>(&data) {
-                    return Ok(resp);
-                }
-                data.clear();
-            }
-        }
-
-        if !data.is_empty()
-            && let Ok(resp) = serde_json::from_str::<JsonRpcResponse>(&data)
-        {
-            return Ok(resp);
-        }
-
-        Err(Error::message(format!(
-            "failed to parse JSON-RPC response from event stream for '{method}'"
-        )))
-    }
-
     /// Send a POST request and handle 401 with auth retry.
     /// Returns the HTTP response or a typed `McpTransportError`.
     async fn send_with_auth_retry(
@@ -238,11 +243,9 @@ impl SseTransport {
     ) -> Result<reqwest::Response> {
         // First attempt
         let req = self.build_post().await?;
-        let http_resp = req
-            .json(body)
-            .send()
+        let http_resp = self
+            .timed_send(req.json(body))
             .await
-            .map_err(sanitize_reqwest_error)
             .with_context(|| format!("SSE POST to '{}' for '{method}' failed", self.display_url))?;
 
         if http_resp.status() == reqwest::StatusCode::UNAUTHORIZED {
@@ -268,17 +271,12 @@ impl SseTransport {
                     );
 
                     let req = self.build_post().await?;
-                    let replay_resp = req
-                        .json(body)
-                        .send()
-                        .await
-                        .map_err(sanitize_reqwest_error)
-                        .with_context(|| {
-                            format!(
-                                "SSE POST session replay to '{}' for '{method}' failed",
-                                self.display_url
-                            )
-                        })?;
+                    let replay_resp = self.timed_send(req.json(body)).await.with_context(|| {
+                        format!(
+                            "SSE POST session replay to '{}' for '{method}' failed",
+                            self.display_url
+                        )
+                    })?;
 
                     if replay_resp.status() != reqwest::StatusCode::UNAUTHORIZED {
                         self.store_session_id_from_response(&replay_resp).await;
@@ -301,12 +299,8 @@ impl SseTransport {
                     if auth.handle_unauthorized(replay_www_auth.as_deref()).await? {
                         // Retry with new token
                         let req = self.build_post().await?;
-                        let retry_resp = req
-                            .json(body)
-                            .send()
-                            .await
-                            .map_err(sanitize_reqwest_error)
-                            .with_context(|| {
+                        let retry_resp =
+                            self.timed_send(req.json(body)).await.with_context(|| {
                                 format!(
                                     "SSE POST retry to '{}' for '{method}' failed",
                                     self.display_url
@@ -344,17 +338,12 @@ impl SseTransport {
                 if auth.handle_unauthorized(first_www_auth.as_deref()).await? {
                     // Retry with new token
                     let req = self.build_post().await?;
-                    let retry_resp = req
-                        .json(body)
-                        .send()
-                        .await
-                        .map_err(sanitize_reqwest_error)
-                        .with_context(|| {
-                            format!(
-                                "SSE POST retry to '{}' for '{method}' failed",
-                                self.display_url
-                            )
-                        })?;
+                    let retry_resp = self.timed_send(req.json(body)).await.with_context(|| {
+                        format!(
+                            "SSE POST retry to '{}' for '{method}' failed",
+                            self.display_url
+                        )
+                    })?;
 
                     if retry_resp.status() == reqwest::StatusCode::UNAUTHORIZED {
                         return Err(McpTransportError::Unauthorized {
@@ -388,6 +377,141 @@ impl SseTransport {
     }
 }
 
+impl SseTransport {
+    /// Read an SSE response until the response to `id` arrives, answering
+    /// server requests and forwarding notifications sent on the way.
+    async fn read_response_stream(
+        &self,
+        http_resp: reqwest::Response,
+        id: &serde_json::Value,
+        method: &str,
+    ) -> Result<JsonRpcResponse> {
+        self.incoming.touch();
+        let read = self.pump_stream(http_resp, Some(id));
+        match self.incoming.await_active(read, self.request_timeout).await {
+            Some(Ok(Some(resp))) => Ok(resp),
+            Some(Ok(None)) => Err(Error::message(format!(
+                "event stream for '{method}' ended without a response"
+            ))),
+            Some(Err(error)) => Err(error),
+            None => Err(Error::message(format!(
+                "MCP request '{method}' timed out after {}s (no response from server)",
+                self.request_timeout.as_secs()
+            ))),
+        }
+    }
+
+    /// Process one SSE body. Returns the response matching `wanted`, or
+    /// `None` when the stream ends first (always `None` for the GET stream).
+    async fn pump_stream(
+        &self,
+        http_resp: reqwest::Response,
+        wanted: Option<&serde_json::Value>,
+    ) -> Result<Option<JsonRpcResponse>> {
+        let mut stream = http_resp.bytes_stream();
+        let mut decoder = SseDecoder::default();
+        let (reply_tx, mut reply_rx) = mpsc::unbounded_channel::<JsonRpcResponse>();
+        loop {
+            tokio::select! {
+                chunk = stream.next() => {
+                    let Some(chunk) = chunk else {
+                        let last = decoder.finish();
+                        return Ok(last.and_then(|data| self.handle_event(&data, wanted, &reply_tx)));
+                    };
+                    let chunk = chunk.map_err(sanitize_reqwest_error)?;
+                    self.incoming.touch();
+                    for data in decoder.push(&chunk)? {
+                        if let Some(resp) = self.handle_event(&data, wanted, &reply_tx) {
+                            return Ok(Some(resp));
+                        }
+                    }
+                },
+                Some(reply) = reply_rx.recv() => self.post_reply(reply).await,
+            }
+        }
+    }
+
+    fn handle_event(
+        &self,
+        data: &str,
+        wanted: Option<&serde_json::Value>,
+        reply_tx: &mpsc::UnboundedSender<JsonRpcResponse>,
+    ) -> Option<JsonRpcResponse> {
+        match IncomingMessage::parse(data) {
+            Ok(IncomingMessage::Response(resp)) if Some(&resp.id) == wanted => Some(resp),
+            Ok(IncomingMessage::Response(resp)) => {
+                warn!(id = %resp.id, "received SSE response for unknown request id");
+                None
+            },
+            Ok(IncomingMessage::Request(request)) => {
+                let reply_tx = reply_tx.clone();
+                self.incoming
+                    .route_request(request, move |response| async move {
+                        let _ = reply_tx.send(response);
+                    });
+                None
+            },
+            Ok(IncomingMessage::Notification(notification)) => {
+                self.incoming.route_notification(notification);
+                None
+            },
+            Err(error) => {
+                debug!(%error, bytes = data.len(), "ignoring non-JSON-RPC SSE event");
+                None
+            },
+        }
+    }
+
+    /// POST our answer to a server request.
+    async fn post_reply(&self, reply: JsonRpcResponse) {
+        match self.send_with_auth_retry("response", &reply).await {
+            Ok(resp) if resp.status().is_success() => {},
+            Ok(resp) => warn!(status = %resp.status(), "MCP server rejected our response"),
+            Err(error) => warn!(%error, "failed to send response to MCP server"),
+        }
+    }
+
+    async fn open_listener(&self) -> Result<Option<reqwest::Response>> {
+        let mut req = self
+            .client
+            .get(self.request_url.expose_secret())
+            .header("Accept", "text/event-stream");
+        req = self.apply_protocol_version(req);
+        req = self.apply_default_headers(req);
+        req = self.apply_session_and_auth(req).await?;
+        let resp = self.timed_send(req).await?;
+        if !resp.status().is_success() || !Self::response_is_event_stream(&resp) {
+            // 405 means the server offers no GET stream; that is allowed.
+            debug!(status = %resp.status(), url = %self.display_url, "no MCP server-to-client stream");
+            return Ok(None);
+        }
+        Ok(Some(resp))
+    }
+
+    /// Keep the GET stream open for notifications and requests the server
+    /// sends outside any client request.
+    async fn run_listener(self: Arc<Self>) {
+        let mut failures = 0u32;
+        while failures <= MAX_LISTENER_RECONNECTS {
+            match self.open_listener().await {
+                Ok(Some(resp)) => {
+                    failures = 0;
+                    if let Err(error) = self.pump_stream(resp, None).await {
+                        debug!(%error, url = %self.display_url, "MCP server stream closed");
+                    }
+                },
+                Ok(None) => return,
+                Err(error) => {
+                    debug!(%error, url = %self.display_url, "MCP server stream failed");
+                },
+            }
+            failures += 1;
+            tokio::time::sleep(Duration::from_secs(1 << failures.min(5))).await;
+        }
+        warn!(url = %self.display_url, "giving up on MCP server-to-client stream");
+    }
+}
+
 #[async_trait::async_trait]
 impl McpTransport for SseTransport {
     async fn request(
@@ -410,17 +534,21 @@ impl McpTransport for SseTransport {
             )));
         }
 
-        let resp: JsonRpcResponse = if Self::response_is_event_stream(&http_resp) {
-            let body = http_resp
-                .text()
-                .await
-                .with_context(|| format!("failed to read event stream response for '{method}'"))?;
-            Self::parse_event_stream_response(&body, method)?
+        let resp = if Self::response_is_event_stream(&http_resp) {
+            self.read_response_stream(http_resp, &req.id, method)
+                .await?
         } else {
-            http_resp
-                .json()
+            match tokio::time::timeout(self.request_timeout, http_resp.json::<JsonRpcResponse>())
                 .await
-                .with_context(|| format!("failed to parse JSON-RPC response for '{method}'"))?
+            {
+                Ok(parsed) => parsed
+                    .with_context(|| format!("failed to parse JSON-RPC response for '{method}'"))?,
+                Err(_) => {
+                    return Err(Error::message(format!(
+                        "MCP request '{method}' timed out reading the response"
+                    )));
+                },
+            }
         };
 
         if let Some(ref err) = resp.error {
@@ -462,8 +590,8 @@ impl McpTransport for SseTransport {
             .client
             .get(self.request_url.expose_secret())
             .timeout(std::time::Duration::from_secs(5))
-            .header("Accept", STREAMABLE_ACCEPT_HEADER)
-            .header(MCP_PROTOCOL_VERSION_HEADER, PROTOCOL_VERSION);
+            .header("Accept", STREAMABLE_ACCEPT_HEADER);
+        req = self.apply_protocol_version(req);
 
         req = self.apply_default_headers(req);
 
@@ -494,6 +622,14 @@ impl McpTransport for SseTransport {
     }
 
     async fn kill(&self) {
+        if let Some(listener) = self
+            .listener
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .take()
+        {
+            listener.abort();
+        }
         let session_id = {
             let mut slot = self.session_id.write().await;
             slot.take()
@@ -507,8 +643,8 @@ impl McpTransport for SseTransport {
             .client
             .delete(self.request_url.expose_secret())
             .timeout(std::time::Duration::from_secs(5))
-            .header(MCP_PROTOCOL_VERSION_HEADER, PROTOCOL_VERSION)
             .header(MCP_SESSION_ID_HEADER, session_id);
+        req = self.apply_protocol_version(req);
 
         req = self.apply_default_headers(req);
 
@@ -526,6 +662,33 @@ impl McpTransport for SseTransport {
                 "failed to close MCP streamable HTTP session"
             );
         }
+    }
+
+    fn set_dispatcher(&self, dispatcher: Arc<dyn IncomingDispatcher>) {
+        self.incoming.set_dispatcher(dispatcher);
+    }
+
+    fn accepts_server_requests(&self) -> bool {
+        true
+    }
+
+    fn set_protocol_version(&self, version: &str) {
+        *self
+            .protocol_version
+            .write()
+            .unwrap_or_else(|e| e.into_inner()) = Some(version.to_string());
+    }
+
+    async fn start_server_stream(&self) {
+        let Some(transport) = self.weak_self.upgrade() else {
+            return;
+        };
+        let mut listener = self.listener.lock().unwrap_or_else(|e| e.into_inner());
+        if listener.is_some() {
+            return;
+        }
+        let task = tokio::spawn(async move { transport.run_listener().await });
+        *listener = Some(task.abort_handle());
     }
 }
 

@@ -27,6 +27,7 @@ pub mod protocol;
 pub mod registry;
 pub mod remote;
 pub mod sampling;
+mod sse_stream;
 pub mod sse_transport;
 pub mod tool_bridge;
 pub mod traits;
