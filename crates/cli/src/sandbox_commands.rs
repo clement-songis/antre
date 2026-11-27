@@ -71,6 +71,10 @@ fn image_build_not_supported_notice(backend: &str) -> Option<(&'static str, &'st
             "Restricted-host sandbox does not use container images — nothing to build.",
             "This backend provides env clearing + rlimit isolation without containers.",
         )),
+        "os" | "seatbelt" | "bubblewrap" => Some((
+            "OS sandbox does not use container images — nothing to build.",
+            "Seatbelt (macOS) and bubblewrap (Linux) run host binaries under a kernel policy.",
+        )),
         "wasm" | "wasmtime" => Some((
             "WASM sandbox does not use container images — nothing to build.",
             "The WASM backend uses Wasmtime + WASI for sandboxed execution.",

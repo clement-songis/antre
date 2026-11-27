@@ -1057,6 +1057,10 @@ pub async fn api_available_backends_handler() -> impl IntoResponse {
         }));
     }
 
+    backends.extend(crate::sandbox_backends::os_sandbox_backend_entry(
+        moltis_tools::sandbox::os_sandbox_backend_name(),
+    ));
+
     // Always include restricted-host as fallback.
     backends.push(serde_json::json!({
         "id": "restricted-host",
