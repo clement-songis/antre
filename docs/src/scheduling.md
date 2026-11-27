@@ -19,6 +19,16 @@ Heartbeat replies can also be delivered to a configured channel destination via
 `[heartbeat] deliver`, `channel`, and `to` in `moltis.toml`, or from the web UI
 under **Settings -> Heartbeat**.
 
+### Active Hours
+
+`[heartbeat.active_hours]` limits when the scheduled heartbeat runs (default
+`08:00` to `24:00`, local time; `end = "24:00"` means end of day, and a window
+whose end is before its start spans midnight). A heartbeat that falls due
+outside the window is moved to the next opening, so with the default settings
+no heartbeat runs at night. An explicit wake (see below) is not gated: it
+answers something that already happened. The window is read at startup;
+changing it requires a restart.
+
 ## Event-Driven Heartbeat Wake
 
 Normally the heartbeat fires on its regular schedule. The **wake** system lets

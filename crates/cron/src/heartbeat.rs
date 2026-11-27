@@ -138,15 +138,8 @@ fn is_within_active_hours_at(start: &str, end: &str, timezone: &str, now: &DateT
         Some(t) => t,
         None => return true, // invalid config → always active
     };
-    // "24:00" means end-of-day. chrono's `%H` rejects hour 24, so this must
-    // run before parsing `end`.
-    let end_minutes = if end == "24:00" {
-        24 * 60
-    } else {
-        match parse_hhmm(end) {
-            Some(t) => t.hour() * 60 + t.minute(),
-            None => return true,
-        }
+    let Some(end_minutes) = end_minutes(end) else {
+        return true;
     };
     let start_minutes = start_time.hour() * 60 + start_time.minute();
 
@@ -172,14 +165,31 @@ fn is_within_active_hours_at(start: &str, end: &str, timezone: &str, now: &DateT
 /// moves the schedule forward.
 #[must_use]
 pub fn ms_until_active_hours(start: &str, end: &str, timezone: &str) -> Option<u64> {
+    ms_until_active_hours_at(start, end, timezone, &Utc::now())
+}
+
+fn ms_until_active_hours_at(
+    start: &str,
+    end: &str,
+    timezone: &str,
+    now: &DateTime<Utc>,
+) -> Option<u64> {
     let start_time = parse_hhmm(start)?;
-    let end_time = parse_hhmm(end)?;
     let start_minutes = start_time.hour() * 60 + start_time.minute();
-    let end_minutes = end_time.hour() * 60 + end_time.minute();
+    let end_minutes = end_minutes(end)?;
     if start_minutes == end_minutes {
         return None;
     }
-    Some(minutes_until(start_minutes, current_minutes(timezone)) * 60_000)
+    Some(minutes_until(start_minutes, current_minutes_at(timezone, now)) * 60_000)
+}
+
+/// Minutes since midnight for a window end, where `"24:00"` means end of day.
+/// chrono's `%H` rejects hour 24, so the sentinel is checked before parsing.
+fn end_minutes(end: &str) -> Option<u32> {
+    if end == "24:00" {
+        return Some(24 * 60);
+    }
+    parse_hhmm(end).map(|t| t.hour() * 60 + t.minute())
 }
 
 /// Minutes from `now_minutes` forward to `target_minutes`, wrapping past
@@ -306,6 +316,7 @@ fn current_minutes_at(timezone: &str, now: &DateTime<Utc>) -> u32 {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use {super::*, chrono::TimeZone};
 
@@ -492,6 +503,16 @@ mod tests {
         // Matches `is_within_active_hours`, which treats an unparseable bound
         // as "always active" and so never reaches this function.
         assert!(ms_until_active_hours("08:00", "not-a-time", "UTC").is_none());
+    }
+
+    #[test]
+    fn default_window_with_2400_end_reopens_at_start() {
+        // 02:30 UTC with the default 08:00–24:00 window: next opening is 08:00.
+        let now = Utc.with_ymd_and_hms(2026, 1, 1, 2, 30, 0).unwrap();
+        assert_eq!(
+            ms_until_active_hours_at("08:00", "24:00", "UTC", &now),
+            Some(330 * 60_000)
+        );
     }
 
     #[test]
