@@ -1189,6 +1189,15 @@ impl ChatService for LiveChatService {
             .cloned()
     }
 
+    async fn active_partial_text(&self, session_key: &str) -> Option<String> {
+        self.active_partial_assistant
+            .read()
+            .await
+            .get(session_key)
+            .map(|draft| draft.content().to_string())
+            .filter(|text| !text.trim().is_empty())
+    }
+
     async fn active_voice_pending(&self, session_key: &str) -> bool {
         self.active_reply_medium
             .read()

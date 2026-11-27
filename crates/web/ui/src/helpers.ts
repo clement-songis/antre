@@ -291,6 +291,23 @@ export function renderMarkdown(raw: string): string {
 	return result.trimEnd();
 }
 
+/**
+ * Split markdown into top-level blocks (paragraphs, fences, lists, tables)
+ * whose concatenation is the input. While a reply streams only its last
+ * block changes, so callers re-render that block alone.
+ */
+export function splitMarkdownBlocks(raw: string): string[] {
+	const blocks: string[] = [];
+	for (const token of markedInstance.lexer(raw)) {
+		if (token.type === "space" && blocks.length > 0) {
+			blocks[blocks.length - 1] += token.raw;
+			continue;
+		}
+		blocks.push(token.raw);
+	}
+	return blocks;
+}
+
 export function sendRpc<T = unknown>(
 	method: string,
 	params: unknown,

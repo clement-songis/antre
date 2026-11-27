@@ -4,6 +4,8 @@ import { chatAddMsg, removeThinking, setComposerStopButton, updateCommandInputUI
 import { sendRpc } from "../helpers";
 import { modelDisplayLabel, modelTitle, updateModelComboAvailability } from "../models";
 import { restoreNodeSelection } from "../nodes-selector";
+import { currentThinkingText as liveThinkingText, resumeStreamedText } from "../pages/chat/transcript/actions";
+import { clearTranscript } from "../pages/chat/transcript/store";
 import { updateSessionProjectSelect } from "../project-combo";
 import { restoreReasoningFromModelId } from "../reasoning-toggle";
 import { sessionPath } from "../router";
@@ -63,6 +65,8 @@ interface SwitchPayload {
 	historyOmitted?: boolean;
 	replying?: boolean;
 	thinkingText?: string;
+	/** Reply text the active run streamed before this client (re)connected. */
+	streamText?: string;
 	voicePending?: boolean;
 	hasMore?: boolean;
 	nextCursor?: number;
@@ -160,7 +164,7 @@ function finishSessionRefresh(key: string): void {
 
 function resetSwitchViewState(): void {
 	hideSessionLoadIndicator();
-	if (S.chatMsgBox) S.chatMsgBox.textContent = "";
+	clearTranscript();
 	const tray = document.getElementById("queuedMessages");
 	if (tray) {
 		while (tray.firstChild) tray.removeChild(tray.firstChild);
@@ -220,8 +224,7 @@ function applyReplyingStateFromSwitchPayload(key: string, payload: SwitchPayload
 }
 
 function currentThinkingText(): string | null {
-	const text = document.querySelector("#thinkingIndicator .thinking-text")?.textContent?.trim();
-	return text || null;
+	return liveThinkingText() || null;
 }
 
 /** Clear history for the currently active session and reset local UI state. */
@@ -232,7 +235,7 @@ export function clearActiveSession(): Promise<RpcResponse> {
 	S.setChatSeq(0);
 	return sendRpc("chat.clear", {}).then((res) => {
 		if (res?.ok) {
-			if (S.chatMsgBox) S.chatMsgBox.textContent = "";
+			clearTranscript();
 			S.setSessionTokens({ input: 0, output: 0 });
 			S.setSessionCurrentInputTokens(0);
 			S.setSessionCurrentContextTokens(0);
@@ -363,6 +366,9 @@ export function switchSession(key: string, searchContext?: SearchContext | null,
 					renderHistory(key, resolvedHistory, searchContext || null, thinkingText, totalCountHint, false);
 				} else {
 					postHistoryLoadActions(key, searchContext || null, [], thinkingText, false);
+				}
+				if (!runStateChanged && switchPayload.replying && switchPayload.streamText) {
+					resumeStreamedText(switchPayload.streamText);
 				}
 				if (appliedServerHistory && historyPayload.historyTruncated === true) {
 					const dropped = Number(historyPayload.historyDroppedCount) || 0;

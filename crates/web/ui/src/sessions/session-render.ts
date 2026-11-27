@@ -2,35 +2,33 @@
 
 import {
 	addQuotaWaitCancelButton,
-	appendChannelFooter,
-	appendReasoningDisclosure,
 	chatAddErrorCard,
-	chatAddMsg,
-	chatAddMsgWithImages,
+	type DocumentAttachment,
 	highlightAndScroll,
-	removeThinking,
 	scrollChatToBottom,
 	stripChannelPrefix,
 	updateCommandInputUI,
 	updateTokenBar,
 } from "../chat-ui";
-import { highlightCodeBlocks } from "../code-highlight";
 import * as gon from "../gon";
-import {
-	formatAssistantTokenUsage,
-	formatTokenSpeed,
-	parseAgentsListPayload,
-	renderAudioPlayer,
-	renderDocument,
-	renderMarkdown,
-	renderScreenshot,
-	sendRpc,
-	tokenSpeedTone,
-	toolCallSummary,
-} from "../helpers";
+import { parseAgentsListPayload, renderMarkdown, sendRpc } from "../helpers";
 import { t } from "../i18n";
-import { appendMessageActions } from "../message-actions";
-import { upsertTtsProviderFooter } from "../message-voice";
+import {
+	appendNode,
+	hideThinking,
+	resetStream,
+	showThinking,
+	usageFromPayload,
+} from "../pages/chat/transcript/actions";
+import {
+	type AssistantItem,
+	type ImageRef,
+	THINKING_ITEM_ID,
+	type ToolItem,
+	type TranscriptItem,
+	type UserItem,
+} from "../pages/chat/transcript/model";
+import { getItem, hasItem, removeItem, replaceItems } from "../pages/chat/transcript/store";
 import { navigate } from "../router";
 import { settingsPath } from "../routes";
 import * as S from "../state";
@@ -38,7 +36,12 @@ import { modelStore } from "../stores/model-store";
 import { sessionStore } from "../stores/session-store";
 import type { HistoryMessage } from "../types";
 
-import { computeHistoryTailIndex, ensureHistoryScrollBinding, syncHistoryState } from "./session-history";
+import {
+	computeHistoryTailIndex,
+	ensureHistoryScrollBinding,
+	historyIndexFromMessage,
+	syncHistoryState,
+} from "./session-history";
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -152,12 +155,12 @@ interface ChatContextPayload {
 	execution?: ExecutionInfo;
 }
 
-// ── Multimodal parsing ───────────────────────────────────────
+// ── History → transcript items ───────────────────────────────
 
 /** Extract text and images from a multimodal content array. */
-function parseMultimodalContent(blocks: unknown[]): { text: string; images: { dataUrl: string; name: string }[] } {
+function parseMultimodalContent(blocks: unknown[]): { text: string; images: ImageRef[] } {
 	let text = "";
-	const images: { dataUrl: string; name: string }[] = [];
+	const images: ImageRef[] = [];
 	for (const block of blocks as Array<{ type?: string; text?: string; image_url?: { url?: string } }>) {
 		if (block.type === "text") {
 			text = block.text || "";
@@ -168,235 +171,138 @@ function parseMultimodalContent(blocks: unknown[]): { text: string; images: { da
 	return { text, images };
 }
 
-// ── History message renderers ────────────────────────────────
+function historyMediaSrc(sessionKey: string, path: string): string {
+	const filename = path.split("/").pop() || "";
+	return `/api/sessions/${encodeURIComponent(sessionKey)}/media/${encodeURIComponent(filename)}`;
+}
 
-function renderHistoryUserMessage(msg: UserMsg): HTMLElement | null {
+/** Item ids derived from the history index stay stable across re-renders. */
+function historyItemId(kind: string, msg: HistoryMessage, position: number): string {
+	const idx = historyIndexFromMessage(msg);
+	return idx === null ? `h-${kind}-p${position}` : `h-${kind}-${idx}`;
+}
+
+function userItemFromHistory(msg: UserMsg, sessionKey: string, position: number): UserItem {
 	let text = "";
-	let images: { dataUrl: string; name: string }[] = [];
+	let images: ImageRef[] = [];
 	if (Array.isArray(msg.content)) {
 		const parsed = parseMultimodalContent(msg.content);
-		text = msg.channel ? stripChannelPrefix(parsed.text) : parsed.text;
+		text = parsed.text;
 		images = parsed.images;
 	} else {
-		text = msg.channel ? stripChannelPrefix((msg.content as string) || "") : (msg.content as string) || "";
+		text = (msg.content as string) || "";
 	}
-
-	let el: HTMLElement | null;
-	if (msg.audio) {
-		el = chatAddMsg("user", "", true);
-		if (el) {
-			const filename = msg.audio.split("/").pop() || "";
-			const audioSrc = `/api/sessions/${encodeURIComponent(S.activeSessionKey)}/media/${encodeURIComponent(filename)}`;
-			renderAudioPlayer(el, audioSrc);
-			if (text) {
-				const textWrap = document.createElement("div");
-				textWrap.className = "mt-2";
-				// Safe: renderMarkdown escapes user input before formatting tags.
-				textWrap.insertAdjacentHTML("beforeend", renderMarkdown(text));
-				el.appendChild(textWrap);
-			}
-			if (images.length > 0) {
-				const thumbRow = document.createElement("div");
-				thumbRow.className = "msg-image-row";
-				for (const img of images) {
-					const thumb = document.createElement("img");
-					thumb.className = "msg-image-thumb";
-					thumb.src = img.dataUrl;
-					thumb.alt = img.name;
-					thumbRow.appendChild(thumb);
-				}
-				el.appendChild(thumbRow);
-			}
-		}
-	} else if (images.length > 0) {
-		el = chatAddMsgWithImages("user", text ? renderMarkdown(text) : "", images);
-	} else {
-		el = chatAddMsg("user", renderMarkdown(text), true);
-	}
-	if (el && Array.isArray(msg.documents)) {
-		for (const doc of msg.documents) {
+	if (msg.channel) text = stripChannelPrefix(text);
+	const documents: DocumentAttachment[] = (msg.documents || [])
+		.map((doc) => {
 			const storedName = doc.stored_filename || doc.media_ref?.split("/").pop() || "";
-			if (!storedName) continue;
-			const mediaSrc = `/api/sessions/${encodeURIComponent(S.activeSessionKey)}/media/${encodeURIComponent(storedName)}`;
-			renderDocument(el, mediaSrc, doc.display_name || storedName, doc.mime_type, doc.size_bytes);
-		}
-	}
-	if (el && msg.channel) appendChannelFooter(el, msg.channel);
-	return el;
+			return {
+				display_name: doc.display_name || storedName,
+				stored_filename: storedName,
+				mime_type: doc.mime_type || "",
+				size_bytes: doc.size_bytes,
+			};
+		})
+		.filter((doc) => doc.stored_filename);
+	return {
+		kind: "user",
+		id: historyItemId("user", msg, position),
+		text,
+		images,
+		documents,
+		audioSrc: msg.audio ? historyMediaSrc(sessionKey, msg.audio) : undefined,
+		channel: msg.channel,
+		historyIndex: historyIndexFromMessage(msg) ?? undefined,
+		createdAt: (msg as SeqHistoryMessage).created_at,
+	};
 }
 
-function createModelFooter(msg: AssistantMsg): HTMLDivElement {
-	const ft = document.createElement("div");
-	ft.className = "msg-model-footer";
-	let ftText = msg.provider ? `${msg.provider} / ${msg.model}` : msg.model || "";
-	if (msg.inputTokens || msg.outputTokens) {
-		ftText += ` \u00b7 ${formatAssistantTokenUsage(msg.inputTokens || 0, msg.outputTokens || 0, msg.cacheReadTokens || 0)}`;
-	}
-	const textSpan = document.createElement("span");
-	textSpan.textContent = ftText;
-	ft.appendChild(textSpan);
-
-	const speedLabel = formatTokenSpeed(msg.outputTokens || 0, msg.durationMs || 0);
-	if (speedLabel) {
-		const speed = document.createElement("span");
-		speed.className = "msg-token-speed";
-		const tone = tokenSpeedTone(msg.outputTokens || 0, msg.durationMs || 0);
-		if (tone) speed.classList.add(`msg-token-speed-${tone}`);
-		speed.textContent = ` \u00b7 ${speedLabel}`;
-		ft.appendChild(speed);
-	}
-	return ft;
+function assistantItemFromHistory(msg: AssistantMsg, sessionKey: string, position: number): AssistantItem {
+	return {
+		kind: "assistant",
+		id: historyItemId("assistant", msg, position),
+		text: msg.content || "",
+		reasoning: msg.reasoning || "",
+		streaming: false,
+		final: true,
+		usage: usageFromPayload(msg),
+		audioSrc: msg.audio ? historyMediaSrc(sessionKey, msg.audio) : undefined,
+		ttsProvider: msg.tts_provider,
+		runId: msg.run_id || undefined,
+		historyIndex: historyIndexFromMessage(msg) ?? undefined,
+		createdAt: (msg as SeqHistoryMessage).created_at,
+	};
 }
 
-function renderHistoryAssistantMessage(msg: AssistantMsg): HTMLElement | null {
-	let el: HTMLElement | null;
-	if (msg.audio) {
-		el = chatAddMsg("assistant", "", true);
-		if (el) {
-			const filename = msg.audio.split("/").pop() || "";
-			const audioSrc = `/api/sessions/${encodeURIComponent(S.activeSessionKey)}/media/${encodeURIComponent(filename)}`;
-			renderAudioPlayer(el, audioSrc);
-			if (msg.content) {
-				const textWrap = document.createElement("div");
-				textWrap.className = "mt-2";
-				textWrap.insertAdjacentHTML("beforeend", renderMarkdown(msg.content));
-				el.appendChild(textWrap);
-			}
-			if (msg.reasoning) {
-				appendReasoningDisclosure(el, msg.reasoning);
-			}
-		}
-	} else {
-		el = chatAddMsg("assistant", renderMarkdown(msg.content || ""), true);
-		if (el && msg.reasoning) {
-			appendReasoningDisclosure(el, msg.reasoning);
-		}
-	}
-	if (el && msg.model) {
-		const footer = createModelFooter(msg);
-		el.appendChild(footer);
-		upsertTtsProviderFooter(el, msg.tts_provider);
-	}
-	if (el) {
-		appendMessageActions({
-			messageEl: el,
-			sessionKey: S.activeSessionKey,
-			messageIndex: msg.historyIndex,
-			text: msg.content || "",
-			runId: msg.run_id || undefined,
-			hasAudio: !!msg.audio,
-		});
-	}
-	if (msg.inputTokens || msg.outputTokens) {
-		S.sessionTokens.input += msg.inputTokens || 0;
-		S.sessionTokens.output += msg.outputTokens || 0;
-	}
-	if (msg.requestInputTokens !== undefined && msg.requestInputTokens !== null) {
-		S.setSessionCurrentInputTokens(msg.requestInputTokens || 0);
-	} else if (msg.inputTokens || msg.outputTokens) {
-		S.setSessionCurrentInputTokens(msg.inputTokens || 0);
-	}
-	S.setSessionCurrentContextTokens(
-		(msg.requestInputTokens ?? msg.inputTokens ?? 0) +
-			(msg.requestOutputTokens ?? msg.outputTokens ?? 0) +
-			(msg.requestCacheReadTokens ?? msg.cacheReadTokens ?? 0) +
-			(msg.requestCacheWriteTokens ?? msg.cacheWriteTokens ?? 0),
-	);
-	return el;
+function toolItemFromHistory(msg: ToolResultMsg, position: number): ToolItem {
+	const toolCallId = msg.tool_call_id || `p${position}`;
+	return {
+		kind: "tool",
+		id: historyItemId("tool", msg, position),
+		toolCallId,
+		runId: msg.run_id,
+		name: msg.tool_name || "tool",
+		args: (msg.arguments && typeof msg.arguments === "object" ? msg.arguments : {}) as Record<string, unknown>,
+		status: msg.success ? "ok" : "error",
+		result: msg.result,
+		error: msg.success ? undefined : msg.error,
+		reasoning: msg.reasoning,
+		historyIndex: historyIndexFromMessage(msg) ?? undefined,
+	};
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Sequential result field rendering
-function renderHistoryToolResult(msg: ToolResultMsg): HTMLElement {
-	const tpl = S.$<HTMLTemplateElement>("tpl-exec-card")!;
-	const frag = tpl.content.cloneNode(true) as DocumentFragment;
-	const card = frag.firstElementChild as HTMLElement;
-
-	const statusEl = card.querySelector(".exec-status");
-	if (statusEl) statusEl.remove();
-
-	const cmd = toolCallSummary(msg.tool_name, msg.arguments as Parameters<typeof toolCallSummary>[1]);
-	(card.querySelector("[data-cmd]") as HTMLElement).textContent = ` ${cmd}`;
-
-	card.className = `msg exec-card ${msg.success ? "exec-ok" : "exec-err"}`;
-
-	if (msg.result) {
-		const out = (msg.result.stdout || "").replace(/\n+$/, "");
-		if (out) {
-			const outEl = document.createElement("pre");
-			outEl.className = "exec-output";
-			outEl.textContent = out;
-			card.appendChild(outEl);
+export function historyToItems(history: HistoryMessage[], sessionKey: string): TranscriptItem[] {
+	const items: TranscriptItem[] = [];
+	history.forEach((msg, position) => {
+		if (msg.role === "user") items.push(userItemFromHistory(msg as UserMsg, sessionKey, position));
+		else if (msg.role === "assistant") items.push(assistantItemFromHistory(msg as AssistantMsg, sessionKey, position));
+		else if (msg.role === "tool_result") items.push(toolItemFromHistory(msg as ToolResultMsg, position));
+		else if (msg.role === "notice") {
+			items.push({
+				kind: "notice",
+				id: historyItemId("notice", msg, position),
+				level: "system",
+				text: renderMarkdown(typeof msg.content === "string" ? msg.content : ""),
+				html: true,
+				historyIndex: historyIndexFromMessage(msg) ?? undefined,
+			});
 		}
-		const stderrText = (msg.result.stderr || "").replace(/\n+$/, "");
-		if (stderrText) {
-			const errEl = document.createElement("pre");
-			errEl.className = "exec-output exec-stderr";
-			errEl.textContent = stderrText;
-			card.appendChild(errEl);
-		}
-		if (msg.result.exit_code !== undefined && msg.result.exit_code !== 0) {
-			const codeEl = document.createElement("div");
-			codeEl.className = "exec-exit";
-			codeEl.textContent = `exit ${msg.result.exit_code}`;
-			card.appendChild(codeEl);
-		}
-		if (msg.result.screenshot && !msg.result.screenshot.startsWith("data:")) {
-			const filename = msg.result.screenshot.split("/").pop() || "";
-			const sessionKey = S.activeSessionKey || "main";
-			const mediaSrc = `/api/sessions/${encodeURIComponent(sessionKey)}/media/${encodeURIComponent(filename)}`;
-			renderScreenshot(card, mediaSrc);
-		}
-		if (msg.result.document_ref) {
-			const docStoredName = msg.result.document_ref.split("/").pop() || "";
-			const docDisplayName = msg.result.filename || docStoredName;
-			const docSessionKey = S.activeSessionKey || "main";
-			const docMediaSrc = `/api/sessions/${encodeURIComponent(docSessionKey)}/media/${encodeURIComponent(docStoredName)}`;
-			renderDocument(card, docMediaSrc, docDisplayName, msg.result.mime_type, msg.result.size_bytes);
-		}
-	}
-
-	if (!msg.success && msg.error) {
-		const errMsg = document.createElement("div");
-		errMsg.className = "exec-error-detail";
-		errMsg.textContent = msg.error;
-		card.appendChild(errMsg);
-	}
-
-	if (msg.reasoning) {
-		appendReasoningDisclosure(card, msg.reasoning);
-	}
-
-	if (S.chatMsgBox) S.chatMsgBox.appendChild(card);
-	return card;
+	});
+	return items;
 }
 
-export function appendLastMessageTimestamp(epochMs: number): void {
-	if (!S.chatMsgBox) return;
-	const old = S.chatMsgBox.querySelector(".msg-footer-time");
-	if (old) old.remove();
-	const lastMsg = S.chatMsgBox.lastElementChild;
-	if (!lastMsg || lastMsg.classList.contains("user")) return;
-	let footer = lastMsg.querySelector(".msg-model-footer") as HTMLElement | null;
-	if (!footer) {
-		footer = document.createElement("div");
-		footer.className = "msg-model-footer";
-		const actionBar = lastMsg.querySelector(".msg-action-bar");
-		lastMsg.insertBefore(footer, actionBar || null);
+function applyHistoryTokenUsage(history: HistoryMessage[]): void {
+	S.setSessionTokens({ input: 0, output: 0 });
+	S.setSessionCurrentInputTokens(0);
+	S.setSessionCurrentContextTokens(0);
+	for (const raw of history) {
+		if (raw.role !== "assistant") continue;
+		const msg = raw as AssistantMsg;
+		if (msg.inputTokens || msg.outputTokens) {
+			S.sessionTokens.input += msg.inputTokens || 0;
+			S.sessionTokens.output += msg.outputTokens || 0;
+		}
+		if (msg.requestInputTokens !== undefined && msg.requestInputTokens !== null) {
+			S.setSessionCurrentInputTokens(msg.requestInputTokens || 0);
+		} else if (msg.inputTokens || msg.outputTokens) {
+			S.setSessionCurrentInputTokens(msg.inputTokens || 0);
+		}
+		S.setSessionCurrentContextTokens(
+			(msg.requestInputTokens ?? msg.inputTokens ?? 0) +
+				(msg.requestOutputTokens ?? msg.outputTokens ?? 0) +
+				(msg.requestCacheReadTokens ?? msg.cacheReadTokens ?? 0) +
+				(msg.requestCacheWriteTokens ?? msg.cacheWriteTokens ?? 0),
+		);
 	}
-	const timeEl = document.createElement("time");
-	timeEl.className = "msg-footer-time";
-	timeEl.setAttribute("data-epoch-ms", String(epochMs));
-	timeEl.textContent = new Date(epochMs).toISOString();
-	const wrap = document.createElement("span");
-	wrap.className = "msg-footer-time";
-	wrap.appendChild(document.createTextNode(" \u00b7 "));
-	wrap.appendChild(timeEl);
-	footer.appendChild(wrap);
 }
 
-function makeThinkingDots(): HTMLElement {
-	const tpl = S.$<HTMLTemplateElement>("tpl-thinking-dots")!;
-	return (tpl.content.cloneNode(true) as DocumentFragment).firstElementChild as HTMLElement;
+/** Rendered elements of the given history entries, in order (null when not rendered). */
+function historyElements(history: HistoryMessage[]): (HTMLElement | null)[] {
+	return history.map((msg) => {
+		const idx = historyIndexFromMessage(msg);
+		if (idx === null || !S.chatMsgBox) return null;
+		return S.chatMsgBox.querySelector<HTMLElement>(`[data-history-index="${idx}"]`);
+	});
 }
 
 export function postHistoryLoadActions(
@@ -455,19 +361,7 @@ export function postHistoryLoadActions(
 
 	const session = sessionStore.getByKey(key);
 	if (session?.replying.value && S.chatMsgBox) {
-		removeThinking();
-		const thinkEl = document.createElement("div");
-		thinkEl.className = "msg assistant thinking";
-		thinkEl.id = "thinkingIndicator";
-		if (thinkingText) {
-			const textEl = document.createElement("span");
-			textEl.className = "thinking-text";
-			textEl.textContent = thinkingText;
-			thinkEl.appendChild(textEl);
-		} else {
-			thinkEl.appendChild(makeThinkingDots());
-		}
-		S.chatMsgBox.appendChild(thinkEl);
+		showThinking(thinkingText || "");
 		if (!skipAutoScroll) scrollChatToBottom(true);
 	}
 }
@@ -522,9 +416,8 @@ export function renderWelcomeAgentPicker(
 					}
 					// Lazy import to avoid circular dependency with sessions.ts
 					void import("../sessions").then(({ fetchSessions }) => fetchSessions());
-					const welcome = S.chatMsgBox?.querySelector("#welcomeCard");
-					if (welcome) {
-						welcome.remove();
+					if (hasItem("dom-welcomeCard")) {
+						removeItem("dom-welcomeCard");
 						showWelcomeCard();
 					}
 				});
@@ -584,7 +477,8 @@ function showWelcomeCard(): void {
 		const noProvTpl = S.$<HTMLTemplateElement>("tpl-no-providers-card");
 		if (!noProvTpl) return;
 		const noProvCard = (noProvTpl.content.cloneNode(true) as DocumentFragment).firstElementChild as HTMLElement;
-		S.chatMsgBox.appendChild(noProvCard);
+		appendNode(noProvCard);
+		S.chatMsgBox.classList.add("chat-messages-empty");
 		return;
 	}
 
@@ -609,41 +503,30 @@ function showWelcomeCard(): void {
 		if (nameEl) nameEl.textContent = activeAgent.name || botName;
 	});
 
-	S.chatMsgBox.appendChild(card);
+	appendNode(card);
+	S.chatMsgBox.classList.add("chat-messages-empty");
 }
 
 export function refreshWelcomeCardIfNeeded(): void {
 	if (!S.chatMsgBox) return;
-	const welcomeCard = S.chatMsgBox.querySelector("#welcomeCard");
-	const noProvCard = S.chatMsgBox.querySelector("#noProvidersCard");
 	const chatBackendAvailable = hasChatBackend();
-
-	if (chatBackendAvailable && noProvCard) {
-		noProvCard.remove();
+	if (chatBackendAvailable && hasItem("dom-noProvidersCard")) {
+		removeItem("dom-noProvidersCard");
 		showWelcomeCard();
-	} else if (!chatBackendAvailable && welcomeCard) {
-		welcomeCard.remove();
+	} else if (!chatBackendAvailable && hasItem("dom-welcomeCard")) {
+		removeItem("dom-welcomeCard");
 		showWelcomeCard();
 	}
 }
 
 export function showSessionLoadIndicator(): void {
 	if (!S.chatMsgBox) return;
-	hideSessionLoadIndicator();
-	const loading = document.createElement("div");
-	loading.id = "sessionLoadIndicator";
-	loading.className = "msg assistant thinking session-loading";
-	loading.appendChild(makeThinkingDots());
-	const label = document.createElement("span");
-	label.className = "session-loading-label";
-	label.textContent = "Loading session\u2026";
-	loading.appendChild(label);
-	S.chatMsgBox.appendChild(loading);
+	showThinking("Loading session\u2026", "loading");
 }
 
 export function hideSessionLoadIndicator(): void {
-	const loading = document.getElementById("sessionLoadIndicator");
-	if (loading) loading.remove();
+	const item = getItem(THINKING_ITEM_ID, "thinking");
+	if (item?.tone === "loading") hideThinking();
 }
 
 export function renderHistory(
@@ -655,31 +538,22 @@ export function renderHistory(
 	skipAutoScroll: boolean,
 ): void {
 	ensureHistoryScrollBinding();
-	hideSessionLoadIndicator();
-	if (S.chatMsgBox) {
-		S.chatMsgBox.classList.remove("chat-messages-empty");
-		S.chatMsgBox.textContent = "";
-	}
-	const msgEls: (HTMLElement | null)[] = [];
-	S.setSessionTokens({ input: 0, output: 0 });
-	S.setSessionCurrentInputTokens(0);
-	S.setSessionCurrentContextTokens(0);
+	S.chatMsgBox?.classList.remove("chat-messages-empty");
+	resetStream();
+	applyHistoryTokenUsage(history);
 	S.setChatBatchLoading(true);
-	history.forEach((msg) => {
-		if (msg.role === "user") {
-			msgEls.push(renderHistoryUserMessage(msg as UserMsg));
-		} else if (msg.role === "assistant") {
-			msgEls.push(renderHistoryAssistantMessage(msg as AssistantMsg));
-		} else if (msg.role === "notice") {
-			msgEls.push(chatAddMsg("system", renderMarkdown(typeof msg.content === "string" ? msg.content : ""), true));
-		} else if (msg.role === "tool_result") {
-			msgEls.push(renderHistoryToolResult(msg as ToolResultMsg));
-		} else {
-			msgEls.push(null);
-		}
-	});
+	const items = historyToItems(history, key);
+	for (const error of sessionStore.getByKey(key)?.sendErrors.value || []) {
+		items.push({
+			kind: "notice",
+			id: `send-error-${items.length}`,
+			level: "error",
+			text: error,
+			className: "chat-send-error",
+		});
+	}
+	replaceItems(items);
 	S.setChatBatchLoading(false);
-	if (S.chatMsgBox) highlightCodeBlocks(S.chatMsgBox);
 	const historyTailIndex = computeHistoryTailIndex(history);
 	syncHistoryState(key, history, historyTailIndex, totalCountHint);
 
@@ -690,16 +564,9 @@ export function renderHistory(
 		}
 	}
 	S.setChatSeq(maxSeq);
-	if (history.length === 0) {
-		showWelcomeCard();
-	} else {
-		const lastMsg = history[history.length - 1];
-		const ts = (lastMsg as SeqHistoryMessage).created_at;
-		if (ts) appendLastMessageTimestamp(ts);
-	}
-	for (const error of sessionStore.getByKey(key)?.sendErrors.value || []) {
-		const element = chatAddMsg("error", error);
-		element?.setAttribute("data-chat-send-error", "true");
-	}
-	postHistoryLoadActions(key, searchContext, msgEls, thinkingText, skipAutoScroll === true);
+	if (history.length === 0) showWelcomeCard();
+	// Elements exist once Preact has rendered the new items.
+	requestAnimationFrame(() => {
+		postHistoryLoadActions(key, searchContext, historyElements(history), thinkingText, skipAutoScroll === true);
+	});
 }

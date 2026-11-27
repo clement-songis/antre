@@ -5,6 +5,7 @@ import { renderMarkdown, sendRpc } from "../../helpers";
 import { clearActiveSession, fetchSessions, switchSession } from "../../sessions";
 import * as S from "../../state";
 import { type ContextData, renderContextCard } from "./context-card";
+import { removeNode } from "./transcript/actions";
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -333,7 +334,7 @@ function handleModeCommand(cmdArgs: string): void {
 	const args = cmdArgs.trim();
 	const placeholder = chatAddMsg("system", "Loading modes...");
 	sendRpc("modes.list", {}).then((listRes) => {
-		placeholder?.remove();
+		removeNode(placeholder);
 		if (!listRes?.ok) {
 			chatAddMsg("error", listRes?.error?.message || "Failed to load modes");
 			return;
@@ -409,7 +410,7 @@ function handleRollbackCommand(cmdArgs: string): void {
 		const placeholder = chatAddMsg("system", "Loading checkpoints\u2026");
 		sendRpc<{ turns?: RollbackTurn[] }>("checkpoints.turns", { sessionKey: S.activeSessionKey, limit: 10 }).then(
 			(res) => {
-				placeholder?.remove();
+				removeNode(placeholder);
 				if (!res?.ok) {
 					chatAddMsg("error", res?.error?.message || "Failed to list checkpoints");
 					return;
@@ -429,7 +430,7 @@ function handleRollbackCommand(cmdArgs: string): void {
 		sessionKey: S.activeSessionKey,
 		turn,
 	}).then((res) => {
-		placeholder?.remove();
+		removeNode(placeholder);
 		if (!res?.ok) {
 			chatAddMsg("error", res?.error?.message || "Rollback failed");
 			return;
@@ -459,7 +460,7 @@ const slashHandlers: Record<SlashCommandName, SlashHandler> = {
 	context: () => {
 		const placeholder = chatAddMsg("system", "Loading context\u2026");
 		sendRpc("chat.context", {}).then((res) => {
-			placeholder?.remove();
+			removeNode(placeholder);
 			if (res.ok && res.payload) {
 				try {
 					renderContextCard(res.payload as ContextData);
@@ -504,7 +505,7 @@ const slashHandlers: Record<SlashCommandName, SlashHandler> = {
 		fetch(`/api/metrics/insights?days=${days}`)
 			.then((resp) => (resp.ok ? resp.json() : Promise.reject(new Error(`HTTP ${resp.status}`))))
 			.then((data: InsightsApiResponse) => {
-				placeholder?.remove();
+				removeNode(placeholder);
 				const lines: string[] = [];
 				lines.push(`**Insights** \u2014 last ${data.days} days\n`);
 				lines.push("| Metric | Value |");
@@ -544,7 +545,7 @@ const slashHandlers: Record<SlashCommandName, SlashHandler> = {
 		}
 		const placeholder = chatAddMsg("system", "Thinking\u2026");
 		sendRpc("chat.send_sync", { text: args, _ephemeral: true, _tool_policy: { deny: ["*"] } }).then((res) => {
-			placeholder?.remove();
+			removeNode(placeholder);
 			if (res.ok && res.payload) {
 				const text = typeof res.payload === "string" ? res.payload : (res.payload as UnknownRecord).text;
 				chatAddMsg("system", renderMarkdown(String(text || "(no response)")), true);
@@ -556,7 +557,7 @@ const slashHandlers: Record<SlashCommandName, SlashHandler> = {
 		const arg = args.trim().toLowerCase();
 		const placeholder = chatAddMsg("system", `Fast mode: ${arg || "toggle"}\u2026`);
 		sendRpc("chat.send_sync", { text: `/fast ${arg}`.trim() }).then((res) => {
-			placeholder?.remove();
+			removeNode(placeholder);
 			if (res.ok && res.payload) {
 				const text = typeof res.payload === "string" ? res.payload : (res.payload as UnknownRecord).text;
 				chatAddMsg("system", String(text || "Done"));
@@ -567,7 +568,7 @@ const slashHandlers: Record<SlashCommandName, SlashHandler> = {
 	fork: (args) => {
 		const placeholder = chatAddMsg("system", "Forking session\u2026");
 		sendRpc("sessions.fork", { key: S.activeSessionKey, label: args.trim() || undefined }).then((res) => {
-			placeholder?.remove();
+			removeNode(placeholder);
 			if (res.ok && res.payload) {
 				const payload = res.payload as UnknownRecord;
 				const key = String(payload.key || payload.sessionKey || "");

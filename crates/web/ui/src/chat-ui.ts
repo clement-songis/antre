@@ -2,6 +2,8 @@
 
 import { formatTokens, parseErrorMessage, renderDocument, sendRpc, updateCountdown } from "./helpers";
 import { t } from "./i18n";
+import { appendNode, hideThinking } from "./pages/chat/transcript/actions";
+import { removeItem } from "./pages/chat/transcript/store";
 import * as S from "./state";
 
 interface ErrorCardData {
@@ -25,13 +27,10 @@ export interface DocumentAttachment {
 	url?: string;
 }
 
-function clearChatEmptyState(): void {
-	if (!S.chatMsgBox) return;
-	const welcome = S.chatMsgBox.querySelector("#welcomeCard");
-	if (welcome) welcome.remove();
-	const noProviders = S.chatMsgBox.querySelector("#noProvidersCard");
-	if (noProviders) noProviders.remove();
-	S.chatMsgBox.classList.remove("chat-messages-empty");
+export function clearChatEmptyState(): void {
+	removeItem("dom-welcomeCard");
+	removeItem("dom-noProvidersCard");
+	S.chatMsgBox?.classList.remove("chat-messages-empty");
 }
 
 // Scroll state for rAF-based auto-scroll — prevents re-entrancy during streaming
@@ -125,11 +124,8 @@ export function chatAddMsg(cls: MessageRole, content: string, isHtml?: boolean):
 	} else {
 		el.textContent = content;
 	}
-	S.chatMsgBox.appendChild(el);
-	if (!S.chatBatchLoading) {
-		if (cls === "user") scrollChatToBottom(true);
-		else smartScrollToBottom();
-	}
+	appendNode(el);
+	if (!S.chatBatchLoading && cls === "user") scrollChatToBottom(true);
 	return el;
 }
 
@@ -192,11 +188,8 @@ export function chatAddMsgWithAttachments(
 	appendHtmlContent(el, htmlContent);
 	appendImageAttachments(el, images);
 	appendDocumentAttachments(el, documents);
-	S.chatMsgBox.appendChild(el);
-	if (!S.chatBatchLoading) {
-		if (cls === "user") scrollChatToBottom(true);
-		else smartScrollToBottom();
-	}
+	appendNode(el);
+	if (!S.chatBatchLoading && cls === "user") scrollChatToBottom(true);
 	return el;
 }
 
@@ -231,8 +224,7 @@ export function appendChannelFooter(el: HTMLElement, channel: ChannelFooterInfo)
 }
 
 export function removeThinking(): void {
-	const el = document.getElementById("thinkingIndicator");
-	if (el) el.remove();
+	hideThinking();
 }
 
 export function appendReasoningDisclosure(
@@ -258,8 +250,8 @@ export function appendReasoningDisclosure(
 	return details;
 }
 
-export function chatAddErrorCard(err: ErrorCardData): void {
-	if (!S.chatMsgBox) return;
+export function chatAddErrorCard(err: ErrorCardData): HTMLElement | null {
+	if (!S.chatMsgBox) return null;
 	clearChatEmptyState();
 	const el = document.createElement("div");
 	el.className = "msg error-card";
@@ -306,13 +298,14 @@ export function chatAddErrorCard(err: ErrorCardData): void {
 		el.appendChild(body);
 	}
 
-	S.chatMsgBox.appendChild(el);
-	smartScrollToBottom();
+	appendNode(el);
+	return el;
 }
 
 /** Add a Cancel button to the last error card of a run parked on a quota. */
 export function addQuotaWaitCancelButton(sessionKey: string): void {
-	const lastCard = S.chatMsgBox?.querySelector(".error-card:last-child") as HTMLElement | null;
+	const cards = S.chatMsgBox?.querySelectorAll<HTMLElement>(".error-card");
+	const lastCard = cards?.[cards.length - 1];
 	if (!lastCard) return;
 	lastCard.dataset.quotaWaitSession = sessionKey;
 	const btn = document.createElement("button");
@@ -326,8 +319,8 @@ export function addQuotaWaitCancelButton(sessionKey: string): void {
 	if (body) body.appendChild(btn);
 }
 
-export function chatAddErrorMsg(message: string): void {
-	chatAddErrorCard(parseErrorMessage(message));
+export function chatAddErrorMsg(message: string): HTMLElement | null {
+	return chatAddErrorCard(parseErrorMessage(message));
 }
 
 export function highlightAndScroll(msgEls: (HTMLElement | null)[], messageIndex: number, query: string): void {

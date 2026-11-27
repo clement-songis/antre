@@ -365,6 +365,12 @@ pub trait ChatService: Send + Sync {
         None
     }
 
+    /// Reply text streamed so far in the session's active run, so a client
+    /// that reconnects mid-run can show it instead of an empty bubble.
+    async fn active_partial_text(&self, _session_key: &str) -> Option<String> {
+        None
+    }
+
     async fn active_voice_pending(&self, _session_key: &str) -> bool {
         false
     }

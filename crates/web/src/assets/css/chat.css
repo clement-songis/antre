@@ -88,6 +88,13 @@
   margin-top: 0;
 }
 
+/* Streamed replies wrap each markdown block; only the first block's heading touches the top. */
+.msg .md-block:not(:first-child) > h1:first-child,
+.msg .md-block:not(:first-child) > h2:first-child,
+.msg .md-block:not(:first-child) > h3:first-child {
+  margin-top: 0.6em;
+}
+
 .msg ul, .msg ol {
   margin: 0.4em 0;
   padding-left: 1.5em;

@@ -1,6 +1,7 @@
 // ── Sandbox event handlers ───────────────────────────────────
 
-import { chatAddMsg, smartScrollToBottom } from "../chat-ui";
+import { chatAddMsg } from "../chat-ui";
+import { appendNode, removeNode } from "../pages/chat/transcript/actions";
 import { currentPrefix } from "../router";
 import * as S from "../state";
 import type { LocalLlmDownloadPayload, LocalLlmLifecyclePayload, SandboxPhasePayload } from "../types/ws-events";
@@ -17,6 +18,9 @@ function updateSandboxBuildingFlag(building: boolean): void {
 	if (info) S.setSandboxInfo({ ...info, image_building: building });
 }
 
+/** "In progress" notices, removed when their phase ends. */
+const statusNotices = new Map<string, HTMLElement | null>();
+
 let sandboxPrepareIndicatorEl: HTMLElement | null = null;
 export function handleSandboxPrepare(payload: SandboxPhasePayload): void {
 	const isChatPage = currentPrefix === "/chats";
@@ -24,7 +28,7 @@ export function handleSandboxPrepare(payload: SandboxPhasePayload): void {
 
 	if (payload.phase === "start") {
 		if (sandboxPrepareIndicatorEl) {
-			sandboxPrepareIndicatorEl.remove();
+			removeNode(sandboxPrepareIndicatorEl);
 			sandboxPrepareIndicatorEl = null;
 		}
 		sandboxPrepareIndicatorEl = chatAddMsg(
@@ -35,7 +39,7 @@ export function handleSandboxPrepare(payload: SandboxPhasePayload): void {
 	}
 
 	if (sandboxPrepareIndicatorEl) {
-		sandboxPrepareIndicatorEl.remove();
+		removeNode(sandboxPrepareIndicatorEl);
 		sandboxPrepareIndicatorEl = null;
 	}
 
@@ -54,7 +58,7 @@ function clearBuildIndicator(): void {
 		buildTimerInterval = null;
 	}
 	if (buildIndicatorEl) {
-		buildIndicatorEl.remove();
+		removeNode(buildIndicatorEl);
 		buildIndicatorEl = null;
 	}
 }
@@ -102,8 +106,7 @@ export function handleSandboxImageBuild(payload: SandboxPhasePayload): void {
 
 		if (S.chatMsgBox) {
 			clearChatEmptyState();
-			S.chatMsgBox.appendChild(buildIndicatorEl);
-			smartScrollToBottom();
+			appendNode(buildIndicatorEl);
 		}
 
 		// Update elapsed time every second.
@@ -130,12 +133,12 @@ export function handleSandboxImageProvision(payload: SandboxPhasePayload): void 
 	const isChatPage = currentPrefix === "/chats";
 	if (!isChatPage) return;
 	if (payload.phase === "start") {
-		chatAddMsg("system", "Provisioning sandbox packages\u2026");
+		statusNotices.set("provision", chatAddMsg("system", "Provisioning sandbox packages\u2026"));
 	} else if (payload.phase === "done") {
-		if (S.chatMsgBox?.lastChild) S.chatMsgBox.removeChild(S.chatMsgBox.lastChild);
+		removeNode(statusNotices.get("provision"));
 		chatAddMsg("system", "Sandbox packages provisioned");
 	} else if (payload.phase === "error") {
-		if (S.chatMsgBox?.lastChild) S.chatMsgBox.removeChild(S.chatMsgBox.lastChild);
+		removeNode(statusNotices.get("provision"));
 		chatAddMsg("error", `Sandbox provisioning failed: ${payload.error || "unknown"}`);
 	}
 }
@@ -146,15 +149,15 @@ export function handleSandboxHostProvision(payload: SandboxPhasePayload): void {
 	if (!isChatPage) return;
 	if (payload.phase === "start") {
 		const msg = `Installing ${payload.count || ""} package${payload.count === 1 ? "" : "s"} on host\u2026`;
-		chatAddMsg("system", msg);
+		statusNotices.set("host", chatAddMsg("system", msg));
 	} else if (payload.phase === "done") {
-		if (S.chatMsgBox?.lastChild) S.chatMsgBox.removeChild(S.chatMsgBox.lastChild);
+		removeNode(statusNotices.get("host"));
 		const parts: string[] = [];
 		if ((payload.installed || 0) > 0) parts.push(`${payload.installed} installed`);
 		if ((payload.skipped || 0) > 0) parts.push(`${payload.skipped} already present`);
 		chatAddMsg("system", `Host packages ready (${parts.join(", ") || "done"})`);
 	} else if (payload.phase === "error") {
-		if (S.chatMsgBox?.lastChild) S.chatMsgBox.removeChild(S.chatMsgBox.lastChild);
+		removeNode(statusNotices.get("host"));
 		chatAddMsg("error", `Host package install failed: ${payload.error || "unknown"}`);
 	}
 }
@@ -164,12 +167,18 @@ export function handleBrowserImagePull(payload: SandboxPhasePayload): void {
 	if (!isChatPage) return;
 	const image = payload.image || "browser container";
 	if (payload.phase === "start") {
-		chatAddMsg("system", `Pulling browser container image (${image})\u2026 This may take a few minutes on first run.`);
+		statusNotices.set(
+			"browser",
+			chatAddMsg(
+				"system",
+				`Pulling browser container image (${image})\u2026 This may take a few minutes on first run.`,
+			),
+		);
 	} else if (payload.phase === "done") {
-		if (S.chatMsgBox?.lastChild) S.chatMsgBox.removeChild(S.chatMsgBox.lastChild);
+		removeNode(statusNotices.get("browser"));
 		chatAddMsg("system", `Browser container image ready: ${image}`);
 	} else if (payload.phase === "error") {
-		if (S.chatMsgBox?.lastChild) S.chatMsgBox.removeChild(S.chatMsgBox.lastChild);
+		removeNode(statusNotices.get("browser"));
 		chatAddMsg("error", `Browser container image pull failed: ${payload.error || "unknown"}`);
 	}
 }
@@ -187,7 +196,7 @@ export function handleLocalLlmDownload(payload: LocalLlmDownloadPayload): void {
 	if (payload.error) {
 		// Download error
 		if (downloadIndicatorEl) {
-			downloadIndicatorEl.remove();
+			removeNode(downloadIndicatorEl);
 			downloadIndicatorEl = null;
 		}
 		chatAddMsg("error", `Failed to download ${modelName}: ${payload.error}`);
@@ -197,7 +206,7 @@ export function handleLocalLlmDownload(payload: LocalLlmDownloadPayload): void {
 	if (payload.complete) {
 		// Download complete
 		if (downloadIndicatorEl) {
-			downloadIndicatorEl.remove();
+			removeNode(downloadIndicatorEl);
 			downloadIndicatorEl = null;
 		}
 		chatAddMsg("system", `${modelName} ready`);
@@ -227,8 +236,7 @@ export function handleLocalLlmDownload(payload: LocalLlmDownloadPayload): void {
 
 		if (S.chatMsgBox) {
 			clearChatEmptyState();
-			S.chatMsgBox.appendChild(downloadIndicatorEl);
-			smartScrollToBottom();
+			appendNode(downloadIndicatorEl);
 		}
 	}
 
@@ -273,12 +281,12 @@ export function handleLocalLlmLifecycle(raw: Record<string, unknown>): void {
 
 	if (payload.state === "loading") {
 		if (lifecycleIndicatorEl) {
-			lifecycleIndicatorEl.remove();
+			removeNode(lifecycleIndicatorEl);
 		}
 		lifecycleIndicatorEl = chatAddMsg("system", `Loading model ${modelName} into memory\u2026`);
 	} else if (payload.state === "loaded") {
 		if (lifecycleIndicatorEl) {
-			lifecycleIndicatorEl.remove();
+			removeNode(lifecycleIndicatorEl);
 			lifecycleIndicatorEl = null;
 		}
 		const sizeStr = payload.modelSizeBytes ? ` (${(payload.modelSizeBytes / (1024 * 1024 * 1024)).toFixed(1)} GB)` : "";

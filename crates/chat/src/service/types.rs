@@ -189,6 +189,10 @@ impl ActiveAssistantDraft {
         self.reasoning.push_str(reasoning);
     }
 
+    pub(crate) fn content(&self) -> &str {
+        &self.content
+    }
+
     pub(crate) fn has_visible_content(&self) -> bool {
         !self.content.trim().is_empty() || !self.reasoning.trim().is_empty()
     }
@@ -972,6 +976,15 @@ mod tests {
         },
         tokio::sync::{RwLock, Semaphore},
     };
+
+    #[test]
+    fn active_assistant_draft_exposes_streamed_content() {
+        let mut draft = ActiveAssistantDraft::new("run-1", "m", "p", None);
+        assert_eq!(draft.content(), "");
+        draft.append_text("hel");
+        draft.append_text("lo");
+        assert_eq!(draft.content(), "hello");
+    }
 
     #[test]
     fn active_assistant_draft_omits_cache_usage_fields() {

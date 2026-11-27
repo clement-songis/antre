@@ -66,8 +66,10 @@ export function upsertTtsProviderFooter(messageEl: HTMLElement | null, provider:
 	if (!footer) {
 		footer = document.createElement("div");
 		footer.className = "msg-model-footer msg-tts-provider-footer";
+		// The action bar may sit in a nested slot: insert next to it, wherever it is.
 		const actionBar = messageEl.querySelector(".msg-action-bar");
-		messageEl.insertBefore(footer, actionBar || null);
+		if (actionBar?.parentNode) actionBar.parentNode.insertBefore(footer, actionBar);
+		else messageEl.appendChild(footer);
 	}
 	footer.textContent = `TTS: ${formatTtsProviderLabel(normalized)} (${normalized})`;
 }

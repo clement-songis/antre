@@ -1,20 +1,16 @@
 // ── Shared helpers used across ws/ sub-modules ───────────────
 
+import { clearChatEmptyState } from "../chat-ui";
 import { renderMarkdown } from "../helpers";
+import { appendNode } from "../pages/chat/transcript/actions";
+import { transcriptItems } from "../pages/chat/transcript/store";
 import { setSessionActiveRunId } from "../sessions";
 import * as S from "../state";
 import { sessionStore } from "../stores/session-store";
 
 // ── Chat empty-state management ───────────────────────────────
 
-export function clearChatEmptyState(): void {
-	if (!S.chatMsgBox) return;
-	const welcome = S.chatMsgBox.querySelector("#welcomeCard");
-	if (welcome) welcome.remove();
-	const noProviders = S.chatMsgBox.querySelector("#noProvidersCard");
-	if (noProviders) noProviders.remove();
-	S.chatMsgBox.classList.remove("chat-messages-empty");
-}
+export { clearChatEmptyState } from "../chat-ui";
 
 // ── Thinking UI helpers ───────────────────────────────────────
 
@@ -45,16 +41,13 @@ export function updateSessionHistoryIndex(sessionKey: string, messageIndex: numb
 export function moveFirstQueuedToChat(): void {
 	const tray = document.getElementById("queuedMessages");
 	if (!tray) return;
-	const firstQueued = tray.querySelector(".msg.user.queued");
+	const firstQueued = tray.querySelector(".msg.user.queued") as HTMLElement | null;
 	if (!firstQueued) return;
-	console.debug("[queued] moving queued message from tray to chat", {
-		remaining: tray.querySelectorAll(".msg").length - 1,
-	});
 	firstQueued.classList.remove("queued");
 	const badge = firstQueued.querySelector(".queued-badge");
 	if (badge) badge.remove();
 	clearChatEmptyState();
-	S.chatMsgBox?.appendChild(firstQueued);
+	appendNode(firstQueued);
 	if (!tray.querySelector(".msg")) tray.classList.add("hidden");
 }
 
@@ -78,15 +71,13 @@ export function hasNonWhitespaceContent(text: string | null | undefined): boolea
 
 // ── Reasoning dedup ───────────────────────────────────────────
 
-/** Check whether a reasoning disclosure with the given text already exists in
- * the chat box (from a previous preserveThinkingAsDisclosure call). */
+/** Whether a tool card or reply already shows this reasoning text. */
 export function isReasoningAlreadyShown(text: string | null | undefined): boolean {
-	if (!(S.chatMsgBox && text)) return false;
-	const normalized = text.trim();
-	for (const el of S.chatMsgBox.querySelectorAll(".msg-reasoning-body")) {
-		if (el.textContent?.trim() === normalized) return true;
-	}
-	return false;
+	const normalized = String(text || "").trim();
+	if (!normalized) return false;
+	return transcriptItems.value.some(
+		(item) => (item.kind === "tool" || item.kind === "assistant") && (item.reasoning || "").trim() === normalized,
+	);
 }
 
 /** Keep the newest reasoning lines in view inside a height-capped element. */

@@ -7,11 +7,12 @@
 //      auto-detects speech via energy-based VAD, auto-sends on silence,
 //      auto-re-listens after TTS playback finishes.
 
-import { chatAddMsg, scrollChatToBottom, smartScrollToBottom } from "./chat-ui";
+import { smartScrollToBottom } from "./chat-ui";
 import * as gon from "./gon";
-import { renderAudioPlayer, renderMarkdown, sendRpc, warmAudioPlayback } from "./helpers";
+import { sendRpc, warmAudioPlayback } from "./helpers";
 import { t } from "./i18n";
-import { bumpSessionCount, seedSessionPreviewFromUserText, setSessionReplying } from "./sessions";
+import { dispatchChatMessage } from "./pages/chat/chat-send";
+import { appendNode, removeNode } from "./pages/chat/transcript/actions";
 import * as S from "./state";
 import { sessionStore } from "./stores/session-store";
 import { LiveTranscription } from "./voice/live-transcription";
@@ -339,7 +340,7 @@ function showLiveText(settled: string, pending: string): void {
 		transcribingEl = createTranscribingIndicator("", false);
 		transcribingEl.setAttribute("role", "status");
 		transcribingEl.setAttribute("aria-live", "polite");
-		(S.chatMsgBox as HTMLElement).appendChild(transcribingEl);
+		appendNode(transcribingEl);
 	}
 	const text = transcribingEl?.querySelector(".voice-transcribing-text");
 	if (!text) return;
@@ -401,7 +402,7 @@ function showTemporaryMessage(message: string, isError: boolean, delayMs: number
 	updateTranscribingMessage(message, isError);
 	setTimeout(() => {
 		if (transcribingEl) {
-			transcribingEl.remove();
+			removeNode(transcribingEl);
 			transcribingEl = null;
 		}
 	}, delayMs);
@@ -414,7 +415,7 @@ function cleanupTranscribingState(): void {
 	micBtn?.classList.remove("transcribing");
 	if (micBtn) micBtn.title = t("chat:micTooltip");
 	if (transcribingEl) {
-		transcribingEl.remove();
+		removeNode(transcribingEl);
 		transcribingEl = null;
 	}
 }
@@ -435,15 +436,6 @@ async function resolveSttProviderInfo(): Promise<SttProviderInfo | null> {
 	};
 }
 
-function appendSttProviderFooter(messageEl: HTMLElement, providerInfo: SttProviderInfo | null): void {
-	if (!providerInfo) return;
-	const footer = document.createElement("div");
-	footer.className = "msg-model-footer";
-	footer.textContent = `STT: ${providerInfo.label}`;
-	messageEl.appendChild(footer);
-	scrollChatToBottom(true);
-}
-
 // ── Send transcribed message ─────────────────────────────────
 
 function sendTranscribedMessage(
@@ -452,49 +444,20 @@ function sendTranscribedMessage(
 	providerInfo: SttProviderInfo | null,
 ): void {
 	warmAudioPlayback();
-
-	let userEl: HTMLElement | null = null;
-	if (audioFilename) {
-		userEl = chatAddMsg("user", "", true);
-		if (userEl) {
-			const audioSrc = `/api/sessions/${encodeURIComponent(S.activeSessionKey)}/media/${encodeURIComponent(audioFilename)}`;
-			renderAudioPlayer(userEl, audioSrc);
-			if (text) {
-				const textWrap = document.createElement("div");
-				textWrap.className = "mt-2";
-				const rendered = renderMarkdown(text);
-				const fragment = document.createRange().createContextualFragment(rendered);
-				textWrap.appendChild(fragment);
-				userEl.appendChild(textWrap);
-			}
-		}
-	} else {
-		userEl = chatAddMsg("user", renderMarkdown(text), true);
-	}
-	if (userEl) appendSttProviderFooter(userEl, providerInfo);
-
-	const chatParams: {
-		text: string;
-		_input_medium: string;
-		_audio_filename?: string;
-		_stt_provider?: string;
-		model?: string;
-	} = {
+	const sessionKey = S.activeSessionKey;
+	const extraParams: Record<string, unknown> = { _input_medium: "voice" };
+	if (audioFilename) extraParams._audio_filename = audioFilename;
+	if (providerInfo?.id) extraParams._stt_provider = providerInfo.id;
+	void dispatchChatMessage({
+		sessionKey,
 		text,
-		_input_medium: "voice",
-	};
-	if (audioFilename) chatParams._audio_filename = audioFilename;
-	if (providerInfo?.id) chatParams._stt_provider = providerInfo.id;
-	const selectedModel = S.selectedModelId;
-	if (selectedModel) chatParams.model = selectedModel;
-
-	bumpSessionCount(S.activeSessionKey, 1);
-	seedSessionPreviewFromUserText(S.activeSessionKey, text);
-	setSessionReplying(S.activeSessionKey, true);
-	sendRpc("chat.send", chatParams).then((sendRes) => {
-		if (sendRes && !sendRes.ok && sendRes.error) {
-			chatAddMsg("error", sendRes.error?.message || "Request failed");
-		}
+		extraParams,
+		display: {
+			audioSrc: audioFilename
+				? `/api/sessions/${encodeURIComponent(sessionKey)}/media/${encodeURIComponent(audioFilename)}`
+				: undefined,
+			footnote: providerInfo ? `STT: ${providerInfo.label}` : undefined,
+		},
 	});
 }
 
@@ -574,8 +537,7 @@ async function transcribeAudio(): Promise<void> {
 
 	if (S.chatMsgBox && !transcribingEl) {
 		transcribingEl = createTranscribingIndicator(t("chat:voiceTranscribingMessage"), false);
-		(S.chatMsgBox as HTMLElement).appendChild(transcribingEl);
-		smartScrollToBottom();
+		appendNode(transcribingEl);
 	}
 
 	try {

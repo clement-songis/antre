@@ -4,6 +4,7 @@
 // Preact component reading sessionStore.activeSession.
 
 import type { VNode } from "preact";
+import { createPortal } from "preact/compat";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import { onEvent } from "../events";
 import * as gon from "../gon";
@@ -68,6 +69,18 @@ export interface SessionHeaderProps {
 	onBeforeShare?: (() => void) | null;
 	onBeforeArchive?: (() => void) | null;
 	onBeforeDelete?: (() => void) | null;
+	/**
+	 * Render the name, the agent/node selectors and the action buttons into
+	 * three separate elements from one instance (one set of RPCs and
+	 * subscriptions instead of one per toolbar region).
+	 */
+	slots?: SessionHeaderSlots | null;
+}
+
+export interface SessionHeaderSlots {
+	name?: HTMLElement | null;
+	selectors?: HTMLElement | null;
+	actions?: HTMLElement | null;
 }
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -135,6 +148,7 @@ export function SessionHeader({
 	onBeforeShare = null,
 	onBeforeArchive = null,
 	onBeforeDelete = null,
+	slots = null,
 }: SessionHeaderProps = {}): VNode {
 	const { t: sessionT } = useTranslation("sessions");
 	const session = sessionStore.activeSession.value;
@@ -586,6 +600,138 @@ export function SessionHeader({
 		</div>
 	);
 
+	const selectors = (
+		<>
+			{showSelectors && shouldShowAgentPicker && (
+				<ComboSelect
+					options={agentSelectOptions}
+					value={agentSelectValue}
+					onChange={onAgentChange}
+					placeholder={sessionT("header.sessionAgent")}
+					searchable={false}
+					allowEmpty={false}
+					fullWidth={false}
+					disabled={agentSelectDisabled}
+				/>
+			)}
+			{showSelectors && shouldShowNodePicker && (
+				<ComboSelect
+					options={nodeSelectOptions}
+					value={currentNodeId}
+					onChange={onNodeChange}
+					placeholder={sessionT("header.sessionNode")}
+					searchable={false}
+					allowEmpty={false}
+					fullWidth={false}
+					disabled={switchingNode}
+				/>
+			)}
+		</>
+	);
+	const actions = (
+		<>
+			{showArchive && canArchive && (
+				<button
+					className={actionButtonClass}
+					onClick={onArchive}
+					title={session?.archived ? sessionT("header.unarchiveTooltip") : sessionT("header.archiveTooltip")}
+				>
+					{session?.archived ? sessionT("header.unarchive") : sessionT("header.archive")}
+				</button>
+			)}
+			{canUnbindChannel && (
+				<button
+					className={actionButtonClass}
+					onClick={onUnbindChannel}
+					disabled={unbinding}
+					data-testid="session-unbind-channel"
+					title={
+						boundChannelLabel
+							? sessionT("header.attachedToNamedChannel", { channel: boundChannelLabel })
+							: sessionT("header.attachedToChannel")
+					}
+				>
+					{unbinding ? sessionT("header.releasing") : sessionT("header.releaseChannel")}
+				</button>
+			)}
+			{showFork && !isCron && (
+				<button
+					className={`${actionButtonClass} inline-flex items-center gap-1.5`}
+					onClick={onFork}
+					title={sessionT("header.forkTooltip")}
+				>
+					<span className="icon icon-sm icon-layers shrink-0" />
+					{sessionT("header.fork")}
+				</button>
+			)}
+			{showShare && !isCron && (
+				<button
+					className={`${actionButtonClass} inline-flex items-center gap-1.5`}
+					onClick={onShare}
+					title={sessionT("header.shareTooltip")}
+				>
+					<span className="icon icon-sm icon-share shrink-0" />
+					{sessionT("header.share")}
+				</button>
+			)}
+			{showSaveMarkdown && (
+				<button
+					type="button"
+					className={`${actionButtonClass} inline-flex items-center gap-1.5`}
+					onClick={onSaveMarkdown}
+					title={sessionT("header.saveMarkdownTooltip")}
+					aria-label={sessionT("header.saveMarkdownTooltip")}
+					aria-busy={savingMarkdown}
+					disabled={savingMarkdown}
+				>
+					<span className="icon icon-sm icon-document shrink-0" />
+					<span className="hidden md:inline">{sessionT("header.saveMarkdownLabel")}</span>
+				</button>
+			)}
+			{showDelete && (
+				<button
+					className={`${actionButtonClass} chat-session-btn-danger inline-flex items-center gap-1.5`}
+					onClick={onDelete}
+					title={sessionT("header.deleteTooltip")}
+					style={{ background: "var(--error)", borderColor: "var(--error)", color: "#fff" }}
+				>
+					<span className="icon icon-sm icon-x-circle shrink-0" />
+					{sessionT("header.delete")}
+				</button>
+			)}
+			{showStop && canStop && (
+				<button className={actionButtonClass} onClick={onStop} title={sessionT("header.stopTooltip")} disabled={stopping}>
+					{stopping ? sessionT("header.stopping") : t("common:actions.stop")}
+				</button>
+			)}
+			{showClear && isMain && (
+				<button className={actionButtonClass} onClick={onClear} title={sessionT("header.clearTooltip")} disabled={clearing}>
+					{clearing ? sessionT("header.clearing") : sessionT("header.clear")}
+				</button>
+			)}
+		</>
+	);
+
+	if (slots) {
+		return (
+			<>
+				{slots.name
+					? createPortal(
+							<div className="flex items-center gap-2 min-w-0">
+								{nameControl}
+								{renameCta}
+							</div>,
+							slots.name,
+						)
+					: null}
+				{slots.selectors
+					? createPortal(<div className="flex items-center gap-2">{selectors}</div>, slots.selectors)
+					: null}
+				{slots.actions ? createPortal(<div className="flex items-center gap-1.5">{actions}</div>, slots.actions) : null}
+			</>
+		);
+	}
+
 	return (
 		<div className={nameOwnLine ? "flex flex-col gap-2 w-full" : "flex items-center gap-2"}>
 			{nameOwnLine && showName && (
@@ -595,121 +741,10 @@ export function SessionHeader({
 				</div>
 			)}
 			<div className={nameOwnLine ? "flex flex-wrap items-center gap-2" : "flex items-center gap-2"}>
-				{showSelectors && shouldShowAgentPicker && (
-					<ComboSelect
-						options={agentSelectOptions}
-						value={agentSelectValue}
-						onChange={onAgentChange}
-						placeholder={sessionT("header.sessionAgent")}
-						searchable={false}
-						allowEmpty={false}
-						fullWidth={false}
-						disabled={agentSelectDisabled}
-					/>
-				)}
-				{showSelectors && shouldShowNodePicker && (
-					<ComboSelect
-						options={nodeSelectOptions}
-						value={currentNodeId}
-						onChange={onNodeChange}
-						placeholder={sessionT("header.sessionNode")}
-						searchable={false}
-						allowEmpty={false}
-						fullWidth={false}
-						disabled={switchingNode}
-					/>
-				)}
+				{selectors}
 				{!nameOwnLine && showName && nameControl}
 				{!nameOwnLine && renameCta}
-				{showArchive && canArchive && (
-					<button
-						className={actionButtonClass}
-						onClick={onArchive}
-						title={session?.archived ? sessionT("header.unarchiveTooltip") : sessionT("header.archiveTooltip")}
-					>
-						{session?.archived ? sessionT("header.unarchive") : sessionT("header.archive")}
-					</button>
-				)}
-				{canUnbindChannel && (
-					<button
-						className={actionButtonClass}
-						onClick={onUnbindChannel}
-						disabled={unbinding}
-						data-testid="session-unbind-channel"
-						title={
-							boundChannelLabel
-								? sessionT("header.attachedToNamedChannel", { channel: boundChannelLabel })
-								: sessionT("header.attachedToChannel")
-						}
-					>
-						{unbinding ? sessionT("header.releasing") : sessionT("header.releaseChannel")}
-					</button>
-				)}
-				{showFork && !isCron && (
-					<button
-						className={`${actionButtonClass} inline-flex items-center gap-1.5`}
-						onClick={onFork}
-						title={sessionT("header.forkTooltip")}
-					>
-						<span className="icon icon-sm icon-layers shrink-0" />
-						{sessionT("header.fork")}
-					</button>
-				)}
-				{showShare && !isCron && (
-					<button
-						className={`${actionButtonClass} inline-flex items-center gap-1.5`}
-						onClick={onShare}
-						title={sessionT("header.shareTooltip")}
-					>
-						<span className="icon icon-sm icon-share shrink-0" />
-						{sessionT("header.share")}
-					</button>
-				)}
-				{showSaveMarkdown && (
-					<button
-						type="button"
-						className={`${actionButtonClass} inline-flex items-center gap-1.5`}
-						onClick={onSaveMarkdown}
-						title={sessionT("header.saveMarkdownTooltip")}
-						aria-label={sessionT("header.saveMarkdownTooltip")}
-						aria-busy={savingMarkdown}
-						disabled={savingMarkdown}
-					>
-						<span className="icon icon-sm icon-document shrink-0" />
-						<span className="hidden md:inline">{sessionT("header.saveMarkdownLabel")}</span>
-					</button>
-				)}
-				{showDelete && (
-					<button
-						className={`${actionButtonClass} chat-session-btn-danger inline-flex items-center gap-1.5`}
-						onClick={onDelete}
-						title={sessionT("header.deleteTooltip")}
-						style={{ background: "var(--error)", borderColor: "var(--error)", color: "#fff" }}
-					>
-						<span className="icon icon-sm icon-x-circle shrink-0" />
-						{sessionT("header.delete")}
-					</button>
-				)}
-				{showStop && canStop && (
-					<button
-						className={actionButtonClass}
-						onClick={onStop}
-						title={sessionT("header.stopTooltip")}
-						disabled={stopping}
-					>
-						{stopping ? sessionT("header.stopping") : t("common:actions.stop")}
-					</button>
-				)}
-				{showClear && isMain && (
-					<button
-						className={actionButtonClass}
-						onClick={onClear}
-						title={sessionT("header.clearTooltip")}
-						disabled={clearing}
-					>
-						{clearing ? sessionT("header.clearing") : sessionT("header.clear")}
-					</button>
-				)}
+				{actions}
 			</div>
 		</div>
 	);

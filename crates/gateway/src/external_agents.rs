@@ -964,6 +964,10 @@ impl ChatService for ExternalAgentChatService {
         self.inner.active_thinking_text(session_key).await
     }
 
+    async fn active_partial_text(&self, session_key: &str) -> Option<String> {
+        self.inner.active_partial_text(session_key).await
+    }
+
     async fn active_voice_pending(&self, session_key: &str) -> bool {
         self.inner.active_voice_pending(session_key).await
     }

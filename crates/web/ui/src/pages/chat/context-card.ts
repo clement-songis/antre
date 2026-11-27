@@ -5,6 +5,7 @@ import { formatBytes, formatTokens } from "../../helpers";
 import { t } from "../../i18n";
 import * as S from "../../state";
 import { slashInjectStyles } from "./slash-commands";
+import { appendNode } from "./transcript/actions";
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -356,6 +357,6 @@ export function renderContextCard(data: ContextData): void {
 	renderContextSandboxSection(card, data);
 	renderContextPromptMemorySection(card, data);
 	renderContextTokensSection(card, data);
-	S.chatMsgBox.appendChild(card);
+	appendNode(card);
 	smartScrollToBottom();
 }

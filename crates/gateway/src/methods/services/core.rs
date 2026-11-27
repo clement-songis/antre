@@ -1145,6 +1145,9 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                         if let Some(text) = chat.active_thinking_text(key).await {
                             obj.insert("thinkingText".to_string(), serde_json::Value::String(text));
                         }
+                        if let Some(text) = chat.active_partial_text(key).await {
+                            obj.insert("streamText".to_string(), serde_json::Value::String(text));
+                        }
                         if chat.active_voice_pending(key).await {
                             obj.insert("voicePending".to_string(), serde_json::Value::Bool(true));
                         }

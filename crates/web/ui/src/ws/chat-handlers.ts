@@ -2,22 +2,37 @@
 
 import {
 	addQuotaWaitCancelButton,
-	appendReasoningDisclosure,
+	type ChannelFooterInfo,
 	chatAddErrorCard,
 	chatAddErrorMsg,
 	chatAddMsg,
-	removeThinking,
 	setComposerStopButton,
-	smartScrollToBottom,
 	updateTokenBar,
 } from "../chat-ui";
-import { highlightCodeBlocks } from "../code-highlight";
-import { localizeStructuredError, renderAudioPlayer, renderMarkdown } from "../helpers";
+import { localizeStructuredError, renderMarkdown } from "../helpers";
 import { t } from "../i18n";
 import { maybeRefreshFullContext, renderCompactCard } from "../pages/ChatPage";
+import {
+	addNotice,
+	addUserMessage,
+	appendAssistantDelta,
+	attachTurnFooterToLastTool,
+	closeStream,
+	currentThinkingText,
+	discardStream,
+	endTool,
+	finalizeAssistant,
+	hideThinking,
+	settleRunningTools,
+	showThinking,
+	startTool,
+	streamedText,
+	streamingAssistantId,
+	usageFromPayload,
+} from "../pages/chat/transcript/actions";
+import { clearTranscript, removeItem } from "../pages/chat/transcript/store";
 import { currentPrefix } from "../router";
 import {
-	appendLastMessageTimestamp,
 	bumpSessionCount,
 	cacheSessionHistoryMessage,
 	clearSessionHistoryCache,
@@ -29,31 +44,16 @@ import {
 } from "../sessions";
 import * as S from "../state";
 import { markSessionRunStateChanged, sessionStore } from "../stores/session-store";
-import type { AbortedPartialState, ChatPayload, CompactPayload, ToolCallPayload } from "../types/ws-events";
+import type { AbortedPartialState, ChatPayload, CompactPayload } from "../types/ws-events";
 import {
 	clearChatEmptyState,
 	hasNonWhitespaceContent,
 	isReasoningAlreadyShown,
-	makeThinkingDots,
 	moveFirstQueuedToChat,
-	setSafeMarkdownHtml,
-	showThinkingTail,
 	updateSessionHistoryIndex,
 	updateSessionRunId,
 } from "./shared";
-import {
-	appendFinalFooter,
-	clearPendingToolCallEndsForSession,
-	clearStaleRunningToolCards,
-	completeToolCard,
-	handleToolCallStartDom,
-	pendingToolCallEnds,
-	renderAbortedPartialInDom,
-	renderChannelUserMessage,
-	resolveFinalMessageEl,
-	toolCallCardId,
-	toolCallEventKey,
-} from "./tool-helpers";
+import { isPureToolOutputEcho, stripChannelPrefix } from "./tool-helpers";
 
 export type ChatHandler = (p: ChatPayload, isActive: boolean, isChatPage: boolean, eventSession: string) => void;
 
@@ -64,14 +64,8 @@ function handleChatThinking(p: ChatPayload, isActive: boolean, isChatPage: boole
 	setSessionReplying(eventSession, true);
 	if (!(isActive && isChatPage)) return;
 	setComposerStopButton(true, eventSession);
-	removeThinking();
 	clearChatEmptyState();
-	const thinkEl = document.createElement("div");
-	thinkEl.className = "msg assistant thinking";
-	thinkEl.id = "thinkingIndicator";
-	thinkEl.appendChild(makeThinkingDots());
-	S.chatMsgBox?.appendChild(thinkEl);
-	smartScrollToBottom();
+	showThinking("");
 }
 
 function handleChatThinkingText(p: ChatPayload, isActive: boolean, isChatPage: boolean, eventSession: string): void {
@@ -79,16 +73,9 @@ function handleChatThinkingText(p: ChatPayload, isActive: boolean, isChatPage: b
 	setSessionReplying(eventSession, true);
 	if (!(isActive && isChatPage)) return;
 	setComposerStopButton(true, eventSession);
-	const indicator = document.getElementById("thinkingIndicator");
-	if (indicator) {
-		while (indicator.firstChild) indicator.removeChild(indicator.firstChild);
-		const textEl = document.createElement("span");
-		textEl.className = "thinking-text";
-		textEl.textContent = p.text || "";
-		indicator.appendChild(textEl);
-		showThinkingTail(textEl);
-		smartScrollToBottom();
-	}
+	// Reasoning after visible text belongs to the next step: keep the text.
+	if (streamingAssistantId()) closeStream();
+	showThinking(p.text || "");
 }
 
 function handleChatThinkingDone(_p: ChatPayload, isActive: boolean, isChatPage: boolean): void {
@@ -113,12 +100,16 @@ function handleChatVoicePending(_p: ChatPayload, isActive: boolean, isChatPage: 
 
 function handleChatToolCallStart(p: ChatPayload, isActive: boolean, isChatPage: boolean, eventSession: string): void {
 	updateSessionRunId(eventSession, p.runId);
-	// Update per-session signal
 	const session = sessionStore.getByKey(eventSession);
 	if (session) session.streamText.value = "";
 	if (!(isActive && isChatPage)) return;
 	setComposerStopButton(true, eventSession);
-	handleToolCallStartDom(p, eventSession);
+	// The reasoning that led to this call stays with its card.
+	const reasoning = currentThinkingText();
+	hideThinking();
+	closeStream();
+	clearChatEmptyState();
+	startTool(p, reasoning);
 }
 
 function handleChatToolCallEnd(p: ChatPayload, isActive: boolean, isChatPage: boolean, eventSession: string): void {
@@ -139,6 +130,7 @@ function handleChatToolCallEnd(p: ChatPayload, isActive: boolean, isChatPage: bo
 			role: "tool_result",
 			tool_call_id: p.toolCallId || "",
 			tool_name: p.toolName || "",
+			arguments: p.arguments || undefined,
 			success: p.success === true,
 			result: p.result || null,
 			error: p.error?.detail || p.error?.message || (typeof p.error === "string" ? String(p.error) : null),
@@ -147,13 +139,12 @@ function handleChatToolCallEnd(p: ChatPayload, isActive: boolean, isChatPage: bo
 		toolHistoryIndex as number | undefined,
 	);
 	updateSessionHistoryIndex(eventSession, toolHistoryIndex as number | undefined);
+	const out = (p.result?.stdout || "").replace(/\n+$/, "");
+	const toolSession = sessionStore.getByKey(eventSession);
+	if (toolSession) toolSession.lastToolOutput.value = out;
 	if (!(isActive && isChatPage)) return;
-	const toolCard = document.getElementById(toolCallCardId(p));
-	if (!toolCard) {
-		pendingToolCallEnds.set(toolCallEventKey(eventSession, p), p as ToolCallPayload);
-		return;
-	}
-	completeToolCard(toolCard, p, eventSession);
+	S.setLastToolOutput(out);
+	endTool(p);
 }
 
 function handleChatChannelUser(p: ChatPayload, isActive: boolean, isChatPage: boolean, eventSession: string): void {
@@ -179,7 +170,19 @@ function handleChatChannelUser(p: ChatPayload, isActive: boolean, isChatPage: bo
 		updateSessionHistoryIndex(eventSession, p.messageIndex);
 		return;
 	}
-	renderChannelUserMessage(p, eventSession);
+	const chanSession = sessionStore.getByKey(eventSession);
+	const lastIdx = chanSession ? chanSession.lastHistoryIndex.value : S.lastHistoryIndex;
+	if (!(p.messageIndex !== undefined && p.messageIndex <= lastIdx)) {
+		const audioFilename = p.channel?.audio_filename;
+		addUserMessage({
+			text: stripChannelPrefix(p.text || ""),
+			audioSrc: audioFilename
+				? `/api/sessions/${encodeURIComponent(eventSession)}/media/${encodeURIComponent(audioFilename)}`
+				: undefined,
+			channel: (p.channel as ChannelFooterInfo | undefined) || undefined,
+			historyIndex: p.messageIndex,
+		});
+	}
 	updateSessionHistoryIndex(eventSession, p.messageIndex);
 }
 
@@ -206,15 +209,12 @@ function handleChatUserMessage(p: ChatPayload, isActive: boolean, isChatPage: bo
 		setSessionUnread(eventSession, true);
 	}
 	if (!(isChatPage && isActive)) return;
-	// Safe: renderMarkdown calls esc() first -- all user input is
-	// HTML-escaped before formatting tags are applied.
-	chatAddMsg("user", renderMarkdown(p.text || ""), true);
+	addUserMessage({ text: p.text || "", historyIndex: p.messageIndex });
 }
 
 function handleChatDelta(p: ChatPayload, isActive: boolean, isChatPage: boolean, eventSession: string): void {
 	updateSessionRunId(eventSession, p.runId);
 	if (!p.text) return;
-	// Update per-session signal
 	const session = sessionStore.getByKey(eventSession);
 	if (session) session.streamText.value += p.text;
 	if (!(isActive && isChatPage)) return;
@@ -223,155 +223,45 @@ function handleChatDelta(p: ChatPayload, isActive: boolean, isChatPage: boolean,
 		S.setStreamText(S.streamText + p.text);
 		return;
 	}
-	// Skip leading whitespace before any real content has been streamed.
-	// Some providers emit newlines between thinking and content; rendering
-	// them would create an empty assistant div that lingers if a tool call
-	// follows immediately.  We must check this BEFORE removeThinking() so
-	// the thinking text is still available for handleChatToolCallStart to
-	// extract into a reasoning disclosure on the tool card.
-	if (!(S.streamEl || p.text.trim())) return;
-	removeThinking();
-	if (!S.streamEl) {
-		S.setStreamText("");
-		S.setStreamEl(document.createElement("div"));
-		S.streamEl!.className = "msg assistant";
-		clearChatEmptyState();
-		S.chatMsgBox?.appendChild(S.streamEl!);
-	}
-	S.setStreamText(S.streamText + p.text);
-	setSafeMarkdownHtml(S.streamEl!, S.streamText);
-	smartScrollToBottom();
+	// Some providers emit newlines between thinking and content; starting a
+	// reply on them would leave an empty bubble if a tool call follows.
+	if (!(streamingAssistantId() || p.text.trim())) return;
+	clearChatEmptyState();
+	appendAssistantDelta(p.text, p.runId);
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Final message handling with audio/voice branching
-function handleChatFinal(p: ChatPayload, isActive: boolean, isChatPage: boolean, eventSession: string): void {
-	clearPendingToolCallEndsForSession(eventSession);
-	updateSessionRunId(eventSession, p.runId);
-	// Always bump badge -- the server persists the final assistant message.
-	bumpSessionCount(eventSession, 1);
-	const finalText = String(p.text || "");
-	const hasVisibleFinal =
-		hasNonWhitespaceContent(finalText) ||
-		hasNonWhitespaceContent(p.reasoning || "") ||
-		hasNonWhitespaceContent(p.audio || "");
-	if (hasVisibleFinal) {
-		cacheSessionHistoryMessage(
-			eventSession,
-			{
-				role: "assistant",
-				content: finalText,
-				model: p.model || "",
-				provider: p.provider || "",
-				inputTokens: p.inputTokens || 0,
-				outputTokens: p.outputTokens || 0,
-				cacheReadTokens: p.cacheReadTokens || 0,
-				cacheWriteTokens: p.cacheWriteTokens || 0,
-				durationMs: p.durationMs || 0,
-				requestInputTokens: p.requestInputTokens,
-				requestOutputTokens: p.requestOutputTokens,
-				requestCacheReadTokens: p.requestCacheReadTokens,
-				requestCacheWriteTokens: p.requestCacheWriteTokens,
-				reasoning: p.reasoning || undefined,
-				audio: p.audio || undefined,
-				run_id: p.runId || undefined,
-				created_at: Date.now(),
-			},
-			p.messageIndex,
-		);
-	}
-	// Compare against the per-session history index so cross-session
-	// events aren't wrongly skipped by another session's index.
-	const evtSession = sessionStore.getByKey(eventSession);
-	const lastIdx = evtSession ? evtSession.lastHistoryIndex.value : S.lastHistoryIndex;
-	if (p.messageIndex !== undefined && p.messageIndex <= lastIdx) {
-		setSessionReplying(eventSession, false);
-		setSessionActiveRunId(eventSession, null);
-		if (isActive && isChatPage) setComposerStopButton(false);
-		return;
-	}
-	updateSessionHistoryIndex(eventSession, p.messageIndex);
-	setSessionReplying(eventSession, false);
-	setSessionActiveRunId(eventSession, null);
-	if (!isActive) {
-		setSessionUnread(eventSession, true);
-	}
-	if (!(isActive && isChatPage)) {
-		S.setVoicePending(false);
-		return;
-	}
-	setComposerStopButton(false);
-	removeThinking();
-	clearStaleRunningToolCards();
+function mediaSrc(sessionKey: string, path: string): string {
+	const filename = path.split("/").pop() || "";
+	return `/api/sessions/${encodeURIComponent(sessionKey)}/media/${encodeURIComponent(filename)}`;
+}
 
-	if (S.voicePending && p.text && p.replyMedium === "voice") {
-		// Voice pending path: we suppressed streaming, so render everything at once.
-		console.debug("[audio] voice-pending path, audio:", !!p.audio, "text:", p.text.substring(0, 40));
-		const msgEl = S.streamEl || document.createElement("div");
-		msgEl.className = "msg assistant";
-		msgEl.textContent = "";
-		if (!msgEl.parentNode) {
-			clearChatEmptyState();
-			S.chatMsgBox?.appendChild(msgEl);
-		}
+function cacheFinalMessage(eventSession: string, p: ChatPayload, finalText: string): void {
+	cacheSessionHistoryMessage(
+		eventSession,
+		{
+			role: "assistant",
+			content: finalText,
+			model: p.model || "",
+			provider: p.provider || "",
+			inputTokens: p.inputTokens || 0,
+			outputTokens: p.outputTokens || 0,
+			cacheReadTokens: p.cacheReadTokens || 0,
+			cacheWriteTokens: p.cacheWriteTokens || 0,
+			durationMs: p.durationMs || 0,
+			requestInputTokens: p.requestInputTokens,
+			requestOutputTokens: p.requestOutputTokens,
+			requestCacheReadTokens: p.requestCacheReadTokens,
+			requestCacheWriteTokens: p.requestCacheWriteTokens,
+			reasoning: p.reasoning || undefined,
+			audio: p.audio || undefined,
+			run_id: p.runId || undefined,
+			created_at: Date.now(),
+		},
+		p.messageIndex,
+	);
+}
 
-		if (p.audio) {
-			const filename = p.audio.split("/").pop() || "";
-			const audioSrc = `/api/sessions/${encodeURIComponent(p.sessionKey || S.activeSessionKey)}/media/${encodeURIComponent(filename)}`;
-			console.debug("[audio] rendering persisted audio:", filename);
-			renderAudioPlayer(msgEl, audioSrc, true);
-		}
-		if (hasNonWhitespaceContent(p.text)) {
-			// Safe: renderMarkdown calls esc() first -- all user input is HTML-escaped.
-			const textWrap = document.createElement("div");
-			textWrap.className = "mt-2";
-			setSafeMarkdownHtml(textWrap, p.text);
-			msgEl.appendChild(textWrap);
-		}
-		if (p.reasoning && !isReasoningAlreadyShown(p.reasoning)) {
-			appendReasoningDisclosure(msgEl, p.reasoning);
-		}
-		appendFinalFooter(msgEl, p, eventSession);
-		smartScrollToBottom();
-	} else {
-		let resolvedEl = resolveFinalMessageEl(p);
-		const skipReasoning = p.reasoning && isReasoningAlreadyShown(p.reasoning);
-		if (!resolvedEl && p.reasoning && !skipReasoning) {
-			resolvedEl = chatAddMsg("assistant", "", false);
-		}
-		if (resolvedEl && p.reasoning && !skipReasoning) {
-			appendReasoningDisclosure(resolvedEl, p.reasoning);
-		}
-		if (resolvedEl && p.text && p.replyMedium === "voice") {
-			console.debug(
-				"[audio] streamed path, audio:",
-				!!p.audio,
-				"voicePending:",
-				S.voicePending,
-				"text:",
-				p.text.substring(0, 40),
-			);
-			if (p.audio) {
-				const fn2 = p.audio.split("/").pop() || "";
-				const src2 = `/api/sessions/${encodeURIComponent(p.sessionKey || S.activeSessionKey)}/media/${encodeURIComponent(fn2)}`;
-				console.debug("[audio] rendering persisted audio (streamed):", fn2);
-				resolvedEl.textContent = "";
-				renderAudioPlayer(resolvedEl, src2, true);
-				appendFinalFooter(resolvedEl, p, eventSession);
-			} else {
-				console.debug("[audio] no persisted audio, showing voice fallback action");
-				appendFinalFooter(resolvedEl, p, eventSession);
-			}
-		} else {
-			// Silent reply -- attach footer to the last visible assistant element
-			// (e.g. exec card). Never attach to a user message.
-			let target = resolvedEl;
-			if (!target) {
-				const last = S.chatMsgBox?.lastElementChild as HTMLElement | null;
-				if (last && !last.classList.contains("user")) target = last;
-			}
-			appendFinalFooter(target, p, eventSession);
-		}
-	}
+function applyFinalTokenUsage(p: ChatPayload): void {
 	if (p.inputTokens || p.outputTokens) {
 		S.sessionTokens.input += p.inputTokens || 0;
 		S.sessionTokens.output += p.outputTokens || 0;
@@ -388,23 +278,89 @@ function handleChatFinal(p: ChatPayload, isActive: boolean, isChatPage: boolean,
 			(p.requestCacheWriteTokens ?? p.cacheWriteTokens ?? 0),
 	);
 	updateTokenBar();
-	appendLastMessageTimestamp(Date.now());
-	// Reset per-session stream state
-	const finalSession = sessionStore.getByKey(eventSession);
-	if (finalSession) finalSession.resetStreamState();
-	// Dual-write to global state for backward compat
+}
+
+/** Put the finished reply in the transcript. */
+function renderFinalReply(p: ChatPayload, eventSession: string): void {
+	const finalText = String(p.text || "");
+	const sessionKey = p.sessionKey || eventSession;
+	const reasoning = p.reasoning && !isReasoningAlreadyShown(p.reasoning) ? p.reasoning : "";
+	const voiceReply = p.replyMedium === "voice" && hasNonWhitespaceContent(finalText);
+	const common = {
+		reasoning,
+		usage: usageFromPayload(p),
+		audioWarning: p.audioWarning || undefined,
+		replyMedium: p.replyMedium,
+		runId: p.runId,
+		historyIndex: p.messageIndex,
+		createdAt: Date.now(),
+	};
+	if (voiceReply) {
+		finalizeAssistant({
+			...common,
+			// The audio player replaces streamed text; the text stays below it
+			// only when voice was pending (nothing was shown yet).
+			text: S.voicePending || !p.audio ? finalText : "",
+			audioSrc: p.audio ? mediaSrc(sessionKey, p.audio) : undefined,
+			audioAutoplay: true,
+		});
+		return;
+	}
+	const hasText = hasNonWhitespaceContent(finalText);
+	if (hasText && !isPureToolOutputEcho(finalText, S.lastToolOutput)) {
+		finalizeAssistant({ ...common, text: finalText });
+		return;
+	}
+	if (reasoning) {
+		finalizeAssistant({ ...common, text: "" });
+		return;
+	}
+	// Silent reply, or text that only repeated the last tool output.
+	discardStream();
+	attachTurnFooterToLastTool({ usage: common.usage, replyMedium: p.replyMedium, createdAt: common.createdAt });
+}
+
+function handleChatFinal(p: ChatPayload, isActive: boolean, isChatPage: boolean, eventSession: string): void {
+	updateSessionRunId(eventSession, p.runId);
+	// Always bump badge -- the server persists the final assistant message.
+	bumpSessionCount(eventSession, 1);
+	const finalText = String(p.text || "");
+	const hasVisibleFinal =
+		hasNonWhitespaceContent(finalText) ||
+		hasNonWhitespaceContent(p.reasoning || "") ||
+		hasNonWhitespaceContent(p.audio || "");
+	if (hasVisibleFinal) cacheFinalMessage(eventSession, p, finalText);
+	// Compare against the per-session history index so cross-session
+	// events aren't wrongly skipped by another session's index.
+	const evtSession = sessionStore.getByKey(eventSession);
+	const lastIdx = evtSession ? evtSession.lastHistoryIndex.value : S.lastHistoryIndex;
+	if (p.messageIndex !== undefined && p.messageIndex <= lastIdx) {
+		setSessionReplying(eventSession, false);
+		setSessionActiveRunId(eventSession, null);
+		if (isActive && isChatPage) setComposerStopButton(false);
+		return;
+	}
+	updateSessionHistoryIndex(eventSession, p.messageIndex);
+	setSessionReplying(eventSession, false);
+	setSessionActiveRunId(eventSession, null);
+	if (!isActive) setSessionUnread(eventSession, true);
+	if (!(isActive && isChatPage)) {
+		S.setVoicePending(false);
+		return;
+	}
+	setComposerStopButton(false);
+	hideThinking();
+	settleRunningTools("finished");
+	renderFinalReply(p, eventSession);
+	applyFinalTokenUsage(p);
+	if (evtSession) evtSession.resetStreamState();
 	S.setStreamEl(null);
 	S.setStreamText("");
 	S.setLastToolOutput("");
 	S.setVoicePending(false);
 	maybeRefreshFullContext();
-	// Syntax-highlight any code blocks in the completed message.
-	if (S.chatMsgBox?.lastElementChild) {
-		highlightCodeBlocks(S.chatMsgBox.lastElementChild as HTMLElement);
-	}
-	// Move the next queued message from the tray AFTER the response is
-	// fully rendered. This ensures correct ordering: user-msg -> response ->
-	// next-user-msg -> next-response (never next-user-msg before response).
+	// Move the next queued message from the tray only after the reply is in
+	// place, so the order stays user -> reply -> next user -> next reply.
 	moveFirstQueuedToChat();
 }
 
@@ -425,7 +381,7 @@ const lastCompactCardAt: Map<string, number> = new Map();
 // `auto_compact done`, which means the old "remove lastChild" pattern
 // would remove the compact card instead of the status message.
 // Greptile P1 on commit 0531913b.
-const compactingStatusElements: Map<string, HTMLElement> = new Map();
+const compactingStatusIds: Map<string, string> = new Map();
 
 function shouldRenderCompactCard(p: CompactPayload): boolean {
 	const key = p.sessionKey || "__active__";
@@ -444,11 +400,9 @@ function shouldRenderCompactCard(p: CompactPayload): boolean {
 // never outlives its purpose, regardless of which event arrives first.
 function removeCompactingStatus(p: CompactPayload): void {
 	const key = p.sessionKey || "__active__";
-	const el = compactingStatusElements.get(key);
-	compactingStatusElements.delete(key);
-	if (el && el.parentNode === S.chatMsgBox) {
-		S.chatMsgBox?.removeChild(el);
-	}
+	const id = compactingStatusIds.get(key);
+	compactingStatusIds.delete(key);
+	if (id) removeItem(id);
 }
 
 function resetTokensAfterCompaction(): void {
@@ -461,11 +415,8 @@ function resetTokensAfterCompaction(): void {
 function handleChatAutoCompact(p: ChatPayload, isActive: boolean, isChatPage: boolean): void {
 	if (!(isActive && isChatPage)) return;
 	if (p.phase === "start") {
-		const statusEl = chatAddMsg("system", "Compacting conversation (context limit reached)\u2026");
-		const key = p.sessionKey || "__active__";
-		if (statusEl) {
-			compactingStatusElements.set(key, statusEl);
-		}
+		const statusId = addNotice("system", "Compacting conversation (context limit reached)\u2026");
+		compactingStatusIds.set(p.sessionKey || "__active__", statusId);
 	} else if (p.phase === "done") {
 		// Always drop the status message -- even when the card was
 		// already rendered by an earlier `chat.compact done` event.
@@ -521,33 +472,30 @@ function handleChatRetrying(p: ChatPayload, isActive: boolean, isChatPage: boole
 	setSessionReplying(eventSession, true);
 	if (!(isActive && isChatPage)) return;
 	setComposerStopButton(true, eventSession);
-
-	let indicator = document.getElementById("thinkingIndicator");
-	if (!indicator) {
-		removeThinking();
-		indicator = document.createElement("div");
-		indicator.className = "msg assistant thinking";
-		indicator.id = "thinkingIndicator";
-		indicator.appendChild(makeThinkingDots());
-		clearChatEmptyState();
-		S.chatMsgBox?.appendChild(indicator);
-	}
-
-	while (indicator.firstChild) indicator.removeChild(indicator.firstChild);
-	const textEl = document.createElement("span");
-	textEl.className = "thinking-text";
-	textEl.textContent = retryStatusText(p);
-	indicator.appendChild(textEl);
-	smartScrollToBottom();
+	clearChatEmptyState();
+	showThinking(retryStatusText(p), "retry");
 }
 
 // ── Error / abort / notice / clear ────────────────────────────
 
+function appendContinueButton(card: HTMLElement | null): void {
+	const body = card?.querySelector(".error-body");
+	if (!body) return;
+	const btn = document.createElement("button");
+	btn.className = "provider-btn error-continue-btn";
+	btn.textContent = t("errors:chat.continue", "Continue");
+	btn.onclick = () => {
+		btn.disabled = true;
+		btn.textContent = t("errors:chat.continuing", "Continuing...");
+		(S.chatInput as HTMLInputElement).value = t("errors:chat.continueMessage", "Please continue where you left off.");
+		S.chatSendBtn?.click();
+	};
+	body.appendChild(btn);
+}
+
 function handleChatError(p: ChatPayload, isActive: boolean, isChatPage: boolean, eventSession: string): void {
-	clearPendingToolCallEndsForSession(eventSession);
 	setSessionReplying(eventSession, false);
 	setSessionActiveRunId(eventSession, null);
-	// Reset per-session stream state
 	const errSession = sessionStore.getByKey(eventSession);
 	if (errSession) errSession.resetStreamState();
 	if (!(isActive && isChatPage)) {
@@ -555,35 +503,15 @@ function handleChatError(p: ChatPayload, isActive: boolean, isChatPage: boolean,
 		return;
 	}
 	setComposerStopButton(false);
-	removeThinking();
-	clearStaleRunningToolCards("cancelled");
-	if (p.error?.title) {
-		chatAddErrorCard(localizeStructuredError(p.error) as Parameters<typeof chatAddErrorCard>[0]);
-	} else {
-		chatAddErrorMsg(p.message || "unknown");
-	}
+	hideThinking();
+	closeStream();
+	settleRunningTools("cancelled");
+	const card = p.error?.title
+		? chatAddErrorCard(localizeStructuredError(p.error) as Parameters<typeof chatAddErrorCard>[0])
+		: chatAddErrorMsg(p.message || "unknown");
+	// max_iterations_reached can be resumed.
 	if (p.error?.canCancel && eventSession) addQuotaWaitCancelButton(eventSession);
-	// Add continue button for max_iterations_reached errors.
-	if (p.error?.canContinue) {
-		const lastCard = S.chatMsgBox?.querySelector(".error-card:last-child") as HTMLElement | null;
-		if (lastCard) {
-			const btn = document.createElement("button");
-			btn.className = "provider-btn error-continue-btn";
-			btn.textContent = t("errors:chat.continue", "Continue");
-			btn.onclick = () => {
-				btn.disabled = true;
-				btn.textContent = t("errors:chat.continuing", "Continuing...");
-				(S.chatInput as HTMLInputElement).value = t(
-					"errors:chat.continueMessage",
-					"Please continue where you left off.",
-				);
-				// Trigger send by clicking the chat send button (sendChat is local to ChatPage)
-				S.chatSendBtn?.click();
-			};
-			const body = lastCard.querySelector(".error-body");
-			if (body) body.appendChild(btn);
-		}
-	}
+	if (p.error?.canContinue) appendContinueButton(card);
 	S.setStreamEl(null);
 	S.setStreamText("");
 	S.setVoicePending(false);
@@ -636,8 +564,40 @@ function cacheAbortedPartial(
 	updateSessionHistoryIndex(eventSession, p.messageIndex);
 }
 
+function renderAbortedPartial(p: ChatPayload, eventSession: string, partialState: AbortedPartialState): void {
+	if (!partialState.hasVisiblePartial) {
+		closeStream();
+		return;
+	}
+	const partial = partialState.partial;
+	const reasoning =
+		partialState.partialReasoning && !isReasoningAlreadyShown(partialState.partialReasoning)
+			? partialState.partialReasoning
+			: "";
+	const text = hasNonWhitespaceContent(partialState.partialText) ? partialState.partialText : streamedText();
+	if (!(hasNonWhitespaceContent(text) || reasoning)) {
+		closeStream();
+		return;
+	}
+	finalizeAssistant({
+		text,
+		reasoning,
+		usage: usageFromPayload({
+			model: partial?.model,
+			provider: partial?.provider,
+			inputTokens: partial?.inputTokens,
+			outputTokens: partial?.outputTokens,
+			durationMs: partial?.durationMs,
+		}),
+		replyMedium: p.replyMedium || "text",
+		runId: p.runId,
+		historyIndex: p.messageIndex,
+		createdAt: Date.now(),
+		audioSrc: partial?.audio ? mediaSrc(eventSession, partial.audio) : undefined,
+	});
+}
+
 function handleChatAborted(p: ChatPayload, isActive: boolean, isChatPage: boolean, eventSession: string): void {
-	clearPendingToolCallEndsForSession(eventSession);
 	setSessionReplying(eventSession, false);
 	setSessionActiveRunId(eventSession, null);
 	const partialState = getAbortedPartialState(p);
@@ -652,30 +612,38 @@ function handleChatAborted(p: ChatPayload, isActive: boolean, isChatPage: boolea
 		return;
 	}
 	setComposerStopButton(false);
-	removeThinking();
-	clearStaleRunningToolCards("cancelled");
-	renderAbortedPartialInDom(eventSession, p, partialState);
+	hideThinking();
+	settleRunningTools("cancelled");
+	renderAbortedPartial(p, eventSession, partialState);
 	S.setStreamEl(null);
 	S.setStreamText("");
 	S.setVoicePending(false);
 	moveFirstQueuedToChat();
 }
 
+function noticeClassName(p: ChatPayload): string {
+	if (!p.title) return "";
+	const classes = ["system-notice"];
+	if (String(p.title).toLowerCase() === "sandbox") {
+		classes.push("system-notice-sandbox");
+		const message = String(p.message || "").toLowerCase();
+		if (message.includes("enabled")) classes.push("is-enabled");
+		else if (message.includes("disabled")) classes.push("is-disabled");
+	}
+	return classes.join(" ");
+}
+
 function handleChatNotice(p: ChatPayload, isActive: boolean, isChatPage: boolean): void {
 	if (!(isActive && isChatPage)) return;
-	// Render titled notices as markdown so emphasis is visible.
-	const msg = p.title ? `**${p.title}:** ${p.message}` : p.message || "";
-	const noticeEl = p.title ? chatAddMsg("system", renderMarkdown(msg), true) : chatAddMsg("system", msg);
-	if (!(noticeEl && p.title)) return;
-	noticeEl.classList.add("system-notice");
-	if (String(p.title).toLowerCase() !== "sandbox") return;
-	noticeEl.classList.add("system-notice-sandbox");
-	const normalizedMessage = String(p.message || "").toLowerCase();
-	if (normalizedMessage.indexOf("enabled") !== -1) {
-		noticeEl.classList.add("is-enabled");
-	} else if (normalizedMessage.indexOf("disabled") !== -1) {
-		noticeEl.classList.add("is-disabled");
+	if (!p.title) {
+		addNotice("system", p.message || "");
+		return;
 	}
+	// Titled notices are markdown so the title can be bold.
+	addNotice("system", renderMarkdown(`**${p.title}:** ${p.message}`), {
+		html: true,
+		className: noticeClassName(p),
+	});
 }
 
 function handleChatQueueCleared(_p: ChatPayload, isActive: boolean, isChatPage: boolean): void {
@@ -690,7 +658,6 @@ function handleChatQueueCleared(_p: ChatPayload, isActive: boolean, isChatPage: 
 }
 
 function handleChatSessionCleared(_p: ChatPayload, isActive: boolean, isChatPage: boolean, eventSession: string): void {
-	clearPendingToolCallEndsForSession(eventSession);
 	setSessionActiveRunId(eventSession, null);
 	clearSessionHistoryCache(eventSession);
 	// Reset badge, unread state, and history index for every client.
@@ -701,8 +668,7 @@ function handleChatSessionCleared(_p: ChatPayload, isActive: boolean, isChatPage
 	}
 	if (!(isActive && isChatPage)) return;
 	setComposerStopButton(false);
-	// Active viewer: clear the chat box and token bar.
-	if (S.chatMsgBox) S.chatMsgBox.textContent = "";
+	clearTranscript();
 	S.setSessionTokens({ input: 0, output: 0 });
 	S.setSessionCurrentInputTokens(0);
 	S.setSessionCurrentContextTokens(0);

@@ -41,7 +41,10 @@ function onDocClick(e: MouseEvent): void {
 // ── Core: build the action bar ───────────────────────────────
 
 export interface MessageActionContext {
+	/** Element the action bar is appended to. */
 	messageEl: HTMLElement;
+	/** The whole message, for copy and voice; defaults to `messageEl`. */
+	hostEl?: HTMLElement;
 	sessionKey: string;
 	messageIndex?: number;
 	text?: string;
@@ -52,6 +55,7 @@ export interface MessageActionContext {
 
 export function appendMessageActions(ctx: MessageActionContext): void {
 	const { messageEl, sessionKey } = ctx;
+	const hostEl = ctx.hostEl || messageEl;
 	const shouldKeepBottomAnchored = isChatAtBottom();
 
 	// Surface server-side audio warnings inline on the message.
@@ -72,7 +76,7 @@ export function appendMessageActions(ctx: MessageActionContext): void {
 	const copyTitle = "Copy as Markdown";
 	const copyBtn = actionButton("icon-copy", copyTitle);
 	copyBtn.addEventListener("click", () => {
-		const text = ctx.text?.trim() ? ctx.text : extractPlainText(messageEl);
+		const text = ctx.text?.trim() ? ctx.text : extractPlainText(hostEl);
 		copyToClipboard(text, "", "Failed to copy to clipboard").then((ok) => {
 			if (!ok) return;
 			copyBtn.replaceChildren(iconSpan("icon-checkmark"));
@@ -123,7 +127,7 @@ export function appendMessageActions(ctx: MessageActionContext): void {
 			const payload = result?.payload as Record<string, unknown> | undefined;
 			if (result?.ok && payload?.audio) {
 				renderPersistedAudio(
-					messageEl,
+					hostEl,
 					sessionKey,
 					payload.audio as string,
 					true,

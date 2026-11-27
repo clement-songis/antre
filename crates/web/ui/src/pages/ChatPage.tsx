@@ -9,13 +9,7 @@
 // is preserved from the original source.
 
 import { render } from "preact";
-import {
-	chatAddMsg,
-	hideNewContentIndicator,
-	isChatAtBottom,
-	setComposerStopButton,
-	smartScrollToBottom,
-} from "../chat-ui";
+import { chatAddMsg, hideNewContentIndicator, isChatAtBottom, setComposerStopButton } from "../chat-ui";
 import { SessionHeader } from "../components/SessionHeader";
 import { formatTokens, sendRpc } from "../helpers";
 import { t } from "../i18n";
@@ -64,6 +58,8 @@ import {
 	slashHideMenu,
 	slashInjectStyles,
 } from "./chat/slash-commands";
+import { appendNode } from "./chat/transcript/actions";
+import { mountTranscript, unmountTranscript } from "./chat/transcript/Transcript";
 
 // ── Module state ─────────────────────────────────────────────
 let promptMemoryToolbarRequestId = 0;
@@ -229,8 +225,7 @@ export function renderCompactCard(data: CompactCardData): void {
 		hintSec.appendChild(hintRow);
 		card.appendChild(hintSec);
 	}
-	S.chatMsgBox.appendChild(card);
-	smartScrollToBottom();
+	appendNode(card);
 }
 
 // ── Debug / full context panels ──────────────────────────────
@@ -605,8 +600,7 @@ export function showModelNotice(model: ModelNotice): void {
 	if (nameEl) nameEl.textContent = model.displayName || model.id;
 	const providerEl = card.querySelector("[data-provider]");
 	if (providerEl) providerEl.textContent = model.provider || "local";
-	S.chatMsgBox.appendChild(card);
-	smartScrollToBottom();
+	appendNode(card);
 }
 
 // ── Chat copy handler ───────────────────────────────────────
@@ -650,54 +644,36 @@ function unmountApprovalControls(): void {
 	}
 }
 
+let sessionHeaderHost: HTMLElement | null = null;
+
+/** One SessionHeader instance renders into the three toolbar regions. */
 function mountSessionHeaderControls(): void {
-	const sessionNameMount = S.$("sessionNameMount");
-	if (sessionNameMount) {
-		render(
-			<SessionHeader
-				showSelectors={false}
-				showName={true}
-				showRenameButton={true}
-				showShare={false}
-				showFork={false}
-				showStop={false}
-				showClear={false}
-				showDelete={false}
-				showArchive={false}
-			/>,
-			sessionNameMount,
-		);
-	}
-	const headerToolbarMount = S.$("sessionHeaderToolbarMount");
-	if (headerToolbarMount) {
-		render(
-			<SessionHeader
-				showName={false}
-				showFork={false}
-				showShare={false}
-				showClear={false}
-				showDelete={false}
-				showArchive={false}
-				showStop={false}
-			/>,
-			headerToolbarMount,
-		);
-	}
-	const sessionActionsMount = S.$("sessionActionsMount");
-	if (sessionActionsMount) {
-		render(
-			<SessionHeader
-				showSelectors={false}
-				showName={false}
-				showSaveMarkdown={true}
-				showStop={false}
-				actionButtonClass={
-					"text-xs border border-[var(--border)] px-2 py-1 rounded-md transition-colors cursor-pointer bg-transparent font-[var(--font-body)] text-[var(--muted)]"
-				}
-			/>,
-			sessionActionsMount,
-		);
-	}
+	sessionHeaderHost = document.createElement("div");
+	sessionHeaderHost.className = "hidden";
+	S.$("sessionActionsMount")?.after(sessionHeaderHost);
+	render(
+		<SessionHeader
+			showRenameButton={true}
+			showSaveMarkdown={true}
+			showStop={false}
+			actionButtonClass={
+				"text-xs border border-[var(--border)] px-2 py-1 rounded-md transition-colors cursor-pointer bg-transparent font-[var(--font-body)] text-[var(--muted)]"
+			}
+			slots={{
+				name: S.$("sessionNameMount"),
+				selectors: S.$("sessionHeaderToolbarMount"),
+				actions: S.$("sessionActionsMount"),
+			}}
+		/>,
+		sessionHeaderHost,
+	);
+}
+
+function unmountSessionHeaderControls(): void {
+	if (!sessionHeaderHost) return;
+	render(null, sessionHeaderHost);
+	sessionHeaderHost.remove();
+	sessionHeaderHost = null;
 }
 
 function bindChatComposer(): void {
@@ -939,6 +915,7 @@ registerPrefix(
 		container.innerHTML = chatPageHTML;
 
 		S.setChatMsgBox(S.$("messages"));
+		if (S.chatMsgBox) mountTranscript(S.chatMsgBox);
 		S.setChatInput(S.$("chatInput"));
 		S.setChatSendBtn(S.$("sendBtn"));
 		S.$("attachInput")?.removeAttribute("accept");
@@ -998,12 +975,8 @@ registerPrefix(
 			document.removeEventListener("keydown", contextModalsKeydownHandler);
 			contextModalsKeydownHandler = null;
 		}
-		const m0 = S.$("sessionNameMount");
-		if (m0) render(null, m0);
-		const m1 = S.$("sessionHeaderToolbarMount");
-		if (m1) render(null, m1);
-		const m2 = S.$("sessionActionsMount");
-		if (m2) render(null, m2);
+		unmountSessionHeaderControls();
+		unmountTranscript();
 		S.setChatMsgBox(null);
 		S.setChatInput(null);
 		S.setChatSendBtn(null);
