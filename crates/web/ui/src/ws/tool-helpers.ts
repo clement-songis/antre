@@ -20,11 +20,24 @@ function screenshotSrc(screenshot: string, sessionKey: string): string {
 	return isStoredPath ? mediaUrl(sessionKey, screenshot) : `data:image/png;base64,${screenshot}`;
 }
 
+/** "text": stdout/stderr and exit code. "media": screenshot, document, map. */
+export type ToolResultParts = "text" | "media" | "all";
+
 /**
  * Render the generic parts of a tool result: stdout/stderr, exit code,
  * screenshot, document card and map links.
  */
-export function appendToolResult(toolCard: HTMLElement, result: ToolResult, sessionKey: string): void {
+export function appendToolResult(
+	toolCard: HTMLElement,
+	result: ToolResult,
+	sessionKey: string,
+	parts: ToolResultParts = "all",
+): void {
+	if (parts !== "media") appendTextResult(toolCard, result);
+	if (parts !== "text") appendMediaResult(toolCard, result, sessionKey);
+}
+
+function appendTextResult(toolCard: HTMLElement, result: ToolResult): void {
 	const out = (result.stdout || "").replace(/\n+$/, "");
 	if (out) {
 		const outEl = document.createElement("pre");
@@ -45,6 +58,9 @@ export function appendToolResult(toolCard: HTMLElement, result: ToolResult, sess
 		codeEl.textContent = `exit ${result.exit_code}`;
 		toolCard.appendChild(codeEl);
 	}
+}
+
+function appendMediaResult(toolCard: HTMLElement, result: ToolResult, sessionKey: string): void {
 	const key = sessionKey || S.activeSessionKey || "main";
 	if (result.screenshot)
 		renderScreenshot(toolCard, screenshotSrc(result.screenshot, key), result.screenshot_scale || 1);

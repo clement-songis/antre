@@ -11,9 +11,10 @@ import { isChatAtBottom, scrollChatToBottom, showNewContentIndicator } from "../
 import * as S from "../../../state";
 import { sessionStore } from "../../../stores/session-store";
 import { AssistantMessage, DomSlot, NoticeMessage, ThinkingIndicator, UserMessage } from "./Messages";
-import type { TranscriptItem } from "./model";
+import type { ToolItem, TranscriptItem } from "./model";
 import { transcriptItems } from "./store";
-import { ToolCard } from "./ToolCard";
+import { ToolCallCard, ToolGroup } from "./tools/ToolCallCard";
+import { PinnedTaskChecklist } from "./tools/tasks";
 
 function lastSettledIndex(items: TranscriptItem[]): number {
 	for (let index = items.length - 1; index >= 0; index--) {
@@ -30,7 +31,7 @@ function renderItem(item: TranscriptItem, sessionKey: string, isLast: boolean) {
 		case "assistant":
 			return <AssistantMessage key={item.id} item={item} sessionKey={sessionKey} isLast={isLast} />;
 		case "tool":
-			return <ToolCard key={item.id} item={item} sessionKey={sessionKey} />;
+			return <ToolCallCard key={item.id} item={item} sessionKey={sessionKey} />;
 		case "notice":
 			return <NoticeMessage key={item.id} item={item} />;
 		case "thinking":
@@ -40,6 +41,27 @@ function renderItem(item: TranscriptItem, sessionKey: string, isLast: boolean) {
 		default:
 			return null;
 	}
+}
+
+/** Consecutive tool calls (two or more, nothing between them) become one group. */
+function groupToolRuns(items: TranscriptItem[]): (TranscriptItem | ToolItem[])[] {
+	const out: (TranscriptItem | ToolItem[])[] = [];
+	let run: ToolItem[] = [];
+	const flush = () => {
+		if (run.length >= 2) out.push(run);
+		else out.push(...run);
+		run = [];
+	};
+	for (const item of items) {
+		if (item.kind === "tool") {
+			run.push(item);
+			continue;
+		}
+		flush();
+		out.push(item);
+	}
+	flush();
+	return out;
 }
 
 // Whether the view sat at the bottom just before the latest store change.
@@ -70,7 +92,18 @@ export function Transcript() {
 	const sessionKey = sessionStore.activeSessionKey.value || S.activeSessionKey;
 	const lastIndex = lastSettledIndex(items);
 	useLayoutEffect(followNewContent, [items]);
-	return <>{items.map((item, index) => renderItem(item, sessionKey, index === lastIndex))}</>;
+	return (
+		<>
+			{groupToolRuns(items).map((entry) =>
+				Array.isArray(entry) ? (
+					<ToolGroup key={`group-${entry[0].id}`} items={entry} sessionKey={sessionKey} />
+				) : (
+					renderItem(entry, sessionKey, items.indexOf(entry) === lastIndex)
+				),
+			)}
+			<PinnedTaskChecklist />
+		</>
+	);
 }
 
 let mountedRoot: HTMLElement | null = null;

@@ -115,7 +115,7 @@ test.describe("Chat quick wins", () => {
 		});
 		const card = page.locator("#tool-run-cancel-tc-1");
 		await expect(card).toBeVisible();
-		await expect(card).toContainText("Read /repo/src/main.rs");
+		await expect(card.locator(".tool-card-target")).toHaveText("/repo/src/main.rs");
 		await chatEvent(page, { state: "aborted", runId: "run-cancel" });
 		await expect(card).toHaveClass(/exec-cancelled/);
 		await expect(card).toContainText("Cancelled");
