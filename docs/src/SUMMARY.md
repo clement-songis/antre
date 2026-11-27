@@ -8,6 +8,7 @@
 
 - [Quickstart](quickstart.md)
 - [Installation](installation.md)
+- [Migrating an Existing Install](legacy-migration.md)
 - [Comparison](comparison.md)
 - [Configuration](configuration.md)
   - [Upstream Proxy](upstream-proxy.md)

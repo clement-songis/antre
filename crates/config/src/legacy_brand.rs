@@ -1,7 +1,7 @@
 //! Compatibility with installs made under the Moltis name.
 //!
 //! `scripts/rebrand.py` skips this file: it is where the old names live.
-//! See `docs/src/migrating-from-moltis.md`.
+//! See `docs/src/legacy-migration.md`.
 
 use std::{
     collections::HashSet,

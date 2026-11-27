@@ -19,7 +19,10 @@ One binary — sandboxed, secure, yours.
 
 ---
 
-Antre recently hit [the front page of Hacker News](https://news.ycombinator.com/item?id=46993587). Please [open an issue](https://github.com/antre-ai/antre/issues) for any friction at all. I'm focused on making Antre excellent.
+> **Antre is a fork of [Moltis](https://github.com/moltis-org/moltis) by Fabien Penso.** <!-- rebrand:keep -->
+> The lineage runs OpenClaw (the claw), Moltis (the molt), Antre (the lair: a self-hosted home for your agent). <!-- rebrand:keep -->
+> Existing Moltis installs migrate on first start, see [Migrating from Moltis](docs/src/legacy-migration.md). <!-- rebrand:keep -->
+> Antre has published nothing yet: the install script below still comes from moltis.org and the `antre-ai` packages and images do not exist yet, so build from source or use the Nix flake (`nix run github:clement-songis/antre`). <!-- rebrand:keep -->
 
 **Secure by design** — Your keys never leave your machine. Every command runs in a sandboxed container, never on your host.
 

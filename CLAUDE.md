@@ -8,6 +8,13 @@ alwaysApply: true
 Rust version of openclaw ([docs](https://docs.openclaw.ai), [code](https://github.com/openclaw/openclaw)).
 All code must have tests with high coverage. Always check for security.
 
+## Former Name
+
+Antre is a fork of Moltis. The old name is kept only for compatibility, in <!-- rebrand:keep -->
+`crates/config/src/legacy_brand.rs` and on lines marked `rebrand:keep`.
+`scripts/rebrand.py` performs the mechanical rename; re-run it on any branch
+based on pre-rename code (instructions in its header).
+
 ## Cargo Features
 
 Enable new feature flags **by default** in `crates/cli/Cargo.toml` (opt-out, not opt-in):

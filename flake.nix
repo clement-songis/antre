@@ -177,6 +177,18 @@
             "antre"
           ];
 
+          # rebrand:keep-start
+          # Services and wrappers written for Moltis still run `moltis`.
+          postInstall = ''
+            cat > $out/bin/moltis <<EOF
+            #!${pkgs.runtimeShell}
+            echo "warning: the moltis command is deprecated, run antre instead" >&2
+            exec "$out/bin/antre" "\$@"
+            EOF
+            chmod +x $out/bin/moltis
+          '';
+          # rebrand:keep-end
+
           meta = with pkgs.lib; {
             description = "Personal AI gateway inspired by OpenClaw";
             homepage = "https://www.moltis.org/";
@@ -184,6 +196,13 @@
             mainProgram = "antre";
           };
         };
+
+        packages.antre = self.packages.${system}.default;
+        # rebrand:keep-start
+        packages.moltis =
+          pkgs.lib.warn "the moltis package is deprecated, use antre (packages.default)"
+            self.packages.${system}.default;
+        # rebrand:keep-end
 
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
