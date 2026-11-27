@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Antre</title>
+<style>
+  :root { color-scheme: light dark; font: 15px/1.5 -apple-system, system-ui, sans-serif; }
+  body { display: grid; place-items: center; height: 100vh; margin: 0; }
+  #error { display: none; max-width: 40rem; white-space: pre-wrap; color: #c0392b; }
+</style>
+</head>
+<body>
+  <main>
+    <p id="status">Connecting to the daemon…</p>
+    <pre id="error"></pre>
+  </main>
+  <script>
+    window.showError = (message) => {
+      document.getElementById("status").textContent = "Could not reach a daemon.";
+      const error = document.getElementById("error");
+      error.textContent = message;
+      error.style.display = "block";
+    };
+  </script>
+</body>
+</html>

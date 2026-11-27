@@ -1,0 +1,99 @@
+{
+  "wallMs": 89722,
+  "peakRssMb": {
+    "shell": 116,
+    "webContent": 271,
+    "gpu": 29,
+    "networking": 8
+  },
+  "result": {
+    "bench": "stream",
+    "codeBlocks": 6,
+    "env": {
+      "devicePixelRatio": 2,
+      "engine": "tauri-system-webview",
+      "refreshHz": 59,
+      "refreshMs": 17,
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko)",
+      "viewport": "1280x860"
+    },
+    "finalHighlightMs": 234,
+    "flatOut": {
+      "deltas": 1389,
+      "domNodes": 293,
+      "firstTenthMeanMs": 0.254,
+      "lastTenthMeanMs": 3.543,
+      "maxTokensPerSec": 1628,
+      "perDeltaMs": {
+        "count": 1389,
+        "max": 11,
+        "mean": 1.84,
+        "p50": 2,
+        "p95": 4,
+        "p99": 4,
+        "total": 2558
+      },
+      "totalMs": 2558
+    },
+    "jsHeapMb": {
+      "end": null,
+      "start": null
+    },
+    "paced": [
+      {
+        "frames": {
+          "droppedFrames": 3405,
+          "droppedPct": 80.5,
+          "durationMs": 71886,
+          "fps": 11.8,
+          "frameP95Ms": 19,
+          "frames": 846,
+          "framesOver50ms": 6,
+          "worstFrameMs": 37759
+        },
+        "handlerMs": {
+          "count": 1389,
+          "max": 4327,
+          "mean": 36.34,
+          "p50": 3,
+          "p95": 85,
+          "p99": 871,
+          "total": 50474
+        },
+        "lagMs": 30266,
+        "renderedTokensPerSec": 57.9,
+        "targetTokensPerSec": 100
+      },
+      {
+        "frames": {
+          "droppedFrames": 57,
+          "droppedPct": 9.3,
+          "durationMs": 10402,
+          "fps": 54.7,
+          "frameP95Ms": 20,
+          "frames": 570,
+          "framesOver50ms": 1,
+          "worstFrameMs": 947
+        },
+        "handlerMs": {
+          "count": 1389,
+          "max": 6,
+          "mean": 2.06,
+          "p50": 2,
+          "p95": 4,
+          "p99": 4,
+          "total": 2860
+        },
+        "lagMs": 5,
+        "renderedTokensPerSec": 399.9,
+        "targetTokensPerSec": 400
+      }
+    ],
+    "reply": {
+      "chars": 16658,
+      "deltas": 1389,
+      "tokens": 4165,
+      "tokensPerDelta": 3
+    }
+  }
+}

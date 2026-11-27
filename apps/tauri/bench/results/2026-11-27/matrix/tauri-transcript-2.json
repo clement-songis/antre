@@ -1,0 +1,56 @@
+{
+  "wallMs": 13482,
+  "peakRssMb": {
+    "shell": 153,
+    "webContent": 474,
+    "gpu": 65,
+    "networking": 8
+  },
+  "result": {
+    "bench": "transcript",
+    "chars": 673908,
+    "domNodes": 28061,
+    "env": {
+      "devicePixelRatio": 2,
+      "engine": "tauri-system-webview",
+      "refreshHz": 59,
+      "refreshMs": 17,
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko)",
+      "viewport": "1280x860"
+    },
+    "highlight": {
+      "codeBlocks": 198,
+      "ms": 378
+    },
+    "jsHeapMb": {
+      "end": null,
+      "start": null
+    },
+    "jumpToPositionMs": {
+      "count": 40,
+      "max": 34,
+      "mean": 33.3,
+      "p50": 33,
+      "p95": 34,
+      "p99": 34,
+      "total": 1332
+    },
+    "messages": 2000,
+    "render": {
+      "domAndLayoutMs": 119,
+      "firstPaintMs": 304,
+      "markdownMs": 44
+    },
+    "scroll8s": {
+      "droppedFrames": 0,
+      "droppedPct": 0,
+      "durationMs": 7984,
+      "fps": 60,
+      "frameP95Ms": 18,
+      "frames": 480,
+      "framesOver50ms": 0,
+      "worstFrameMs": 21
+    },
+    "scrollHeightPx": 273160
+  }
+}

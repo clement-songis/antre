@@ -1,0 +1,38 @@
+[
+  {
+    "engine": "chromium",
+    "page": "canvas",
+    "run": 1,
+    "file": "chromium-canvas-1.json"
+  },
+  {
+    "engine": "chromium",
+    "page": "canvas",
+    "run": 2,
+    "file": "chromium-canvas-2.json"
+  },
+  {
+    "engine": "chromium",
+    "page": "canvas",
+    "run": 3,
+    "file": "chromium-canvas-3.json"
+  },
+  {
+    "engine": "tauri",
+    "page": "canvas",
+    "run": 1,
+    "file": "tauri-canvas-1.json"
+  },
+  {
+    "engine": "tauri",
+    "page": "canvas",
+    "run": 2,
+    "file": "tauri-canvas-2.json"
+  },
+  {
+    "engine": "tauri",
+    "page": "canvas",
+    "run": 3,
+    "file": "tauri-canvas-3.json"
+  }
+]

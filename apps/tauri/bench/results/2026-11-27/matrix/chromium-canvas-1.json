@@ -1,0 +1,83 @@
+{
+  "wallMs": 10593,
+  "peakRssMb": {
+    "renderer": 2202,
+    "gpu": 127,
+    "browser": 193
+  },
+  "result": {
+    "bench": "canvas",
+    "env": {
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36",
+      "engine": "browser",
+      "devicePixelRatio": 2,
+      "viewport": "1280x900",
+      "refreshMs": 8.3,
+      "refreshHz": 120
+    },
+    "srcdocBytes": 807035,
+    "elements": 5110,
+    "designScrollHeightPx": 23791,
+    "firstMount": {
+      "readyMs": 36.4,
+      "loadMs": 36.4
+    },
+    "idle3s": {
+      "iframe": {
+        "durationMs": 2858,
+        "frames": 343,
+        "fps": 119.7,
+        "droppedFrames": 1,
+        "droppedPct": 0.3,
+        "framesOver50ms": 0,
+        "worstFrameMs": 17,
+        "frameP95Ms": 9.2
+      },
+      "host": {
+        "durationMs": 3009.3,
+        "frames": 346,
+        "fps": 114.6,
+        "droppedFrames": 16,
+        "droppedPct": 4.4,
+        "framesOver50ms": 1,
+        "worstFrameMs": 141.9,
+        "frameP95Ms": 9.2
+      }
+    },
+    "scroll4s": {
+      "iframe": {
+        "durationMs": 4000,
+        "frames": 433,
+        "fps": 108,
+        "droppedFrames": 48,
+        "droppedPct": 10,
+        "framesOver50ms": 3,
+        "worstFrameMs": 183,
+        "frameP95Ms": 9.3
+      },
+      "host": {
+        "durationMs": 4000,
+        "frames": 872,
+        "fps": 217.8,
+        "droppedFrames": 45,
+        "droppedPct": 9.3,
+        "framesOver50ms": 3,
+        "worstFrameMs": 174.9,
+        "frameP95Ms": 9.2
+      }
+    },
+    "remountLoadMs": {
+      "count": 5,
+      "mean": 26.24,
+      "p50": 22.4,
+      "p95": 43.4,
+      "p99": 43.4,
+      "max": 43.4,
+      "total": 131.2
+    },
+    "jsHeapMb": {
+      "start": 5,
+      "end": 7.6
+    }
+  }
+}

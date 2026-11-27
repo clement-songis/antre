@@ -1,0 +1,98 @@
+{
+  "wallMs": 57154,
+  "peakRssMb": {
+    "renderer": 348,
+    "gpu": 107,
+    "browser": 211
+  },
+  "result": {
+    "bench": "stream",
+    "env": {
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36",
+      "engine": "browser",
+      "devicePixelRatio": 2,
+      "viewport": "1280x900",
+      "refreshMs": 8.3,
+      "refreshHz": 120
+    },
+    "reply": {
+      "chars": 16658,
+      "tokens": 4165,
+      "deltas": 1389,
+      "tokensPerDelta": 3
+    },
+    "flatOut": {
+      "deltas": 1389,
+      "totalMs": 1940.6,
+      "maxTokensPerSec": 2146,
+      "firstTenthMeanMs": 0.25,
+      "lastTenthMeanMs": 2.559,
+      "perDeltaMs": {
+        "count": 1389,
+        "mean": 1.38,
+        "p50": 1.4,
+        "p95": 2.6,
+        "p99": 3.3,
+        "max": 9.4,
+        "total": 1914.6
+      },
+      "domNodes": 293
+    },
+    "paced": [
+      {
+        "targetTokensPerSec": 100,
+        "renderedTokensPerSec": 100,
+        "lagMs": 7.2,
+        "handlerMs": {
+          "count": 1389,
+          "mean": 1.79,
+          "p50": 1.7,
+          "p95": 3.3,
+          "p99": 3.9,
+          "max": 5.5,
+          "total": 2485.5
+        },
+        "frames": {
+          "durationMs": 41641.7,
+          "frames": 4998,
+          "fps": 120,
+          "droppedFrames": 0,
+          "droppedPct": 0,
+          "framesOver50ms": 0,
+          "worstFrameMs": 9.4,
+          "frameP95Ms": 8.9
+        }
+      },
+      {
+        "targetTokensPerSec": 400,
+        "renderedTokensPerSec": 399.9,
+        "lagMs": 4.4,
+        "handlerMs": {
+          "count": 1389,
+          "mean": 1.85,
+          "p50": 1.8,
+          "p95": 3.5,
+          "p99": 4.1,
+          "max": 5.7,
+          "total": 2562.8
+        },
+        "frames": {
+          "durationMs": 10400.8,
+          "frames": 1249,
+          "fps": 120,
+          "droppedFrames": 0,
+          "droppedPct": 0,
+          "framesOver50ms": 0,
+          "worstFrameMs": 9.4,
+          "frameP95Ms": 9.3
+        }
+      }
+    ],
+    "finalHighlightMs": 455.7,
+    "codeBlocks": 6,
+    "jsHeapMb": {
+      "start": 2.1,
+      "end": 42.3
+    }
+  }
+}

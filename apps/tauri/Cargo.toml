@@ -1,0 +1,91 @@
+# Antre shell spike: a thin Tauri 2 window around the existing web UI.
+#
+# Its own workspace (and lockfile) so Tauri's dependency tree (wry, tao and,
+# on Linux, webkit2gtk system libraries) stays out of the main workspace's
+# builds and CI, like `apps/desktop`. See `plans/research/tauri-spike.md`.
+[workspace]
+members  = ["."]
+resolver = "2"
+
+[workspace.lints.rust]
+unsafe_code           = "deny"
+unused_qualifications = "deny"
+
+[workspace.lints.clippy]
+expect_used = "deny"
+unwrap_used = "deny"
+
+[package]
+description = "Tauri 2 shell spike for the Moltis/Antre web UI"
+edition     = "2024"
+license     = "MIT"
+name        = "antre-shell"
+publish     = false
+version     = "0.1.0"
+
+[[bin]]
+name = "antre-shell"
+path = "src/main.rs"
+
+# Versions live in this workspace's own table (it is separate from the main
+# workspace); the package inherits them.
+[workspace.dependencies]
+anyhow             = "1"
+moltis-client      = { default-features = false, features = ["local"], path = "../../crates/client" }
+moltis-config      = { path = "../../crates/config" }
+moltis-httpd       = { path = "../../crates/httpd" }
+moltis-web         = { path = "../../crates/web" }
+reqwest            = { default-features = false, features = ["rustls"], version = "0.13" }
+secrecy            = "0.8"
+serde              = { features = ["derive"], version = "1" }
+serde_json         = "1"
+tauri              = { features = [], version = "2.12" }
+tauri-build        = { features = [], version = "2.7" }
+tempfile           = "3"
+tokio              = { features = ["macros", "net", "process", "rt-multi-thread", "signal", "sync", "time"], version = "1" }
+tracing            = "0.1"
+tracing-subscriber = { features = ["env-filter", "fmt"], version = "0.3" }
+url                = "2"
+
+[dependencies]
+anyhow             = { workspace = true }
+moltis-client      = { workspace = true }
+moltis-config      = { optional = true, workspace = true }
+moltis-httpd       = { optional = true, workspace = true }
+moltis-web         = { optional = true, workspace = true }
+reqwest            = { workspace = true }
+secrecy            = { workspace = true }
+serde              = { workspace = true }
+serde_json         = { workspace = true }
+tauri              = { workspace = true }
+tokio              = { workspace = true }
+tracing            = { workspace = true }
+tracing-subscriber = { workspace = true }
+url                = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+
+[build-dependencies]
+tauri-build = { workspace = true }
+
+[features]
+default = []
+# Run the gateway inside the shell process instead of supervising the
+# `moltis` binary. Compiles the whole gateway into this workspace (slow), so
+# it is opt-in for the spike.
+embedded = ["dep:moltis-config", "dep:moltis-httpd", "dep:moltis-web"]
+
+[lints]
+workspace = true
+
+[profile.release]
+codegen-units = 1
+lto           = "thin"
+
+# Same patches as the main workspace (needed only to resolve the `embedded`
+# feature's gateway dependencies; keep in sync with the root Cargo.toml).
+[patch.crates-io]
+agent-client-protocol = { path = "../../vendor/agent-client-protocol" }
+sqlx-core   = { git = "https://github.com/moltis-org/sqlx", rev = "33747ad2e2d0c7962c6450faf31591c4e0782c23" }
+sqlx-sqlite = { git = "https://github.com/moltis-org/sqlx", rev = "33747ad2e2d0c7962c6450faf31591c4e0782c23" }

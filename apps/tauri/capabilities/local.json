@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "local-pages",
+  "description": "Only the shell's own bundled pages (connecting screen, benchmarks) get IPC. Pages served by a daemon, local or remote, get none.",
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}
