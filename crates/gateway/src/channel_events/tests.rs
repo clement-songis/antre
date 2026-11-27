@@ -654,11 +654,13 @@ fn format_pending_approvals_renders_numbered_commands() {
             id: "1".into(),
             command: "git status".into(),
             session_key: Some("session:a".into()),
+            expires_at_ms: 0,
         },
         PendingApprovalView {
             id: "2".into(),
             command: "rm -rf /tmp/build".into(),
             session_key: Some("session:a".into()),
+            expires_at_ms: 0,
         },
     ];
 
