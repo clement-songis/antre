@@ -14,6 +14,24 @@ makes, and lets you approve commands, rewind, edit and queue messages.
 | `/` | Composer | Slash command menu: Enter runs a command without arguments, Tab inserts it |
 | `@` | Composer, session bound to a project | File picker; inserts `@relative/path` |
 
+## Menus
+
+Right-click (or long-press on a phone, or use the **…** button) a session,
+a message or a tool card for its actions. On phones menus open as a sheet
+from the bottom of the screen.
+
+- **Sessions**: rename, pin to the top (per browser), move to a project,
+  fork, share, archive, delete. A deleted session can be restored with
+  **Undo** for five seconds.
+- **The chat title**: the same session actions plus auto-title, Markdown
+  export, MCP tools on/off, and the debug and full-context views.
+- **Messages**: copy, edit and resend, fork from here, rewind; on replies,
+  regenerate.
+- **Tool cards**: copy the command or target, the output, the arguments.
+
+Settings, theme, the command palette and sign-out are in the menu at the
+bottom of the session sidebar.
+
 ## Command approvals
 
 When `tools.exec.approval_mode` asks for approval, the request appears above
