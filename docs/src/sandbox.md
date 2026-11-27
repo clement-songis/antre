@@ -1,7 +1,9 @@
 # Sandbox Backends
 
-Moltis runs LLM-generated commands inside containers to protect your host
-system. The sandbox backend controls which container technology is used.
+Moltis runs LLM-generated commands inside a sandbox to protect your host
+system. The sandbox backend controls which isolation technology is used:
+containers or VMs when a runtime is installed, otherwise the operating
+system's own sandbox (Seatbelt on macOS, bubblewrap on Linux).
 
 ## Backend Selection
 
@@ -13,6 +15,9 @@ backend = "auto"          # default — picks the best available
 # backend = "podman"      # force Podman (daemonless, rootless)
 # backend = "docker"      # force Docker
 # backend = "apple-container"  # force Apple Container (macOS only)
+# backend = "os"          # native OS sandbox (Seatbelt on macOS, bubblewrap on Linux)
+# backend = "seatbelt"    # force Seatbelt (macOS only)
+# backend = "bubblewrap"  # force bubblewrap (Linux only)
 # backend = "wasm"        # force WASM sandbox (Wasmtime + WASI)
 # backend = "restricted-host"  # env clearing + rlimits only
 ```
@@ -24,8 +29,19 @@ With `"auto"` (the default), Moltis picks the strongest available backend:
 | 1        | Apple Container   | macOS    | VM (Virtualization.framework) |
 | 2        | Podman            | any      | Linux namespaces / cgroups (daemonless) |
 | 3        | Docker            | any      | Linux namespaces / cgroups    |
-| 4        | Restricted Host   | any      | env clearing, rlimits (no filesystem isolation) |
-| 5        | none (host)       | any      | no isolation                  |
+| 4        | Vercel / Daytona  | remote   | only when credentials are configured |
+| 5        | OS sandbox        | macOS, Linux | Seatbelt profile / bubblewrap namespaces (see below) |
+| 6        | Restricted Host   | any      | env clearing, rlimits (no filesystem isolation) |
+| 7        | none (host)       | any      | no isolation                  |
+
+The active backend and what it protects are logged at startup, for example:
+
+```text
+INFO sandbox backend: OS sandbox backend="seatbelt" protection="macOS Seatbelt: system read-only, writes limited to the sandbox home, temp and writable workspace, user home and Moltis secrets hidden, network only through the egress proxy on 127.0.0.1:18791"
+```
+
+When Moltis falls back to the restricted host it logs a warning, because
+commands then run unconfined and need approval.
 
 The WASM backend (`backend = "wasm"`) is not in the auto-detect chain because
 it cannot execute arbitrary shell commands — use it explicitly when you want
@@ -286,6 +302,104 @@ cargo build --release --no-default-features --features lightweight
 When the feature is disabled and the config requests `backend = "wasm"`, Moltis
 falls back to `restricted-host` with a warning.
 
+## OS Sandbox (Seatbelt / bubblewrap)
+
+When no container runtime is available, desktops still get kernel-enforced
+isolation without installing anything: Moltis runs each command on the host
+under a per-session policy enforced by the operating system.
+
+| Platform | Mechanism | Requirement |
+|----------|-----------|-------------|
+| macOS | Seatbelt (`/usr/bin/sandbox-exec` with a generated profile) | built in |
+| Linux | [bubblewrap](https://github.com/containers/bubblewrap) (user, mount, PID, IPC, UTS and network namespaces) | `bwrap` installed and unprivileged user namespaces enabled |
+| Windows | not available yet, see [Windows sandboxing](sandbox-windows.md) | — |
+
+Moltis probes the mechanism at startup by running a trivial command under it.
+If the probe fails (missing `bwrap`, user namespaces disabled by the
+distribution, or Moltis itself already running inside a sandbox), the next
+backend in the chain is used.
+
+### Policy
+
+Both platforms apply the same deny-by-default policy:
+
+| Area | Allowed |
+|------|---------|
+| System | read and execute only: `/usr`, `/bin`, `/sbin`, `/etc`, system frameworks, Homebrew (`/opt/homebrew`), Nix store, Xcode command-line tools |
+| Workspace (`data_dir()`) | read-only with `workspace_mount = "ro"` (default), read-write with `"rw"`, hidden with `"none"` |
+| Managed Files | follows `managed_files_mount`; stays read-only inside a writable workspace when set to `"ro"` |
+| Sandbox home | read-write. Follows `home_persistence`: `data_dir()/sandbox/home/shared` (default), one directory per session, or a temporary one removed at cleanup |
+| Temp | read-write `data_dir()/sandbox/os/<session>/tmp`, exported as `TMPDIR` and removed at cleanup. On Linux `/tmp` is a private tmpfs |
+| Everything else | denied: the user's home directory, other users' files, the system temp directories |
+
+Some paths stay denied even inside an allowed root: Moltis secrets in the
+data directory (`credentials.json`, `provider_keys.json`, OAuth token files,
+`mcp-servers.json`, `moltis.toml`, `.env`, `logs/`, `browser/`, and every
+`*.db`/`*.sqlite` file with its WAL and journal), the config directory, and
+credential stores under `$HOME` (`.ssh`, `.gnupg`, `.aws`, `.azure`, `.kube`,
+`.docker`, `.netrc`, `.npmrc`, `.pypirc`, `.git-credentials`,
+`.config/gcloud`, `.config/gh`, `Library/Keychains`, `Library/Cookies`).
+These denies also apply when you grant extra paths.
+
+Entries that Moltis loads or runs on the host stay read-only even with
+`workspace_mount = "rw"`, so a sandboxed command cannot plant code that runs
+outside the sandbox: `hooks/`, `disabled_hooks.json`, `plugins/`,
+`plugins-manifest.json`, `installed-skills/`, `bundled-skills/`,
+`skills-manifest.json`, the service supervisor script and pid files.
+
+The environment is never inherited: commands get a fixed `PATH`,
+`HOME` pointing to the sandbox home, `TMPDIR`, `LANG=C.UTF-8`,
+`MOLTIS_SANDBOX=os`, proxy variables in `trusted` mode, and the environment
+variables you configured in Moltis. `LD_*` and `DYLD_*` variables are
+dropped so nothing runs in the launcher before the policy applies.
+
+Because the policy is kernel-enforced, commands in the OS sandbox do not need
+per-command approval, like container backends. Host paths stay valid: the
+working directory, the workspace and managed Files keep their host location.
+
+### Network
+
+| `network` | macOS (Seatbelt) | Linux (bubblewrap) |
+|-----------|------------------|--------------------|
+| `"blocked"` | no network | no network (own network namespace) |
+| `"trusted"` (default) | only TCP to the egress proxy on `127.0.0.1:18791`; `HTTP(S)_PROXY` is set | **no network**: the sandbox's network namespace cannot reach the proxy on the host loopback, so it fails closed |
+| `"bypass"` | unrestricted IP traffic, including services listening on the host's loopback; Unix sockets of the host (ssh-agent, Docker) stay unreachable | host network, including the host's loopback |
+
+Unix sockets are allowed only inside the sandbox home and temp, so tools such
+as tmux work while the host's ssh-agent and Docker sockets stay out of reach.
+
+### Granting extra paths
+
+```toml
+[tools.exec.sandbox]
+backend = "os"
+os_read_paths = ["/Users/me/src/reference-docs"]   # read-only
+os_write_paths = ["/Users/me/src/my-project"]       # read-write
+```
+
+Relative paths are resolved against the data directory. Credential stores
+listed above stay denied even when a parent directory is granted.
+
+### Limitations
+
+- Seatbelt (`sandbox-exec`) is deprecated by Apple but still shipped and used
+  by Chrome, Codex and other agent tools; Moltis only trusts
+  `/usr/bin/sandbox-exec`.
+- Seatbelt cannot nest: if Moltis runs inside another Seatbelt sandbox (for
+  example a sandboxed terminal), the probe fails and Moltis falls back.
+- bubblewrap needs unprivileged user namespaces. Ubuntu 24.04 and later
+  restrict them through AppArmor; install the distribution's `bwrap` profile
+  or allow them with `sysctl kernel.apparmor_restrict_unprivileged_userns=0`.
+- With `workspace_mount = "rw"` on Linux, a denied or read-only entry that
+  does not exist yet (for example no `.env` or no `hooks/` in the data
+  directory) is not masked, so a command could create it. Seatbelt denies
+  creation as well. Keep the default `workspace_mount = "ro"` on Linux unless
+  you need it.
+- Resource limits use `ulimit` like the restricted host, except that the
+  process count limit is only applied when `pids_max` is set: the kernel
+  counts every process of your user, not just the sandboxed ones.
+- No image building — `moltis sandbox build` returns immediately.
+
 ## Restricted Host Sandbox
 
 The restricted-host sandbox provides lightweight isolation by running commands
@@ -328,9 +442,10 @@ recommended** for untrusted workloads.
 
 Moltis wraps the primary sandbox backend with automatic failover:
 
-- **Apple Container → Docker → Restricted Host**: if Apple Container enters a
-  corrupted state (stale metadata, missing config, VM boot failure), Moltis
-  fails over to Docker. If Docker is unavailable, it uses restricted-host.
+- **Apple Container → Podman/Docker → OS sandbox → Restricted Host**: if Apple
+  Container enters a corrupted state (stale metadata, missing config, VM boot
+  failure), Moltis fails over to Podman or Docker. If neither is available, it
+  uses Seatbelt, and restricted-host only when Seatbelt is unusable.
 - **Docker → Restricted Host**: if Docker loses its daemon connection during a
   session, Moltis fails over to the restricted-host sandbox.
 
@@ -456,11 +571,11 @@ pids_max = 256
 
 How resource limits are applied depends on the backend:
 
-| Limit | Docker | Apple Container | WASM | Restricted Host | cgroup (Linux) |
-|-------|--------|-----------------|------|-----------------|----------------|
-| `memory_limit` | `--memory` | `--memory` | Wasmtime reservation | `ulimit -v` | `MemoryMax=` |
-| `cpu_quota` | `--cpus` | `--cpus` | epoch timeout | `ulimit -t` (seconds) | `CPUQuota=` |
-| `pids_max` | `--pids-limit` | `--ulimit nproc=` | n/a | `ulimit -u` | `TasksMax=` |
+| Limit | Docker | Apple Container | WASM | OS sandbox | Restricted Host | cgroup (Linux) |
+|-------|--------|-----------------|------|------------|-----------------|----------------|
+| `memory_limit` | `--memory` | `--memory` | Wasmtime reservation | `ulimit -v` | `ulimit -v` | `MemoryMax=` |
+| `cpu_quota` | `--cpus` | `--cpus` | epoch timeout | `ulimit -t` (seconds) | `ulimit -t` (seconds) | `CPUQuota=` |
+| `pids_max` | `--pids-limit` | `--ulimit nproc=` | n/a | `ulimit -u` (only when set) | `ulimit -u` | `TasksMax=` |
 
 Apple Container requires version 0.9 or newer to apply `pids_max`.
 Its `--cpus` option only accepts positive whole CPU counts, so fractional
@@ -468,15 +583,15 @@ Its `--cpus` option only accepts positive whole CPU counts, so fractional
 
 ## Comparison
 
-| Feature | Apple Container | Docker | WASM | Restricted Host | none |
-|---------|----------------|--------|------|-----------------|------|
-| Filesystem isolation | ✅ VM boundary | ✅ namespaces | ✅ sandboxed tree | ❌ host FS | ❌ |
-| Network isolation | ✅ | ✅ | ✅ (no network) | ❌ | ❌ |
-| Kernel isolation | ✅ separate kernel | ❌ shared kernel | ✅ WASM VM | ❌ | ❌ |
-| Environment isolation | ✅ | ✅ | ✅ | ✅ cleared + restricted | ❌ |
-| Resource limits | ✅ | ✅ | ✅ fuel + epoch | ✅ ulimit | ❌ |
-| Image building | ✅ (via Docker) | ✅ | ❌ | ❌ | ❌ |
-| Shell commands | ✅ full shell | ✅ full shell | ~20 built-ins | ✅ full shell | ✅ full shell |
-| Managed Files mount | yes: `none`/`ro`/`rw` | yes: `none`/`ro`/`rw` | not yet | host path, no mount | host path, no mount |
-| Platform | macOS 26+ | any | any | any | any |
-| Overhead | low | medium | minimal | minimal | none |
+| Feature | Apple Container | Docker | WASM | OS sandbox | Restricted Host | none |
+|---------|----------------|--------|------|------------|-----------------|------|
+| Filesystem isolation | ✅ VM boundary | ✅ namespaces | ✅ sandboxed tree | ✅ kernel policy on host FS | ❌ host FS | ❌ |
+| Network isolation | ✅ | ✅ | ✅ (no network) | ✅ (proxy-only on macOS, blocked on Linux) | ❌ | ❌ |
+| Kernel isolation | ✅ separate kernel | ❌ shared kernel | ✅ WASM VM | ❌ shared kernel | ❌ | ❌ |
+| Environment isolation | ✅ | ✅ | ✅ | ✅ cleared + restricted | ✅ cleared + restricted | ❌ |
+| Resource limits | ✅ | ✅ | ✅ fuel + epoch | ✅ ulimit | ✅ ulimit | ❌ |
+| Image building | ✅ (via Docker) | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Shell commands | ✅ full shell | ✅ full shell | ~20 built-ins | ✅ host tools | ✅ full shell | ✅ full shell |
+| Managed Files mount | yes: `none`/`ro`/`rw` | yes: `none`/`ro`/`rw` | not yet | host path, `none`/`ro`/`rw` enforced | host path, no mount | host path, no mount |
+| Platform | macOS 26+ | any | any | macOS, Linux | any | any |
+| Overhead | low | medium | minimal | minimal | minimal | none |

@@ -32,6 +32,7 @@
 - [Hooks](hooks.md)
 - [Local LLMs](local-llm.md)
 - [Sandbox](sandbox.md)
+  - [Windows Sandboxing](sandbox-windows.md)
   - [Trusted Network](trusted-network.md)
 - [Voice](voice.md)
 - [Remote Access](remote-access.md)
