@@ -117,6 +117,28 @@ textarea.an-input { height: auto; min-height: 84px; padding: var(--space-2) var(
 .an-menu__item { display: flex; align-items: center; gap: var(--space-2); height: 32px; padding: 0 var(--space-2); border-radius: var(--corner-s); color: var(--ink); font-size: 13px; }
 .an-menu__item.is-active { background: var(--raised-2); color: var(--ink-strong); }
 .an-menu__item .an-kbd { margin-left: auto; }
+.an-menu__item--danger { color: var(--state-error); }
+.an-menu__item--danger .an-i { color: var(--state-error); }
+.an-menu__item .an-i { color: var(--ink-muted); }
+.an-menu__item .an-menu__chev { margin-left: auto; color: var(--ink-muted); }
+.an-menu__sep { height: 1px; margin: var(--space-1) calc(-1 * var(--space-1)); background: var(--line); }
+.an-menu--sheet { min-width: 0; border-radius: 0; border: 0; box-shadow: none; padding: 0; background: transparent; }
+.an-menu--sheet .an-menu__item { height: 48px; padding: 0 var(--space-3); font-size: 15px; }
+.an-menu--sheet .an-menu__item .an-i { width: 20px; height: 20px; }
+/* Row actions: the "…" button is shown on hover/focus with a pointer, and always on touch. */
+.an-more { margin-left: auto; width: 26px; height: 26px; flex: none; border: 0; border-radius: var(--corner-s); background: transparent; color: var(--ink-muted); display: grid; place-items: center; cursor: pointer; opacity: 0; }
+.an-more:hover, .an-more.is-open { background: var(--raised-2); color: var(--ink-strong); }
+:hover > .an-more, :focus-within > .an-more, .an-more.is-open, .an-more.is-visible { opacity: 1; }
+@media (hover: none) { .an-more { opacity: 1; width: 36px; height: 36px; } }
+.an-session__row { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
+.an-session__row .an-session__title { flex: 1 1 auto; min-width: 0; }
+.an-session.is-menu { background: var(--raised-2); box-shadow: inset 0 0 0 1px var(--lake); }
+.an-floating { position: absolute; z-index: var(--layer-menu); }
+.an-header-title { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 var(--space-2); border-radius: var(--corner-s); border: 0; background: transparent; font-family: var(--font-display); font-weight: 600; font-size: 14px; color: var(--ink-strong); cursor: pointer; }
+.an-header-title:hover, .an-header-title.is-open { background: var(--raised-2); }
+.an-header-title .an-i { color: var(--ink-muted); }
+.an-msg__actions { display: flex; align-items: center; gap: 2px; }
+.an-msg__actions .an-btn { color: var(--ink-muted); }
 .an-menu__group { padding: var(--space-2) var(--space-2) var(--space-1); font-family: var(--font-display); font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-muted); }
 
 /* App shell */
