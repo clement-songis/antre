@@ -66,6 +66,11 @@ use crate::{
 #[path = "run_with_tools/channel_tasks.rs"]
 mod channel_tasks;
 use channel_tasks::channel_task_update;
+#[path = "run_with_tools/memory_recall.rs"]
+mod memory_recall;
+pub(crate) use memory_recall::format_recalled_context;
+#[cfg(feature = "metrics")]
+use memory_recall::record_prefetch_metric;
 
 #[cfg(feature = "push-notifications")]
 use crate::channel_push::send_chat_push_notification;
@@ -1462,44 +1467,6 @@ where
             "agent run timed out after {timeout_secs}s"
         ))),
     }
-}
-
-/// Format recalled context, escaping XML metacharacters to prevent prompt injection.
-pub(crate) fn format_recalled_context(results: &[moltis_memory::search::SearchResult]) -> String {
-    if results.is_empty() {
-        return String::new();
-    }
-    let mut out = String::from(
-        "<recalled_context>\nRecalled from long-term memory as potentially relevant:\n\n",
-    );
-    for r in results {
-        // Truncate long chunks to avoid prompt bloat.
-        let text = if r.text.len() > 300 {
-            format!("{}…", &r.text[..r.text.floor_char_boundary(300)])
-        } else {
-            r.text.clone()
-        };
-        // Escape XML metacharacters to prevent injection through memory content.
-        let safe_path = escape_xml(&r.path);
-        let safe_text = escape_xml(&text.replace('\n', " "));
-        out.push_str(&format!("- [{safe_path}] {safe_text}\n"));
-    }
-    out.push_str("</recalled_context>");
-    out
-}
-
-#[cfg(feature = "metrics")]
-fn record_prefetch_metric(status: &'static str, start: Instant) {
-    use moltis_metrics::{counter, histogram, labels, memory as mem_metrics};
-    counter!(mem_metrics::PREFETCH_TOTAL, labels::STATUS => status).increment(1);
-    histogram!(mem_metrics::PREFETCH_DURATION_SECONDS).record(start.elapsed().as_secs_f64());
-}
-
-/// Escape XML metacharacters that could break prompt structure.
-fn escape_xml(s: &str) -> String {
-    s.replace('&', "&amp;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
 }
 
 #[cfg(test)]
