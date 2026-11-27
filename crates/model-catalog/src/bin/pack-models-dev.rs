@@ -75,6 +75,20 @@ fn run(args: &[String]) -> Result<String, String> {
     })
 }
 
+fn main() -> ExitCode {
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    match run(&args) {
+        Ok(summary) => {
+            println!("{summary}");
+            ExitCode::SUCCESS
+        },
+        Err(error) => {
+            eprintln!("{error}");
+            ExitCode::FAILURE
+        },
+    }
+}
+
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
@@ -111,19 +125,5 @@ mod tests {
         .unwrap_err();
         assert!(err.contains("refusing"));
         assert!(!output.exists());
-    }
-}
-
-fn main() -> ExitCode {
-    let args: Vec<String> = std::env::args().skip(1).collect();
-    match run(&args) {
-        Ok(summary) => {
-            println!("{summary}");
-            ExitCode::SUCCESS
-        },
-        Err(error) => {
-            eprintln!("{error}");
-            ExitCode::FAILURE
-        },
     }
 }
