@@ -74,6 +74,24 @@ npm run watch:css      # Watch mode
 The output `style.css` is committed unminified (one rule per line) so
 diffs merge cleanly.
 
+### Antre design tokens
+
+The Antre visual identity lives in `crates/web/ui/src/theme/`:
+
+| File | Role |
+|------|------|
+| `tokens.json` | Source of truth: colors for the `dark` (Cave) and `light` (Day) themes, type scale, spacing, radius, shadows, motion, z-index. Same file as the "Antre" design system artifact. |
+| `tokens.css` | CSS variables (`--ground`, `--ink`, `--lake`, `--corner-l`…) plus `.an-type-*` text styles. Generated. |
+| `tailwind.css` | Tailwind v4 mapping: `bg-raised`, `text-ink-muted`, `border-line`, `rounded-corner-l`, `shadow-elev-2`, `text-prose`, `font-display`. Generated. |
+| `tokens.ts` | Typed token names and `tokenVar()`. Generated. |
+| `components.css`, `icons.css` | Component classes prefixed `an-` (buttons, tool cards, diffs, approval card, composer, panes…) and mask icons (`an-i an-i-<name>`). |
+
+After editing `tokens.json`, run `npm run build:theme` then `npm run build:css`.
+Token names do not overlap the legacy variables (`--bg`, `--accent`, `--ok`…),
+so existing pages keep their look until they move to the new classes.
+The fonts (Geologica, Atkinson Hyperlegible Next and Mono) fall back to system
+faces until they are vendored.
+
 ### Service Worker
 
 The service worker is built from TypeScript via esbuild:

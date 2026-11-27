@@ -1,4 +1,8 @@
 @import "tailwindcss" source("../src/assets/");
+@import "./src/theme/tokens.css";
+@import "./src/theme/tailwind.css";
+@import "./src/theme/components.css";
+@import "./src/theme/icons.css";
 @source "./src/";
 
 /* ── Theme variables (clawdbot-inspired) ──────────────────────────── */
