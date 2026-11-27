@@ -115,6 +115,10 @@ export default {
 		searchModels: "Search models\u2026",
 		noMatchingModels: "Aucun modèle correspondant",
 		unsupported: "non pris en charge",
+		deprecated: "obsolète",
+		contextUnknown: "taille de contexte inconnue",
+		contextSize: "contexte {{size}}",
+		retiresOn: "retiré le {{date}}",
 	},
 	modals: {
 		addProvider: "Ajouter un fournisseur",

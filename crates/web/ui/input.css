@@ -1188,6 +1188,31 @@
     flex-shrink: 0;
     margin-left: 8px;
   }
+  .model-item-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .model-item-wire-id {
+    font-size: 0.65rem;
+    color: var(--muted);
+    font-family: var(--font-mono, ui-monospace, monospace);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .model-item-context {
+    font-size: 0.65rem;
+    color: var(--muted);
+    flex-shrink: 0;
+    margin-left: 6px;
+  }
+  .model-item-deprecated {
+    font-size: 0.62rem;
+    color: var(--warn, #b45309);
+    flex-shrink: 0;
+    margin-left: 6px;
+  }
   .model-dropdown-empty {
     padding: 8px 10px;
     font-size: 0.78rem;

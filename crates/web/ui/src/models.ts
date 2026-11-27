@@ -210,6 +210,31 @@ export function modelTitle(model: ModelLabelInfo): string {
 	return model.displayName && model.displayName !== model.id ? `${model.displayName} (${model.id})` : label;
 }
 
+/** Wire id (and version label) under the name, when the name hides it. */
+export function modelSecondaryLine(model: ModelInfo): string | null {
+	const wireId = model.catalog?.wireId;
+	if (!wireId || wireId === modelDisplayLabel(model)) return null;
+	return wireId;
+}
+
+/** Compact token count: 1048576 -> "1M", 131072 -> "128K". */
+export function formatTokenCount(tokens: number): string {
+	if (tokens >= 1_000_000) {
+		const millions = tokens / 1_000_000;
+		return `${Number.isInteger(millions) ? millions : millions.toFixed(millions < 10 ? 2 : 1).replace(/\.?0+$/, "")}M`;
+	}
+	if (tokens >= 1000) return `${Math.round(tokens / 1000)}K`;
+	return String(tokens);
+}
+
+export function modelContextLabel(model: ModelInfo): { text: string; title: string } | null {
+	if (!model.catalog) return null;
+	const window = model.catalog.contextWindow;
+	if (window == null) return { text: "?", title: t("common:labels.contextUnknown") };
+	const size = formatTokenCount(window);
+	return { text: size, title: t("common:labels.contextSize", { size }) };
+}
+
 function updateModelComboLabel(model: ModelInfo): void {
 	if (!S.modelComboLabel) return;
 	const label = modelDisplayLabel(model);
@@ -314,12 +339,22 @@ function buildModelItem(m: ModelInfo, currentId: string): HTMLDivElement {
 	if (m.id === currentId) el.classList.add("selected");
 	if (m.unsupported) el.classList.add("model-dropdown-item-unsupported");
 
+	const text = document.createElement("span");
+	text.className = "model-item-text";
 	const label = document.createElement("span");
 	label.className = "model-item-label";
 	label.textContent = modelDisplayLabel(m);
 	label.title = modelTitle(m);
 	el.title = label.title;
-	el.appendChild(label);
+	text.appendChild(label);
+	const secondary = modelSecondaryLine(m);
+	if (secondary) {
+		const sub = document.createElement("span");
+		sub.className = "model-item-wire-id";
+		sub.textContent = secondary;
+		text.appendChild(sub);
+	}
+	el.appendChild(text);
 
 	const meta = document.createElement("span");
 	meta.className = "model-item-meta";
@@ -329,6 +364,23 @@ function buildModelItem(m: ModelInfo, currentId: string): HTMLDivElement {
 		prov.className = "model-item-provider";
 		prov.textContent = m.provider;
 		meta.appendChild(prov);
+	}
+
+	const context = modelContextLabel(m);
+	if (context) {
+		const ctx = document.createElement("span");
+		ctx.className = "model-item-context";
+		ctx.textContent = context.text;
+		ctx.title = context.title;
+		meta.appendChild(ctx);
+	}
+
+	if (m.catalog?.deprecated) {
+		const badge = document.createElement("span");
+		badge.className = "model-item-deprecated";
+		badge.textContent = t("common:labels.deprecated");
+		if (m.catalog.retiresAt) badge.title = t("common:labels.retiresOn", { date: m.catalog.retiresAt });
+		meta.appendChild(badge);
 	}
 
 	if (m.supportsReasoning) {

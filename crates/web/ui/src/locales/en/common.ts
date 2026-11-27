@@ -114,6 +114,10 @@ export default {
 		searchModels: "Search models\u2026",
 		noMatchingModels: "No matching models",
 		unsupported: "unsupported",
+		deprecated: "deprecated",
+		contextUnknown: "context window unknown",
+		contextSize: "{{size}} context",
+		retiresOn: "retires {{date}}",
 	},
 	modals: {
 		addProvider: "Add Provider",

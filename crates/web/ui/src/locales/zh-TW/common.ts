@@ -114,6 +114,10 @@ export default {
 		searchModels: "搜尋模型\u2026",
 		noMatchingModels: "沒有符合的模型",
 		unsupported: "不支援",
+		deprecated: "已棄用",
+		contextUnknown: "上下文視窗未知",
+		contextSize: "{{size}} 上下文",
+		retiresOn: "{{date}} 下線",
 	},
 	modals: {
 		addProvider: "新增供應商",
