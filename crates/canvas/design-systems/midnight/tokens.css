@@ -1,0 +1,50 @@
+/* Midnight design system tokens. */
+:root {
+  color-scheme: dark;
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.625rem;
+  --text-3xl: 2.125rem;
+  --text-4xl: 3rem;
+  --leading-tight: 1.2;
+  --leading-normal: 1.55;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
+
+  --color-layer-0: #0b0b10;
+  --color-layer-1: #13131b;
+  --color-layer-2: #1c1c27;
+  --color-layer-3: #262634;
+  --color-text: #ededf3;
+  --color-text-muted: #a0a0b4;
+  --color-border: #2c2c3c;
+  --color-accent: #8b5cf6;
+  --color-on-accent: #ffffff;
+  --color-success: #34d399;
+  --color-warning: #fbbf24;
+  --color-danger: #f87171;
+
+  --glow-accent: 0 0 0 1px rgb(139 92 246 / 0.5), 0 0 24px rgb(139 92 246 / 0.35);
+  --shadow-popover: 0 8px 32px rgb(0 0 0 / 0.5);
+}

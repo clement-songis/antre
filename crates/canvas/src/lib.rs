@@ -1,10 +1,43 @@
-//! Canvas / A2UI host: HTTP + WebSocket server for agent-controlled HTML UI on mobile nodes.
+//! Design canvas: design artifacts, their versions, exports, and the
+//! sandboxed render origin that serves them.
 //!
-//! Flow: agent invokes canvas.push → canvas host serves HTML → node renders in
-//! WKWebView/WebView → user action → event back to agent.
+//! A design is a directory under `data_dir/designs/<id>/` (entry
+//! `index.html`), with metadata and an append-only version list in SQLite.
+//! The agent edits it with the regular file tools; [`hook`] versions it once
+//! per turn. See `docs/src/canvas.md`.
 
-pub mod server;
-
+pub mod csp;
+pub mod design_systems;
 pub mod error;
+pub mod events;
+pub mod export;
+pub mod hook;
+pub mod paths;
+pub mod publish;
+pub mod render;
+pub mod server;
+pub mod service;
+pub mod store;
+pub mod token;
+pub mod tools;
+pub mod vendor;
+pub mod versions;
 
-pub use error::{Error, Result};
+pub use {
+    error::{Error, Result},
+    events::{CanvasEvent, CanvasEventSink, Visibility},
+    paths::DesignId,
+    publish::{CreatedShare, PublishedSnapshot, ShareBackend},
+    render::{BrowserRenderer, DesignRenderer},
+    service::{CanvasService, CanvasServiceParts, CanvasSettings, ExportFormat, Viewport},
+    store::{Design, DesignFilter, DesignStore, DesignVersion},
+};
+
+/// Run the canvas migrations on the shared `moltis.db` pool.
+pub async fn run_migrations(pool: &sqlx::SqlitePool) -> Result<()> {
+    sqlx::migrate!("./migrations")
+        .set_ignore_missing(true)
+        .run(pool)
+        .await?;
+    Ok(())
+}

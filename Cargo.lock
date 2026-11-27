@@ -7452,12 +7452,34 @@ dependencies = [
 name = "moltis-canvas"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
+ "async-trait",
  "axum",
+ "base64 0.22.1",
+ "hex",
+ "hmac 0.12.1",
+ "mime_guess",
+ "moltis-agents",
+ "moltis-browser",
  "moltis-common",
+ "moltis-config",
  "moltis-metrics",
+ "moltis-tools",
+ "rand 0.10.1",
+ "regex",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "sqlx",
+ "tempfile",
  "thiserror 2.0.18",
+ "time",
  "tokio",
+ "tower",
  "tracing",
+ "uuid",
+ "walkdir",
+ "zip",
 ]
 
 [[package]]
