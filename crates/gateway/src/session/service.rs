@@ -323,6 +323,14 @@ impl SessionService for LiveSessionService {
         self.fork_impl(params).await
     }
 
+    async fn truncate(&self, params: Value) -> ServiceResult {
+        self.truncate_impl(params).await
+    }
+
+    async fn rewind_points(&self, params: Value) -> ServiceResult {
+        self.rewind_points_impl(params).await
+    }
+
     async fn branches(&self, params: Value) -> ServiceResult {
         self.branches_impl(params).await
     }

@@ -288,6 +288,67 @@ pub(super) fn register(reg: &mut MethodRegistry) {
         }),
     );
     reg.register(
+        "sessions.rewind_points",
+        Box::new(|ctx| {
+            Box::pin(async move {
+                ctx.state
+                    .services
+                    .session
+                    .rewind_points(ctx.params.clone())
+                    .await
+                    .map_err(ErrorShape::from)
+            })
+        }),
+    );
+    reg.register(
+        "sessions.truncate",
+        Box::new(|ctx| {
+            Box::pin(async move {
+                let key = ctx
+                    .params
+                    .get("key")
+                    .and_then(|v| v.as_str())
+                    .ok_or_else(|| {
+                        ErrorShape::new(error_codes::INVALID_REQUEST, "missing 'key' parameter")
+                    })?
+                    .to_string();
+                // A run appends to the history while it streams; cutting it
+                // underneath would interleave old and new messages.
+                if ctx
+                    .state
+                    .chat()
+                    .active_session_keys()
+                    .await
+                    .iter()
+                    .any(|active| active == &key)
+                {
+                    return Err(ErrorShape::new(
+                        error_codes::INVALID_REQUEST,
+                        "stop the running reply before rewinding this session",
+                    ));
+                }
+                let result = ctx
+                    .state
+                    .services
+                    .session
+                    .truncate(ctx.params.clone())
+                    .await
+                    .map_err(ErrorShape::from)?;
+                broadcast(
+                    &ctx.state,
+                    "session",
+                    serde_json::json!({ "kind": "truncated", "sessionKey": key }),
+                    BroadcastOpts {
+                        drop_if_slow: true,
+                        ..Default::default()
+                    },
+                )
+                .await;
+                Ok(result)
+            })
+        }),
+    );
+    reg.register(
         "sessions.branches",
         Box::new(|ctx| {
             Box::pin(async move {

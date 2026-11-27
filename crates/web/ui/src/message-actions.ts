@@ -10,6 +10,7 @@ import * as gon from "./gon";
 import { sendRpc } from "./helpers";
 import { buildFeedbackButtons, feedbackStatus } from "./message-feedback";
 import { renderPersistedAudio } from "./message-voice";
+import { regenerateLastTurn } from "./pages/chat/rewind";
 import { copyToClipboard, showToast } from "./ui";
 
 // ── Icon helper ──────────────────────────────────────────────
@@ -196,8 +197,12 @@ function buildRetryPopover(sessionKey: string): HTMLElement {
 	const items: Array<{ iconClass: string; label: string; action: () => void }> = [
 		{
 			iconClass: "icon-retry",
-			label: "Try again",
-			action: () => retrySend(sessionKey, "Please try again with a different response."),
+			label: "Regenerate",
+			action: () => {
+				regenerateLastTurn(sessionKey).catch((err: unknown) => {
+					showToast(err instanceof Error ? err.message : "Regenerate failed", "error");
+				});
+			},
 		},
 		{
 			iconClass: "icon-list-plus",

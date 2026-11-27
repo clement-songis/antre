@@ -1,5 +1,86 @@
 use super::*;
 
+/// A user message a session can be rewound to, with the runs that followed
+/// it (their file checkpoints are what "restore files" undoes).
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct RewindPoint {
+    /// Position of the user message in the raw history.
+    pub index: usize,
+    pub text: String,
+    /// The message carries images or documents, so it cannot be resent as text.
+    pub has_attachments: bool,
+    pub run_ids: Vec<String>,
+}
+
+fn user_message_text(message: &Value) -> (String, bool) {
+    match message.get("content") {
+        Some(Value::String(text)) => (text.clone(), message.get("documents").is_some()),
+        Some(Value::Array(blocks)) => {
+            let text = blocks
+                .iter()
+                .filter(|block| block.get("type").and_then(Value::as_str) == Some("text"))
+                .filter_map(|block| block.get("text").and_then(Value::as_str))
+                .collect::<Vec<_>>()
+                .join("\n");
+            let has_media = blocks
+                .iter()
+                .any(|block| block.get("type").and_then(Value::as_str) != Some("text"));
+            (text, has_media || message.get("documents").is_some())
+        },
+        _ => (String::new(), message.get("documents").is_some()),
+    }
+}
+
+/// Every user message with the run ids seen from it up to the next one.
+pub(crate) fn rewind_points(messages: &[Value]) -> Vec<RewindPoint> {
+    let mut points: Vec<RewindPoint> = Vec::new();
+    for (index, message) in messages.iter().enumerate() {
+        let run_id = message
+            .get("run_id")
+            .and_then(Value::as_str)
+            .filter(|id| !id.is_empty());
+        if message.get("role").and_then(Value::as_str) == Some("user") {
+            let (text, has_attachments) = user_message_text(message);
+            points.push(RewindPoint {
+                index,
+                text,
+                has_attachments,
+                run_ids: run_id.map(str::to_string).into_iter().collect(),
+            });
+            continue;
+        }
+        if let (Some(point), Some(run_id)) = (points.last_mut(), run_id)
+            && !point.run_ids.iter().any(|id| id == run_id)
+        {
+            point.run_ids.push(run_id.to_string());
+        }
+    }
+    points
+}
+
+/// Keep the first `keep` messages of `key`. Returns (kept, removed).
+pub(crate) async fn truncate_history(
+    store: &SessionStore,
+    key: &str,
+    keep: usize,
+) -> Result<(usize, usize), ServiceError> {
+    let messages = store.read(key).await.map_err(ServiceError::message)?;
+    let total = messages.len();
+    if keep > total {
+        return Err(format!("keep {keep} exceeds message count {total}").into());
+    }
+    if keep == total {
+        return Ok((total, 0));
+    }
+    let kept: Vec<Value> = messages.into_iter().take(keep).collect();
+    store
+        .replace_history(key, kept)
+        .await
+        .map_err(ServiceError::message)?;
+    Ok((keep, total - keep))
+}
+
 impl LiveSessionService {
     pub(super) async fn delete_impl(&self, params: Value) -> ServiceResult {
         let key = params
@@ -85,6 +166,39 @@ impl LiveSessionService {
         }
 
         Ok(serde_json::json!({ "ok": true }))
+    }
+
+    pub(super) async fn rewind_points_impl(&self, params: Value) -> ServiceResult {
+        let key = params
+            .get("key")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| "missing 'key' parameter".to_string())?;
+        let messages = self.store.read(key).await.map_err(ServiceError::message)?;
+        Ok(serde_json::json!({
+            "key": key,
+            "messageCount": messages.len(),
+            "points": rewind_points(&messages),
+        }))
+    }
+
+    /// Keep the first `keep` messages of a session and drop the rest. The
+    /// caller must make sure no run is writing to the session.
+    pub(super) async fn truncate_impl(&self, params: Value) -> ServiceResult {
+        let key = params
+            .get("key")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| "missing 'key' parameter".to_string())?;
+        let keep = params
+            .get("keep")
+            .and_then(|v| v.as_u64())
+            .ok_or_else(|| "missing 'keep' parameter".to_string())? as usize;
+        let (kept, removed) = truncate_history(&self.store, key, keep).await?;
+        self.metadata.touch(key, kept as u32).await;
+        Ok(serde_json::json!({
+            "key": key,
+            "messageCount": kept,
+            "removed": removed,
+        }))
     }
 
     pub(super) async fn fork_impl(&self, params: Value) -> ServiceResult {

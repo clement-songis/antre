@@ -20,6 +20,7 @@ import { upsertTtsProviderFooter } from "../../../message-voice";
 import { showThinkingTail } from "../../../ws/shared";
 import { Markdown } from "./Markdown";
 import type { AssistantItem, AssistantUsage, DomItem, NoticeItem, ThinkingItem, UserItem } from "./model";
+import { UserActions } from "./UserActions";
 
 /** Runs `mount` once on a slot element; the slot content is owned by `mount`. */
 function ImperativeSlot({ mount, deps }: { mount: (el: HTMLElement) => void; deps: unknown[] }) {
@@ -82,6 +83,7 @@ export function UserMessage({ item, sessionKey }: UserMessageProps) {
 				/>
 			) : null}
 			{item.footnote ? <div className="msg-model-footer">{item.footnote}</div> : null}
+			<UserActions item={item} sessionKey={sessionKey} />
 		</div>
 	);
 }
@@ -152,6 +154,22 @@ export function AssistantMessage({ item, sessionKey, isLast, children }: Assista
 	useEffect(() => {
 		if (ref.current && item.ttsProvider) upsertTtsProviderFooter(ref.current, item.ttsProvider);
 	}, [item.ttsProvider]);
+	// The action bar is built imperatively and appended last, as a direct
+	// child, after every rendered part of the message.
+	useLayoutEffect(() => {
+		const host = ref.current;
+		if (!(host && item.final)) return;
+		for (const bar of host.querySelectorAll(":scope > .msg-action-bar")) bar.remove();
+		appendMessageActions({
+			messageEl: host,
+			sessionKey,
+			messageIndex: item.historyIndex,
+			text: item.text,
+			runId: item.runId,
+			hasAudio: !!item.audioSrc,
+			audioWarning: item.audioWarning,
+		});
+	}, [item.final, item.historyIndex, item.runId, item.text, sessionKey, item.audioSrc, item.audioWarning]);
 	return (
 		<div
 			ref={ref}
@@ -174,24 +192,6 @@ export function AssistantMessage({ item, sessionKey, isLast, children }: Assista
 			{item.final ? <ReasoningDisclosure text={item.reasoning} /> : null}
 			{item.final ? (
 				<UsageFooter usage={item.usage} replyMedium={item.replyMedium} createdAt={item.createdAt} showTime={isLast} />
-			) : null}
-			{item.final ? (
-				<ImperativeSlot
-					mount={(el) => {
-						const host = el.closest(".msg") as HTMLElement | null;
-						appendMessageActions({
-							messageEl: el,
-							hostEl: host || el,
-							sessionKey,
-							messageIndex: item.historyIndex,
-							text: item.text,
-							runId: item.runId,
-							hasAudio: !!item.audioSrc,
-							audioWarning: item.audioWarning,
-						});
-					}}
-					deps={[item.final, item.historyIndex, item.runId, sessionKey, !!item.audioSrc]}
-				/>
 			) : null}
 			{children}
 		</div>

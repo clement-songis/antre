@@ -1430,6 +1430,9 @@ mod tests {
     #[path = "channel_binding_tests.rs"]
     mod channel_binding_tests;
 
+    #[path = "truncate_tests.rs"]
+    mod truncate_tests;
+
     #[cfg(feature = "fs-tools")]
     #[tokio::test]
     async fn delete_clears_fs_state_for_session() {

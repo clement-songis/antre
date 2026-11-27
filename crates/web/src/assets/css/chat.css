@@ -975,6 +975,32 @@
 
 /* ── Message action bar (copy, retry, fork) ── */
 
+/* Edit / rewind on user messages: shown on hover or keyboard focus. */
+.msg-user-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 2px;
+  margin-top: 4px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.msg.user:hover .msg-user-actions,
+.msg-user-actions:focus-within {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .msg-user-actions {
+    opacity: 1;
+  }
+}
+
+.msg-action-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
 .msg-action-bar {
   display: flex;
   align-items: center;

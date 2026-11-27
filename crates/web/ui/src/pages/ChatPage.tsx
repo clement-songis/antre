@@ -50,6 +50,8 @@ import {
 	renderContextTokensSection,
 	renderContextToolsSection,
 } from "./chat/context-card";
+import { RewindDialog, reportRewindError } from "./chat/RewindDialog";
+import { fetchRewindPoints, rewindPickerOpen } from "./chat/rewind";
 // ── Sub-module imports ──────────────────────────────────────
 import {
 	setSendChatFn,
@@ -633,12 +635,14 @@ function handleChatCopy(e: ClipboardEvent): void {
 function mountApprovalControls(): void {
 	const dockMount = S.$("approvalDockMount");
 	if (dockMount) render(<ApprovalDock />, dockMount);
+	const rewindMount = S.$("rewindDialogMount");
+	if (rewindMount) render(<RewindDialog />, rewindMount);
 	const badgeMount = S.$("approvalsBadgeMount");
 	if (badgeMount) render(<ApprovalsBadge />, badgeMount);
 }
 
 function unmountApprovalControls(): void {
-	for (const id of ["approvalDockMount", "approvalsBadgeMount"]) {
+	for (const id of ["approvalDockMount", "approvalsBadgeMount", "rewindDialogMount"]) {
 		const mount = S.$(id);
 		if (mount) render(null, mount);
 	}
@@ -735,6 +739,27 @@ function anyChatModalOpen(): boolean {
 	return !!document.querySelector(".provider-modal-backdrop:not(.hidden), [role='dialog'][aria-modal='true']");
 }
 
+const DOUBLE_ESCAPE_MS = 600;
+let lastIdleEscapeAt = 0;
+
+/** Esc Esc with an empty composer and no running reply opens the rewind picker. */
+function handleDoubleEscape(e: KeyboardEvent): void {
+	if ((S.chatInput as HTMLTextAreaElement | null)?.value.trim()) return;
+	const now = Date.now();
+	if (now - lastIdleEscapeAt > DOUBLE_ESCAPE_MS) {
+		lastIdleEscapeAt = now;
+		return;
+	}
+	lastIdleEscapeAt = 0;
+	e.preventDefault();
+	const sessionKey = S.activeSessionKey;
+	fetchRewindPoints(sessionKey)
+		.then((points) => {
+			rewindPickerOpen.value = { sessionKey, points };
+		})
+		.catch(reportRewindError);
+}
+
 let approvalShortcutHandler: ((e: KeyboardEvent) => void) | null = null;
 let escapeStopHandler: ((e: KeyboardEvent) => void) | null = null;
 
@@ -747,9 +772,12 @@ function bindChatShortcuts(): void {
 		if (e.key !== "Escape" || e.defaultPrevented || e.isComposing) return;
 		if (anyChatModalOpen()) return;
 		const btn = S.chatSendBtn as HTMLButtonElement | null;
-		if (btn?.dataset.mode !== "stop" || btn.disabled) return;
-		e.preventDefault();
-		stopGeneration(btn);
+		if (btn?.dataset.mode === "stop" && !btn.disabled) {
+			e.preventDefault();
+			stopGeneration(btn);
+			return;
+		}
+		handleDoubleEscape(e);
 	};
 	document.addEventListener("keydown", approvalShortcutHandler, true);
 	document.addEventListener("keydown", escapeStopHandler);
@@ -897,6 +925,7 @@ const chatPageHTML =
 	'<div id="fullContextModal" class="provider-modal-backdrop hidden"><div class="provider-modal" style="width:min(1080px,96vw);max-width:96vw;max-height:88vh;"><div class="provider-modal-header"><div class="provider-item-name">Full context</div><button id="fullContextModalCloseBtn" type="button" class="provider-btn provider-btn-secondary provider-btn-sm">Close</button></div><div class="provider-modal-body" style="padding:0;overflow:hidden;"><div id="fullContextPanel" class="px-4 py-3 overflow-y-auto" style="max-height:72vh;"></div></div></div></div>' +
 	'<div class="p-4 flex flex-col gap-2" id="messages" role="log" aria-label="Chat messages" style="grid-row:3;overflow-y:auto;min-height:0;min-width:0"></div>' +
 	'<div id="approvalDockMount" style="grid-row:4;"></div>' +
+	'<div id="rewindDialogMount"></div>' +
 	'<div id="queuedMessages" class="queued-tray hidden" style="grid-row:5;"></div>' +
 	'<div class="chat-input-row bg-[var(--bg)]" style="grid-row:6;"><div id="chatComposer" class="chat-composer"><div class="chat-composer-input-line"><span id="chatCommandPrompt" class="chat-command-prompt chat-command-prompt-hidden" title="Command prompt symbol" aria-hidden="true">$</span><textarea id="chatInput" placeholder="Type a message..." rows="1" enterkeyhint="send" class="chat-composer-textarea"></textarea></div><div class="chat-composer-footer"><div class="chat-composer-tools"><div id="modelCombo" class="model-combo"><button id="modelComboBtn" class="model-combo-btn" type="button"><span id="modelComboLabel">loading\u2026</span><span class="icon icon-sm icon-chevron-down model-combo-chevron"></span></button><div id="modelDropdown" class="model-dropdown hidden"><input id="modelSearchInput" type="text" placeholder="Search models\u2026" class="model-search-input" autocomplete="off" /><div id="modelDropdownList" class="model-dropdown-list"></div></div></div><div id="reasoningCombo" class="model-combo hidden"><button id="reasoningComboBtn" class="model-combo-btn" type="button" title="Reasoning effort"><span class="icon icon-sm icon-brain" style="flex-shrink:0;"></span><span id="reasoningComboLabel">Off</span><span class="icon icon-sm icon-chevron-down model-combo-chevron"></span></button><div id="reasoningDropdown" class="model-dropdown hidden"><div id="reasoningDropdownList" class="model-dropdown-list"></div></div></div></div><div id="tokenBar" class="token-bar"></div><div class="chat-composer-actions"><input id="attachInput" class="hidden" type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple /><button id="attachBtn" type="button" title="Attach images" class="chat-composer-icon-btn"><span class="icon icon-lg icon-paperclip"></span></button><button id="micBtn" disabled title="Click to start recording" class="mic-btn chat-composer-icon-btn"><span class="icon icon-lg icon-microphone"></span></button><button id="vadBtn" disabled title="Conversation mode (VAD)" class="vad-btn chat-composer-icon-btn"><span class="icon icon-lg icon-waveform"></span></button><button id="sendBtn" disabled aria-label="Send" title="Send" class="chat-composer-send-btn"><span class="icon icon-lg icon-arrow-up"></span></button></div></div></div></div></div>';
 
