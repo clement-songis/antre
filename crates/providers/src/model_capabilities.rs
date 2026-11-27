@@ -80,6 +80,13 @@ impl ContextWindowFallback {
 }
 
 const GENERIC_CONTEXT_WINDOW_FALLBACKS: &[ContextWindowFallback] = &[
+    ContextWindowFallback::Prefix("gpt-6", 1_050_000),
+    ContextWindowFallback::Prefix("gpt-oss", 131_072),
+    ContextWindowFallback::Prefix("openai/gpt-oss", 131_072),
+    ContextWindowFallback::Prefix("llama-3", 131_072),
+    ContextWindowFallback::Exact("grok-4.3", 1_000_000),
+    ContextWindowFallback::Prefix("grok-4", 500_000),
+    ContextWindowFallback::Prefix("mistral-large-4", 1_000_000),
     ContextWindowFallback::Exact("gpt-5.6", 1_050_000),
     ContextWindowFallback::Exact("gpt-5.6-luna", 1_050_000),
     ContextWindowFallback::Exact("gpt-5.6-sol", 1_050_000),
@@ -107,6 +114,9 @@ const GENERIC_CONTEXT_WINDOW_FALLBACKS: &[ContextWindowFallback] = &[
 ];
 
 const OPENAI_CODEX_CONTEXT_WINDOW_FALLBACKS: &[ContextWindowFallback] = &[
+    ContextWindowFallback::Exact("gpt-6.2-sol", 500_000),
+    ContextWindowFallback::Exact("gpt-6.1-sol", 500_000),
+    ContextWindowFallback::Prefix("gpt-6", 272_000),
     ContextWindowFallback::Exact("gpt-5.6", 372_000),
     ContextWindowFallback::Exact("gpt-5.6-luna", 372_000),
     ContextWindowFallback::Exact("gpt-5.6-sol", 372_000),
@@ -115,12 +125,14 @@ const OPENAI_CODEX_CONTEXT_WINDOW_FALLBACKS: &[ContextWindowFallback] = &[
 ];
 
 const GITHUB_COPILOT_CONTEXT_WINDOW_FALLBACKS: &[ContextWindowFallback] = &[
-    ContextWindowFallback::Exact("claude-fable-5", 1_000_000),
+    ContextWindowFallback::Prefix("claude-fable-5", 1_000_000),
+    ContextWindowFallback::Prefix("claude-opus-5", 1_000_000),
+    ContextWindowFallback::Prefix("claude-haiku-5", 1_000_000),
     ContextWindowFallback::Exact("claude-opus-4.6", 1_000_000),
     ContextWindowFallback::Exact("claude-opus-4.7", 1_000_000),
     ContextWindowFallback::Exact("claude-opus-4.8", 1_000_000),
     ContextWindowFallback::Exact("claude-sonnet-4.6", 1_000_000),
-    ContextWindowFallback::Exact("claude-sonnet-5", 1_000_000),
+    ContextWindowFallback::Prefix("claude-sonnet-5", 1_000_000),
 ];
 
 pub(crate) fn context_window_fallback_for_model(

@@ -339,7 +339,8 @@ pub struct PerplexityConfig {
     pub api_key: Option<Secret<String>>,
     /// Base URL override. Auto-detected from key prefix if empty.
     pub base_url: Option<String>,
-    /// Model to use.
+    /// Model for the OpenRouter / proxy chat route. Ignored with a direct
+    /// Perplexity key, which uses the Search API.
     pub model: Option<String>,
 }
 

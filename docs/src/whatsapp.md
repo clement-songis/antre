@@ -96,7 +96,7 @@ automated deployments or when you want to pre-configure settings before pairing.
 
 [channels.whatsapp."my-whatsapp"]
 dm_policy = "open"
-model = "anthropic/claude-sonnet-4-20250514"
+model = "anthropic/claude-sonnet-5-5"
 model_provider = "anthropic"
 ```
 
@@ -110,7 +110,7 @@ paired = true
 display_name = "John's iPhone"
 phone_number = "+15551234567"
 dm_policy = "open"
-model = "anthropic/claude-sonnet-4-20250514"
+model = "anthropic/claude-sonnet-5-5"
 model_provider = "anthropic"
 ```
 
@@ -149,7 +149,7 @@ Each WhatsApp account is a named entry under `[channels.whatsapp]`:
 paired = true
 display_name = "John's iPhone"
 phone_number = "+15551234567"
-model = "anthropic/claude-sonnet-4-20250514"
+model = "anthropic/claude-sonnet-5-5"
 model_provider = "anthropic"
 agent_id = "personal"
 dm_policy = "allowlist"
@@ -183,7 +183,7 @@ agent_id = "support"
 agent_id = "triage"
 
 [channels.whatsapp."work-bot.user_overrides"."15551234567@s.whatsapp.net"]
-model = "anthropic/claude-sonnet-4-20250514"
+model = "anthropic/claude-sonnet-5-5"
 agent_id = "research"
 ```
 

@@ -319,7 +319,7 @@ pub async fn fetch_discoverable_models(
         }
         if matches!(entry.wire_api, moltis_config::WireApi::Anthropic) {
             if should_fetch_models(config, name)
-                && let Some(auth) = resolve_custom_anthropic_auth(entry)
+                && let Some(auth) = resolve_custom_anthropic_auth(config, name, entry)
             {
                 let base_url = entry
                     .base_url
@@ -1140,7 +1140,7 @@ impl ProviderRegistry {
                 let has_explicit_models = !configured_models_for_provider(config, name).is_empty();
                 if !has_explicit_models
                     && should_fetch_models(config, name)
-                    && let Some(auth) = resolve_custom_anthropic_auth(entry)
+                    && let Some(auth) = resolve_custom_anthropic_auth(config, name, entry)
                 {
                     let base_url = entry
                         .base_url

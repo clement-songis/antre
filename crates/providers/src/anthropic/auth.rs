@@ -64,6 +64,12 @@ impl AnthropicAuth {
         Self::SetupToken(token)
     }
 
+    /// `true` for a `claude setup-token` subscription credential.
+    #[must_use]
+    pub fn is_subscription_token(&self) -> bool {
+        self.is_oauth()
+    }
+
     /// `true` when requests must carry the Claude Code OAuth identity.
     fn is_oauth(&self) -> bool {
         matches!(self, Self::SetupToken(_))

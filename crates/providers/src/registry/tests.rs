@@ -350,10 +350,38 @@ fn capture_anthropic_request() -> anyhow::Result<(String, mpsc::Receiver<anyhow:
     Ok((base_url, rx))
 }
 
+#[test]
+fn custom_anthropic_setup_token_is_skipped_without_opt_in() {
+    let mut config = ProvidersConfig::default();
+    config
+        .providers
+        .insert("custom-anthropic-sub".into(), ProviderEntry {
+            wire_api: moltis_config::WireApi::Anthropic,
+            setup_token: Some(Secret::new("sk-ant-oat01-sub".into())),
+            models: vec!["claude-opus-5-5".into()],
+            ..ProviderEntry::default()
+        });
+
+    let registry = ProviderRegistry::from_config_with_prefetched(
+        &config,
+        &HashMap::new(),
+        &HashMap::new(),
+        HashMap::new(),
+    );
+    assert!(
+        registry
+            .get("custom-anthropic-sub::claude-opus-5-5")
+            .is_none()
+    );
+}
+
 #[tokio::test]
 async fn custom_anthropic_provider_registers_with_setup_token() -> anyhow::Result<()> {
     let (base_url, body_rx) = capture_anthropic_request()?;
-    let mut config = ProvidersConfig::default();
+    let mut config = ProvidersConfig {
+        allow_claude_subscription_tokens: true,
+        ..ProvidersConfig::default()
+    };
     config
         .providers
         .insert("custom-anthropic-healabs".into(), ProviderEntry {

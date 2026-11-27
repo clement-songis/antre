@@ -22,7 +22,8 @@ use crate::openai_compat::to_responses_api_tools;
 mod catalog;
 
 pub use catalog::{
-    available_models, default_model_catalog, has_stored_tokens, live_models, start_model_discovery,
+    available_models, default_model_catalog, fetch_models_with_token, has_stored_tokens,
+    live_models, start_model_discovery,
 };
 
 use catalog::load_codex_cli_tokens;
@@ -1378,14 +1379,15 @@ mod tests {
     #[test]
     fn default_codex_models_includes_latest() {
         let ids: Vec<&str> = DEFAULT_CODEX_MODELS.iter().map(|(id, _)| *id).collect();
-        for model_id in ["gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"] {
+        for model_id in ["gpt-6.2-sol", "gpt-6.2-astra", "gpt-6.1-sol", "gpt-6-luna"] {
             assert!(ids.contains(&model_id), "missing {model_id} in defaults");
         }
-        assert!(ids.contains(&"gpt-5.4"), "missing gpt-5.4 in defaults");
-        assert!(
-            ids.contains(&"gpt-5.3-codex-spark"),
-            "missing gpt-5.3-codex-spark in defaults"
-        );
+        for retired in ["gpt-5.4", "gpt-5.3-codex-spark", "gpt-5.2-codex", "gpt-5.2"] {
+            assert!(
+                !ids.contains(&retired),
+                "retired {retired} still in defaults"
+            );
+        }
     }
 
     mod model_payload_tests;

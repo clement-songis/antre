@@ -31,13 +31,30 @@ pub(crate) const ANTHROPIC_MODELS: &[(&str, &str)] = &[
 
 /// Known Mistral models.
 pub(crate) const MISTRAL_MODELS: &[(&str, &str)] = &[
-    ("mistral-large-latest", "Mistral Large"),
-    ("codestral-latest", "Codestral"),
+    ("mistral-large-4-0", "Mistral Large 4"),
+    ("mistral-small-4-0-26-03", "Mistral Small 4"),
+    ("codestral-25-08", "Codestral 25.08"),
 ];
 
 /// Known Cerebras models.
-pub(crate) const CEREBRAS_MODELS: &[(&str, &str)] =
-    &[("llama-4-scout-17b-16e-instruct", "Llama 4 Scout (Cerebras)")];
+pub(crate) const CEREBRAS_MODELS: &[(&str, &str)] = &[
+    ("gpt-oss-120b", "GPT OSS 120B"),
+    ("qwen-3.8-27b", "Qwen 3.8 27B"),
+];
+
+/// Known Groq models.
+/// See: <https://console.groq.com/docs/models>
+pub(crate) const GROQ_MODELS: &[(&str, &str)] = &[
+    ("openai/gpt-oss-120b", "GPT OSS 120B"),
+    ("llama-3.3-70b-versatile", "Llama 3.3 70B Versatile"),
+    ("openai/gpt-oss-20b", "GPT OSS 20B"),
+    ("llama-3.1-8b-instant", "Llama 3.1 8B Instant"),
+];
+
+/// Known xAI models.
+/// See: <https://docs.x.ai/developers/models>
+pub(crate) const XAI_MODELS: &[(&str, &str)] =
+    &[("grok-4.7", "Grok 4.7"), ("grok-4.3", "Grok 4.3")];
 
 /// Known MiniMax models.
 /// See: <https://platform.minimax.io/docs/api-reference/text-openai-api>
@@ -124,8 +141,6 @@ pub(crate) const DEEPSEEK_MODELS: &[(&str, &str)] = &[
     ("deepseek-flash", "DeepSeek Flash"),
     ("deepseek-v4-flash", "DeepSeek V4 Flash"),
     ("deepseek-v4-pro", "DeepSeek V4 Pro"),
-    ("deepseek-chat", "DeepSeek Chat"),
-    ("deepseek-reasoner", "DeepSeek Reasoner"),
 ];
 
 /// Known Moonshot models.
@@ -139,11 +154,11 @@ pub(crate) const MOONSHOT_MODELS: &[(&str, &str)] = &[
 /// Known Google Gemini models.
 /// See: <https://ai.google.dev/gemini-api/docs/models>
 pub(crate) const GEMINI_MODELS: &[(&str, &str)] = &[
-    ("gemini-3.1-pro-preview", "Gemini 3.1 Pro Preview"),
-    ("gemini-3.1-flash-lite", "Gemini 3.1 Flash-Lite"),
-    ("gemini-3-flash-preview", "Gemini 3 Flash Preview"),
-    ("gemini-2.5-flash", "Gemini 2.5 Flash"),
-    ("gemini-2.5-pro", "Gemini 2.5 Pro"),
+    ("gemini-4-carbon", "Gemini 4 Carbon"),
+    ("gemini-4-argon", "Gemini 4 Argon"),
+    ("gemini-3.8-flash", "Gemini 3.8 Flash"),
+    ("gemini-4-neon", "Gemini 4 Neon"),
+    ("gemini-4-hydrogen", "Gemini 4 Hydrogen"),
 ];
 
 /// OpenAI-compatible provider definition for table-driven registration.
@@ -217,6 +232,24 @@ pub(crate) const OPENAI_COMPAT_PROVIDERS: &[OpenAiCompatDef] = &[
         env_base_url_key: "CEREBRAS_BASE_URL",
         default_base_url: "https://api.cerebras.ai/v1",
         models: CEREBRAS_MODELS,
+        ..OpenAiCompatDef::DEFAULT
+    },
+    OpenAiCompatDef {
+        config_name: "groq",
+        env_key: "GROQ_API_KEY",
+        env_base_url_key: "GROQ_BASE_URL",
+        default_base_url: "https://api.groq.com/openai/v1",
+        models: GROQ_MODELS,
+        ..OpenAiCompatDef::DEFAULT
+    },
+    // xAI marks Chat Completions as legacy in favour of Responses but has
+    // announced no shutdown; Chat Completions keeps tool calling working.
+    OpenAiCompatDef {
+        config_name: "xai",
+        env_key: "XAI_API_KEY",
+        env_base_url_key: "XAI_BASE_URL",
+        default_base_url: "https://api.x.ai/v1",
+        models: XAI_MODELS,
         ..OpenAiCompatDef::DEFAULT
     },
     OpenAiCompatDef {
@@ -407,6 +440,46 @@ mod tests {
         assert!(!DEEPINFRA_MODELS.is_empty());
         assert!(!MOONSHOT_MODELS.is_empty());
         assert!(!GEMINI_MODELS.is_empty());
+        assert!(!GROQ_MODELS.is_empty());
+        assert!(!XAI_MODELS.is_empty());
+    }
+
+    #[test]
+    fn fallback_lists_drop_retired_ids() {
+        let retired = [
+            "gemini-2.5-pro",
+            "gemini-2.5-flash",
+            "mistral-large-latest",
+            "codestral-latest",
+            "llama-4-scout-17b-16e-instruct",
+            "deepseek-chat",
+            "deepseek-reasoner",
+            "grok-3-mini",
+        ];
+        for def in OPENAI_COMPAT_PROVIDERS {
+            for (id, _) in def.models {
+                assert!(
+                    !retired.contains(id),
+                    "{} still lists retired model {id}",
+                    def.config_name
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn groq_and_xai_use_openai_compat_table() {
+        let groq = OPENAI_COMPAT_PROVIDERS
+            .iter()
+            .find(|def| def.config_name == "groq")
+            .expect("groq entry");
+        assert_eq!(groq.default_base_url, "https://api.groq.com/openai/v1");
+        let xai = OPENAI_COMPAT_PROVIDERS
+            .iter()
+            .find(|def| def.config_name == "xai")
+            .expect("xai entry");
+        assert_eq!(xai.default_base_url, "https://api.x.ai/v1");
+        assert!(xai.models.iter().all(|(id, _)| id.starts_with("grok-4")));
     }
 
     #[test]
@@ -448,15 +521,23 @@ mod tests {
     }
 
     #[test]
-    fn openai_catalog_includes_gpt_5_6_models() {
+    fn openai_catalog_includes_gpt_6_models_and_drops_shutdown_ones() {
         let models = crate::openai::default_model_catalog();
         let ids: Vec<&str> = models.iter().map(|model| model.id.as_str()).collect();
 
-        for model_id in ["gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"] {
+        for model_id in [
+            "gpt-6.2-sol",
+            "gpt-6.2-astra",
+            "gpt-6.1-terra",
+            "gpt-6-luna",
+        ] {
             assert!(
                 ids.contains(&model_id),
                 "missing {model_id} in OpenAI defaults"
             );
+        }
+        for shutdown in ["gpt-5-mini", "gpt-5.2", "gpt-5.2-chat-latest"] {
+            assert!(!ids.contains(&shutdown), "{shutdown} shuts down 2026-12-11");
         }
     }
 
@@ -675,8 +756,6 @@ mod tests {
             "kimi-code",
             "local-llm",
             "openai-codex",
-            "groq",
-            "xai",
         ]);
 
         for name in &provider_names {

@@ -404,9 +404,7 @@ mod tests {
 
     #[test]
     fn test_is_gemini_model() {
-        assert!(GoogleTts::is_gemini_model(Some(
-            "gemini-2.5-flash-preview-tts"
-        )));
+        assert!(GoogleTts::is_gemini_model(Some("gemini-3.8-flash-tts")));
         assert!(GoogleTts::is_gemini_model(Some("gemini-2.0-flash-lite")));
         assert!(!GoogleTts::is_gemini_model(Some("en-US-Neural2-A")));
         assert!(!GoogleTts::is_gemini_model(None));
@@ -418,7 +416,7 @@ mod tests {
             api_key: Some(Secret::new("test".to_string())),
             ..Default::default()
         };
-        let tts = GoogleTts::new(&config).with_model(Some("gemini-2.5-flash-preview-tts".into()));
+        let tts = GoogleTts::new(&config).with_model(Some("gemini-3.8-flash-tts".into()));
         assert!(GoogleTts::is_gemini_model(tts.model.as_deref()));
     }
 

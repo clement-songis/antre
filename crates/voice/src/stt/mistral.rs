@@ -23,7 +23,7 @@ use {
 const API_BASE: &str = "https://api.mistral.ai/v1";
 
 /// Default Mistral transcription model.
-const DEFAULT_MODEL: &str = "voxtral-mini-latest";
+const DEFAULT_MODEL: &str = "voxtral-small-transcribe-latest";
 
 /// Mistral AI STT provider using Voxtral Transcribe.
 #[derive(Clone)]

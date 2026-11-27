@@ -802,7 +802,7 @@ fn enrich_voice_provider(
         VoiceProviderId::OpenaiTts => (
             serde_json::json!({
                 "voiceChoices": ["alloy", "echo", "fable", "onyx", "nova", "shimmer"],
-                "modelChoices": ["tts-1", "tts-1-hd"],
+                "modelChoices": ["gpt-4o-mini-tts"],
                 "baseUrl": true,
                 "customVoice": true,
                 "customModel": true,
@@ -820,7 +820,7 @@ fn enrich_voice_provider(
         VoiceProviderId::Whisper => (
             serde_json::json!({
                 "baseUrl": true,
-                "modelChoices": ["whisper-1", "gpt-4o-transcribe", "gpt-4o-mini-transcribe"],
+                "modelChoices": ["gpt-transcribe", "gpt-4o-transcribe-diarize"],
                 "realtimeModelChoices": ["gpt-live-transcribe", "gpt-realtime-whisper", "gpt-4o-transcribe", "gpt-4o-mini-transcribe"],
                 "customModel": true,
             }),

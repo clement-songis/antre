@@ -347,7 +347,7 @@ impl ProviderRegistry {
                 let Some(models) = fetched.get(name.as_str()) else {
                     continue;
                 };
-                if let Some(auth) = resolve_custom_anthropic_auth(entry) {
+                if let Some(auth) = resolve_custom_anthropic_auth(config, name, entry) {
                     let base_url = entry
                         .base_url
                         .clone()
@@ -442,21 +442,22 @@ impl ProviderRegistry {
         use crate::genai_provider;
 
         // (env_key, provider_config_name, model_id, display_name)
+        // Groq and xAI live in the OpenAI-compatible table (tool calling,
+        // live discovery); genai only backs the native providers when those
+        // are compiled out, and skips ids a native provider already serves.
         let genai_models: &[(&str, &str, &str, &str)] = &[
             (
                 "ANTHROPIC_API_KEY",
                 "anthropic",
-                "claude-sonnet-4-20250514",
-                "Claude Sonnet 4 (genai)",
+                "claude-sonnet-5-5",
+                "Claude Sonnet 5.5 (genai)",
             ),
-            ("OPENAI_API_KEY", "openai", "gpt-4o", "GPT-4o (genai)"),
             (
-                "GROQ_API_KEY",
-                "groq",
-                "llama-3.1-8b-instant",
-                "Llama 3.1 8B (genai/groq)",
+                "OPENAI_API_KEY",
+                "openai",
+                "gpt-6.2-sol",
+                "GPT-6.2 Sol (genai)",
             ),
-            ("XAI_API_KEY", "xai", "grok-3-mini", "Grok 3 Mini (genai)"),
         ];
 
         for &(env_key, provider_name, default_model_id, display_name) in genai_models {
@@ -1113,7 +1114,7 @@ impl ProviderRegistry {
             }
 
             if matches!(entry.wire_api, moltis_config::WireApi::Anthropic) {
-                if let Some(auth) = resolve_custom_anthropic_auth(entry) {
+                if let Some(auth) = resolve_custom_anthropic_auth(config, name, entry) {
                     let base_url = entry
                         .base_url
                         .clone()

@@ -21,12 +21,12 @@ impl ModelCatalogEntry {
 }
 
 const DEFAULT_OPENAI_MODELS: &[ModelCatalogEntry] = &[
+    ModelCatalogEntry::new("gpt-6.2-sol", "GPT-6.2 Sol"),
+    ModelCatalogEntry::new("gpt-6.2-astra", "GPT-6.2 Astra"),
+    ModelCatalogEntry::new("gpt-6.1-terra", "GPT-6.1 Terra"),
+    ModelCatalogEntry::new("gpt-6-luna", "GPT-6 Luna"),
     ModelCatalogEntry::new("gpt-5.6-sol", "GPT-5.6 Sol"),
-    ModelCatalogEntry::new("gpt-5.6-terra", "GPT-5.6 Terra"),
     ModelCatalogEntry::new("gpt-5.6-luna", "GPT-5.6 Luna"),
-    ModelCatalogEntry::new("gpt-5.2", "GPT-5.2"),
-    ModelCatalogEntry::new("gpt-5.2-chat-latest", "GPT-5.2 Chat Latest"),
-    ModelCatalogEntry::new("gpt-5-mini", "GPT-5 Mini"),
 ];
 
 #[must_use]
@@ -171,7 +171,7 @@ fn parse_model_entry(entry: &serde_json::Value) -> Option<DiscoveredModel> {
 fn is_recommended_openai_model(model_id: &str) -> bool {
     matches!(
         model_id,
-        "gpt-5.6" | "gpt-5.6-sol" | "gpt-5.6-terra" | "gpt-5.6-luna" | "o4-mini" | "o3"
+        "gpt-6.2-sol" | "gpt-6.2-astra" | "gpt-6.1-terra" | "gpt-6-luna"
     )
 }
 

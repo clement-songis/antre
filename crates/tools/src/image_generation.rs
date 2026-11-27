@@ -8,14 +8,14 @@ use {
     async_trait::async_trait,
     moltis_agents::tool_registry::AgentTool,
     moltis_providers::openai_codex_image::{
-        GeneratedImage, ImageGenerationRequest, OpenAiCodexImageProvider,
+        DEFAULT_IMAGE_MODEL, GeneratedImage, ImageGenerationRequest, OpenAiCodexImageProvider,
+        SUPPORTED_IMAGE_MODELS,
     },
     serde_json::{Value, json},
 };
 
 use crate::{Error, params::str_param};
 
-const DEFAULT_MODEL: &str = "gpt-image-2";
 const DEFAULT_SIZE: &str = "1024x1024";
 const DEFAULT_QUALITY: &str = "medium";
 const DEFAULT_OUTPUT_FORMAT: &str = "png";
@@ -56,10 +56,11 @@ impl GenerateImageTool {
         let prompt = str_param(params, "prompt")
             .ok_or_else(|| Error::message("missing required parameter: prompt"))?;
 
-        let model = str_param(params, "model").unwrap_or(DEFAULT_MODEL);
-        if model != DEFAULT_MODEL {
+        let model = str_param(params, "model").unwrap_or(DEFAULT_IMAGE_MODEL);
+        if !SUPPORTED_IMAGE_MODELS.contains(&model) {
             return Err(Error::message(format!(
-                "unsupported image model '{model}' — supported: {DEFAULT_MODEL}"
+                "unsupported image model '{model}' — supported: {}",
+                SUPPORTED_IMAGE_MODELS.join(", ")
             ))
             .into());
         }
@@ -130,7 +131,7 @@ impl AgentTool for GenerateImageTool {
     }
 
     fn description(&self) -> &str {
-        "Generate an image from a text prompt using gpt-image-2 via the existing OpenAI Codex OAuth login. Returns channel-sendable image media."
+        "Generate an image from a text prompt using OpenAI gpt-image models via the existing OpenAI Codex OAuth login. Returns channel-sendable image media."
     }
 
     fn parameters_schema(&self) -> Value {
@@ -144,8 +145,8 @@ impl AgentTool for GenerateImageTool {
                 },
                 "model": {
                     "type": "string",
-                    "enum": [DEFAULT_MODEL],
-                    "description": "Image model to use. Defaults to gpt-image-2."
+                    "enum": SUPPORTED_IMAGE_MODELS,
+                    "description": "Image model to use. Defaults to gpt-image-2.6-flare."
                 },
                 "size": {
                     "type": "string",
@@ -195,11 +196,34 @@ mod tests {
         .unwrap();
 
         assert_eq!(request.prompt, "a neon fox");
-        assert_eq!(request.model, DEFAULT_MODEL);
+        assert_eq!(request.model, DEFAULT_IMAGE_MODEL);
         assert_eq!(request.size, DEFAULT_SIZE);
         assert_eq!(request.quality, DEFAULT_QUALITY);
         assert_eq!(request.output_format, DEFAULT_OUTPUT_FORMAT);
         assert_eq!(request.background, DEFAULT_BACKGROUND);
+    }
+
+    #[test]
+    fn request_from_params_accepts_every_supported_model() {
+        for model in SUPPORTED_IMAGE_MODELS {
+            let request = GenerateImageTool::request_from_params(&json!({
+                "prompt": "a neon fox",
+                "model": model
+            }))
+            .unwrap();
+            assert_eq!(request.model, *model);
+        }
+    }
+
+    #[test]
+    fn request_from_params_rejects_retired_model() {
+        let err = GenerateImageTool::request_from_params(&json!({
+            "prompt": "a neon fox",
+            "model": "gpt-image-2"
+        }))
+        .expect_err("retired model should fail");
+
+        assert!(err.to_string().contains("unsupported image model"));
     }
 
     #[test]

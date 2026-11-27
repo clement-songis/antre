@@ -22,8 +22,11 @@ use {
 /// OpenAI API base URL.
 const API_BASE: &str = "https://api.openai.com/v1";
 
-/// Default Whisper model.
-const DEFAULT_MODEL: &str = "whisper-1";
+/// Default model on the OpenAI API (`whisper-1` is deprecated there).
+const DEFAULT_MODEL: &str = "gpt-transcribe";
+/// Default model for OpenAI-compatible servers behind a custom base URL,
+/// which conventionally alias `whisper-1` rather than OpenAI's newer ids.
+const DEFAULT_COMPAT_MODEL: &str = "whisper-1";
 
 /// OpenAI Whisper STT provider.
 #[derive(Clone)]
@@ -79,12 +82,30 @@ impl WhisperStt {
         model: Option<String>,
         language: Option<String>,
     ) -> Self {
+        let base_url = Self::normalize_base_url(base_url);
+        let model = model.unwrap_or_else(|| {
+            if base_url == API_BASE {
+                DEFAULT_MODEL.into()
+            } else {
+                DEFAULT_COMPAT_MODEL.into()
+            }
+        });
         Self {
             client: Client::new(),
             api_key,
-            base_url: Self::normalize_base_url(base_url),
-            model: model.unwrap_or_else(|| DEFAULT_MODEL.into()),
+            base_url,
+            model,
             language,
+        }
+    }
+
+    /// Only the `whisper` models return `verbose_json` (language, duration,
+    /// word timings); the gpt-*-transcribe family rejects it with HTTP 400.
+    fn response_format(&self) -> &'static str {
+        if self.model.starts_with("whisper") {
+            "verbose_json"
+        } else {
+            "json"
         }
     }
 
@@ -128,7 +149,7 @@ impl SttProvider for WhisperStt {
         let mut form = Form::new()
             .part("file", file_part)
             .text("model", self.model.clone())
-            .text("response_format", "verbose_json");
+            .text("response_format", self.response_format());
 
         // Request language overrides the configured language, otherwise fall back.
         if let Some(language) = request.language.or_else(|| self.language.clone()) {
@@ -302,6 +323,22 @@ mod tests {
         let provider = WhisperStt::with_options(Some(Secret::new("key".into())), None, None, None);
         assert_eq!(provider.model, DEFAULT_MODEL);
         assert!(provider.language.is_none());
+    }
+
+    #[test]
+    fn test_custom_base_url_defaults_to_whisper_alias() {
+        let provider =
+            WhisperStt::with_options(None, Some("http://localhost:8000/v1/".into()), None, None);
+        assert_eq!(provider.model, DEFAULT_COMPAT_MODEL);
+        assert_eq!(provider.base_url, "http://localhost:8000/v1");
+    }
+
+    #[test]
+    fn test_response_format_depends_on_model_family() {
+        let official = WhisperStt::new(Some(Secret::new("key".into())));
+        assert_eq!(official.response_format(), "json");
+        let whisper = WhisperStt::with_model(None, Some("whisper-large-v3".into()));
+        assert_eq!(whisper.response_format(), "verbose_json");
     }
 
     #[test]

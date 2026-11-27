@@ -7,8 +7,13 @@ use {
 
 use crate::openai_codex::OpenAiCodexProvider;
 
-const CODEX_IMAGE_RESPONSES_MODEL: &str = "gpt-5.4";
-const DEFAULT_IMAGE_MODEL: &str = "gpt-image-2";
+/// Orchestrators tried in order against the live Codex model list. Codex
+/// retires orchestrator models every few months (gpt-5.4 left on 2026-08-31),
+/// so the first one the account still serves wins.
+const PREFERRED_ORCHESTRATORS: &[&str] = &["gpt-6.2-sol", "gpt-6.1-sol", "gpt-6-luna"];
+const FALLBACK_ORCHESTRATOR: &str = "gpt-6.2-sol";
+pub const DEFAULT_IMAGE_MODEL: &str = "gpt-image-2.6-flare";
+pub const SUPPORTED_IMAGE_MODELS: &[&str] = &["gpt-image-2.6-flare", "gpt-image-2.6-sunburst"];
 const DEFAULT_SIZE: &str = "1024x1024";
 const DEFAULT_QUALITY: &str = "medium";
 const DEFAULT_OUTPUT_FORMAT: &str = "png";
@@ -78,7 +83,7 @@ impl OpenAiCodexImageProvider {
         Self {
             base_url: "https://chatgpt.com/backend-api/codex".to_string(),
             client: crate::shared_http_client(),
-            auth: OpenAiCodexProvider::new(CODEX_IMAGE_RESPONSES_MODEL.to_string()),
+            auth: OpenAiCodexProvider::new(FALLBACK_ORCHESTRATOR.to_string()),
         }
     }
 
@@ -94,7 +99,19 @@ impl OpenAiCodexImageProvider {
         let tokens = self.auth.get_valid_tokens().await?;
         let token = tokens.access_token.expose_secret().clone();
         let account_id = OpenAiCodexProvider::resolve_account_id(&tokens)?;
-        let body = build_codex_image_request_body(&request);
+        let orchestrator = match crate::openai_codex::fetch_models_with_token(
+            token.clone(),
+            account_id.clone(),
+        )
+        .await
+        {
+            Ok(models) => pick_orchestrator(&models),
+            Err(err) => {
+                debug!(error = %err, "codex model list unavailable, using fallback image orchestrator");
+                FALLBACK_ORCHESTRATOR.to_string()
+            },
+        };
+        let body = build_codex_image_request_body(&request, &orchestrator);
 
         let response = self
             .client
@@ -126,9 +143,16 @@ impl OpenAiCodexImageProvider {
     }
 }
 
-fn build_codex_image_request_body(request: &ImageGenerationRequest) -> Value {
+fn pick_orchestrator(live: &[crate::DiscoveredModel]) -> String {
+    PREFERRED_ORCHESTRATORS
+        .iter()
+        .find(|preferred| live.iter().any(|model| model.id == **preferred))
+        .map_or_else(|| FALLBACK_ORCHESTRATOR.to_string(), |id| (*id).to_string())
+}
+
+fn build_codex_image_request_body(request: &ImageGenerationRequest, orchestrator: &str) -> Value {
     serde_json::json!({
-        "model": CODEX_IMAGE_RESPONSES_MODEL,
+        "model": orchestrator,
         "store": false,
         "stream": true,
         "instructions": "You are an image generation assistant.",
@@ -318,20 +342,43 @@ mod tests {
     use super::*;
 
     #[test]
+    fn new_request_defaults_to_current_image_model() {
+        let request = ImageGenerationRequest::new("a fox");
+        assert_eq!(request.model, DEFAULT_IMAGE_MODEL);
+        assert!(SUPPORTED_IMAGE_MODELS.contains(&request.model.as_str()));
+    }
+
+    #[test]
+    fn picks_first_preferred_orchestrator_served_by_account() {
+        let live = vec![
+            crate::DiscoveredModel::new("gpt-6-luna", "GPT-6 Luna"),
+            crate::DiscoveredModel::new("gpt-6.1-sol", "GPT-6.1 Sol"),
+        ];
+        assert_eq!(pick_orchestrator(&live), "gpt-6.1-sol");
+    }
+
+    #[test]
+    fn falls_back_when_no_preferred_orchestrator_is_served() {
+        let live = vec![crate::DiscoveredModel::new("gpt-7-nova", "GPT-7 Nova")];
+        assert_eq!(pick_orchestrator(&live), FALLBACK_ORCHESTRATOR);
+        assert_eq!(pick_orchestrator(&[]), FALLBACK_ORCHESTRATOR);
+    }
+
+    #[test]
     fn builds_codex_image_generation_body() {
         let request = ImageGenerationRequest {
             prompt: " draw a fox ".into(),
-            model: "gpt-image-2".into(),
+            model: "gpt-image-2.6-flare".into(),
             size: "1536x1024".into(),
             quality: "high".into(),
             output_format: "webp".into(),
             background: "opaque".into(),
         };
-        let body = build_codex_image_request_body(&request);
-        assert_eq!(body["model"], CODEX_IMAGE_RESPONSES_MODEL);
+        let body = build_codex_image_request_body(&request, "gpt-6.2-sol");
+        assert_eq!(body["model"], "gpt-6.2-sol");
         assert_eq!(body["input"][0]["content"][0]["text"], "draw a fox");
         assert_eq!(body["tools"][0]["type"], "image_generation");
-        assert_eq!(body["tools"][0]["model"], "gpt-image-2");
+        assert_eq!(body["tools"][0]["model"], "gpt-image-2.6-flare");
         assert_eq!(body["tools"][0]["quality"], "high");
         assert_eq!(body["tool_choice"]["type"], "image_generation");
     }
@@ -342,8 +389,9 @@ mod tests {
         let body = format!(
             "data: {{\"type\":\"response.output_item.done\",\"item\":{{\"type\":\"image_generation_call\",\"result\":\"{png}\"}}}}\n\n"
         );
-        let result = extract_codex_image_generation_result(&body, "gpt-image-2", "png").unwrap();
-        assert_eq!(result.model, "gpt-image-2");
+        let result =
+            extract_codex_image_generation_result(&body, "gpt-image-2.6-flare", "png").unwrap();
+        assert_eq!(result.model, "gpt-image-2.6-flare");
         assert_eq!(result.images.len(), 1);
         assert_eq!(result.images[0].media_type, "image/png");
         assert_eq!(result.images[0].data, png);
@@ -355,7 +403,8 @@ mod tests {
         let body = format!(
             "data: {{\"type\":\"response.completed\",\"response\":{{\"output\":[{{\"type\":\"image_generation_call\",\"result\":\"{jpg}\"}}]}}}}\n\n"
         );
-        let result = extract_codex_image_generation_result(&body, "gpt-image-2", "jpeg").unwrap();
+        let result =
+            extract_codex_image_generation_result(&body, "gpt-image-2.6-flare", "jpeg").unwrap();
         assert_eq!(result.images[0].media_type, "image/jpeg");
         assert_eq!(result.images[0].data, jpg);
     }
@@ -363,7 +412,7 @@ mod tests {
     #[test]
     fn surfaces_failed_event_message() {
         let body = "data: {\"type\":\"response.failed\",\"error\":{\"message\":\"blocked\"}}\n\n";
-        let err = extract_codex_image_generation_result(body, "gpt-image-2", "png")
+        let err = extract_codex_image_generation_result(body, "gpt-image-2.6-flare", "png")
             .expect_err("failure should error");
         assert!(err.to_string().contains("blocked"));
     }

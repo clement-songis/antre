@@ -1,8 +1,7 @@
 //! OpenAI TTS provider implementation.
 //!
-//! OpenAI offers text-to-speech with multiple voices and two quality tiers:
-//! - tts-1: Optimized for real-time, lower latency
-//! - tts-1-hd: Higher quality, slightly higher latency
+//! OpenAI offers text-to-speech with multiple voices. Models:
+//! - gpt-4o-mini-tts: default, steerable with free-form instructions
 
 use {
     anyhow::{Context, Result, anyhow},
@@ -21,7 +20,7 @@ const API_BASE: &str = "https://api.openai.com/v1";
 const DEFAULT_VOICE: &str = "alloy";
 
 /// Default model (real-time optimized).
-const DEFAULT_MODEL: &str = "tts-1";
+const DEFAULT_MODEL: &str = "gpt-4o-mini-tts";
 
 /// Available OpenAI TTS voices.
 const VOICES: &[(&str, &str)] = &[

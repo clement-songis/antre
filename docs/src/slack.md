@@ -150,7 +150,7 @@ operators = ["U0123456789"]
 channel_allowlist = ["C0123456789"]
 otp_self_approval = true
 otp_cooldown_secs = 300
-model = "claude-sonnet-4-20250514"
+model = "claude-sonnet-5-5"
 model_provider = "anthropic"
 stream_mode = "edit_in_place"
 edit_throttle_ms = 500
@@ -163,7 +163,7 @@ model = "gpt-4o"
 
 # Per-user override: use a specific model/provider for a Slack user
 [channels.slack.my-bot.user_overrides.U0123456789]
-model = "claude-sonnet-4-20250514"
+model = "claude-sonnet-5-5"
 model_provider = "anthropic"
 ```
 

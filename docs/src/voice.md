@@ -107,7 +107,7 @@ similarity_boost = 0.75
 # api_key = "sk-..."
 # base_url = "http://10.1.2.30:8003"  # Override for OpenAI-compatible servers (e.g. Chatterbox)
 voice = "alloy"  # alloy, echo, fable, onyx, nova, shimmer
-model = "tts-1"
+model = "gpt-4o-mini-tts"
 speed = 1.0
 
 [voice.tts.google]
@@ -353,7 +353,7 @@ voice "flair" per-message, a persona defines a stable spoken character.
 | Provider | Instructions support | Notes |
 |----------|---------------------|-------|
 | OpenAI (`gpt-4o-mini-tts`) | Full | Persona prompt rendered as `instructions` field |
-| Google Gemini TTS (`gemini-*`) | Full | Persona prompt as `system_instruction`; set `model = "gemini-2.5-flash-preview-tts"` |
+| Google Gemini TTS (`gemini-*`) | Full | Persona prompt as `system_instruction`; set `model = "gemini-3.8-flash-tts"` |
 | ElevenLabs | Partial | Uses provider binding overrides (voice_id, stability) |
 | Google Cloud TTS v1 | Partial | Uses provider binding overrides (voice, speaking_rate, pitch) |
 | Piper / Coqui | None | Local providers ignore instructions |
@@ -425,7 +425,7 @@ max_stream_seconds = 300  # Hard cap per live transcription stream
 # No api_key needed if OpenAI is configured as an LLM provider or OPENAI_API_KEY is set.
 # api_key = "sk-..."
 # base_url = "http://10.1.2.30:8001"  # Override for OpenAI-compatible servers (e.g. faster-whisper-server)
-model = "whisper-1"  # or "gpt-4o-transcribe", "gpt-4o-mini-transcribe"
+model = "gpt-transcribe"  # default
 # realtime_model = "gpt-live-transcribe"  # Live transcription model (Realtime API)
 language = "en"     # Optional ISO 639-1 hint
 
@@ -447,7 +447,7 @@ language = "en-US"
 
 [voice.stt.mistral]
 api_key = "..."
-model = "voxtral-mini-latest"  # default
+model = "voxtral-small-transcribe-latest"  # default
 language = "en"
 
 [voice.stt.gemini]

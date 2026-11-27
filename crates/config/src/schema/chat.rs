@@ -208,7 +208,7 @@ pub struct CompactionConfig {
     pub tool_prune_char_threshold: u32,
 
     /// Provider-qualified model identifier reserved for the auxiliary-
-    /// model subsystem (e.g. `"openrouter/google/gemini-2.5-flash"`).
+    /// model subsystem (e.g. `"openrouter/google/gemini-3.8-flash"`).
     ///
     /// **Not wired yet** — tracked by beads issue `moltis-8me`. Until
     /// that lands, `structured` and `llm_replace` always use the
@@ -328,8 +328,8 @@ pub enum ToolRegistryMode {
 ///
 /// ```toml
 /// [auxiliary]
-/// compaction = "openrouter/google/gemini-2.5-flash"
-/// title_generation = "openrouter/google/gemini-2.5-flash"
+/// compaction = "openrouter/google/gemini-3.8-flash"
+/// title_generation = "openrouter/google/gemini-3.8-flash"
 /// ```
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(default)]

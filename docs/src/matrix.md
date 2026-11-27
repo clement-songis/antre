@@ -363,7 +363,7 @@ otp_self_approval = true
 otp_cooldown_secs = 300
 
 [channels.matrix.my-bot.channel_overrides."!ops:example.com"]
-model = "claude-sonnet-4-20250514"
+model = "claude-sonnet-5-5"
 model_provider = "anthropic"
 
 [channels.matrix.my-bot.user_overrides."@alice:example.com"]

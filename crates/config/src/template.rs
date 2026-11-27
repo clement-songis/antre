@@ -142,6 +142,7 @@ loopback_http = true                # Plain HTTP on loopback binds: http://local
 # offered = ["local-llm", "lmstudio", "github-copilot", "openai-codex", "openai", "anthropic", "openrouter", "ollama", "moonshot", "minimax", "zai"]
                                     # Enabled providers and those shown in onboarding/picker UI ([] = enable/show all)
 # show_legacy_models = true         # Show models older than 1 year in the chat model selector (they always appear in Settings)
+# allow_claude_subscription_tokens = false # Accept `claude setup-token` credentials (Anthropic ToS risk)
 # All available providers (canonical list in schema/providers.rs):
 #   "anthropic", "openai", "gemini", "groq", "xai", "deepinfra",
 #   "deepseek", "fireworks", "mistral", "openrouter", "cerebras", "minimax",
@@ -154,9 +155,11 @@ loopback_http = true                # Plain HTTP on loopback binds: http://local
 # enabled = true
 # api_key = "sk-ant-..."                      # Or set ANTHROPIC_API_KEY env var
 # Subscription alternative to api_key: a `claude setup-token` token
-# (or set ANTHROPIC_OAUTH_TOKEN). Requests then identify as Claude Code:
+# (or set ANTHROPIC_OAUTH_TOKEN). Requests then identify as Claude Code.
+# Ignored unless [providers] allow_claude_subscription_tokens = true:
+# Anthropic's terms may not allow subscription OAuth in third-party apps.
 # setup_token = "${{ANTHROPIC_OAUTH_TOKEN}}"
-# models = ["claude-sonnet-4-5-20250929"]     # Optional preferred models
+# models = ["claude-sonnet-5-5"]              # Optional preferred models
 # fetch_models = true                          # Set false to skip remote discovery
 # base_url = "https://api.anthropic.com"     # API endpoint
 # alias = "anthropic"                         # Custom name for metrics
@@ -199,7 +202,7 @@ loopback_http = true                # Plain HTTP on loopback binds: http://local
 # [providers.gemini]
 # enabled = true
 # api_key = "..."                             # Or set GEMINI_API_KEY / GOOGLE_API_KEY env var
-# models = ["gemini-2.5-flash", "gemini-2.5-pro"]
+# models = ["gemini-3.8-flash", "gemini-4-carbon"]
 # fetch_models = true
 # base_url = "https://generativelanguage.googleapis.com/v1beta/openai"
 # alias = "gemini"
@@ -208,7 +211,8 @@ loopback_http = true                # Plain HTTP on loopback binds: http://local
 # [providers.groq]
 # enabled = true
 # api_key = "..."                             # Or set GROQ_API_KEY env var
-# models = ["llama-3.3-70b-versatile"]
+# models = ["openai/gpt-oss-120b", "llama-3.3-70b-versatile"]
+# base_url = "https://api.groq.com/openai/v1"
 # alias = "groq"
 
 # ── DeepInfra ─────────────────────────────────────────────────
@@ -249,14 +253,15 @@ loopback_http = true                # Plain HTTP on loopback binds: http://local
 # [providers.xai]
 # enabled = true
 # api_key = "..."                             # Or set XAI_API_KEY env var
-# models = ["grok-3-mini"]
+# models = ["grok-4.7"]
+# base_url = "https://api.x.ai/v1"
 # alias = "xai"
 
 # ── OpenRouter (multi-provider gateway) ───────────────────────
 # [providers.openrouter]
 # enabled = true
 # api_key = "..."                             # Or set OPENROUTER_API_KEY env var
-# models = ["anthropic/claude-3.5-sonnet"]    # Any model IDs on OpenRouter
+# models = ["anthropic/claude-sonnet-5.5"]     # Any model IDs on OpenRouter
 # base_url = "https://openrouter.ai/api/v1"
 
 # ── Moonshot (Kimi) ─────────────────────────────────────────
@@ -348,9 +353,9 @@ loopback_http = true                # Plain HTTP on loopback binds: http://local
 # more capable model. Falls back to the session's primary provider when unset.
 #
 # [auxiliary]
-# compaction = "openrouter/google/gemini-2.5-flash"        # Model for context compaction
-# title_generation = "openrouter/google/gemini-2.5-flash"  # Model for session titles
-# vision = "openrouter/google/gemini-2.5-flash"            # Model for vision/image tasks
+# compaction = "openrouter/google/gemini-3.8-flash"        # Model for context compaction
+# title_generation = "openrouter/google/gemini-3.8-flash"  # Model for session titles
+# vision = "openrouter/google/gemini-3.8-flash"            # Model for vision/image tasks
 
 # ══════════════════════════════════════════════════════════════════════════════
 # SUB-AGENT SPAWN PRESETS
@@ -531,7 +536,8 @@ loopback_http = true                # Plain HTTP on loopback binds: http://local
 
 # [tools.web.search.perplexity]
 # api_key = "..."                   # Or set PERPLEXITY_API_KEY env var
-# model = "sonar"                   # Perplexity model to use
+#                                   # Direct pplx- keys use the Search API (POST /search)
+# model = "perplexity/sonar-pro"    # Only for OpenRouter/proxy keys (chat completions)
 
 # ── Web Fetch ─────────────────────────────────────────────────────────────────
 
@@ -840,7 +846,7 @@ loopback_http = true                # Plain HTTP on loopback binds: http://local
 # [external_agents.agents.codex]
 # binary = "codex"
 # args = ["app-server"]
-# models = ["gpt-5.5", "gpt-5.4"]
+# models = ["gpt-6.2-sol", "gpt-6.2-astra"]
 # efforts = ["medium", "high", "xhigh", "max"]
 
 # Generic manual ACP server for advanced/custom CLIs not listed below.

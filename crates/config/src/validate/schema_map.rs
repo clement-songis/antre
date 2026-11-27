@@ -395,6 +395,7 @@ pub(super) fn build_schema_map() -> KnownKeys {
             fields: HashMap::from([
                 ("offered", Array(Box::new(Leaf))),
                 ("show_legacy_models", Leaf),
+                ("allow_claude_subscription_tokens", Leaf),
             ]),
         }),
         (

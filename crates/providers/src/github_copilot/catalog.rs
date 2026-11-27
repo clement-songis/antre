@@ -1,42 +1,31 @@
 /// Current GitHub Copilot model IDs. Live `/models` discovery is preferred;
 /// this catalog is used when discovery is unavailable.
 pub(super) const COPILOT_MODELS: &[CopilotCatalogModel] = &[
-    chat("gpt-4o", "GPT-4o (Copilot)"),
-    chat("gpt-4.1", "GPT-4.1 (Copilot)"),
-    chat("gpt-4.1-mini", "GPT-4.1 Mini (Copilot)"),
-    chat("gpt-4.1-nano", "GPT-4.1 Nano (Copilot)"),
-    chat("gpt-5-mini", "GPT-5 mini (Copilot)"),
-    responses("gpt-5.3-codex", "GPT-5.3-Codex (Copilot)"),
-    responses("gpt-5.4", "GPT-5.4 (Copilot)"),
-    responses("gpt-5.4-mini", "GPT-5.4 mini (Copilot)"),
-    responses("gpt-5.4-nano", "GPT-5.4 nano (Copilot)"),
-    responses("gpt-5.4-pro", "GPT-5.4 Pro (Copilot)"),
-    responses("gpt-5.5", "GPT-5.5 (Copilot)"),
-    responses("gpt-5.6-luna", "GPT-5.6 Luna (Copilot)"),
+    responses("gpt-6.2-sol", "GPT-6.2 Sol (Copilot)"),
+    chat("claude-opus-5.5", "Claude Opus 5.5 (Copilot)"),
+    chat("claude-sonnet-5.5", "Claude Sonnet 5.5 (Copilot)"),
+    responses("gpt-6.2-astra", "GPT-6.2 Astra (Copilot)"),
+    responses("gpt-6.1-sol", "GPT-6.1 Sol (Copilot)"),
+    responses("gpt-6.1-terra", "GPT-6.1 Terra (Copilot)"),
+    responses("gpt-6-astra", "GPT-6 Astra (Copilot)"),
+    responses("gpt-6-sol", "GPT-6 Sol (Copilot)"),
+    responses("gpt-6-luna", "GPT-6 Luna (Copilot)"),
     responses("gpt-5.6-sol", "GPT-5.6 Sol (Copilot)"),
-    responses("gpt-5.6-terra", "GPT-5.6 Terra (Copilot)"),
-    responses("gpt-5.2-pro", "GPT-5.2 Pro (Copilot)"),
-    chat("o1", "o1 (Copilot)"),
-    chat("o1-mini", "o1-mini (Copilot)"),
-    chat("o3-mini", "o3-mini (Copilot)"),
+    responses("gpt-5.6-luna", "GPT-5.6 Luna (Copilot)"),
+    responses("gpt-5.4-nano", "GPT-5.4 nano (Copilot)"),
+    responses("gpt-5.3-codex", "GPT-5.3-Codex (Copilot)"),
+    chat("claude-fable-5.2", "Claude Fable 5.2 (Copilot)"),
+    chat("claude-fable-5.1", "Claude Fable 5.1 (Copilot)"),
     chat("claude-fable-5", "Claude Fable 5 (Copilot)"),
-    chat("claude-haiku-4.5", "Claude Haiku 4.5 (Copilot)"),
-    chat("claude-opus-4.5", "Claude Opus 4.5 (Copilot)"),
-    chat("claude-opus-4.6", "Claude Opus 4.6 (Copilot)"),
-    chat("claude-opus-4.7", "Claude Opus 4.7 (Copilot)"),
-    chat("claude-opus-4.8", "Claude Opus 4.8 (Copilot)"),
-    chat("claude-sonnet-4", "Claude Sonnet 4 (Copilot)"),
-    chat("claude-sonnet-4.5", "Claude Sonnet 4.5 (Copilot)"),
-    chat("claude-sonnet-4.6", "Claude Sonnet 4.6 (Copilot)"),
     chat("claude-sonnet-5", "Claude Sonnet 5 (Copilot)"),
-    chat("gemini-2.0-flash", "Gemini 2.0 Flash (Copilot)"),
-    chat("gemini-2.5-pro", "Gemini 2.5 Pro (Copilot)"),
-    chat("gemini-3-flash-preview", "Gemini 3 Flash (Copilot)"),
-    chat("gemini-3.1-pro-preview", "Gemini 3.1 Pro (Copilot)"),
-    chat("gemini-3.5-flash", "Gemini 3.5 Flash (Copilot)"),
-    chat("mai-code-1-flash-picker", "MAI-Code-1-Flash (Copilot)"),
-    chat("raptor-mini", "Raptor mini (Copilot)"),
-    chat("kimi-k2.7-code", "Kimi K2.7 Code (Copilot)"),
+    chat("claude-haiku-5.5", "Claude Haiku 5.5 (Copilot)"),
+    chat("claude-haiku-4.5", "Claude Haiku 4.5 (Copilot)"),
+    chat("gemini-3.8-flash", "Gemini 3.8 Flash (Copilot)"),
+    chat("gemini-4-argon", "Gemini 4 Argon (Copilot)"),
+    chat("gemini-4-carbon", "Gemini 4 Carbon (Copilot)"),
+    chat("gemini-4-hydrogen", "Gemini 4 Hydrogen (Copilot)"),
+    chat("gemini-4-neon", "Gemini 4 Neon (Copilot)"),
+    chat("kimi-k3", "Kimi K3 (Copilot)"),
 ];
 
 pub(super) struct CopilotCatalogModel {
@@ -90,15 +79,13 @@ mod tests {
     #[test]
     fn includes_current_copilot_model_ids() {
         for expected in [
-            "gpt-5.6-luna",
-            "gpt-5.6-sol",
-            "gpt-5.6-terra",
-            "claude-opus-4.8",
-            "claude-sonnet-5",
-            "gemini-3-flash-preview",
-            "gemini-3.1-pro-preview",
-            "mai-code-1-flash-picker",
-            "kimi-k2.7-code",
+            "gpt-6.2-sol",
+            "gpt-6-luna",
+            "claude-opus-5.5",
+            "claude-sonnet-5.5",
+            "gemini-3.8-flash",
+            "gemini-4-argon",
+            "kimi-k3",
         ] {
             assert!(
                 COPILOT_MODELS.iter().any(|model| model.id == expected),
@@ -111,30 +98,30 @@ mod tests {
     fn catalog_marks_responses_api_models_as_capability() {
         let catalog = default_model_catalog();
         let Some(luna) = catalog.iter().find(|model| model.id == "gpt-5.6-luna") else {
-            panic!("missing gpt-5.6-luna model");
+            panic!("missing gpt-6-luna model");
         };
         let Some(luna_capabilities) = luna.capabilities else {
-            panic!("missing gpt-5.6-luna capabilities");
+            panic!("missing gpt-6-luna capabilities");
         };
         assert!(luna_capabilities.requires_responses_api);
 
-        let Some(mini) = catalog.iter().find(|model| model.id == "gpt-5-mini") else {
-            panic!("missing gpt-5-mini model");
+        let Some(flash) = catalog.iter().find(|model| model.id == "gemini-3.8-flash") else {
+            panic!("missing gemini-3.8-flash model");
         };
-        let Some(mini_capabilities) = mini.capabilities else {
-            panic!("missing gpt-5-mini capabilities");
+        let Some(flash_capabilities) = flash.capabilities else {
+            panic!("missing gemini-3.8-flash capabilities");
         };
-        assert!(!mini_capabilities.requires_responses_api);
+        assert!(!flash_capabilities.requires_responses_api);
     }
 
     #[test]
     fn catalog_marks_copilot_extended_context_models_as_capability() {
         let catalog = default_model_catalog();
-        let Some(opus) = catalog.iter().find(|model| model.id == "claude-opus-4.8") else {
-            panic!("missing claude-opus-4.8 model");
+        let Some(opus) = catalog.iter().find(|model| model.id == "claude-opus-5.5") else {
+            panic!("missing claude-opus-5.5 model");
         };
         let Some(opus_capabilities) = opus.capabilities else {
-            panic!("missing claude-opus-4.8 capabilities");
+            panic!("missing claude-opus-5.5 capabilities");
         };
         assert_eq!(opus_capabilities.context_window, 1_000_000);
 

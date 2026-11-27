@@ -102,7 +102,7 @@ stream_transport = "sse"        # "sse", "websocket", or "auto"
 
 [providers.gemini]
 enabled = true
-models = ["gemini-2.5-flash", "gemini-2.5-pro"]
+models = ["gemini-3.8-flash", "gemini-4-carbon"]
 
 [providers.local-llm]
 enabled = true
@@ -207,8 +207,14 @@ duckduckgo_fallback = false      # Default: do not use DuckDuckGo fallback
 [tools.web.search.perplexity]
 # api_key = "..."                # Or use PERPLEXITY_API_KEY / OPENROUTER_API_KEY
 # base_url = "..."               # Optional override
-# model = "perplexity/sonar-pro" # Optional override
+# model = "perplexity/sonar-pro" # OpenRouter/proxy keys only
 ```
+
+A direct Perplexity key (`pplx-…`, or a `perplexity.ai` base URL) uses the
+[Search API](https://docs.perplexity.ai/docs/search/quickstart) and returns a
+ranked list of results, like Brave. Perplexity ended Sonar Chat Completions on
+2026-09-27, so `model` only applies to OpenRouter or another OpenAI-compatible
+proxy, which still answer through `/chat/completions`.
 
 If no search API key is configured:
 

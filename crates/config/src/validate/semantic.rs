@@ -5,7 +5,11 @@ use {
     std::path::Path,
 };
 
-const PROVIDERS_META_KEYS: &[&str] = &["offered", "show_legacy_models"];
+const PROVIDERS_META_KEYS: &[&str] = &[
+    "offered",
+    "show_legacy_models",
+    "allow_claude_subscription_tokens",
+];
 
 pub(super) fn check_deprecated_fields(
     toml_value: &toml::Value,

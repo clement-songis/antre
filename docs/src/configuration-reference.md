@@ -304,7 +304,7 @@ User profile collected during onboarding.
 | `protect_tail_min` | integer | `20` | Minimum number of tail messages preserved verbatim (floor under token-budget cut). |
 | `tail_budget_ratio` | float | `0.20` | Tail protection window as a fraction of `threshold_percent × context_window`. |
 | `tool_prune_char_threshold` | integer | `200` | Tool-result content longer than this is replaced with a placeholder in the collapsed middle region. |
-| `summary_model` | optional string | `null` | Provider-qualified model for LLM summary calls (e.g. `"openrouter/google/gemini-2.5-flash"`). ⚠️ **Not yet implemented** — setting this field triggers a warning. |
+| `summary_model` | optional string | `null` | Provider-qualified model for LLM summary calls (e.g. `"openrouter/google/gemini-3.8-flash"`). ⚠️ **Not yet implemented** — setting this field triggers a warning. |
 | `max_summary_tokens` | integer | `4096` | Maximum output tokens for LLM summary calls. `0` accepts provider default. ⚠️ **Not yet implemented** — has no effect. |
 | `show_settings_hint` | bool | `true` | Whether the "Change `chat.compaction.mode` in moltis.toml…" hint is included in compaction notifications. |
 
@@ -529,7 +529,7 @@ Default `tool_overrides` entries:
 |-----|------|---------|-------------|
 | api_key | optional string | — | API key (overrides `PERPLEXITY_API_KEY` / `OPENROUTER_API_KEY` env vars). |
 | base_url | optional string | — | Base URL override. Auto-detected from key prefix if empty. |
-| model | optional string | — | Model to use. |
+| model | optional string | — | Model for the OpenRouter / proxy chat route. Ignored with a direct Perplexity key, which uses the Search API. |
 
 
 ### `tools.web.fetch` — WebFetchConfig
@@ -897,6 +897,7 @@ Each channel account (`channels.<channel_type>.<account_name>`) is an arbitrary 
 |-----|------|---------|-------------|
 | `offered` | array of string | `[]` | Allowlist of enabled providers (also controls web UI pickers). Empty = all enabled. |
 | `show_legacy_models` | bool | `false` | Show models older than one year in the chat model selector. |
+| `allow_claude_subscription_tokens` | bool | `false` | Accept `claude setup-token` subscription credentials for Anthropic providers. Off by default because Anthropic's terms may not allow subscription OAuth in third-party apps; setup-tokens are ignored with a warning until enabled. |
 | `<name>` | `ProviderEntry` (see below) | — | Provider-specific settings keyed by provider name. |
 
 ### `providers.<name>` — ProviderEntry
@@ -995,7 +996,7 @@ context_window = 1_000_000
 | `api_key` | optional secret string | `null` | API key (from `OPENAI_API_KEY` env or config) |
 | `base_url` | optional string | `null` | Override the OpenAI TTS endpoint for compatible local servers |
 | `voice` | optional string | `null` | Voice to use for TTS (`alloy`, `echo`, `fable`, `onyx`, `nova`, `shimmer`) |
-| `model` | optional string | `null` | Model to use for TTS (`tts-1`, `tts-1-hd`) |
+| `model` | optional string | `null` | Model to use for TTS (default `gpt-4o-mini-tts`) |
 
 
 ### `voice.tts.google`
@@ -1072,7 +1073,7 @@ context_window = 1_000_000
 |-----|------|---------|-------------|
 | `api_key` | optional secret string | `null` | API key (from `OPENAI_API_KEY` env or config) |
 | `base_url` | optional string | `null` | Override the Whisper endpoint for compatible local servers |
-| `model` | optional string | `null` | Model to use (`whisper-1`) |
+| `model` | optional string | `null` | Model to use (default `gpt-transcribe`) |
 | `language` | optional string | `null` | Language hint (ISO 639-1 code) |
 
 
@@ -1118,7 +1119,7 @@ context_window = 1_000_000
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | `api_key` | optional secret string | `null` | API key (from `MISTRAL_API_KEY` env or config) |
-| `model` | optional string | `null` | Model to use (e.g. `"voxtral-mini-latest"`) |
+| `model` | optional string | `null` | Model to use (default `"voxtral-small-transcribe-latest"`) |
 | `language` | optional string | `null` | Language hint (ISO 639-1 code) |
 
 

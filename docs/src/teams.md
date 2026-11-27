@@ -169,7 +169,7 @@ welcome_card = true
 bot_name = "My Assistant"
 prompt_starters = ["What can you do?", "Help me write an email"]
 reply_style = "top_level"
-model = "claude-sonnet-4-20250514"
+model = "claude-sonnet-5-5"
 model_provider = "anthropic"
 ```
 

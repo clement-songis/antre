@@ -103,7 +103,7 @@ pub struct VoiceOpenAiConfig {
     pub base_url: Option<String>,
     /// Voice to use for TTS (alloy, echo, fable, onyx, nova, shimmer).
     pub voice: Option<String>,
-    /// Model to use for TTS (tts-1, tts-1-hd).
+    /// Model to use for TTS (default `gpt-4o-mini-tts`).
     pub model: Option<String>,
 }
 
@@ -137,7 +137,7 @@ pub struct VoiceGoogleTtsConfig {
     /// Voice name (e.g., "en-US-Neural2-A", "Algieba" for Gemini TTS).
     pub voice: Option<String>,
     /// Model to use. Set to a `gemini-*` value for Gemini TTS
-    /// (e.g., `"gemini-2.5-flash-preview-tts"`). Omit for standard Cloud TTS v1.
+    /// (e.g., `"gemini-3.8-flash-tts"`). Omit for standard Cloud TTS v1.
     pub model: Option<String>,
     /// Language code (e.g., "en-US", "fr-FR").
     pub language_code: Option<String>,
@@ -488,7 +488,7 @@ pub struct VoiceWhisperConfig {
     pub api_key: Option<Secret<String>>,
     /// Override the Whisper endpoint for compatible local servers.
     pub base_url: Option<String>,
-    /// Model to use (whisper-1, gpt-4o-transcribe, gpt-4o-mini-transcribe).
+    /// Model to use (default `gpt-transcribe`).
     pub model: Option<String>,
     /// Realtime API transcription model for live transcription
     /// (gpt-live-transcribe, gpt-realtime-whisper, gpt-4o-transcribe).
@@ -627,7 +627,7 @@ pub struct VoiceMistralSttConfig {
         deserialize_with = "crate::schema::deserialize_option_secret"
     )]
     pub api_key: Option<Secret<String>>,
-    /// Model to use (e.g., "voxtral-mini-latest").
+    /// Model to use (default "voxtral-small-transcribe-latest").
     pub model: Option<String>,
     /// Language hint (ISO 639-1 code).
     pub language: Option<String>,

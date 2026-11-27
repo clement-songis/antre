@@ -100,6 +100,13 @@ pub struct ProvidersConfig {
     #[serde(default, skip_serializing_if = "is_false")]
     pub show_legacy_models: bool,
 
+    /// Accept `claude setup-token` subscription credentials for Anthropic
+    /// providers. Off by default: Anthropic's consumer terms reportedly
+    /// forbid subscription OAuth in third-party apps, so API keys are the
+    /// supported path and setup-tokens are ignored with a warning.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub allow_claude_subscription_tokens: bool,
+
     /// Provider-specific settings keyed by provider name.
     /// See [`KNOWN_PROVIDER_NAMES`] for the full list of recognised names.
     #[serde(flatten)]

@@ -19,16 +19,12 @@ const CODEX_MODELS_ENDPOINT: &str = "https://chatgpt.com/backend-api/codex/model
 pub(super) const CODEX_MODELS_CLIENT_VERSION: &str = "1.0.0";
 
 pub(super) const DEFAULT_CODEX_MODELS: &[(&str, &str)] = &[
-    ("gpt-5.6-sol", "GPT-5.6 Sol"),
-    ("gpt-5.6-terra", "GPT-5.6 Terra"),
-    ("gpt-5.6-luna", "GPT-5.6 Luna"),
-    ("gpt-5.4", "GPT-5.4"),
-    ("gpt-5.3-codex-spark", "GPT-5.3 Codex Spark"),
-    ("gpt-5.3-codex", "GPT-5.3 Codex"),
-    ("gpt-5.2-codex", "GPT-5.2 Codex"),
-    ("gpt-5.2", "GPT-5.2"),
-    ("gpt-5.1-codex-max", "GPT-5.1 Codex Max"),
-    ("gpt-5.1-codex-mini", "GPT-5.1 Codex Mini"),
+    ("gpt-6.2-sol", "GPT-6.2 Sol"),
+    ("gpt-6.2-astra", "GPT-6.2 Astra"),
+    ("gpt-6.1-sol", "GPT-6.1 Sol"),
+    ("gpt-6.1-terra", "GPT-6.1 Terra"),
+    ("gpt-6-luna", "GPT-6 Luna"),
+    ("gpt-6-astra", "GPT-6 Astra"),
 ];
 
 /// Parse tokens from Codex CLI auth.json content.
@@ -213,6 +209,14 @@ pub(super) fn parse_models_payload(value: &serde_json::Value) -> Vec<crate::Disc
     });
 
     models
+}
+
+/// Fetch the live Codex model list with tokens the caller already holds.
+pub async fn fetch_models_with_token(
+    access_token: String,
+    account_id: String,
+) -> anyhow::Result<Vec<crate::DiscoveredModel>> {
+    fetch_models_from_api(access_token, account_id).await
 }
 
 async fn fetch_models_from_api(

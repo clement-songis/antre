@@ -14,8 +14,8 @@ Configure providers through the web UI or directly in configuration files.
 | **Google Gemini** | `gemini` | `GEMINI_API_KEY` | Streaming, tools, vision, model discovery |
 | **DeepSeek** | `deepseek` | `DEEPSEEK_API_KEY` | Streaming, tools, model discovery |
 | **Mistral** | `mistral` | `MISTRAL_API_KEY` | Streaming, tools, model discovery |
-| **Groq** | `groq` | `GROQ_API_KEY` | Streaming |
-| **xAI (Grok)** | `xai` | `XAI_API_KEY` | Streaming |
+| **Groq** | `groq` | `GROQ_API_KEY` | Streaming, tools, model discovery |
+| **xAI (Grok)** | `xai` | `XAI_API_KEY` | Streaming, tools, model discovery |
 | **OpenRouter** | `openrouter` | `OPENROUTER_API_KEY` | Streaming, tools, model discovery |
 | **Cerebras** | `cerebras` | `CEREBRAS_API_KEY` | Streaming, tools, model discovery |
 | **MiniMax** | `minimax` | `MINIMAX_API_KEY` | Streaming, tools, M3 vision |
@@ -104,7 +104,7 @@ stream_transport = "sse"              # "sse", "websocket", or "auto"
 
 [providers.gemini]
 enabled = true
-models = ["gemini-2.5-flash", "gemini-2.5-pro"]
+models = ["gemini-3.8-flash", "gemini-4-carbon"]
 # api_key = "..."                     # Or set GEMINI_API_KEY / GOOGLE_API_KEY env var
 # fetch_models = true                 # Discover models from the API
 # base_url = "https://generativelanguage.googleapis.com/v1beta/openai"
@@ -158,7 +158,7 @@ Google Gemini uses an API key from [Google AI Studio](https://aistudio.google.co
 ```toml
 [providers.gemini]
 enabled = true
-models = ["gemini-2.5-flash", "gemini-2.5-pro"]
+models = ["gemini-3.8-flash", "gemini-4-carbon"]
 ```
 
 Gemini supports native tool calling, vision/multimodal inputs, streaming, and automatic model discovery.
@@ -338,7 +338,7 @@ Tokens are saved to the config volume and picked up by the gateway automatically
 ```
 
 Once OpenAI Codex OAuth is connected, agents can use the built-in
-`generate_image` tool to create `gpt-image-2` images without an `OPENAI_API_KEY`.
+`generate_image` tool to create `gpt-image-2.6-flare` (default) or `gpt-image-2.6-sunburst` images without an `OPENAI_API_KEY`.
 Generated images are delivered through the same channel media path as
 screenshots and `send_image`, so supported chat channels receive the image as a
 native attachment.

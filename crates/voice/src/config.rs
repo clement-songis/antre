@@ -136,7 +136,7 @@ pub struct OpenAiTtsConfig {
     /// Voice to use (alloy, echo, fable, onyx, nova, shimmer).
     pub voice: Option<String>,
 
-    /// Model to use (tts-1, tts-1-hd).
+    /// Model to use (default `gpt-4o-mini-tts`).
     pub model: Option<String>,
 
     /// Speed (0.25 - 4.0, default 1.0).
@@ -146,7 +146,7 @@ pub struct OpenAiTtsConfig {
 /// Google Cloud TTS provider configuration.
 ///
 /// Supports both standard Cloud TTS v1 voices and Gemini TTS models.
-/// Set `model` to a `gemini-*` value (e.g., `"gemini-2.5-flash-preview-tts"`)
+/// Set `model` to a `gemini-*` value (e.g., `"gemini-3.8-flash-tts"`)
 /// to use Gemini TTS with voice persona instruction support.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(default)]
@@ -164,7 +164,7 @@ pub struct GoogleTtsConfig {
     pub voice: Option<String>,
 
     /// Model to use. Set to a `gemini-*` value for Gemini TTS
-    /// (e.g., `"gemini-2.5-flash-preview-tts"`).
+    /// (e.g., `"gemini-3.8-flash-tts"`).
     pub model: Option<String>,
 
     /// Language code (e.g., "en-US", "fr-FR").
@@ -326,7 +326,7 @@ pub struct WhisperConfig {
     /// Override for OpenAI-compatible STT servers (e.g. faster-whisper-server).
     pub base_url: Option<String>,
 
-    /// Model to use (whisper-1).
+    /// Model to use (default `gpt-transcribe`).
     pub model: Option<String>,
 
     /// Language hint (ISO 639-1 code).
@@ -412,7 +412,7 @@ pub struct MistralSttConfig {
     )]
     pub api_key: Option<Secret<String>>,
 
-    /// Model to use (e.g., "voxtral-mini-latest").
+    /// Model to use (default "voxtral-small-transcribe-latest").
     pub model: Option<String>,
 
     /// Language hint (ISO 639-1 code).

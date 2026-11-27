@@ -112,7 +112,7 @@ dm_policy = "allowlist"
 allowed_pubkeys = [
   "npub1abc123...",
 ]
-model = "anthropic/claude-sonnet-4-20250514"
+model = "anthropic/claude-sonnet-5-5"
 model_provider = "anthropic"
 otp_self_approval = true
 otp_cooldown_secs = 300

@@ -167,7 +167,7 @@ protect_head = 3                    # Head messages kept verbatim (recency/struc
 protect_tail_min = 20               # Minimum tail messages kept verbatim (recency/structured).
 tail_budget_ratio = 0.20            # Tail size as fraction of threshold_percent × context_window.
 tool_prune_char_threshold = 200     # Middle tool results longer than this get placeholder-replaced.
-summary_model = "openrouter/google/gemini-2.5-flash"   # RESERVED — see note below.
+summary_model = "openrouter/google/gemini-3.8-flash"   # RESERVED — see note below.
 max_summary_tokens = 4096           # RESERVED — see note below.
 show_settings_hint = true           # Show "Change chat.compaction.mode in moltis.toml…" footer.
 ```
@@ -237,7 +237,7 @@ tail-budget math inside recency-preserving and structured modes.
 
 When the auxiliary-model subsystem lands, `summary_model` will take
 a provider-qualified model identifier understood by the provider
-registry (e.g. `"openrouter/google/gemini-2.5-flash"`,
+registry (e.g. `"openrouter/google/gemini-3.8-flash"`,
 `"anthropic/claude-3-5-haiku-20241022"`). Leave it unset to reuse the
 session's primary model.
 

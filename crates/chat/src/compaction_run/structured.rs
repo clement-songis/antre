@@ -131,7 +131,7 @@ static WARNED_UNUSED_AUXILIARY_CONFIG: std::sync::OnceLock<
 /// The auxiliary-model subsystem is tracked by beads issue `moltis-8me`.
 /// Until that ships, `structured` always uses the session's primary
 /// provider regardless of these fields. Users who configured a cheap
-/// auxiliary model (e.g. "openrouter/google/gemini-2.5-flash") would
+/// auxiliary model (e.g. "openrouter/google/gemini-3.8-flash") would
 /// otherwise silently fall through to the frontier model they use for
 /// coding, with a nasty billing surprise. The warning names the exact
 /// fields and the tracking issue so operators can either disable the
