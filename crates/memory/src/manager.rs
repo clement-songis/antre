@@ -15,16 +15,21 @@ use crate::{
     config::MemoryConfig,
     embeddings::EmbeddingProvider,
     error::Result,
+    reranking::RerankerProvider,
     schema::{ChunkRow, FileRow},
     search::SearchResult,
     store::{CacheEntry, MemoryStore},
     writer::validate_memory_path,
 };
 
+const RERANK_POOL_FACTOR: usize = 3;
+
 pub struct MemoryManager {
     config: MemoryConfig,
     store: Box<dyn MemoryStore>,
     embedder: Option<Box<dyn EmbeddingProvider>>,
+    /// Set after construction: the LLM reranker needs the provider registry.
+    reranker: std::sync::RwLock<Option<Arc<dyn RerankerProvider>>>,
     /// Serializes sync operations so concurrent syncs of the same path can't
     /// interleave their delete+upsert and corrupt the chunk-PK index.
     sync_lock: Arc<tokio::sync::Semaphore>,
@@ -74,6 +79,7 @@ impl MemoryManager {
             config,
             store,
             embedder: Some(embedder),
+            reranker: std::sync::RwLock::new(None),
             sync_lock: Arc::new(tokio::sync::Semaphore::new(1)),
         }
     }
@@ -84,6 +90,7 @@ impl MemoryManager {
             config,
             store,
             embedder: None,
+            reranker: std::sync::RwLock::new(None),
             sync_lock: Arc::new(tokio::sync::Semaphore::new(1)),
         }
     }
@@ -111,6 +118,22 @@ impl MemoryManager {
     /// Whether LLM reranking is enabled.
     pub fn llm_reranking_enabled(&self) -> bool {
         self.config.llm_reranking
+    }
+
+    /// Rerank search results with `reranker` from now on (`None` disables).
+    pub fn set_reranker(&self, reranker: Option<Arc<dyn RerankerProvider>>) {
+        *self
+            .reranker
+            .write()
+            .unwrap_or_else(|poisoned| poisoned.into_inner()) = reranker;
+    }
+
+    /// Whether search results are reranked.
+    pub fn has_reranker(&self) -> bool {
+        self.reranker
+            .read()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .is_some()
     }
 
     /// Resolve a file path by a content-hash prefix.
@@ -430,8 +453,18 @@ impl MemoryManager {
         };
 
         let strategy = self.config.search_strategy();
+        let reranker = self
+            .reranker
+            .read()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .clone();
+        // Give the reranker a wider pool than the caller asked for.
+        let fetch = match reranker {
+            Some(_) => limit.saturating_mul(RERANK_POOL_FACTOR).max(limit),
+            None => limit,
+        };
 
-        let results = self
+        let mut results = self
             .store
             .hybrid_search(
                 &embedding,
@@ -439,9 +472,13 @@ impl MemoryManager {
                 self.config.vector_weight,
                 self.config.keyword_weight,
                 strategy,
-                limit,
+                fetch,
             )
             .await?;
+        if let Some(reranker) = reranker {
+            results = reranker.rerank(query, results, limit).await?;
+        }
+        results.truncate(limit);
 
         #[cfg(feature = "metrics")]
         moltis_metrics::histogram!(
@@ -733,6 +770,66 @@ mod tests {
         assert!(
             combined.contains("Rust memory system"),
             "search results should contain the synced text, got: {combined}"
+        );
+    }
+
+    struct ReversingReranker {
+        seen: std::sync::Mutex<Vec<(usize, usize)>>,
+    }
+
+    #[async_trait]
+    impl RerankerProvider for ReversingReranker {
+        async fn rerank(
+            &self,
+            _query: &str,
+            mut results: Vec<SearchResult>,
+            top_k: usize,
+        ) -> Result<Vec<SearchResult>> {
+            self.seen.lock().unwrap().push((results.len(), top_k));
+            results.reverse();
+            results.truncate(top_k);
+            Ok(results)
+        }
+    }
+
+    #[tokio::test]
+    async fn search_reranks_a_wider_pool_down_to_the_limit() {
+        let (manager, tmp) = setup().await;
+        let mem_dir = tmp.path().join("memory");
+        for (name, text) in [
+            ("a.md", "rust memory search alpha"),
+            ("b.md", "rust memory beta"),
+            ("c.md", "rust gamma"),
+            ("d.md", "rust delta"),
+        ] {
+            std::fs::write(mem_dir.join(name), text).unwrap();
+        }
+        manager.sync().await.unwrap();
+        let plain = manager.search("rust memory search", 2).await.unwrap();
+
+        let reranker = Arc::new(ReversingReranker {
+            seen: std::sync::Mutex::new(Vec::new()),
+        });
+        manager.set_reranker(Some(reranker.clone()));
+        assert!(manager.has_reranker());
+        let reranked = manager.search("rust memory search", 2).await.unwrap();
+
+        let seen = reranker.seen.lock().unwrap().clone();
+        assert_eq!(seen.len(), 1);
+        assert!(seen[0].0 > 2, "reranker saw only {} candidates", seen[0].0);
+        assert_eq!(seen[0].1, 2);
+        assert_eq!(reranked.len(), 2);
+        assert_ne!(
+            reranked.iter().map(|r| &r.chunk_id).collect::<Vec<_>>(),
+            plain.iter().map(|r| &r.chunk_id).collect::<Vec<_>>()
+        );
+
+        manager.set_reranker(None);
+        assert!(!manager.has_reranker());
+        let again = manager.search("rust memory search", 2).await.unwrap();
+        assert_eq!(
+            again.iter().map(|r| &r.chunk_id).collect::<Vec<_>>(),
+            plain.iter().map(|r| &r.chunk_id).collect::<Vec<_>>()
         );
     }
 

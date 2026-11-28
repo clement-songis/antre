@@ -464,3 +464,42 @@ trust = "untrusted"
         result.diagnostics
     );
 }
+
+#[test]
+fn memory_reranker_keys_are_known_and_custom_needs_a_base_url() {
+    let toml = r#"
+[memory]
+reranker = "custom"
+rerank_model = "bge-reranker-v2-m3"
+rerank_api_key = "k"
+"#;
+    let result = validate_toml_str(toml);
+    assert!(
+        result
+            .diagnostics
+            .iter()
+            .all(|d| d.category != "unknown-field"),
+        "{:?}",
+        result.diagnostics
+    );
+    assert!(
+        result
+            .diagnostics
+            .iter()
+            .any(|d| d.path == "memory.rerank_base_url" && d.severity == Severity::Error)
+    );
+
+    let ok = validate_toml_str(
+        r#"
+[memory]
+reranker = "jina"
+"#,
+    );
+    assert!(
+        ok.diagnostics
+            .iter()
+            .all(|d| !d.path.starts_with("memory.rerank")),
+        "{:?}",
+        ok.diagnostics
+    );
+}

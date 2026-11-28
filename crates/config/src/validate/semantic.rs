@@ -965,6 +965,17 @@ pub(super) fn check_semantic_warnings(config: &MoltisConfig, diagnostics: &mut V
         });
     }
 
+    if config.memory.reranker == Some(crate::schema::MemoryReranker::Custom)
+        && config.memory.rerank_base_url.is_none()
+    {
+        diagnostics.push(Diagnostic {
+            severity: Severity::Error,
+            category: "invalid-value",
+            path: "memory.rerank_base_url".into(),
+            message: "memory.reranker = \"custom\" needs memory.rerank_base_url".into(),
+        });
+    }
+
     // Redundant voice fallback entries: the active provider or a repeat
     // would be tried at most once anyway.
     check_voice_fallback(

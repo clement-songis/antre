@@ -46,6 +46,7 @@ pub mod mcp_host;
 pub mod mcp_service;
 #[cfg(feature = "mdns")]
 pub mod mdns;
+pub(crate) mod memory_rerank;
 pub mod message_log_store;
 pub mod methods;
 #[cfg(feature = "mods")]

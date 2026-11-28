@@ -133,14 +133,39 @@ Exported sessions are:
 - Sanitized to remove sensitive tool results and system messages
 - Automatically cleaned up based on age/count limits
 
-### LLM Reranking
+### Reranking
 
-LLM reranking uses the configured language model to re-score and reorder search results based on semantic relevance to the query. This provides better results than keyword or vector matching alone, at the cost of additional latency.
+A reranker re-scores the top search candidates and reorders them before they
+reach the agent. Memory search fetches three times the requested number of
+results and the reranker keeps the best ones. If the reranker fails, the
+search order is kept and a warning is logged.
 
-**How it works:**
-1. Initial search returns candidate results
-2. LLM evaluates each result's relevance (0.0-1.0 score)
-3. Results are reordered by combined score (70% LLM, 30% original)
+Two kinds are available:
+
+- **Chat model** (`llm_reranking = true` or `reranker = "llm"`): the model
+  scores each passage from 0.0 to 1.0 and results are reordered by a blend
+  (70% model score, 30% search score). It costs one chat request per search.
+  `rerank_model` picks the model as `provider::model`; by default the first
+  available chat model is used.
+- **Rerank API** (`reranker = "cohere" | "jina" | "voyage" | "custom"`): a
+  dedicated rerank model, faster and cheaper than a chat model. The default
+  model comes from the model catalog's rerank pick for that provider (for
+  example Cohere `rerank-v5.0-fast`); set `rerank_model` to change it. The
+  key is read from `rerank_api_key` or `COHERE_API_KEY` / `JINA_API_KEY` /
+  `VOYAGE_API_KEY`. `custom` calls `{rerank_base_url}/rerank` in the
+  Cohere/Jina shape, which llama.cpp (`--reranking`) and vLLM serve, and
+  needs `rerank_model`.
+
+```toml
+[memory]
+reranker = "cohere"
+# rerank_api_key = "..."   # or COHERE_API_KEY
+
+# Local llama.cpp server:
+# reranker = "custom"
+# rerank_base_url = "http://127.0.0.1:8080/v1"
+# rerank_model = "bge-reranker-v2-m3"
+```
 
 ## Configuration
 

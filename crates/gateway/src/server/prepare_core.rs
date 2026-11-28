@@ -1379,6 +1379,7 @@ pub async fn prepare_gateway_core_with_profile(
         &data_dir,
         &effective_providers,
         &runtime_env_overrides,
+        &registry,
         config.server.db_pool_max_connections,
         !profile.is_headless(),
     )

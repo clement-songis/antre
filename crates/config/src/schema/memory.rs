@@ -47,6 +47,20 @@ pub struct MemoryEmbeddingConfig {
     /// Enable LLM reranking for hybrid search results.
     #[serde(default)]
     pub llm_reranking: bool,
+    /// Reranker for memory search results. Overrides `llm_reranking` when set.
+    pub reranker: Option<MemoryReranker>,
+    /// Rerank model. Defaults to the catalog's rerank pick for API rerankers
+    /// and to the first available chat model for `llm` (`provider::model`).
+    pub rerank_model: Option<String>,
+    /// Base URL of the rerank API (required for `custom`).
+    pub rerank_base_url: Option<String>,
+    /// API key for the rerank API (falls back to the provider's env var).
+    #[serde(
+        default,
+        serialize_with = "crate::schema::serialize_option_secret",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub rerank_api_key: Option<Secret<String>>,
     /// Merge strategy for hybrid search results.
     pub search_merge_strategy: MemorySearchMergeStrategy,
     /// How session transcripts are exported into searchable memory.
@@ -99,6 +113,10 @@ impl Default for MemoryEmbeddingConfig {
             embedding_dimension: None,
             citations: MemoryCitationsMode::default(),
             llm_reranking: false,
+            reranker: None,
+            rerank_model: None,
+            rerank_base_url: None,
+            rerank_api_key: None,
             search_merge_strategy: MemorySearchMergeStrategy::default(),
             session_export: default_session_export_mode(),
             qmd: QmdConfig::default(),
@@ -199,6 +217,58 @@ pub enum MemoryCitationsMode {
     /// Include citations when results come from multiple files.
     #[default]
     Auto,
+}
+
+/// Reranker used to reorder memory search results.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum MemoryReranker {
+    /// Score passages with a chat model.
+    Llm,
+    /// Cohere `/v2/rerank`.
+    Cohere,
+    /// Jina `/v1/rerank`.
+    Jina,
+    /// Voyage `/v1/rerank`.
+    Voyage,
+    /// A `/rerank` endpoint in the Cohere/Jina shape (llama.cpp, vLLM,
+    /// Infinity, TEI behind a compatible proxy).
+    Custom,
+}
+
+impl MemoryReranker {
+    #[must_use]
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Llm => "llm",
+            Self::Cohere => "cohere",
+            Self::Jina => "jina",
+            Self::Voyage => "voyage",
+            Self::Custom => "custom",
+        }
+    }
+
+    /// Default API base URL; `{base}/rerank` is called.
+    #[must_use]
+    pub fn default_base_url(self) -> Option<&'static str> {
+        match self {
+            Self::Cohere => Some("https://api.cohere.com/v2"),
+            Self::Jina => Some("https://api.jina.ai/v1"),
+            Self::Voyage => Some("https://api.voyageai.com/v1"),
+            Self::Llm | Self::Custom => None,
+        }
+    }
+
+    /// Environment variable holding the API key.
+    #[must_use]
+    pub fn env_key(self) -> Option<&'static str> {
+        match self {
+            Self::Cohere => Some("COHERE_API_KEY"),
+            Self::Jina => Some("JINA_API_KEY"),
+            Self::Voyage => Some("VOYAGE_API_KEY"),
+            Self::Llm | Self::Custom => None,
+        }
+    }
 }
 
 /// Embedding provider for memory/RAG features.

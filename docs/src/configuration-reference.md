@@ -840,7 +840,11 @@ Each channel account (`channels.<channel_type>.<account_name>`) is an arbitrary 
 | `model` | optional string | — | Model name for embeddings. Alias: `embedding_model`. |
 | `api_key` | optional string (secret) | — | API key for the embedding endpoint. Alias: `embedding_api_key`. |
 | `citations` | enum (`on`, `off`, `auto`) | `"auto"` | Citation mode for memory search results. |
-| `llm_reranking` | bool | `false` | Enable LLM reranking for hybrid search results. |
+| `llm_reranking` | bool | `false` | Rerank search results with a chat model (same as `reranker = "llm"`). |
+| `reranker` | optional enum (`llm`, `cohere`, `jina`, `voyage`, `custom`) | — | Reranker for memory search results. Overrides `llm_reranking`. |
+| `rerank_model` | optional string | *catalog rerank pick* | Rerank model; for `llm`, a `provider::model` id (default: first chat model). Required for `custom`. |
+| `rerank_base_url` | optional string | *provider default* | Rerank API base URL; `{base}/rerank` is called. Required for `custom`. |
+| `rerank_api_key` | optional string (secret) | — | Rerank API key. Falls back to `COHERE_API_KEY`, `JINA_API_KEY` or `VOYAGE_API_KEY`. |
 | `search_merge_strategy` | enum (`rrf`, `linear`) | `"rrf"` | Merge strategy for hybrid search results. |
 | `session_export` | enum (`off`, `on-new-or-reset`) | `"on-new-or-reset"` | How session transcripts are exported into searchable memory. |
 | `qmd` | map (see `memory.qmd`) | `{}` | QMD-specific configuration (only used when backend = `"qmd"`). |

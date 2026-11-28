@@ -914,6 +914,11 @@ loopback_http = true                # Plain HTTP on loopback binds: http://local
 # db_path = "memory.zvec"           # Zvec collection directory (only when backend = "zvec")
 # vector_weight = 0.7               # Weight for vector similarity in hybrid search
 # keyword_weight = 0.3              # Weight for keyword/FTS similarity in hybrid search
+# llm_reranking = false             # Rerank search results with a chat model
+# reranker = "cohere"               # "llm" | "cohere" | "jina" | "voyage" | "custom" (overrides llm_reranking)
+# rerank_model = "rerank-v5.0-fast" # Default: the catalog's rerank pick (llm: first chat model, or "provider::model")
+# rerank_base_url = "http://127.0.0.1:8080/v1" # Required for "custom" (llama.cpp / vLLM /rerank)
+# rerank_api_key = "..."            # Or COHERE_API_KEY / JINA_API_KEY / VOYAGE_API_KEY
 
 # ══════════════════════════════════════════════════════════════════════════════
 # PHONE (Telephony Providers)

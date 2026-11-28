@@ -14,6 +14,7 @@ pub mod embeddings_openai;
 pub mod error;
 pub mod manager;
 pub mod reranking;
+pub mod reranking_api;
 pub mod runtime;
 pub mod schema;
 pub mod search;

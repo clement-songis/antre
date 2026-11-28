@@ -38,6 +38,7 @@ futures                = { workspace = true }
 llama-cpp-2            = { optional = true, workspace = true }
 moltis-agents          = { workspace = true }
 moltis-common          = { workspace = true }
+moltis-config          = { workspace = true }
 moltis-metrics         = { optional = true, workspace = true }
 moltis-splitter        = { workspace = true }
 moltis-tools           = { workspace = true }
@@ -54,6 +55,7 @@ tracing                = { workspace = true }
 walkdir                = { workspace = true }
 
 [dev-dependencies]
+mockito  = { workspace = true }
 tempfile = { workspace = true }
 
 [lints]

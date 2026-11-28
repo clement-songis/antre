@@ -20,6 +20,7 @@ pub(crate) async fn init_memory_system(
     data_dir: &FsPath,
     effective_providers: &moltis_config::schema::ProvidersConfig,
     runtime_env_overrides: &HashMap<String, String>,
+    registry: &Arc<tokio::sync::RwLock<moltis_providers::ProviderRegistry>>,
     db_pool_max_connections: u32,
     start_background_tasks: bool,
 ) -> Option<moltis_memory::runtime::DynMemoryRuntime> {
@@ -32,6 +33,7 @@ pub(crate) async fn init_memory_system(
     let mem_cfg = &config.memory;
 
     validate_memory_backend(mem_cfg.backend);
+    let reranker = crate::memory_rerank::build_reranker(mem_cfg, registry, runtime_env_overrides);
 
     if mem_cfg.disable_rag {
         info!("memory: RAG disabled via memory.disable_rag=true, using keyword-only search");
@@ -210,6 +212,7 @@ pub(crate) async fn init_memory_system(
                         mem_cfg,
                         data_dir,
                         embedder,
+                        reranker,
                         store,
                         start_background_tasks,
                     )
@@ -266,6 +269,7 @@ pub(crate) async fn init_memory_system(
                     mem_cfg,
                     data_dir,
                     embedder,
+                    reranker,
                     memory_pool,
                     start_background_tasks,
                 )
@@ -284,14 +288,22 @@ async fn build_memory_runtime(
     mem_cfg: &moltis_config::schema::MemoryEmbeddingConfig,
     data_dir: &FsPath,
     embedder: Option<Box<dyn moltis_memory::embeddings::EmbeddingProvider>>,
+    reranker: Option<Arc<dyn moltis_memory::reranking::RerankerProvider>>,
     memory_pool: sqlx::SqlitePool,
     start_background_tasks: bool,
 ) -> Option<moltis_memory::runtime::DynMemoryRuntime> {
     let store: Box<dyn moltis_memory::store::MemoryStore> = Box::new(
         moltis_memory::store_sqlite::SqliteMemoryStore::new(memory_pool),
     );
-    build_memory_runtime_from_store(mem_cfg, data_dir, embedder, store, start_background_tasks)
-        .await
+    build_memory_runtime_from_store(
+        mem_cfg,
+        data_dir,
+        embedder,
+        reranker,
+        store,
+        start_background_tasks,
+    )
+    .await
 }
 
 /// Validate that the configured memory backend is available with the current
@@ -407,6 +419,7 @@ async fn build_memory_runtime_from_store(
     mem_cfg: &moltis_config::schema::MemoryEmbeddingConfig,
     data_dir: &FsPath,
     embedder: Option<Box<dyn moltis_memory::embeddings::EmbeddingProvider>>,
+    reranker: Option<Arc<dyn moltis_memory::reranking::RerankerProvider>>,
     store: Box<dyn moltis_memory::store::MemoryStore>,
     start_background_tasks: bool,
 ) -> Option<moltis_memory::runtime::DynMemoryRuntime> {
@@ -462,6 +475,7 @@ async fn build_memory_runtime_from_store(
     } else {
         moltis_memory::manager::MemoryManager::keyword_only(memory_runtime_config, store)
     });
+    builtin_manager.set_reranker(reranker);
     let manager: moltis_memory::runtime::DynMemoryRuntime = match mem_cfg.backend {
         moltis_config::MemoryBackend::Builtin => builtin_manager.clone(),
         moltis_config::MemoryBackend::Qmd => {

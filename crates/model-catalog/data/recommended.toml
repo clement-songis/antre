@@ -36,6 +36,21 @@ models   = ["gemini-3.5-transcribe"]
 provider = "gemini"
 
 [[role]]
+kind     = "rerank"
+models   = ["rerank-v5.0-fast", "rerank-v5.0-pro"]
+provider = "cohere"
+
+[[role]]
+kind     = "rerank"
+models   = ["jina-reranker-v3"]
+provider = "jina"
+
+[[role]]
+kind     = "rerank"
+models   = ["rerank-3", "rerank-3-lite"]
+provider = "voyage"
+
+[[role]]
 kind     = "chat"
 models   = ["claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-5-5", "claude-fable-5-2"]
 provider = "anthropic"

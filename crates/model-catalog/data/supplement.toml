@@ -145,3 +145,34 @@ rate_limit_tz = "+08:00"
 id            = "*"
 provider      = "zai-code"
 rate_limit_tz = "+08:00"
+
+# ── Rerank APIs used by memory search (memory.reranker)
+[[models]]
+display_name = "Cohere Rerank 5.0 Fast"
+id           = "rerank-v5.0-fast"
+kind         = "rerank"
+provider     = "cohere"
+
+[[models]]
+display_name = "Cohere Rerank 5.0 Pro"
+id           = "rerank-v5.0-pro"
+kind         = "rerank"
+provider     = "cohere"
+
+[[models]]
+display_name = "Jina Reranker v3"
+id           = "jina-reranker-v3"
+kind         = "rerank"
+provider     = "jina"
+
+[[models]]
+display_name = "Voyage Rerank 3"
+id           = "rerank-3"
+kind         = "rerank"
+provider     = "voyage"
+
+[[models]]
+display_name = "Voyage Rerank 3 Lite"
+id           = "rerank-3-lite"
+kind         = "rerank"
+provider     = "voyage"

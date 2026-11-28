@@ -85,10 +85,9 @@ impl LlmReranker {
 
         for (i, result) in results.iter().enumerate() {
             // Truncate long texts to avoid context overflow
-            let text = if result.text.len() > 500 {
-                format!("{}...", &result.text[..500])
-            } else {
-                result.text.clone()
+            let text = match result.text.char_indices().nth(500) {
+                Some((cut, _)) => format!("{}...", &result.text[..cut]),
+                None => result.text.clone(),
             };
             prompt.push_str(&format!("{}. {}\n\n", i + 1, text.replace('\n', " ")));
         }
@@ -340,5 +339,18 @@ mod tests {
 
         let scores = reranker.parse_scores("[1.5, -0.2, 0.5]", 3).unwrap();
         assert_eq!(scores, vec![1.0, 0.0, 0.5]);
+    }
+
+    #[test]
+    fn build_prompt_truncates_on_char_boundaries() {
+        let reranker = LlmReranker::new(Arc::new(MockLlmClient {
+            response: String::new(),
+        }));
+        let long = SearchResult {
+            text: "é".repeat(600),
+            ..make_result("1", "", 0.5)
+        };
+        let prompt = reranker.build_prompt("q", &[long]);
+        assert!(prompt.contains(&format!("{}...", "é".repeat(500))));
     }
 }
