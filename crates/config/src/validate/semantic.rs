@@ -965,28 +965,24 @@ pub(super) fn check_semantic_warnings(config: &MoltisConfig, diagnostics: &mut V
         });
     }
 
-    // Redundant voice STT fallback entries: the active provider or a repeat
+    // Redundant voice fallback entries: the active provider or a repeat
     // would be tried at most once anyway.
-    for (idx, provider) in config.voice.stt.fallback.iter().enumerate() {
-        let is_active = config.voice.stt.provider == Some(*provider);
-        let is_repeat = config.voice.stt.fallback[..idx].contains(provider);
-        if is_active || is_repeat {
-            let reason = if is_active {
-                "is already the active provider"
-            } else {
-                "is listed more than once"
-            };
-            diagnostics.push(Diagnostic {
-                severity: Severity::Warning,
-                category: "invalid-value",
-                path: format!("voice.stt.fallback[{idx}]"),
-                message: format!(
-                    "STT fallback provider \"{}\" {reason}; it is tried only once",
-                    provider.as_str()
-                ),
-            });
-        }
-    }
+    check_voice_fallback(
+        "STT",
+        "voice.stt.fallback",
+        config.voice.stt.provider,
+        &config.voice.stt.fallback,
+        |provider| provider.as_str(),
+        diagnostics,
+    );
+    check_voice_fallback(
+        "TTS",
+        "voice.tts.fallback",
+        config.voice.tts.provider,
+        &config.voice.tts.fallback,
+        |provider| provider.as_str(),
+        diagnostics,
+    );
 
     // Unknown hook event names
     let valid_hook_events = [

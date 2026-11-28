@@ -11,6 +11,7 @@ mod stt_fallback;
 mod stt_service;
 #[cfg(feature = "voice")]
 pub mod stt_stream;
+mod tts_fallback;
 #[cfg(feature = "voice")]
 mod tts_service;
 

@@ -837,6 +837,9 @@ loopback_http = true                # Plain HTTP on loopback binds: http://local
 
 # [voice.tts]
 # enabled = true
+# provider = "openai"                   # Omit to auto-select the first configured provider
+# fallback = ["google", "piper"]        # Tried in order when the active provider fails
+#                                       # (empty = every other configured provider)
 # providers = []                        # UI allowlist (empty = show all)
 
 # Voice personas — named voice identities injected into TTS calls.

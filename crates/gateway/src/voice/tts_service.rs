@@ -14,7 +14,10 @@ use moltis_voice::{
 
 use crate::services::{ServiceError, ServiceResult, TtsService};
 
-use super::{load_voice_config, resolve_openai_key, resolve_openai_tts_base_url};
+use super::{
+    load_voice_config, resolve_openai_key, resolve_openai_tts_base_url,
+    tts_fallback::{ChainOutput, build_chain, synthesize_with_fallback},
+};
 
 /// Live TTS service that delegates to voice providers.
 /// Reads fresh config on each operation to pick up changes.
@@ -415,57 +418,32 @@ impl TtsService for LiveTtsService {
             request.similarity_boost = Some(s);
         }
 
-        // Provider fallback chain: try the selected provider, then fall through
-        // to other configured providers if synthesis fails.
         // Explicit provider selection disables fallback — fail immediately.
-        let mut attempted_providers = vec![provider_id];
-
-        let (actual_provider_id, output) = match provider.synthesize(request.clone()).await {
-            Ok(output) => (provider_id, output),
-            Err(e) if explicit_provider => {
-                warn!(provider = %provider_id, error = %e, "TTS synthesis failed (explicit provider, no fallback)");
-                return Err(format!("TTS synthesis failed: {e}").into());
-            },
-            Err(e) => {
-                warn!(provider = %provider_id, error = %e, "TTS synthesis failed, trying fallback providers");
-                let mut last_error = e.to_string();
-
-                let mut fallback_output = None;
-                for (fallback_id, configured) in Self::list_providers() {
-                    if !configured || attempted_providers.contains(&fallback_id) {
-                        continue;
-                    }
-                    attempted_providers.push(fallback_id);
-                    if let Some(fallback_provider) = Self::create_provider(fallback_id) {
-                        // Re-apply persona for the new provider if applicable.
-                        let mut fb_request = request.clone();
-                        if let Some(ref persona) = persona {
-                            let _ = crate::voice_persona::apply_persona_to_request(
-                                &mut fb_request,
-                                persona,
-                                fallback_id,
-                            );
-                        }
-                        match fallback_provider.synthesize(fb_request).await {
-                            Ok(output) => {
-                                info!(provider = %fallback_id, "TTS fallback succeeded");
-                                fallback_output = Some((fallback_id, output));
-                                break;
-                            },
-                            Err(fb_err) => {
-                                warn!(provider = %fallback_id, error = %fb_err, "TTS fallback failed");
-                                last_error = fb_err.to_string();
-                            },
-                        }
-                    }
-                }
-
-                match fallback_output {
-                    Some((fb_id, output)) => (fb_id, output),
-                    None => return Err(format!("TTS synthesis failed: {last_error}").into()),
-                }
-            },
+        let chain = if explicit_provider {
+            vec![provider_id]
+        } else {
+            build_chain(
+                provider_id,
+                &load_voice_config().voice.tts.fallback,
+                &Self::list_providers(),
+            )
         };
+        let request_for = |id: TtsProviderId| {
+            let mut request = request.clone();
+            if id != provider_id
+                && let Some(ref persona) = persona
+            {
+                let _ = crate::voice_persona::apply_persona_to_request(&mut request, persona, id);
+            }
+            request
+        };
+        let ChainOutput {
+            provider: actual_provider_id,
+            output,
+            attempted: attempted_providers,
+        } = synthesize_with_fallback(&chain, Self::create_provider, request_for)
+            .await
+            .map_err(ServiceError::message)?;
 
         info!(
             provider = %actual_provider_id,

@@ -130,6 +130,26 @@ endpoint = "http://localhost:5002"  # Coqui TTS server
 # model = "tts_models/en/ljspeech/tacotron2-DDC"  # optional
 ```
 
+### TTS Fallback Providers
+
+`voice.tts.fallback` lists providers to try, in order, when the active TTS
+provider fails. The active provider is always tried first, each provider at
+most once, and providers that are not configured are skipped. When the list
+is empty (the default), every other configured provider is tried in listing
+order.
+
+```toml
+[voice.tts]
+provider = "elevenlabs"
+fallback = ["openai", "piper"]
+```
+
+Each fallback gets the active voice persona's binding for that provider. A
+request that names a provider (the `provider` parameter or a
+`[[tts:provider=...]]` directive) never falls back. The `voice.convert`
+response lists the providers tried in `providersAttempted`; when every
+provider fails, the error names each failure in order.
+
 ### Local TTS Provider Setup
 
 #### Piper TTS

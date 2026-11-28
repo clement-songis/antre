@@ -23,6 +23,10 @@ pub struct VoiceTtsConfig {
     pub enabled: bool,
     /// Preferred TTS provider. `None` means auto-select the first configured.
     pub provider: Option<VoiceTtsProvider>,
+    /// Providers tried in order when the active provider fails. Empty means
+    /// every other configured provider, in listing order. Providers that are
+    /// not configured are skipped.
+    pub fallback: Vec<VoiceTtsProvider>,
     /// Provider IDs to list in the UI. Empty means list all.
     pub providers: Vec<String>,
     /// ElevenLabs-specific settings.
@@ -42,6 +46,7 @@ impl Default for VoiceTtsConfig {
         Self {
             enabled: true,
             provider: None,
+            fallback: Vec::new(),
             providers: Vec::new(),
             elevenlabs: VoiceElevenLabsConfig::default(),
             openai: VoiceOpenAiConfig::default(),

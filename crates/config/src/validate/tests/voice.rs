@@ -180,3 +180,28 @@ fallback = ["not-a-provider"]
         result.diagnostics
     );
 }
+
+#[test]
+fn voice_tts_fallback_accepts_known_providers_and_warns_on_repeats() {
+    let toml = r#"
+[voice.tts]
+provider = "openai"
+fallback = ["openai", "google", "piper", "google"]
+"#;
+    let result = validate_toml_str(toml);
+    let paths: Vec<_> = result
+        .diagnostics
+        .iter()
+        .filter(|d| d.path.starts_with("voice.tts.fallback"))
+        .map(|d| d.path.as_str())
+        .collect();
+    assert_eq!(paths, ["voice.tts.fallback[0]", "voice.tts.fallback[3]"]);
+    assert!(
+        result
+            .diagnostics
+            .iter()
+            .all(|d| d.category != "unknown-field"),
+        "{:?}",
+        result.diagnostics
+    );
+}
