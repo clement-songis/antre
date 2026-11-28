@@ -32,13 +32,13 @@ default-members = [
   "crates/home-assistant",
   "crates/httpd",
   "crates/import-core",
+  "crates/learning",
   "crates/matrix",
   "crates/mcp",
   "crates/mcp-agent-bridge",
   "crates/media",
   "crates/memory",
   "crates/metrics",
-  "crates/learning",
   "crates/model-catalog",
   "crates/mods",
   "crates/msteams",
@@ -113,13 +113,13 @@ members = [
   "crates/home-assistant",
   "crates/httpd",
   "crates/import-core",
+  "crates/learning",
   "crates/matrix",
   "crates/mcp",
   "crates/media",
   "crates/memory",
   "crates/memory-zvec",
   "crates/metrics",
-  "crates/learning",
   "crates/model-catalog",
   "crates/mods",
   "crates/msteams",
@@ -447,6 +447,7 @@ moltis-hermes-import      = { path = "crates/hermes-import" }
 moltis-home-assistant     = { path = "crates/home-assistant" }
 moltis-httpd              = { default-features = false, path = "crates/httpd" }
 moltis-import-core        = { path = "crates/import-core" }
+moltis-learning           = { path = "crates/learning" }
 moltis-matrix             = { path = "crates/matrix" }
 moltis-mcp                = { path = "crates/mcp" }
 moltis-mcp-agent-bridge   = { path = "crates/mcp-agent-bridge" }
@@ -454,7 +455,6 @@ moltis-media              = { path = "crates/media" }
 moltis-memory             = { path = "crates/memory" }
 moltis-memory-zvec        = { path = "crates/memory-zvec" }
 moltis-metrics            = { path = "crates/metrics" }
-moltis-learning           = { path = "crates/learning" }
 moltis-model-catalog      = { path = "crates/model-catalog" }
 moltis-mods               = { path = "crates/mods" }
 moltis-msteams            = { path = "crates/msteams" }
