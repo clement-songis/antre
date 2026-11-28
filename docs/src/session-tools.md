@@ -87,7 +87,10 @@ Use `spawn_agent` when work is short-lived and synchronous. For longer delegated
 work, call `spawn_agent` with `nonblocking: true`; it returns a `task_id` while
 the sub-agent continues in the background. Use `spawn_status` to check progress,
 `spawn_result` to fetch the final output, `spawn_list` to recover task IDs after
-context loss, and `cancel_spawn` to stop work that is no longer needed.
+context loss, and `cancel_spawn` to stop work that is no longer needed. If the
+parent turn ends before the sub-agent finishes, its result is posted to the
+parent session when it is ready, unless the parent already read it with
+`spawn_result` (see [Reliable delivery](delivery.md#background-sub-agents-report-back)).
 
 Use `active_tools` and `tool_choice` to prevent model drift on small/cheap
 LLMs. These controls apply **per agent run** (not per iteration within a run)

@@ -24,6 +24,7 @@
   - [Anthropic OAuth (FAQ)](anthropic-oauth.md)
   - [Model Catalog](model-catalog.md)
   - [Rate Limits and Quotas](rate-limits.md)
+  - [Reliable Delivery and Session Lanes](delivery.md)
 - [MCP Servers](mcp.md)
 - [External Agents](external-agents.md)
   - [Moltis as an ACP Agent](acp-server.md)

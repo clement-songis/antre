@@ -52,6 +52,10 @@ after a restart; a reset that passed while Moltis was down resumes right away.
 Cancel from the chat card, or with the `chat.cancel_quota_wait` RPC
 (`{"sessionKey": "..."}`).
 
+A parked run keeps its session: messages sent while it waits are queued behind
+it, and they run after it resumes, or right away if you cancel the wait. See
+[Reliable delivery and session lanes](delivery.md#one-run-per-session).
+
 ```toml
 [chat.quota_wait]
 enabled = true

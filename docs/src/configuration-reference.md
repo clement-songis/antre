@@ -46,6 +46,7 @@
   - [`chat`](#chat)
   - [`chat.compaction`](#chatcompaction)
   - [`chat.quota_wait`](#chatquota_wait)
+  - [`chat.delivery`](#chatdelivery)
   - [`agents`](#agents)
   - [`agents.presets.<name>`](#agentspresetsname)
   - [`modes`](#modes)
@@ -321,6 +322,19 @@ When every provider of a run fails on a rate limit or quota whose reset time is 
 |-----|------|---------|-------------|
 | `enabled` | bool | `true` | Park runs until the provider's quota resets instead of failing them. |
 | `max_wait_hours` | float | `6.0` | Longest accepted wait (up to 192 h); a later reset fails the run with the reset time in the error. |
+
+### `chat.delivery` — DeliveryConfig
+
+Channel replies are saved to an outbox, retried with exponential backoff, and reported when they cannot be delivered. See [Reliable delivery and session lanes](delivery.md).
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `max_attempts` | integer | `8` | Send attempts before a delivery is marked failed. |
+| `initial_retry_secs` | integer | `2` | Delay before the first retry; each retry doubles it. |
+| `max_retry_secs` | integer | `600` | Upper bound of the retry delay. |
+| `attempt_timeout_secs` | integer | `30` | Longest a single send may take before it counts as failed. |
+| `retention_days` | integer | `7` | Days delivered and failed records are kept. |
+| `announce_background_tasks` | bool | `true` | Post a background sub-agent's result to its parent session when the parent did not read it with `spawn_result`. |
 
 
 ### `agents` — AgentsConfig
