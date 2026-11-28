@@ -7811,6 +7811,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "moltis-delivery"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "moltis-channels",
+ "moltis-config",
+ "moltis-metrics",
+ "rand 0.10.1",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "tempfile",
+ "thiserror 2.0.18",
+ "time",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "moltis-discord"
 version = "0.1.0"
 dependencies = [

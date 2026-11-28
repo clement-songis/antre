@@ -7,6 +7,10 @@ use std::path::Path;
 
 use crate::schema::MoltisConfig;
 
+#[path = "validate/agent_presets.rs"]
+mod agent_presets;
+#[path = "validate/delivery.rs"]
+mod delivery;
 #[path = "validate/learning.rs"]
 mod learning;
 #[path = "validate/schema_map.rs"]

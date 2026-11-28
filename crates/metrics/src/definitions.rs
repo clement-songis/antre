@@ -651,6 +651,14 @@ pub mod spawn {
     pub const TASKS_EXPIRED_TOTAL: &str = "moltis_spawn_agents_tasks_expired_total";
 }
 
+/// Outbound channel delivery metrics
+pub mod delivery {
+    /// Deliveries persisted to the outbox (label: kind)
+    pub const ENQUEUED_TOTAL: &str = "moltis_delivery_enqueued_total";
+    /// Send attempts (labels: kind, status=delivered|retry|failed, channel)
+    pub const ATTEMPTS_TOTAL: &str = "moltis_delivery_attempts_total";
+}
+
 /// Common/shared metrics
 pub mod common {
     /// Application errors by type

@@ -123,3 +123,37 @@ models = ["a", { id = "b", contextWindow = 4096 }]
         Some(4096)
     );
 }
+
+#[test]
+fn delivery_section_is_known_and_validated() {
+    let ok = validate_toml_str(
+        "[chat.delivery]\nmax_attempts = 5\ninitial_retry_secs = 1\nmax_retry_secs = 60\nattempt_timeout_secs = 10\nretention_days = 3\nannounce_background_tasks = false\n",
+    );
+    assert!(
+        !ok.diagnostics
+            .iter()
+            .any(|d| d.path.starts_with("chat.delivery"))
+    );
+    let bad = validate_toml_str(
+        "[chat.delivery]\nmax_attempts = 0\ninitial_retry_secs = 0\nmax_retry_secs = 0\nattempt_timeout_secs = 0\n",
+    );
+    for field in ["max_attempts", "initial_retry_secs", "attempt_timeout_secs"] {
+        assert!(
+            bad.diagnostics
+                .iter()
+                .any(|d| d.path == format!("chat.delivery.{field}")),
+            "missing warning for {field}"
+        );
+    }
+    let ceiling =
+        validate_toml_str("[chat.delivery]\ninitial_retry_secs = 10\nmax_retry_secs = 5\n");
+    assert!(
+        ceiling
+            .diagnostics
+            .iter()
+            .any(|d| d.path == "chat.delivery.max_retry_secs")
+    );
+    let defaults = MoltisConfig::default();
+    assert_eq!(defaults.chat.delivery.max_attempts, 8);
+    assert!(defaults.chat.delivery.announce_background_tasks);
+}

@@ -24,6 +24,7 @@ default-members = [
   "crates/connectors",
   "crates/cron",
   "crates/ctl",
+  "crates/delivery",
   "crates/discord",
   "crates/external-agents",
   "crates/gateway",
@@ -106,6 +107,7 @@ members = [
   "crates/connectors",
   "crates/cron",
   "crates/ctl",
+  "crates/delivery",
   "crates/external-agents",
   "crates/gateway",
   "crates/graphql",
@@ -439,6 +441,7 @@ moltis-connector-gmail    = { path = "crates/connector-gmail" }
 moltis-connector-himalaya = { path = "crates/connector-himalaya" }
 moltis-connectors         = { path = "crates/connectors" }
 moltis-cron               = { path = "crates/cron" }
+moltis-delivery           = { path = "crates/delivery" }
 moltis-discord            = { path = "crates/discord" }
 moltis-external-agents    = { path = "crates/external-agents" }
 moltis-gateway            = { default-features = false, path = "crates/gateway" }

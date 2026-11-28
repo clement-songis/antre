@@ -374,6 +374,14 @@ loopback_http = true                # Plain HTTP on loopback binds: http://local
 # enabled = true                     # Wait for a provider quota reset and resume the run
 # max_wait_hours = 6                 # Longer waits fail with the reset time instead
 
+# [chat.delivery]
+# max_attempts = 8                   # Channel send attempts before a reply is reported as failed
+# initial_retry_secs = 2             # First retry delay; doubles on each attempt
+# max_retry_secs = 600               # Retry delay ceiling
+# attempt_timeout_secs = 30          # A send slower than this counts as failed
+# retention_days = 7                 # How long delivered/failed records are kept
+# announce_background_tasks = true   # Post unread background sub-agent results to the parent session
+
 # [chat]
 # reasoning_default = "high"         # Optional: minimal, low, medium, high, xhigh (alias: extra-high), max.
                                     #   Omit for Off (current behavior); max is distinct from xhigh.

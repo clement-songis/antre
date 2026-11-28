@@ -1,6 +1,6 @@
 use {
     super::*,
-    crate::schema::{KNOWN_PROVIDER_NAMES, MoltisConfig, ToolChoice},
+    crate::schema::{KNOWN_PROVIDER_NAMES, MoltisConfig},
     secrecy::ExposeSecret,
     std::path::Path,
 };
@@ -403,6 +403,7 @@ pub(super) fn check_semantic_warnings(config: &MoltisConfig, diagnostics: &mut V
     }
 
     check_catalog(&config.catalog, diagnostics);
+    delivery::check_delivery(&config.chat.delivery, diagnostics);
     learning::check_learning(&config.learning, diagnostics);
     let quota_wait = &config.chat.quota_wait;
     if quota_wait.enabled
@@ -425,38 +426,7 @@ pub(super) fn check_semantic_warnings(config: &MoltisConfig, diagnostics: &mut V
             message: "tools.agent_max_iterations must be at least 1".into(),
         });
     }
-    for (name, preset) in &config.agents.presets {
-        if preset.max_iterations == Some(0) {
-            diagnostics.push(Diagnostic {
-                severity: Severity::Error,
-                category: "invalid-value",
-                path: format!("agents.presets.{name}.max_iterations"),
-                message: "agents.presets.<name>.max_iterations must be at least 1".into(),
-            });
-        }
-        if let Some(ToolChoice::Tool { name: tool_name }) = &preset.tool_controls.tool_choice {
-            if tool_name.trim().is_empty() {
-                diagnostics.push(Diagnostic {
-                    severity: Severity::Error,
-                    category: "invalid-value",
-                    path: format!("agents.presets.{name}.tool_controls.tool_choice.name"),
-                    message: "forced tool_choice requires a non-empty name".into(),
-                });
-            }
-            if let Some(active_tools) = &preset.tool_controls.active_tools
-                && !active_tools.iter().any(|active| active == tool_name)
-            {
-                diagnostics.push(Diagnostic {
-                    severity: Severity::Error,
-                    category: "invalid-value",
-                    path: format!("agents.presets.{name}.tool_controls"),
-                    message: format!(
-                        "forced tool_choice `{tool_name}` must be included in active_tools"
-                    ),
-                });
-            }
-        }
-    }
+    agent_presets::check_agent_presets(&config.agents.presets, diagnostics);
 
     // A zero workspace file limit would silently drop all AGENTS.md / TOOLS.md content.
     if config.chat.workspace_file_max_chars == 0 {

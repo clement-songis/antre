@@ -41,6 +41,9 @@ pub struct ChatConfig {
     /// Waiting for a provider quota to reset. See [`QuotaWaitConfig`].
     #[serde(default)]
     pub quota_wait: QuotaWaitConfig,
+    /// Outbound reply delivery: retries and retention. See [`DeliveryConfig`].
+    #[serde(default)]
+    pub delivery: DeliveryConfig,
 }
 
 /// When every provider of a run hits a rate limit or quota with a known
@@ -59,6 +62,40 @@ impl Default for QuotaWaitConfig {
         Self {
             enabled: true,
             max_wait_hours: 6.0,
+        }
+    }
+}
+
+/// Replies sent to channels go through a persisted outbox: a failed send is
+/// retried with exponential backoff, and a reply that still cannot be sent
+/// is reported instead of dropped.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct DeliveryConfig {
+    /// Send attempts before a delivery is marked failed.
+    pub max_attempts: u32,
+    /// Delay before the first retry; each retry doubles it.
+    pub initial_retry_secs: u64,
+    /// Upper bound of the retry delay.
+    pub max_retry_secs: u64,
+    /// Longest a single send may take before it counts as failed.
+    pub attempt_timeout_secs: u64,
+    /// Days delivered and failed records are kept.
+    pub retention_days: u32,
+    /// Post a background sub-agent's result to its parent session when the
+    /// parent did not read it with `spawn_result`.
+    pub announce_background_tasks: bool,
+}
+
+impl Default for DeliveryConfig {
+    fn default() -> Self {
+        Self {
+            max_attempts: 8,
+            initial_retry_secs: 2,
+            max_retry_secs: 600,
+            attempt_timeout_secs: 30,
+            retention_days: 7,
+            announce_background_tasks: true,
         }
     }
 }
@@ -92,6 +129,7 @@ impl Default for ChatConfig {
             allowed_models: Vec::new(),
             compaction: CompactionConfig::default(),
             quota_wait: QuotaWaitConfig::default(),
+            delivery: DeliveryConfig::default(),
         }
     }
 }
