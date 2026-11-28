@@ -44,6 +44,19 @@ pub enum SinkError {
     Rejected(String),
 }
 
+impl From<moltis_channels::Error> for SinkError {
+    /// An unknown account is retried: after a restart the outbox can run
+    /// before every channel account has registered again.
+    fn from(error: moltis_channels::Error) -> Self {
+        let message = error.to_string();
+        if error.is_retryable() || matches!(error, moltis_channels::Error::UnknownAccount { .. }) {
+            Self::Retryable(message)
+        } else {
+            Self::Rejected(message)
+        }
+    }
+}
+
 /// Sends one delivery to its channel.
 #[async_trait]
 pub trait DeliverySink: Send + Sync {

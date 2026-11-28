@@ -1,7 +1,10 @@
 //! A `ChatRuntime` for unit tests: no channels, no sandbox, and a chat
 //! service supplied by the test.
 
-use std::sync::Arc;
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+};
 
 use {async_trait::async_trait, moltis_service_traits::ChatService, serde_json::Value};
 
@@ -9,6 +12,13 @@ use crate::runtime::ChatRuntime;
 
 pub(crate) struct TestRuntime {
     chat: Arc<dyn ChatService>,
+    outbound: Option<Arc<dyn moltis_channels::ChannelOutbound>>,
+    outbox: Option<Arc<moltis_delivery::Outbox>>,
+    /// Every broadcast, in order.
+    pub(crate) broadcasts: Mutex<Vec<(String, Value)>>,
+    /// Channel acknowledgment activity reported per run.
+    pub(crate) activities: Mutex<Vec<(String, moltis_channels::ChannelActivity)>>,
+    replies: Mutex<HashMap<String, Vec<moltis_channels::ChannelReplyTarget>>>,
     tts: moltis_service_traits::NoopTtsService,
     project: moltis_service_traits::NoopProjectService,
     mcp: moltis_service_traits::NoopMcpService,
@@ -16,27 +26,58 @@ pub(crate) struct TestRuntime {
 
 #[async_trait]
 impl ChatRuntime for TestRuntime {
-    async fn broadcast(&self, _topic: &str, _payload: Value) {}
+    async fn broadcast(&self, topic: &str, payload: Value) {
+        self.broadcasts
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .push((topic.to_string(), payload));
+    }
 
     async fn push_channel_reply(
         &self,
-        _session_key: &str,
-        _target: moltis_channels::ChannelReplyTarget,
+        session_key: &str,
+        target: moltis_channels::ChannelReplyTarget,
     ) {
+        self.replies
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .entry(session_key.to_string())
+            .or_default()
+            .push(target);
     }
 
     async fn drain_channel_replies(
         &self,
-        _session_key: &str,
+        session_key: &str,
     ) -> Vec<moltis_channels::ChannelReplyTarget> {
-        Vec::new()
+        self.replies
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .remove(session_key)
+            .unwrap_or_default()
     }
 
     async fn peek_channel_replies(
         &self,
-        _session_key: &str,
+        session_key: &str,
     ) -> Vec<moltis_channels::ChannelReplyTarget> {
-        Vec::new()
+        self.replies
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .get(session_key)
+            .cloned()
+            .unwrap_or_default()
+    }
+
+    async fn note_channel_activity(
+        &self,
+        activity_id: &str,
+        activity: moltis_channels::ChannelActivity,
+    ) {
+        self.activities
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .push((activity_id.to_string(), activity));
     }
 
     async fn push_channel_status_log(&self, _session_key: &str, _message: String) {}
@@ -83,7 +124,11 @@ impl ChatRuntime for TestRuntime {
     }
 
     fn channel_outbound(&self) -> Option<Arc<dyn moltis_channels::ChannelOutbound>> {
-        None
+        self.outbound.clone()
+    }
+
+    fn delivery_outbox(&self) -> Option<Arc<moltis_delivery::Outbox>> {
+        self.outbox.clone()
     }
 
     fn channel_stream_outbound(&self) -> Option<Arc<dyn moltis_channels::ChannelStreamOutbound>> {
@@ -133,9 +178,37 @@ impl TestRuntime {
     pub(crate) fn new(chat: Arc<dyn ChatService>) -> Self {
         Self {
             chat,
+            outbound: None,
+            outbox: None,
+            broadcasts: Mutex::new(Vec::new()),
+            activities: Mutex::new(Vec::new()),
+            replies: Mutex::new(HashMap::new()),
             tts: moltis_service_traits::NoopTtsService,
             project: moltis_service_traits::NoopProjectService,
             mcp: moltis_service_traits::NoopMcpService,
         }
+    }
+
+    pub(crate) fn with_outbound(
+        mut self,
+        outbound: Arc<dyn moltis_channels::ChannelOutbound>,
+    ) -> Self {
+        self.outbound = Some(outbound);
+        self
+    }
+
+    pub(crate) fn with_outbox(mut self, outbox: Arc<moltis_delivery::Outbox>) -> Self {
+        self.outbox = Some(outbox);
+        self
+    }
+
+    pub(crate) fn broadcasts_on(&self, topic: &str) -> Vec<Value> {
+        self.broadcasts
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .iter()
+            .filter(|(seen, _)| seen == topic)
+            .map(|(_, payload)| payload.clone())
+            .collect()
     }
 }

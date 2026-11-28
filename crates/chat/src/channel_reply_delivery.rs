@@ -9,12 +9,32 @@ use std::{collections::HashSet, sync::Arc};
 
 use tracing::warn;
 
+use moltis_delivery::{DeliveryBody, DeliveryKind, NewDelivery, Outbox};
+
 use crate::{
     agent_loop::ChannelReplyTargetKey,
     channels::{format_logbook_html, tts::build_tts_payload},
     runtime::ChatRuntime,
     types::ReplyMedium,
 };
+
+fn new_delivery(
+    target: &moltis_channels::ChannelReplyTarget,
+    session_key: &str,
+    run_id: &str,
+    kind: DeliveryKind,
+    body: DeliveryBody,
+    reply_to: Option<&str>,
+) -> NewDelivery {
+    NewDelivery {
+        session_key: session_key.to_string(),
+        run_id: Some(run_id.to_string()),
+        kind,
+        target: target.clone(),
+        body,
+        reply_to: reply_to.map(String::from),
+    }
+}
 
 /// Send the activity logbook as a follow-up message and link it to the trace.
 ///
@@ -27,6 +47,7 @@ use crate::{
 ///
 /// A no-op when there is no logbook, so callers need no emptiness check.
 async fn deliver_logbook_follow_up(
+    outbox: Option<&Arc<Outbox>>,
     outbound: &Arc<dyn moltis_channels::plugin::ChannelOutbound>,
     feedback: Option<&moltis_channels::FeedbackService>,
     target: &moltis_channels::ChannelReplyTarget,
@@ -36,6 +57,21 @@ async fn deliver_logbook_follow_up(
     trace_correlation_key: &str,
 ) {
     if logbook_html.is_empty() {
+        return;
+    }
+    if let Some(outbox) = outbox {
+        outbox
+            .submit(new_delivery(
+                target,
+                session_key,
+                trace_correlation_key,
+                DeliveryKind::Logbook,
+                DeliveryBody::Html {
+                    html: logbook_html.to_string(),
+                },
+                None,
+            ))
+            .await;
         return;
     }
     match outbound
@@ -72,6 +108,7 @@ async fn deliver_logbook_follow_up(
 /// cannot report ids return an empty list and lose attribution, not the reply.
 #[allow(clippy::too_many_arguments)]
 pub(crate) async fn deliver_text_reply(
+    outbox: Option<&Arc<Outbox>>,
     outbound: &Arc<dyn moltis_channels::plugin::ChannelOutbound>,
     feedback: Option<&moltis_channels::FeedbackService>,
     target: &moltis_channels::ChannelReplyTarget,
@@ -82,6 +119,22 @@ pub(crate) async fn deliver_text_reply(
     session_key: &str,
     trace_correlation_key: &str,
 ) {
+    if let Some(outbox) = outbox {
+        outbox
+            .submit(new_delivery(
+                target,
+                session_key,
+                trace_correlation_key,
+                DeliveryKind::Reply,
+                DeliveryBody::Text {
+                    text: text.to_string(),
+                    suffix_html: (!logbook_html.is_empty()).then(|| logbook_html.to_string()),
+                },
+                reply_to,
+            ))
+            .await;
+        return;
+    }
     let result = if logbook_html.is_empty() {
         outbound
             .send_text_reporting_ids(&target.account_id, to, text, reply_to)
@@ -121,6 +174,7 @@ pub(crate) async fn deliver_text_reply(
 
 #[allow(clippy::too_many_arguments)]
 async fn deliver_media_reply(
+    outbox: Option<&Arc<Outbox>>,
     outbound: &Arc<dyn moltis_channels::plugin::ChannelOutbound>,
     feedback: Option<&moltis_channels::FeedbackService>,
     target: &moltis_channels::ChannelReplyTarget,
@@ -151,6 +205,22 @@ async fn deliver_media_reply(
                 thread_id = target.thread_id.as_deref().unwrap_or("-"),
                 "failed to send channel voice reply: {e}"
             );
+            // Voice files are temporary, so the outbox keeps the words: the
+            // transcript goes out as text with the usual retries.
+            if let Some(outbox) = outbox
+                && !payload.text.is_empty()
+            {
+                outbox
+                    .submit(new_delivery(
+                        target,
+                        session_key,
+                        trace_correlation_key,
+                        DeliveryKind::Reply,
+                        DeliveryBody::text(payload.text.clone()),
+                        reply_to,
+                    ))
+                    .await;
+            }
         },
     }
 }
@@ -172,9 +242,11 @@ pub(crate) async fn deliver_channel_replies_to_targets(
     let logbook_html = format_logbook_html(&status_log);
     // Resolved once rather than per target: it is the same service either way.
     let feedback = state.feedback();
+    let outbox = state.delivery_outbox();
     let mut tasks = Vec::with_capacity(targets.len());
     for target in targets {
         let outbound = Arc::clone(&outbound);
+        let outbox = outbox.clone();
         let state = Arc::clone(&state);
         let feedback = feedback.clone();
         let session_key = session_key.clone();
@@ -200,6 +272,7 @@ pub(crate) async fn deliver_channel_replies_to_targets(
                         if text_already_streamed {
                             // Text was already streamed — send voice audio only.
                             deliver_media_reply(
+                                outbox.as_ref(),
                                 &outbound,
                                 feedback.as_deref(),
                                 &target,
@@ -213,6 +286,7 @@ pub(crate) async fn deliver_channel_replies_to_targets(
                             // The answer went out some other way, so the logbook is the
                             // only text message of this turn.
                             deliver_logbook_follow_up(
+                                outbox.as_ref(),
                                 &outbound,
                                 feedback.as_deref(),
                                 &target,
@@ -236,6 +310,7 @@ pub(crate) async fn deliver_channel_replies_to_targets(
                                 // Short transcript fits as a caption on the voice message.
                                 payload.text = transcript;
                                 deliver_media_reply(
+                                    outbox.as_ref(),
                                     &outbound,
                                     feedback.as_deref(),
                                     &target,
@@ -249,6 +324,7 @@ pub(crate) async fn deliver_channel_replies_to_targets(
                                 // The answer went out some other way, so the logbook is the
                                 // only text message of this turn.
                                 deliver_logbook_follow_up(
+                                    outbox.as_ref(),
                                     &outbound,
                                     feedback.as_deref(),
                                     &target,
@@ -262,6 +338,7 @@ pub(crate) async fn deliver_channel_replies_to_targets(
                                 // Transcript too long for a caption — send voice
                                 // without caption, then the full text as a follow-up.
                                 deliver_media_reply(
+                                    outbox.as_ref(),
                                     &outbound,
                                     feedback.as_deref(),
                                     &target,
@@ -277,6 +354,7 @@ pub(crate) async fn deliver_channel_replies_to_targets(
                                 // reaction target as a plain text reply and
                                 // goes out through the same attributing path.
                                 deliver_text_reply(
+                                    outbox.as_ref(),
                                     &outbound,
                                     feedback.as_deref(),
                                     &target,
@@ -295,6 +373,7 @@ pub(crate) async fn deliver_channel_replies_to_targets(
                         // The answer went out some other way, so the logbook is the
                         // only text message of this turn.
                         deliver_logbook_follow_up(
+                            outbox.as_ref(),
                             &outbound,
                             feedback.as_deref(),
                             &target,
@@ -307,6 +386,7 @@ pub(crate) async fn deliver_channel_replies_to_targets(
                     },
                     None => {
                         deliver_text_reply(
+                            outbox.as_ref(),
                             &outbound,
                             feedback.as_deref(),
                             &target,
@@ -323,6 +403,7 @@ pub(crate) async fn deliver_channel_replies_to_targets(
                 _ => match tts_payload {
                     Some(payload) => {
                         deliver_media_reply(
+                            outbox.as_ref(),
                             &outbound,
                             feedback.as_deref(),
                             &target,
@@ -338,6 +419,7 @@ pub(crate) async fn deliver_channel_replies_to_targets(
                         // The answer went out some other way, so the logbook is the
                         // only text message of this turn.
                         deliver_logbook_follow_up(
+                            outbox.as_ref(),
                             &outbound,
                             feedback.as_deref(),
                             &target,
@@ -350,6 +432,7 @@ pub(crate) async fn deliver_channel_replies_to_targets(
                     },
                     None => {
                         deliver_text_reply(
+                            outbox.as_ref(),
                             &outbound,
                             feedback.as_deref(),
                             &target,
@@ -532,6 +615,7 @@ mod tests {
         let outbound: Arc<dyn moltis_channels::plugin::ChannelOutbound> = recorder.clone();
 
         deliver_logbook_follow_up(
+            None,
             &outbound,
             None,
             &reply_target(),
@@ -552,6 +636,7 @@ mod tests {
         let outbound: Arc<dyn moltis_channels::plugin::ChannelOutbound> = recorder.clone();
 
         deliver_logbook_follow_up(
+            None,
             &outbound,
             None,
             &reply_target(),
@@ -599,6 +684,7 @@ mod tests {
         let outbound: Arc<dyn moltis_channels::plugin::ChannelOutbound> = recorder.clone();
 
         deliver_media_reply(
+            None,
             &outbound,
             None,
             &reply_target(),
@@ -625,6 +711,7 @@ mod tests {
         let outbound: Arc<dyn moltis_channels::plugin::ChannelOutbound> = recorder.clone();
 
         deliver_text_reply(
+            None,
             &outbound,
             None,
             &reply_target(),
@@ -647,6 +734,7 @@ mod tests {
         let outbound: Arc<dyn moltis_channels::plugin::ChannelOutbound> = recorder.clone();
 
         deliver_text_reply(
+            None,
             &outbound,
             None,
             &reply_target(),

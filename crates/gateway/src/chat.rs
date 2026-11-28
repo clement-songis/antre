@@ -196,6 +196,10 @@ impl ChatRuntime for GatewayChatRuntime {
         self.state.services.channel_outbound_arc()
     }
 
+    fn delivery_outbox(&self) -> Option<Arc<moltis_delivery::Outbox>> {
+        self.state.delivery_outbox.get().cloned()
+    }
+
     fn channel_stream_outbound(&self) -> Option<Arc<dyn moltis_channels::ChannelStreamOutbound>> {
         self.state.services.channel_stream_outbound_arc()
     }

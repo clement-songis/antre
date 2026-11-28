@@ -130,6 +130,38 @@ async fn deliver_channel_replies_inner(
     let outbound = match state.channel_outbound() {
         Some(o) => o,
         None => {
+            if let Some(outbox) = state.delivery_outbox() {
+                // The outbox retries until the channels are up again.
+                let logbook_html =
+                    format_logbook_html(&state.drain_channel_status_log(session_key).await);
+                let suffix_html = (!logbook_html.is_empty()).then(|| logbook_html.clone());
+                crate::channel_delivery::submit_to_targets(
+                    &outbox,
+                    targets,
+                    session_key,
+                    Some(activity_id),
+                    moltis_delivery::DeliveryKind::Reply,
+                    &moltis_delivery::DeliveryBody::Text {
+                        text: text.to_string(),
+                        suffix_html,
+                    },
+                    true,
+                )
+                .await;
+                if !logbook_html.is_empty() {
+                    crate::channel_delivery::submit_to_targets(
+                        &outbox,
+                        streamed_targets,
+                        session_key,
+                        Some(activity_id),
+                        moltis_delivery::DeliveryKind::Logbook,
+                        &moltis_delivery::DeliveryBody::Html { html: logbook_html },
+                        false,
+                    )
+                    .await;
+                }
+                return;
+            }
             if is_channel_session {
                 info!(
                     session_key,
@@ -146,6 +178,7 @@ async fn deliver_channel_replies_inner(
     let logbook_html = format_logbook_html(&status_log);
     if !streamed_targets.is_empty() && !logbook_html.is_empty() {
         send_channel_logbook_follow_up_to_targets(
+            state.delivery_outbox(),
             Arc::clone(&outbound),
             streamed_targets,
             &logbook_html,
@@ -200,6 +233,7 @@ pub(crate) fn format_logbook_html(entries: &[String]) -> String {
 }
 
 async fn send_channel_logbook_follow_up_to_targets(
+    outbox: Option<Arc<moltis_delivery::Outbox>>,
     outbound: Arc<dyn moltis_channels::plugin::ChannelOutbound>,
     targets: Vec<moltis_channels::ChannelReplyTarget>,
     logbook_html: &str,
@@ -208,6 +242,21 @@ async fn send_channel_logbook_follow_up_to_targets(
     trace_correlation_key: &str,
 ) {
     if targets.is_empty() || logbook_html.is_empty() {
+        return;
+    }
+    if let Some(outbox) = outbox {
+        crate::channel_delivery::submit_to_targets(
+            &outbox,
+            targets,
+            session_key,
+            Some(trace_correlation_key),
+            moltis_delivery::DeliveryKind::Logbook,
+            &moltis_delivery::DeliveryBody::Html {
+                html: logbook_html.to_string(),
+            },
+            false,
+        )
+        .await;
         return;
     }
 
@@ -462,13 +511,35 @@ async fn deliver_channel_error_inner(
         return;
     }
 
-    let outbound = match state.channel_outbound() {
-        Some(o) => o,
-        None => return,
-    };
-
     let error_text = format_channel_error_message(error_obj);
     let logbook_html = format_logbook_html(&status_log);
+    if let Some(outbox) = state.delivery_outbox() {
+        crate::channel_delivery::submit_to_targets(
+            &outbox,
+            targets,
+            session_key,
+            None,
+            moltis_delivery::DeliveryKind::Error,
+            &moltis_delivery::DeliveryBody::Text {
+                text: error_text,
+                suffix_html: (!logbook_html.is_empty()).then_some(logbook_html),
+            },
+            true,
+        )
+        .await;
+        return;
+    }
+
+    let outbound = match state.channel_outbound() {
+        Some(o) => o,
+        None => {
+            warn!(
+                session_key,
+                "channel outbound unavailable; terminal error not delivered"
+            );
+            return;
+        },
+    };
     let mut tasks = JoinSet::new();
     for target in targets {
         let outbound = Arc::clone(&outbound);

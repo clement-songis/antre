@@ -459,3 +459,22 @@ async fn the_worker_resumes_sends_interrupted_by_a_restart() {
     let stored = outbox.store().get(id).await.unwrap().unwrap();
     assert_eq!(stored.attempts, 2);
 }
+
+#[test]
+fn channel_errors_map_to_retry_or_reject() {
+    let unknown = moltis_channels::Error::UnknownAccount {
+        account_id: "bot".into(),
+    };
+    assert!(matches!(SinkError::from(unknown), SinkError::Retryable(_)));
+    let unavailable = moltis_channels::Error::Unavailable {
+        message: "starting".into(),
+    };
+    assert!(matches!(
+        SinkError::from(unavailable),
+        SinkError::Retryable(_)
+    ));
+    let invalid = moltis_channels::Error::InvalidInput {
+        message: "bad chat id".into(),
+    };
+    assert!(matches!(SinkError::from(invalid), SinkError::Rejected(_)));
+}

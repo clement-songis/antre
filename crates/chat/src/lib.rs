@@ -1,6 +1,7 @@
 mod agent_loop;
 pub(crate) mod channel_acks;
 mod channel_compaction;
+pub mod channel_delivery;
 mod channel_feedback;
 #[cfg(any(feature = "push-notifications", test))]
 mod channel_push;

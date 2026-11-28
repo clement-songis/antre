@@ -1,5 +1,5 @@
 use {
-    super::feedback::install_feedback,
+    super::{delivery::install_delivery, feedback::install_feedback},
     anyhow::Context as _,
     secrecy::Secret,
     std::{
@@ -372,6 +372,7 @@ pub(super) async fn complete_startup(
     }
 
     install_feedback(&state, &db_pool);
+    install_delivery(&state, &db_pool);
 
     if !profile.is_headless() {
         let (webhook_tx, webhook_rx) = tokio::sync::mpsc::channel::<i64>(256);

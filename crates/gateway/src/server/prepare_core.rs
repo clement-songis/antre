@@ -34,6 +34,7 @@ use {
     std::{path::PathBuf, sync::Arc},
     tracing::{debug, info, warn},
 };
+mod delivery;
 mod feedback;
 mod log_persistence;
 mod post_state;
@@ -488,6 +489,9 @@ pub async fn prepare_gateway_core_with_profile(
     moltis_webhooks::run_migrations(&db_pool)
         .await
         .expect("failed to run webhooks migrations");
+    moltis_delivery::run_migrations(&db_pool)
+        .await
+        .expect("failed to run delivery migrations");
     crate::run_migrations(&db_pool)
         .await
         .expect("failed to run gateway migrations");

@@ -72,6 +72,15 @@ pub(in crate::channel_events) async fn dispatch_to_chat(
             return;
         }
 
+        // Replies that failed for good while this chat was unreachable go out
+        // again now that the recipient is writing; they keep their place
+        // ahead of the answer to this message.
+        if let Some(outbox) = state.delivery_outbox.get()
+            && let Err(error) = outbox.redeliver_failed(&reply_to).await
+        {
+            warn!(%error, "could not requeue failed channel deliveries");
+        }
+
         let effective_text =
             if trusted_channel_turn && state.is_channel_command_mode_enabled(&session_key).await {
                 rewrite_for_shell_mode(text).unwrap_or_else(|| text.to_string())

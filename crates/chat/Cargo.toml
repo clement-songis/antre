@@ -16,6 +16,7 @@ moltis-agents         = { workspace = true }
 moltis-channels       = { workspace = true }
 moltis-common         = { workspace = true }
 moltis-config         = { workspace = true }
+moltis-delivery       = { workspace = true }
 moltis-memory         = { workspace = true }
 moltis-metrics        = { optional = true, workspace = true }
 moltis-observability  = { workspace = true }
@@ -48,7 +49,7 @@ uuid                  = { workspace = true }
 bundled-skills     = ["moltis-skills/bundled-skills"]
 llm-compaction     = []
 local-llm          = []
-metrics            = ["dep:moltis-metrics", "moltis-metrics/sqlite"]
+metrics            = ["dep:moltis-metrics", "moltis-delivery/metrics", "moltis-metrics/sqlite"]
 push-notifications = []
 telegram           = ["dep:moltis-telegram"]
 web-ui             = []

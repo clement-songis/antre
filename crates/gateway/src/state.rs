@@ -499,6 +499,8 @@ pub struct GatewayState {
     // ── Generic webhook ingress ───────────────────────────────────────────────
     /// Webhook store for direct access from HTTP ingress handlers.
     pub webhook_store: std::sync::OnceLock<Arc<dyn moltis_webhooks::store::WebhookStore>>,
+    /// Persisted outbox for channel replies, set once the database is open.
+    pub delivery_outbox: std::sync::OnceLock<Arc<moltis_delivery::Outbox>>,
     /// Per-webhook rate limiter for generic webhook ingress.
     pub webhook_rate_limiter: moltis_webhooks::rate_limit::WebhookRateLimiter,
     /// Sender for queueing delivery IDs to the webhook worker.
@@ -642,6 +644,7 @@ impl GatewayState {
             channel_webhook_rate_limiter:
                 crate::channel_webhook_rate_limit::ChannelWebhookRateLimiter::new(),
             webhook_store: std::sync::OnceLock::new(),
+            delivery_outbox: std::sync::OnceLock::new(),
             webhook_rate_limiter: moltis_webhooks::rate_limit::WebhookRateLimiter::default(),
             webhook_worker_tx: std::sync::OnceLock::new(),
             skill_usage_store: std::sync::OnceLock::new(),

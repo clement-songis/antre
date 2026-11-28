@@ -123,6 +123,13 @@ pub trait ChatRuntime: Send + Sync {
     /// Channel outbound service for delivering replies.
     fn channel_outbound(&self) -> Option<Arc<dyn moltis_channels::ChannelOutbound>>;
 
+    /// Persisted outbox that sends, retries and reports channel replies.
+    ///
+    /// `None` (tests, embedders) keeps the direct, unretried sends.
+    fn delivery_outbox(&self) -> Option<Arc<moltis_delivery::Outbox>> {
+        None
+    }
+
     /// Channel stream outbound for edit-in-place streaming.
     fn channel_stream_outbound(&self) -> Option<Arc<dyn moltis_channels::ChannelStreamOutbound>>;
 
