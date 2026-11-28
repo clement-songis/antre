@@ -49,13 +49,9 @@ pub trait SessionService: Send + Sync {
     async fn search(&self, params: Value) -> ServiceResult;
     async fn fork(&self, params: Value) -> ServiceResult;
     /// Drop every message after the first `keep` ones (rewind).
-    async fn truncate(&self, _params: Value) -> ServiceResult {
-        Err("session truncate not supported".into())
-    }
+    async fn truncate(&self, params: Value) -> ServiceResult;
     /// The user turns a session can be rewound to.
-    async fn rewind_points(&self, _params: Value) -> ServiceResult {
-        Err("session rewind points not supported".into())
-    }
+    async fn rewind_points(&self, params: Value) -> ServiceResult;
     async fn branches(&self, params: Value) -> ServiceResult;
     async fn run_detail(&self, params: Value) -> ServiceResult;
     async fn clear_all(&self) -> ServiceResult;
@@ -116,6 +112,14 @@ impl SessionService for NoopSessionService {
 
     async fn fork(&self, _p: Value) -> ServiceResult {
         Err("session forking not available".into())
+    }
+
+    async fn truncate(&self, _p: Value) -> ServiceResult {
+        Err("session truncate not available".into())
+    }
+
+    async fn rewind_points(&self, _p: Value) -> ServiceResult {
+        Err("session rewind points not available".into())
     }
 
     async fn branches(&self, _p: Value) -> ServiceResult {

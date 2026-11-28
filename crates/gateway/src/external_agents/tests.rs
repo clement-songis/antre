@@ -791,3 +791,55 @@ fn selected_external_agent_filters_by_kind() {
 
     assert!(selected_external_agent(Some(&id), AgentTransportKind::Codex).is_none());
 }
+
+#[tokio::test]
+async fn session_wrapper_forwards_rewind_and_restarts_the_agent_on_truncate() {
+    let dir = tempfile::tempdir().unwrap();
+    let store = Arc::new(SessionStore::new(dir.path().to_path_buf()));
+    let metadata = Arc::new(SqliteSessionMetadata::new(sqlite_pool().await));
+    metadata.upsert("main", None).await.unwrap();
+    for (role, content) in [
+        ("user", "one"),
+        ("assistant", "first reply"),
+        ("user", "two"),
+        ("assistant", "second reply"),
+    ] {
+        store
+            .append(
+                "main",
+                &serde_json::json!({ "role": role, "content": content }),
+            )
+            .await
+            .unwrap();
+    }
+    let agent_state = Arc::new(FakeAgentState::default());
+    let external_agents = fake_external_agents(Arc::clone(&metadata), Arc::clone(&agent_state));
+    external_agents
+        .bind(serde_json::json!({ "sessionKey": "main", "kind": "codex" }))
+        .await
+        .expect("bind external agent");
+    drop(
+        external_agents
+            .session_for_binding("main", AgentTransportKind::Codex)
+            .await
+            .expect("live session"),
+    );
+    let inner = Arc::new(crate::session::LiveSessionService::new(
+        Arc::clone(&store),
+        Arc::clone(&metadata),
+    ));
+    let wrapper = ExternalAgentSessionService::new(inner, Arc::clone(&external_agents));
+
+    let points = wrapper
+        .rewind_points(serde_json::json!({ "key": "main" }))
+        .await
+        .expect("rewind points");
+    assert_eq!(points["points"].as_array().map(Vec::len), Some(2));
+
+    wrapper
+        .truncate(serde_json::json!({ "key": "main", "keep": 2 }))
+        .await
+        .expect("truncate");
+    assert_eq!(store.read("main").await.unwrap().len(), 2);
+    assert_eq!(agent_state.shutdowns.load(Ordering::SeqCst), 1);
+}

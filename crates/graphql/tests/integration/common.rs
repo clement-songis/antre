@@ -159,6 +159,14 @@ impl moltis_service_traits::SessionService for MockSession {
         self.0.call("sessions.fork", p)
     }
 
+    async fn truncate(&self, p: Value) -> ServiceResult {
+        self.0.call("sessions.truncate", p)
+    }
+
+    async fn rewind_points(&self, p: Value) -> ServiceResult {
+        self.0.call("sessions.rewind_points", p)
+    }
+
     async fn branches(&self, p: Value) -> ServiceResult {
         self.0.call("sessions.branches", p)
     }

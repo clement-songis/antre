@@ -324,6 +324,19 @@ impl SessionService for ExternalAgentSessionService {
         self.inner.fork(params).await
     }
 
+    async fn truncate(&self, params: Value) -> ServiceResult {
+        // The external agent holds its own copy of the conversation; restart it
+        // so the next turn starts from the truncated history.
+        if let Some(session_key) = session_key_param(&params) {
+            self.external_agents.shutdown_binding(&session_key).await;
+        }
+        self.inner.truncate(params).await
+    }
+
+    async fn rewind_points(&self, params: Value) -> ServiceResult {
+        self.inner.rewind_points(params).await
+    }
+
     async fn branches(&self, params: Value) -> ServiceResult {
         self.inner.branches(params).await
     }
