@@ -28,6 +28,7 @@ import * as S from "../state";
 import { copyToClipboard } from "../ui";
 import { initVadButton, initVoiceInput, teardownVoiceInput } from "../voice-input";
 import { ApprovalDock, ApprovalsBadge, handleApprovalShortcut } from "./chat/ApprovalDock";
+import { mountCanvas, unmountCanvas } from "./chat/canvas/mount";
 import {
 	chatAutoResize,
 	handleHistoryDown,
@@ -924,7 +925,8 @@ function initializeChatMediaDrop(): void {
 // Safe: static hardcoded HTML template string — no user input is interpolated.
 // This is a compile-time constant defined in the original JS source.
 const chatPageHTML =
-	'<div style="position:absolute;inset:0;display:grid;grid-template-rows:auto auto 1fr auto auto auto;overflow:hidden">' +
+	'<div class="absolute inset-0 flex min-w-0">' +
+	'<div style="position:relative;flex:1;min-width:0;display:grid;grid-template-rows:auto auto 1fr auto auto auto;overflow:hidden">' +
 	'<div class="chat-toolbar h-12 px-4 border-b border-[var(--border)] bg-[var(--surface)] flex items-center gap-2" style="grid-row:1;">' +
 	// The session title and its menu lead; context pickers and status follow.
 	// overflow-hidden keeps a long session name inside its own box.
@@ -932,6 +934,7 @@ const chatPageHTML =
 	'<div class="flex-1"></div>' +
 	'<div id="nodeCombo" class="model-combo hidden"><button id="nodeComboBtn" class="model-combo-btn" type="button"><span class="icon icon-sm icon-server" style="flex-shrink:0;"></span><span id="nodeComboLabel">Local</span><span class="icon icon-sm icon-chevron-down model-combo-chevron"></span></button><div id="nodeDropdown" class="model-dropdown hidden" tabindex="-1"><div id="nodeDropdownList" class="model-dropdown-list"></div></div></div>' +
 	'<div id="projectCombo" class="model-combo hidden"><button id="projectComboBtn" class="model-combo-btn" type="button"><span class="icon icon-sm icon-folder" style="flex-shrink:0;"></span><span id="projectComboLabel">No project</span><span class="icon icon-sm icon-chevron-down model-combo-chevron"></span></button><div id="projectDropdown" class="model-dropdown hidden"><div id="projectDropdownList" class="model-dropdown-list"></div></div></div>' +
+	'<div id="canvasToggleMount" class="flex items-center"></div>' +
 	'<div id="approvalsBadgeMount" class="flex items-center"></div>' +
 	'<div id="sessionHeaderToolbarMount" class="flex items-center gap-1.5"></div>' +
 	'<button id="sandboxToggle" class="sandbox-toggle text-xs border border-[var(--border)] px-2 py-1 rounded-md transition-colors cursor-pointer bg-transparent font-[var(--font-body)] inline-flex items-center gap-1" title="Toggle sandbox mode"><span class="icon icon-md icon-lock shrink-0"></span><span id="sandboxLabel">direct</span></button>' +
@@ -943,7 +946,8 @@ const chatPageHTML =
 	'<div id="approvalDockMount" style="grid-row:4;"></div>' +
 	'<div id="rewindDialogMount"></div>' +
 	'<div id="queuedMessages" class="queued-tray hidden" style="grid-row:5;"></div>' +
-	'<div class="chat-input-row bg-ground" style="grid-row:6;"><div id="chatComposer" class="chat-composer"><div class="chat-composer-input-line"><span id="chatCommandPrompt" class="chat-command-prompt chat-command-prompt-hidden" title="Command prompt symbol" aria-hidden="true">$</span><textarea id="chatInput" placeholder="Type a message..." rows="1" enterkeyhint="send" class="chat-composer-textarea"></textarea></div><div class="chat-composer-footer"><div class="chat-composer-tools"><div id="modelCombo" class="model-combo"><button id="modelComboBtn" class="model-combo-btn" type="button"><span id="modelComboLabel">loading\u2026</span><span class="icon icon-sm icon-chevron-down model-combo-chevron"></span></button><div id="modelDropdown" class="model-dropdown hidden"><input id="modelSearchInput" type="text" placeholder="Search models\u2026" class="model-search-input" autocomplete="off" /><div id="modelDropdownList" class="model-dropdown-list"></div></div></div><div id="reasoningCombo" class="model-combo hidden"><button id="reasoningComboBtn" class="model-combo-btn" type="button" title="Reasoning effort"><span class="icon icon-sm icon-brain" style="flex-shrink:0;"></span><span id="reasoningComboLabel">Off</span><span class="icon icon-sm icon-chevron-down model-combo-chevron"></span></button><div id="reasoningDropdown" class="model-dropdown hidden"><div id="reasoningDropdownList" class="model-dropdown-list"></div></div></div></div><div id="tokenBar" class="token-bar"></div><div class="chat-composer-actions"><input id="attachInput" class="hidden" type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple /><button id="attachBtn" type="button" title="Attach images" class="chat-composer-icon-btn"><span class="icon icon-lg icon-paperclip"></span></button><button id="micBtn" disabled title="Click to start recording" class="mic-btn chat-composer-icon-btn"><span class="icon icon-lg icon-microphone"></span></button><button id="vadBtn" disabled title="Conversation mode (VAD)" class="vad-btn chat-composer-icon-btn"><span class="icon icon-lg icon-waveform"></span></button><button id="sendBtn" disabled aria-label="Send" title="Send" class="chat-composer-send-btn"><span class="icon icon-lg icon-arrow-up"></span></button></div></div></div></div></div>';
+	'<div class="chat-input-row bg-ground" style="grid-row:6;"><div id="chatComposer" class="chat-composer"><div id="canvasChipsMount"></div><div class="chat-composer-input-line"><span id="chatCommandPrompt" class="chat-command-prompt chat-command-prompt-hidden" title="Command prompt symbol" aria-hidden="true">$</span><textarea id="chatInput" placeholder="Type a message..." rows="1" enterkeyhint="send" class="chat-composer-textarea"></textarea></div><div class="chat-composer-footer"><div class="chat-composer-tools"><div id="modelCombo" class="model-combo"><button id="modelComboBtn" class="model-combo-btn" type="button"><span id="modelComboLabel">loading\u2026</span><span class="icon icon-sm icon-chevron-down model-combo-chevron"></span></button><div id="modelDropdown" class="model-dropdown hidden"><input id="modelSearchInput" type="text" placeholder="Search models\u2026" class="model-search-input" autocomplete="off" /><div id="modelDropdownList" class="model-dropdown-list"></div></div></div><div id="reasoningCombo" class="model-combo hidden"><button id="reasoningComboBtn" class="model-combo-btn" type="button" title="Reasoning effort"><span class="icon icon-sm icon-brain" style="flex-shrink:0;"></span><span id="reasoningComboLabel">Off</span><span class="icon icon-sm icon-chevron-down model-combo-chevron"></span></button><div id="reasoningDropdown" class="model-dropdown hidden"><div id="reasoningDropdownList" class="model-dropdown-list"></div></div></div></div><div id="tokenBar" class="token-bar"></div><div class="chat-composer-actions"><input id="attachInput" class="hidden" type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple /><button id="attachBtn" type="button" title="Attach images" class="chat-composer-icon-btn"><span class="icon icon-lg icon-paperclip"></span></button><button id="micBtn" disabled title="Click to start recording" class="mic-btn chat-composer-icon-btn"><span class="icon icon-lg icon-microphone"></span></button><button id="vadBtn" disabled title="Conversation mode (VAD)" class="vad-btn chat-composer-icon-btn"><span class="icon icon-lg icon-waveform"></span></button><button id="sendBtn" disabled aria-label="Send" title="Send" class="chat-composer-send-btn"><span class="icon icon-lg icon-arrow-up"></span></button></div></div></div></div></div>' +
+	'<div id="canvasPaneMount" class="contents"></div></div>';
 
 // ── Page registration ────────────────────────────────────────
 
@@ -974,6 +978,7 @@ registerPrefix(
 
 		mountSessionHeaderControls();
 		mountApprovalControls();
+		mountCanvas();
 		bindChatShortcuts();
 
 		updateMcpToggleUI(true);
@@ -1005,6 +1010,7 @@ registerPrefix(
 		S.chatMsgBox?.removeEventListener("copy", handleChatCopy);
 		unbindChatShortcuts();
 		unmountApprovalControls();
+		unmountCanvas();
 		teardownVoiceInput();
 		teardownMediaDrop();
 		unbindReasoningToggle();

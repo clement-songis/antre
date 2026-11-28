@@ -86,6 +86,7 @@ const namespaces: Record<string, (lng: string) => Promise<{ default?: Record<str
 	pwa: (lng: string) => import(`./locales/${lng}/pwa.ts`),
 	sessions: (lng: string) => import(`./locales/${lng}/sessions.ts`),
 	logs: (lng: string) => import(`./locales/${lng}/logs.ts`),
+	canvas: (lng: string) => import(`./locales/${lng}/canvas.ts`),
 };
 
 // ── Load all namespace bundles for a language ───────────────

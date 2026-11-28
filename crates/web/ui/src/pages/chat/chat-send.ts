@@ -23,6 +23,8 @@ import {
 import * as S from "../../state";
 import { modelStore } from "../../stores/model-store";
 import type { RpcResponse } from "../../types/rpc";
+import { withElementContext } from "./canvas/prompts";
+import { elementContexts, takeElementContexts } from "./canvas/store";
 import { enqueueMessage } from "./queue";
 import { handleSlashCommand, parseSlashCommand, shouldHandleSlashLocally, slashHideMenu } from "./slash-commands";
 import { addNotice, addUserMessage, type UserMessageFields } from "./transcript/actions";
@@ -278,15 +280,17 @@ async function sendChatAsync(): Promise<void> {
 	warmAudioPlayback();
 	try {
 		if (tryHandleLocalSlashCommand(text, hasAttachments)) return;
-		const outgoingText = normalizeOutgoingText(text, hasAttachments);
+		const contexts = elementContexts.value;
+		const outgoingText = withElementContext(normalizeOutgoingText(text, hasAttachments), contexts);
 		await dispatchChatMessage({
 			sessionKey,
 			text: outgoingText,
-			displayText: text,
+			displayText: withElementContext(text, contexts),
 			withAttachments: hasAttachments,
 			// After a successful upload only: a failed one keeps the typed text.
 			onPrepared: () => {
 				rememberChatHistory(text);
+				takeElementContexts();
 				forActiveSession(sessionKey, resetComposerAfterSend);
 			},
 		});

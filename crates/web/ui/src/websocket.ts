@@ -129,6 +129,11 @@ const connectOpts: ConnectOptions = {
 				"skills.install.progress",
 				"mcp.status",
 				"delivery",
+				"canvas.design.created",
+				"canvas.version.created",
+				"canvas.design.published",
+				"canvas.design.unpublished",
+				"canvas.comments.changed",
 			]),
 		);
 		S.setSubscribed(true);
