@@ -546,7 +546,7 @@ function ContainerRow({
 						</button>
 					)}
 					<button
-						className="text-xs text-white border border-[var(--error)] px-2 py-0.5 rounded bg-[var(--error)] hover:opacity-80 transition-colors cursor-pointer"
+						className="text-xs text-ground border border-[var(--error)] px-2 py-0.5 rounded bg-[var(--error)] hover:opacity-80 transition-colors cursor-pointer"
 						onClick={() => removeContainer(c.name)}
 						disabled={!sandboxAvailable}
 						title={sandboxAvailable ? "Delete container" : SANDBOX_DISABLED_HINT}
@@ -607,7 +607,7 @@ function RunningContainersSection(): VNode {
 				</button>
 				{list.length > 0 && (
 					<button
-						className="text-xs text-white border border-[var(--error)] px-2 py-0.5 rounded-md bg-[var(--error)] hover:opacity-80 transition-colors cursor-pointer"
+						className="text-xs text-ground border border-[var(--error)] px-2 py-0.5 rounded-md bg-[var(--error)] hover:opacity-80 transition-colors cursor-pointer"
 						onClick={cleanAllContainers}
 						disabled={cleaningAll.value || !sandboxAvailable}
 						title={sandboxAvailable ? "Stop and remove all containers" : SANDBOX_DISABLED_HINT}

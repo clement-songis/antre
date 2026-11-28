@@ -166,7 +166,7 @@ test.describe("Session management", () => {
 		expect(pageErrors).toEqual([]);
 	});
 
-	test("sessions sidebar uses search and add button row", async ({ page }) => {
+	test("sessions sidebar puts new chat and search above the session filter", async ({ page }) => {
 		const pageErrors = await navigateAndWait(page, "/");
 		await waitForWsConnected(page);
 
@@ -174,23 +174,12 @@ test.describe("Session management", () => {
 		await expect(sessionsPanel).toBeVisible();
 		await expect(page.locator("#sessionSearch")).toBeVisible();
 		await expect(page.locator("#newSessionBtn")).toBeVisible();
+		await expect(sessionsPanel.locator("#commandPaletteBtn")).toBeVisible();
+		await expect(sessionsPanel.locator(".app-sidebar-footer #settingsBtn")).toBeVisible();
 
-		const hasTopSessionsTitle = await page.evaluate(() => {
-			const panel = document.getElementById("sessionsPanel");
-			if (!panel) return false;
-			const firstBlock = panel.firstElementChild;
-			const title = firstBlock?.querySelector("span");
-			return (title?.textContent || "").trim() === "Sessions";
-		});
-		expect(hasTopSessionsTitle).toBe(false);
-
-		const searchAndAddShareRow = await page.evaluate(() => {
-			const searchInput = document.getElementById("sessionSearch");
-			const newSessionBtn = document.getElementById("newSessionBtn");
-			if (!(searchInput && newSessionBtn)) return false;
-			return searchInput.parentElement === newSessionBtn.parentElement;
-		});
-		expect(searchAndAddShareRow).toBe(true);
+		const newChatBox = await page.locator("#newSessionBtn").boundingBox();
+		const filterBox = await page.locator("#sessionSearch").boundingBox();
+		expect(newChatBox && filterBox && newChatBox.y < filterBox.y).toBe(true);
 
 		expect(pageErrors).toEqual([]);
 	});

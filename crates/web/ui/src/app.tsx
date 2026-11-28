@@ -18,10 +18,11 @@ import { installBackgroundNotify } from "./pages/chat/background-notify";
 import { mountShortcutsDialog } from "./pages/chat/ShortcutsDialog";
 import { installChatShortcuts } from "./pages/chat/shortcuts";
 import "./github-stats";
+import { initAppShell } from "./app-shell";
 import * as _helpers from "./helpers";
 import * as _i18n from "./i18n";
 import { init as initI18n, translateStaticElements } from "./i18n";
-import { initMobile, toggleSessions } from "./mobile";
+import { initMobile } from "./mobile";
 import { fetchModels } from "./models";
 import { updateNavCounts } from "./nav-counts";
 import * as _nodeSelector from "./nodes-selector";
@@ -295,31 +296,8 @@ if (commandPaletteBtn) {
 // Logout button — wire up click handler once.
 const logoutBtn = document.getElementById("logoutBtn");
 const settingsBtn = document.getElementById("settingsBtn");
-const mobileMenuBtn = document.getElementById("mobileMenuBtn");
-const mobileMenuOverlay = document.getElementById("mobileMenuOverlay");
-const mobileMenuPanel = document.getElementById("mobileMenuPanel");
-const mobileMenuSessionsBtn = document.getElementById("mobileMenuSessionsBtn");
-const mobileMenuSettingsBtn = document.getElementById("mobileMenuSettingsBtn");
-const mobileMenuLogoutBtn = document.getElementById("mobileMenuLogoutBtn");
-
-function closeMobileMenu(): void {
-	if (mobileMenuPanel) mobileMenuPanel.classList.remove("open");
-	if (mobileMenuOverlay) mobileMenuOverlay.classList.remove("visible");
-}
-
-function toggleMobileMenu(): void {
-	if (!(mobileMenuPanel && mobileMenuOverlay)) return;
-	const isOpen = mobileMenuPanel.classList.contains("open");
-	if (isOpen) {
-		closeMobileMenu();
-		return;
-	}
-	mobileMenuPanel.classList.add("open");
-	mobileMenuOverlay.classList.add("visible");
-}
 
 function performLogout(): void {
-	closeMobileMenu();
 	fetch("/api/auth/logout", { method: "POST" }).finally(() => {
 		location.href = "/";
 	});
@@ -330,39 +308,10 @@ if (logoutBtn) {
 }
 if (settingsBtn) {
 	settingsBtn.addEventListener("click", () => {
-		closeMobileMenu();
 		navigate(routes.profile as string);
 	});
 }
-if (mobileMenuBtn) {
-	mobileMenuBtn.addEventListener("click", (e) => {
-		e.stopPropagation();
-		toggleMobileMenu();
-	});
-}
-if (mobileMenuOverlay) {
-	mobileMenuOverlay.addEventListener("click", closeMobileMenu);
-}
-if (mobileMenuSettingsBtn) {
-	mobileMenuSettingsBtn.addEventListener("click", () => {
-		closeMobileMenu();
-		navigate(routes.profile as string);
-	});
-}
-if (mobileMenuSessionsBtn) {
-	mobileMenuSessionsBtn.addEventListener("click", () => {
-		closeMobileMenu();
-		if (window.innerWidth < 768) {
-			toggleSessions();
-		}
-	});
-}
-if (mobileMenuLogoutBtn) {
-	mobileMenuLogoutBtn.addEventListener("click", performLogout);
-}
-window.addEventListener("resize", () => {
-	if (window.innerWidth >= 768) closeMobileMenu();
-});
+initAppShell();
 installCodeCopyHandler();
 mountContextMenuHost();
 // Both render translated labels, so wait for the locale bundles.
@@ -373,32 +322,15 @@ void i18nReady.then(() => {
 installChatShortcuts();
 installBackgroundNotify();
 document.addEventListener("keydown", (e) => {
-	if (e.key === "Escape") closeMobileMenu();
 	if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
 		e.preventDefault();
 		togglePalette();
 	}
 });
-document.addEventListener("click", (e) => {
-	if (!mobileMenuPanel?.classList.contains("open")) return;
-	if (mobileMenuPanel.contains(e.target as Node)) return;
-	if (mobileMenuBtn?.contains(e.target as Node)) return;
-	closeMobileMenu();
-});
-
 function updateAuthChrome(auth: AuthStatus | null): void {
 	const showLogout = !!(auth?.authenticated && !auth.auth_disabled && (auth.has_password || auth.has_passkeys));
 	if (logoutBtn) {
 		logoutBtn.style.display = showLogout ? "" : "none";
-	}
-	if (mobileMenuLogoutBtn) {
-		mobileMenuLogoutBtn.style.display = showLogout ? "" : "none";
-	}
-	if (mobileMenuPanel) {
-		mobileMenuPanel.classList.toggle("logout-hidden", !showLogout);
-	}
-	if (!showLogout) {
-		closeMobileMenu();
 	}
 
 	const banner = document.getElementById("authDisabledBanner");

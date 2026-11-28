@@ -162,7 +162,7 @@ function CatalogMismatchNotice({ models }: CatalogMismatchNoticeProps): VNode | 
 	const mismatch = models.find((model) => model.catalog?.providerMismatch)?.catalog?.providerMismatch;
 	if (!mismatch) return null;
 	return (
-		<div className="mt-1 text-xs text-[var(--warn,#b45309)] catalog-mismatch">
+		<div className="mt-1 text-xs text-[var(--warn)] catalog-mismatch">
 			{mismatch.missing.length > 0 ? (
 				<div>{t("providers:catalogMismatch.missing", { models: mismatch.missing.join(", ") })}</div>
 			) : null}
@@ -444,9 +444,7 @@ function ProviderSection({ group }: { group: ProviderGroup }): VNode {
 				</div>
 			</div>
 			{providerTestResult ? (
-				<div
-					className={`mt-1 text-xs ${providerTestResult.ok ? "text-[var(--success,#22c55e)]" : "text-[var(--danger,#ef4444)]"}`}
-				>
+				<div className={`mt-1 text-xs ${providerTestResult.ok ? "text-[var(--success)]" : "text-[var(--danger)]"}`}>
 					{providerTestResult.ok ? t("providers:testSuccess") : providerTestResult.error}
 				</div>
 			) : null}
@@ -479,9 +477,7 @@ function ProviderSection({ group }: { group: ProviderGroup }): VNode {
 								</div>
 								<div className="mt-1 text-xs text-[var(--muted)] font-mono opacity-75">{model.id}</div>
 								{model.unsupported && model.unsupportedReason ? (
-									<div className="mt-0.5 text-xs font-medium text-[var(--danger,#ef4444)]">
-										{model.unsupportedReason}
-									</div>
+									<div className="mt-0.5 text-xs font-medium text-[var(--danger)]">{model.unsupportedReason}</div>
 								) : null}
 								{model.createdAt ? (
 									<time
@@ -559,7 +555,7 @@ function ProvidersPageComponent(): VNode {
 					{t("providers:description")}
 				</p>
 				{detectError.value || providerActionError.value ? (
-					<div className="text-xs text-[var(--danger,#ef4444)] max-w-form">
+					<div className="text-xs text-[var(--danger)] max-w-form">
 						{detectError.value || providerActionError.value}
 					</div>
 				) : null}

@@ -365,7 +365,7 @@ function FeaturedCard({ skill: f }: { skill: FeaturedSkill }): VNode {
 				style={{
 					background: "var(--surface2)",
 					border: "1px solid var(--border)",
-					color: isInstalled ? "var(--success, #22c55e)" : "var(--text)",
+					color: isInstalled ? "var(--success)" : "var(--text)",
 					borderRadius: "var(--radius-sm)",
 					fontSize: ".72rem",
 					padding: "4px 10px",
@@ -726,11 +726,8 @@ function RepoCard({ repo }: { repo: RepoSummary }): VNode {
 								fontSize: ".68rem",
 								padding: "1px 5px",
 								borderRadius: "var(--radius-sm)",
-								background:
-									repo.trusted_count === repo.skill_count
-										? "var(--success-bg, rgba(34,197,94,.12))"
-										: "var(--warning-bg, rgba(234,179,8,.12))",
-								color: repo.trusted_count === repo.skill_count ? "var(--success, #22c55e)" : "var(--warning, #eab308)",
+								background: repo.trusted_count === repo.skill_count ? "var(--success-bg)" : "var(--warning-bg)",
+								color: repo.trusted_count === repo.skill_count ? "var(--success)" : "var(--warning)",
 							}}
 						>
 							{repo.trusted_count === repo.skill_count
@@ -809,7 +806,7 @@ function RepoCard({ repo }: { repo: RepoSummary }): VNode {
 			{(repo.quarantined || repo.provenance) && expanded.value && (
 				<div style={{ padding: "8px 12px", fontSize: ".78rem", color: "var(--muted)" }}>
 					{repo.quarantined && (
-						<div style={{ marginBottom: "6px", color: "var(--warning, #c77d00)", fontWeight: 600 }}>
+						<div style={{ marginBottom: "6px", color: "var(--warning)", fontWeight: 600 }}>
 							Quarantined{repo.quarantine_reason ? `: ${repo.quarantine_reason}` : ""}
 						</div>
 					)}
@@ -905,7 +902,7 @@ function RepoCard({ repo }: { repo: RepoSummary }): VNode {
 												style={{
 													fontSize: ".72rem",
 													padding: "4px 8px",
-													color: "var(--success, #22c55e)",
+													color: "var(--success)",
 													fontWeight: 500,
 												}}
 											>
@@ -1001,7 +998,7 @@ function BundledCategoriesSection(): VNode | null {
 							disabled={toggling.value === cat.name}
 							className={`flex items-center gap-2 px-3 py-2 rounded-md border text-left cursor-pointer transition-colors ${
 								cat.enabled
-									? "border-[var(--accent)] bg-[var(--accent-bg,rgba(var(--accent-rgb,59,130,246),0.08))]"
+									? "border-[var(--accent)] bg-[var(--accent-bg)]"
 									: "border-[var(--border)] bg-[var(--surface)] opacity-60"
 							}`}
 						>

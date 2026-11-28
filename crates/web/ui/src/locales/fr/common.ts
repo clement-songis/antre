@@ -62,6 +62,8 @@ export default {
 		signOut: "Se déconnecter",
 		discussions: "Discussions",
 		commandPalette: "Palette de commandes",
+		newChat: "Nouvelle discussion",
+		search: "Rechercher",
 	},
 	banners: {
 		authDisabled:

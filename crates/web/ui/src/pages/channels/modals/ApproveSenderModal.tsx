@@ -150,7 +150,7 @@ export function ApproveSenderModal(): VNode | null {
 					</p>
 				)}
 
-				{error.value && <div className="text-xs text-[var(--danger,#dc2626)]">{error.value}</div>}
+				{error.value && <div className="text-xs text-[var(--danger)]">{error.value}</div>}
 
 				<div className="flex justify-end gap-2">
 					<button type="button" className="provider-btn provider-btn-secondary" onClick={close}>

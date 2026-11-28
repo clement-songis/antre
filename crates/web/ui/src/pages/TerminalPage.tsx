@@ -494,10 +494,10 @@ function getCssVar(name: string, fallback: string): string {
 
 function buildXtermTheme(): Record<string, string> {
 	return {
-		background: getCssVar("--bg", "#0f1115"),
-		foreground: getCssVar("--text", "#e4e4e7"),
-		cursor: getCssVar("--accent", "#4ade80"),
-		cursorAccent: getCssVar("--bg", "#0f1115"),
+		background: getCssVar("--code-bg", "#0a0f11"),
+		foreground: getCssVar("--code-ink", "#cfd8db"),
+		cursor: getCssVar("--lake", "#52c3ce"),
+		cursorAccent: getCssVar("--code-bg", "#0a0f11"),
 		selectionBackground: getCssVar("--accent-subtle", "#4ade801f"),
 	};
 }

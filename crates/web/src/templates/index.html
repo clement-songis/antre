@@ -7,8 +7,8 @@
 
 <!-- PWA Meta Tags -->
 <link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#0f1115" media="(prefers-color-scheme: dark)">
-<meta name="theme-color" content="#fafafa" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d1214" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f5f7f7" media="(prefers-color-scheme: light)">
 <meta name="mobile-web-app-capable" content="yes">
 
 <!-- iOS PWA Meta Tags -->
@@ -16,7 +16,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="moltis">
 <link rel="apple-touch-icon" href="{{ asset_prefix }}icons/apple-touch-icon.png">
-<script nonce="{{ nonce }}">!function(){var t=localStorage.getItem("moltis-theme")||"system";if(t==="system")t=matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light";document.documentElement.setAttribute("data-theme",t);document.documentElement.style.background=t==="dark"?"#0f1115":"#fafafa";document.documentElement.style.color=t==="dark"?"#e0e0e0":"#222"}()</script>
+<script nonce="{{ nonce }}">!function(){var t=localStorage.getItem("moltis-theme")||"system";if(t==="system")t=matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light";document.documentElement.setAttribute("data-theme",t);document.documentElement.style.background=t==="dark"?"#0d1214":"#f5f7f7";document.documentElement.style.color=t==="dark"?"#d3dcdf":"#27343a"}()</script>
 <title>{{ share_site_name }}</title>
 <meta name="description" content="{{ share_description }}">
 <meta property="og:title" content="{{ share_title }}">
@@ -58,101 +58,6 @@
   <span>Running on: <strong id="branchName"></strong></span>
 </div>
 
-<!-- Top bar -->
-<header class="flex items-center gap-3 px-4 py-2.5 border-b border-[var(--border)] bg-[var(--surface)] shrink-0">
-  <a href="{{ routes.chats }}" id="titleLink" class="text-base font-medium tracking-wide text-[var(--text-strong)] no-underline cursor-pointer"><span id="titleEmoji"></span><span id="titleName">moltis</span></a>
-  <script nonce="{{ nonce }}">!function(){var g=window.__MOLTIS__;if(!g||!g.identity)return;var i=g.identity;var e=document.getElementById("titleEmoji");var n=document.getElementById("titleName");if(e&&i.emoji)e.textContent=i.emoji+" ";if(n&&i.name)n.textContent=i.name;var a=(i&&i.name&&String(i.name).trim())||"moltis";document.title=a}()</script>
-  <span class="status-dot" id="statusDot"></span>
-  <span class="text-xs text-[var(--muted)]" id="statusText">disconnected</span>
-  <div class="flex-1"></div>
-
-  <span id="memoryInfo" class="text-xs text-[var(--muted)]" title="Process memory · System free memory"></span>
-
-  <button id="mobileMenuBtn" class="burger-btn" title="Menu" aria-label="Open menu">
-    <span class="icon icon-md icon-burger-mobile"></span>
-  </button>
-
-  <button id="commandPaletteBtn" class="header-link-btn" title="Command palette">
-    <span class="icon icon-search"></span>
-    <kbd class="cmd-palette-header-kbd" id="cmdPaletteKbd"></kbd>
-  </button>
-  <script nonce="{{ nonce }}">!function(){var k=document.getElementById("cmdPaletteKbd");if(k)k.textContent=/Mac|iPhone|iPad/.test(navigator.userAgent)?"\u2318K":"Ctrl+K"}()</script>
-
-  <div class="header-actions">
-    <button id="settingsBtn" class="header-link-btn" title="Settings">
-      <span class="icon icon-settings"></span>
-      <span class="header-link-label">Settings</span>
-    </button>
-    <a
-      href="https://www.moltis.org/changelog/"
-      target="_blank"
-      rel="noopener noreferrer"
-      class="header-link-btn"
-      title="Changelog"
-    >
-      <span class="icon icon-document"></span>
-      <span class="header-link-label" data-i18n="common:header.changelog">Changelog</span>
-    </a>
-    <a
-      href="https://github.com/moltis-org/moltis/issues/new/choose"
-      target="_blank"
-      rel="noopener noreferrer"
-      class="header-link-btn"
-      title="Report an issue"
-    >
-      <span class="icon icon-github-issue"></span>
-      <span class="header-link-label">Issues</span>
-      <span class="header-badge" id="githubIssuesCount"></span>
-    </a>
-    <a
-      href="https://github.com/moltis-org/moltis/discussions"
-      target="_blank"
-      rel="noopener noreferrer"
-      class="header-link-btn"
-      title="Discussions"
-    >
-      <span class="icon icon-github-discussion"></span>
-      <span class="header-link-label">Discussions</span>
-      <span class="header-badge" id="githubDiscussionsCount"></span>
-    </a>
-  </div>
-
-  <!-- Theme toggle -->
-  <div class="theme-toggle" id="themeToggle">
-    <button class="theme-btn" data-theme-val="light" title="Light theme">
-      <span class="icon icon-sun"></span>
-    </button>
-    <button class="theme-btn" data-theme-val="system" title="System theme">
-      <span class="icon icon-monitor"></span>
-    </button>
-    <button class="theme-btn" data-theme-val="dark" title="Dark theme">
-      <span class="icon icon-moon"></span>
-    </button>
-  </div>
-
-  <!-- Logout button (shown by JS only when auth is active) -->
-  <button id="logoutBtn" class="logout-btn" title="Sign out" style="display:none">
-    <span class="icon icon-logout"></span>
-  </button>
-
-</header>
-
-<div id="mobileMenuOverlay" class="mobile-menu-overlay"></div>
-<div id="mobileMenuPanel" class="mobile-menu-panel">
-  <button id="mobileMenuSessionsBtn" type="button" class="mobile-menu-item">
-    <span class="icon icon-chat-dots"></span>
-    <span>Sessions</span>
-  </button>
-  <button id="mobileMenuSettingsBtn" type="button" class="mobile-menu-item">
-    <span class="icon icon-settings"></span>
-    <span>Settings</span>
-  </button>
-  <button id="mobileMenuLogoutBtn" type="button" class="mobile-menu-item mobile-menu-item-danger" style="display:none">
-    <span class="icon icon-logout"></span>
-    <span>Sign out</span>
-  </button>
-</div>
-
 <!-- Auth disabled warning banner (shown by JS when auth is removed) -->
 <div id="authDisabledBanner" class="auth-disabled-banner" style="display:none">
   <span>Authentication is disabled. Anyone with network access can control moltis and your computer.</span>
@@ -188,48 +93,107 @@
   </div>
 </div>
 
-<!-- Overlays for mobile panels -->
+<!-- Overlay behind the sidebar drawer on phones -->
 <div id="sessionsOverlay" class="sessions-overlay"></div>
 
-<!-- Main layout -->
+<!-- Main layout: sidebar on the left, page on the right -->
 <div class="flex flex-1 min-h-0 overflow-hidden">
-  <!-- Sessions sidebar -->
-  <div class="w-[240px] border-r border-[var(--border)] flex flex-col bg-[var(--surface)] shrink-0 hidden" id="sessionsPanel">
-    <!-- Project selector -->
-    <div id="projectSelectWrapper" class="px-3 py-2 border-b border-[var(--border)] hidden">
-      <div id="projectFilterCombo" class="model-combo">
-        <button id="projectFilterBtn" class="model-combo-btn" type="button" style="width:100%;max-width:none;justify-content:space-between">
-          <span id="projectFilterLabel">All sessions</span>
-          <span class="icon icon-sm icon-chevron-down model-combo-chevron"></span>
-        </button>
-        <div id="projectFilterDropdown" class="model-dropdown hidden" style="width:100%">
-          <input id="projectFilterSearch" type="text" placeholder="Search projects…" class="model-search-input" autocomplete="off" />
-          <div id="projectFilterList" class="model-dropdown-list"></div>
+  <!-- Sidebar: brand, new chat, search, sessions, account. A drawer on phones. -->
+  <aside class="app-sidebar hidden" id="sessionsPanel" aria-label="Sessions">
+    <div class="app-sidebar-brand">
+      <a href="{{ routes.chats }}" id="titleLink" class="app-brand"><svg class="app-brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M7 25.5V16a9 9 0 0 1 18 0v9.5" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/><path d="M4 25.5h24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/><circle class="app-brand-dot" cx="16" cy="20" r="2.6"/></svg><span id="titleEmoji"></span><span id="titleName">moltis</span></a>
+      <script nonce="{{ nonce }}">!function(){var g=window.__MOLTIS__;if(!g||!g.identity)return;var i=g.identity;var e=document.getElementById("titleEmoji");var n=document.getElementById("titleName");if(e&&i.emoji)e.textContent=i.emoji+" ";if(n&&i.name)n.textContent=i.name;var a=(i&&i.name&&String(i.name).trim())||"moltis";document.title=a}()</script>
+      <span class="status-dot" id="statusDot" title="Connection"></span>
+      <span class="app-status-text" id="statusText">disconnected</span>
+      <span class="flex-1"></span>
+      <button id="sidebarCollapseBtn" type="button" class="app-icon-btn app-sidebar-collapse" title="Collapse sidebar" aria-label="Collapse sidebar">
+        <span class="icon icon-md icon-sidebar"></span>
+      </button>
+      <button id="sidebarCloseBtn" type="button" class="app-icon-btn app-sidebar-close" title="Close" aria-label="Close sidebar">
+        <span class="icon icon-md icon-x"></span>
+      </button>
+    </div>
+    <div class="app-sidebar-actions">
+      <button id="newSessionBtn" type="button" class="app-new-chat" title="New session">
+        <span class="icon icon-md icon-plus"></span>
+        <span class="app-sidebar-label" data-i18n="common:header.newChat">New chat</span>
+      </button>
+      <button id="commandPaletteBtn" type="button" class="app-nav-item" title="Command palette">
+        <span class="icon icon-md icon-search"></span>
+        <span class="app-sidebar-label" data-i18n="common:header.search">Search</span>
+        <kbd class="app-kbd" id="cmdPaletteKbd"></kbd>
+      </button>
+      <script nonce="{{ nonce }}">!function(){var k=document.getElementById("cmdPaletteKbd");if(k)k.textContent=/Mac|iPhone|iPad/.test(navigator.userAgent)?"\u2318K":"Ctrl+K"}()</script>
+    </div>
+    <div class="app-sidebar-body">
+      <!-- Project selector -->
+      <div id="projectSelectWrapper" class="px-3 pb-2 hidden">
+        <div id="projectFilterCombo" class="model-combo">
+          <button id="projectFilterBtn" class="model-combo-btn" type="button" style="width:100%;max-width:none;justify-content:space-between">
+            <span id="projectFilterLabel">All sessions</span>
+            <span class="icon icon-sm icon-chevron-down model-combo-chevron"></span>
+          </button>
+          <div id="projectFilterDropdown" class="model-dropdown hidden" style="width:100%">
+            <input id="projectFilterSearch" type="text" placeholder="Search projects…" class="model-search-input" autocomplete="off" />
+            <div id="projectFilterList" class="model-dropdown-list"></div>
+          </div>
         </div>
       </div>
-    </div>
-    <div class="px-3 py-1.5 border-b border-[var(--border)] relative flex items-center">
-      <div class="w-full flex items-center gap-1">
-        <input id="sessionSearch" type="text" placeholder="Search sessions…"
-               class="flex-1 min-w-0 text-xs bg-[var(--surface2)] border border-[var(--border)] rounded px-2 py-1 text-[var(--text)] focus:outline-none focus:border-[var(--border-strong)] font-sans" />
-        <button id="newSessionBtn" class="text-xs text-[var(--muted)] border border-[var(--border)] px-2 py-1 rounded hover:text-[var(--text)] hover:border-[var(--border-strong)] transition-colors cursor-pointer bg-transparent" title="New session">+</button>
+      <div class="app-sidebar-filter relative">
+        <input id="sessionSearch" type="text" placeholder="Filter sessions…" aria-label="Filter sessions" class="app-sidebar-search" />
+        <div id="searchResults" class="hidden"></div>
       </div>
-      <div id="searchResults" class="hidden"></div>
+      <div id="sessionTabBar" class="app-session-tabs" role="tablist">
+        <button class="session-tab" data-tab="sessions" role="tab">Sessions</button>
+        <button class="session-tab" data-tab="cron" role="tab">Cron</button>
+      </div>
+      <label id="archivedSessionsRow" class="app-archived-row hidden">
+        <input id="showArchivedSessions" type="checkbox" class="cursor-pointer" />
+        <span>Show archived sessions</span>
+      </label>
+      <div class="flex-1 overflow-y-auto" id="sessionList"></div>
     </div>
-    <div id="sessionTabBar" class="flex border-b border-[var(--border)] text-xs" role="tablist">
-      <button class="session-tab flex-1 py-1.5 text-center cursor-pointer bg-transparent border-b-2 border-transparent text-[var(--muted)] hover:text-[var(--text)] transition-colors" data-tab="sessions" role="tab">Sessions</button>
-      <button class="session-tab flex-1 py-1.5 text-center cursor-pointer bg-transparent border-b-2 border-transparent text-[var(--muted)] hover:text-[var(--text)] transition-colors" data-tab="cron" role="tab">Cron</button>
+    <div class="app-sidebar-footer">
+      <div id="sidebarAccountMount"></div>
+      <div class="app-sidebar-footer-row">
+        <button id="settingsBtn" type="button" class="app-icon-btn" title="Settings" aria-label="Settings">
+          <span class="icon icon-md icon-settings"></span>
+        </button>
+        <div class="theme-toggle" id="themeToggle">
+          <button class="theme-btn" data-theme-val="light" title="Light theme" aria-label="Light theme">
+            <span class="icon icon-sun"></span>
+          </button>
+          <button class="theme-btn" data-theme-val="system" title="System theme" aria-label="System theme">
+            <span class="icon icon-monitor"></span>
+          </button>
+          <button class="theme-btn" data-theme-val="dark" title="Dark theme" aria-label="Dark theme">
+            <span class="icon icon-moon"></span>
+          </button>
+        </div>
+        <span class="flex-1"></span>
+        <span id="memoryInfo" class="app-memory-info" title="Process memory · System free memory"></span>
+        <!-- Shown by JS only when auth is active -->
+        <button id="logoutBtn" type="button" class="app-icon-btn" title="Sign out" aria-label="Sign out" style="display:none">
+          <span class="icon icon-md icon-logout"></span>
+        </button>
+      </div>
     </div>
-    <label id="archivedSessionsRow" class="px-3 py-2 border-b border-[var(--border)] hidden text-xs text-[var(--muted)] flex items-center gap-2 cursor-pointer select-none">
-      <input id="showArchivedSessions" type="checkbox" class="cursor-pointer" />
-      <span>Show archived sessions</span>
-    </label>
-    <div class="flex-1 overflow-y-auto" id="sessionList"></div>
-    <div id="sidebarAccountMount" class="border-t border-[var(--border)]"></div>
-  </div>
+  </aside>
 
-  <!-- Page content (swapped by router) -->
-  <div id="pageContent" class="flex-1 flex flex-col min-w-0 overflow-hidden"></div>
+  <div class="app-main">
+    <!-- Phone top bar: opens the sidebar drawer -->
+    <header class="app-topbar">
+      <button id="mobileMenuBtn" type="button" class="app-icon-btn" title="Menu" aria-label="Open sidebar" aria-controls="sessionsPanel">
+        <span class="icon icon-md icon-burger-mobile"></span>
+      </button>
+      <span class="app-topbar-title" id="mobileTitle"></span>
+      <button id="mobileNewSessionBtn" type="button" class="app-icon-btn" title="New session" aria-label="New session">
+        <span class="icon icon-md icon-plus"></span>
+      </button>
+    </header>
+    <!-- Page content (swapped by router) -->
+    <div id="pageContent" class="flex-1 flex flex-col min-w-0 overflow-hidden"></div>
+  </div>
 </div>
 
 <!-- Mobile sessions toggle FAB -->

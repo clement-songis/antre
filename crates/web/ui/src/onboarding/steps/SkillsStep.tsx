@@ -139,7 +139,7 @@ function CategoriesTab(): VNode {
 							disabled={busy}
 							className={`flex items-start gap-3 p-3 rounded-md border text-left cursor-pointer transition-colors ${
 								cat.enabled
-									? "border-[var(--accent)] bg-[var(--accent-bg,rgba(var(--accent-rgb,59,130,246),0.08))]"
+									? "border-[var(--accent)] bg-[var(--accent-bg)]"
 									: "border-[var(--border)] bg-[var(--surface)] opacity-60"
 							}`}
 						>
@@ -271,7 +271,7 @@ function RepositoriesTab(): VNode {
 									style={{
 										background: "var(--surface2)",
 										border: "1px solid var(--border)",
-										color: installed ? "var(--success, #22c55e)" : "var(--text)",
+										color: installed ? "var(--success)" : "var(--text)",
 										borderRadius: "var(--radius-sm)",
 										fontSize: ".72rem",
 										padding: "4px 10px",

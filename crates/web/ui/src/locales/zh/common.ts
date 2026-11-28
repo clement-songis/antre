@@ -62,6 +62,8 @@ export default {
 		signOut: "退出登录",
 		discussions: "讨论",
 		commandPalette: "命令面板",
+		newChat: "新对话",
+		search: "搜索",
 	},
 	banners: {
 		authDisabled: "身份验证已禁用。任何具有网络访问权限的人都可以控制 moltis 和您的计算机。",

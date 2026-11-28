@@ -50,8 +50,8 @@ function EnvVaultNotice({ vaultStatus, authHasPassword }: EnvVaultNoticeProps): 
 				</>
 			) : vaultStatus === "sealed" ? (
 				<>
-					<span style={{ color: "var(--warning,var(--error))" }}>Vault locked.</span> Encrypted keys can{"\u2019"}t be
-					read {"\u2014"} sandbox commands won{"\u2019"}t work.{" "}
+					<span style={{ color: "var(--warning)" }}>Vault locked.</span> Encrypted keys can{"\u2019"}t be read{" "}
+					{"\u2014"} sandbox commands won{"\u2019"}t work.{" "}
 					<a href="/settings/vault" style={{ color: "inherit", textDecoration: "underline" }}>
 						Unlock in Encryption settings.
 					</a>

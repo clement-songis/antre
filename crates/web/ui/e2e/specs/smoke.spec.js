@@ -44,7 +44,7 @@ test("index page exposes OG and Twitter share metadata", async ({ page }) => {
 	expect(pageErrors).toEqual([]);
 });
 
-test("mobile menu drives settings and sessions", async ({ page }) => {
+test("phone drawer drives settings and sessions", async ({ page }) => {
 	const pageErrors = watchPageErrors(page);
 	await page.setViewportSize({ width: 390, height: 844 });
 
@@ -55,8 +55,13 @@ test("mobile menu drives settings and sessions", async ({ page }) => {
 	await expect(page.locator("#settingsBtn")).toBeHidden();
 	await expect(page.locator("#mobileMenuBtn")).toBeVisible();
 	await page.locator("#mobileMenuBtn").click();
-	await expect(page.locator("#mobileMenuPanel")).toHaveClass(/open/);
-	await page.locator("#mobileMenuSettingsBtn").click();
+	await expect(page.locator("#sessionsPanel")).toHaveClass(/open/);
+	await expect(page.locator("#sessionsOverlay")).toHaveClass(/visible/);
+	// Settings sits at the bottom of the drawer, never in its top row.
+	await expect(page.locator(".app-sidebar-brand .icon-settings")).toHaveCount(0);
+	await expect(page.locator(".app-sidebar-footer #settingsBtn")).toBeVisible();
+	await page.locator("#settingsBtn").click();
+	await expect(page.locator("#sessionsPanel")).not.toHaveClass(/open/);
 	await expect(page).toHaveURL(/\/settings\/profile$/);
 	await expect(page.locator(".settings-sidebar")).toHaveCount(0);
 	await page.locator(".settings-mobile-menu-btn").click();
@@ -93,9 +98,11 @@ test("mobile menu drives settings and sessions", async ({ page }) => {
 	await expectPageContentMounted(page);
 	await expect(page.locator("#sessionsToggle")).toBeHidden();
 	await page.locator("#mobileMenuBtn").click();
-	await page.locator("#mobileMenuSessionsBtn").click();
 	await expect(page.locator("#sessionsPanel")).toHaveClass(/open/);
 	await expect(page.locator("#sessionsOverlay")).toHaveClass(/visible/);
+	await page.locator("#sidebarCloseBtn").click();
+	await expect(page.locator("#sessionsPanel")).not.toHaveClass(/open/);
+	await expect(page.locator("#sessionsOverlay")).not.toHaveClass(/visible/);
 
 	expect(pageErrors).toEqual([]);
 });

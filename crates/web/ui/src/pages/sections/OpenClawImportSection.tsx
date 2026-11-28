@@ -237,7 +237,7 @@ export function OpenClawImportSection(): VNode {
 								className={`flex items-center gap-3 p-3 rounded-md border text-left cursor-pointer transition-colors ${
 									cat.available
 										? checked
-											? "border-[var(--accent)] bg-[var(--accent-bg,rgba(var(--accent-rgb,59,130,246),0.08))]"
+											? "border-[var(--accent)] bg-[var(--accent-bg)]"
 											: "border-[var(--border)] bg-[var(--surface)] opacity-60"
 										: "border-[var(--border)] bg-[var(--surface)] opacity-40 cursor-not-allowed"
 								}`}

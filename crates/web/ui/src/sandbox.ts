@@ -140,8 +140,8 @@ export function updateSandboxUI(enabled: boolean): void {
 	}
 	if (S.sessionSandboxEnabled) {
 		label.textContent = t("chat:sandboxed");
-		toggleBtn.style.borderColor = "var(--accent, #f59e0b)";
-		toggleBtn.style.color = "var(--accent, #f59e0b)";
+		toggleBtn.style.borderColor = "var(--accent)";
+		toggleBtn.style.color = "var(--accent)";
 	} else {
 		label.textContent = t("chat:sandboxDirect");
 		toggleBtn.style.borderColor = "";
@@ -318,7 +318,7 @@ function appendBackendOptions(dropdown: HTMLElement, backends: AvailableBackend[
 		opt.className =
 			"px-3 py-1.5 text-xs cursor-pointer hover:bg-[var(--surface2)] transition-colors flex items-center gap-2";
 		if (isCurrent) {
-			opt.style.color = "var(--accent, #f59e0b)";
+			opt.style.color = "var(--accent)";
 			opt.style.fontWeight = "600";
 		}
 		const kindBadge = backend.kind === "remote" ? " \u2601" : "";
@@ -364,7 +364,7 @@ function addImageOption(dropdown: HTMLElement, tag: string, isActive: boolean, s
 	const opt = document.createElement("div");
 	opt.className = "px-3 py-2 text-xs cursor-pointer hover:bg-[var(--surface2)] transition-colors";
 	if (isActive) {
-		opt.style.color = "var(--accent, #f59e0b)";
+		opt.style.color = "var(--accent)";
 		opt.style.fontWeight = "600";
 	}
 

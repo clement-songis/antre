@@ -243,14 +243,19 @@ function MetricCard({
 	);
 }
 
-// Chart color palette (CSS variables with fallbacks)
-const chartColors: Record<string, string> = {
-	primary: "#22c55e", // green
-	secondary: "#3b82f6", // blue
-	tertiary: "#f59e0b", // amber
-	error: "#ef4444", // red
-	muted: "#6b7280", // gray
-};
+// Chart colors come from the theme tokens so they follow light and dark.
+const chartTokens = {
+	primary: "--lake",
+	secondary: "--state-info",
+	tertiary: "--code-number",
+	error: "--state-error",
+	muted: "--ink-muted",
+} as const;
+type ChartColorKey = keyof typeof chartTokens;
+
+function chartColor(key: ChartColorKey): string {
+	return getCssVar(chartTokens[key], "currentColor");
+}
 
 // Get CSS variable or fallback
 function getCssVar(name: string, fallback: string): string {
@@ -294,15 +299,15 @@ function TimeSeriesChart({
 			},
 			axes: [
 				{
-					stroke: getCssVar("--muted", "#6b7280"),
-					grid: { stroke: getCssVar("--border", "#333"), width: 1 },
-					ticks: { stroke: getCssVar("--border", "#333"), width: 1 },
+					stroke: getCssVar("--ink-muted", "currentColor"),
+					grid: { stroke: getCssVar("--line", "currentColor"), width: 1 },
+					ticks: { stroke: getCssVar("--line", "currentColor"), width: 1 },
 					font: "11px system-ui",
 				},
 				{
-					stroke: getCssVar("--muted", "#6b7280"),
-					grid: { stroke: getCssVar("--border", "#333"), width: 1 },
-					ticks: { stroke: getCssVar("--border", "#333"), width: 1 },
+					stroke: getCssVar("--ink-muted", "currentColor"),
+					grid: { stroke: getCssVar("--line", "currentColor"), width: 1 },
+					ticks: { stroke: getCssVar("--line", "currentColor"), width: 1 },
 					font: "11px system-ui",
 					size: 50,
 				},
@@ -311,7 +316,7 @@ function TimeSeriesChart({
 				{ label: t("metrics:series.time") },
 				...series.map((s, i) => ({
 					label: s.label,
-					stroke: s.color || Object.values(chartColors)[i % Object.values(chartColors).length],
+					stroke: s.color || providerColor(i),
 					width: 2,
 					fill: s.fill ? `${s.color}20` : undefined,
 				})),
@@ -394,11 +399,11 @@ function prepareMemoryChart(points: HistoryPoint[]): { data: (number | null)[][]
 	const hasLocalLlama = points.some((p) => ((p.local_llama_cpp_bytes as number) || 0) > 0);
 
 	const data: (number | null)[][] = [timestamps, processMemory];
-	const series: ChartSeries[] = [{ label: t("metrics:series.processMemory"), color: chartColors.error }];
+	const series: ChartSeries[] = [{ label: t("metrics:series.processMemory"), color: chartColor("error") }];
 
 	if (hasLocalLlama) {
 		data.push(points.map((p) => ((p.local_llama_cpp_bytes as number) || 0) / mib));
-		series.push({ label: t("metrics:series.localLlamaCpp"), color: chartColors.primary });
+		series.push({ label: t("metrics:series.localLlamaCpp"), color: chartColor("primary") });
 	}
 
 	return { data, series };
@@ -438,17 +443,21 @@ function prepareProviderChartData(
 	return [timestamps, ...seriesData];
 }
 
-// Provider color palette (distinct colors for different providers)
-const providerColors = [
-	"#10b981", // emerald (primary)
-	"#8b5cf6", // violet
-	"#f59e0b", // amber
-	"#ef4444", // red
-	"#3b82f6", // blue
-	"#ec4899", // pink
-	"#14b8a6", // teal
-	"#f97316", // orange
+// Distinct series colors for providers, taken from the theme tokens.
+const providerColorTokens = [
+	"--lake",
+	"--state-info",
+	"--code-number",
+	"--state-error",
+	"--code-type",
+	"--state-ok",
+	"--code-string",
+	"--state-warn",
 ];
+
+function providerColor(index: number): string {
+	return getCssVar(providerColorTokens[index % providerColorTokens.length], "currentColor");
+}
 
 function MetricsGrid({
 	categories,
@@ -582,7 +591,7 @@ function ChartsSection({
 	const providerOutputData = prepareProviderChartData(filteredPoints, providers, "output_tokens");
 	const providerSeries = providers.map((name, i) => ({
 		label: name,
-		color: providerColors[i % providerColors.length],
+		color: providerColor(i),
 	}));
 
 	return (
@@ -594,8 +603,8 @@ function ChartsSection({
 						title={t("metrics:charts.tokenUsageTotal")}
 						data={tokenData}
 						series={[
-							{ label: t("metrics:series.inputTokens"), color: chartColors.primary },
-							{ label: t("metrics:series.outputTokens"), color: chartColors.secondary },
+							{ label: t("metrics:series.inputTokens"), color: chartColor("primary") },
+							{ label: t("metrics:series.outputTokens"), color: chartColor("secondary") },
 						]}
 					/>
 				)}
@@ -618,8 +627,8 @@ function ChartsSection({
 						title={t("metrics:charts.requests")}
 						data={requestData}
 						series={[
-							{ label: t("metrics:series.httpRequests"), color: chartColors.tertiary },
-							{ label: t("metrics:series.llmCompletions"), color: chartColors.primary },
+							{ label: t("metrics:series.httpRequests"), color: chartColor("tertiary") },
+							{ label: t("metrics:series.llmCompletions"), color: chartColor("primary") },
 						]}
 					/>
 				)}
@@ -628,8 +637,8 @@ function ChartsSection({
 						title={t("metrics:charts.connections")}
 						data={connectionsData}
 						series={[
-							{ label: t("metrics:series.wsActive"), color: chartColors.secondary },
-							{ label: t("metrics:series.activeSessions"), color: chartColors.tertiary },
+							{ label: t("metrics:series.wsActive"), color: chartColor("secondary") },
+							{ label: t("metrics:series.activeSessions"), color: chartColor("tertiary") },
 						]}
 					/>
 				)}
@@ -645,8 +654,8 @@ function ChartsSection({
 						title={t("metrics:charts.toolActivity")}
 						data={toolsData}
 						series={[
-							{ label: t("metrics:series.toolExecutions"), color: chartColors.primary },
-							{ label: t("metrics:series.mcpCalls"), color: chartColors.secondary },
+							{ label: t("metrics:series.toolExecutions"), color: chartColor("primary") },
+							{ label: t("metrics:series.mcpCalls"), color: chartColor("secondary") },
 						]}
 					/>
 				)}
@@ -814,7 +823,7 @@ function InsightsTab(): VNode {
 						type="button"
 						className={`px-3 py-1.5 rounded text-sm transition-colors ${
 							insightsDays === r.days
-								? "bg-[var(--accent)] text-white"
+								? "bg-lake text-on-lake"
 								: "bg-[var(--bg-secondary)] text-[var(--fg)] hover:bg-[var(--bg-hover)]"
 						}`}
 						onClick={() => setInsightsDays(r.days)}

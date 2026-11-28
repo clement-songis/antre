@@ -165,7 +165,7 @@ export function ModelSelectCard({
 				</div>
 			</div>
 			<div className="text-xs text-[var(--muted)] mt-1 font-mono">{model.id}</div>
-			{probeError ? <div className="text-xs font-medium text-[var(--danger,#ef4444)] mt-0.5">{probeError}</div> : null}
+			{probeError ? <div className="text-xs font-medium text-[var(--danger)] mt-0.5">{probeError}</div> : null}
 			{model.createdAt ? (
 				<time
 					className="text-xs text-[var(--muted)] mt-0.5 opacity-60 block"

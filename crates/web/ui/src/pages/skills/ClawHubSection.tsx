@@ -71,7 +71,7 @@ function SecurityScanPanel({ scan }: { scan: ScanData | null }): VNode | null {
 	if (!scan) return null;
 
 	const isClean = scan.status === "clean";
-	const bg = isClean ? "var(--success-bg, rgba(34,197,94,.08))" : "var(--warning-bg, rgba(234,179,8,.12))";
+	const bg = isClean ? "var(--success-bg)" : "var(--warning-bg)";
 	const vt = scan.scanners?.vt;
 	const llm = scan.scanners?.llm;
 
@@ -88,13 +88,13 @@ function SecurityScanPanel({ scan }: { scan: ScanData | null }): VNode | null {
 			<div style={{ fontWeight: 600, marginBottom: "4px" }}>
 				Security Scan: {isClean ? "Benign" : scan.status || "Unknown"}
 				{!isClean && scan.hasWarnings && (
-					<span style={{ color: "var(--warning, #eab308)", marginLeft: "6px" }}>(has warnings)</span>
+					<span style={{ color: "var(--warning)", marginLeft: "6px" }}>(has warnings)</span>
 				)}
 			</div>
 			{vt && (
 				<div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "2px" }}>
 					<span style={{ fontWeight: 500 }}>VirusTotal:</span>
-					<span style={{ color: vt.verdict === "benign" ? "var(--success, #22c55e)" : "var(--warning, #eab308)" }}>
+					<span style={{ color: vt.verdict === "benign" ? "var(--success)" : "var(--warning)" }}>
 						{vt.verdict || "unknown"}
 					</span>
 					{scan.virustotalUrl && (
@@ -112,7 +112,7 @@ function SecurityScanPanel({ scan }: { scan: ScanData | null }): VNode | null {
 			{llm && (
 				<div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
 					<span style={{ fontWeight: 500 }}>AI Analysis:</span>
-					<span style={{ color: llm.verdict === "benign" ? "var(--success, #22c55e)" : "var(--warning, #eab308)" }}>
+					<span style={{ color: llm.verdict === "benign" ? "var(--success)" : "var(--warning)" }}>
 						{llm.verdict || "unknown"}
 					</span>
 				</div>
@@ -197,7 +197,7 @@ function DetailPanel({
 			<div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
 				<div style={{ flex: 1, minWidth: 0 }}>
 					{loading.value && <div style={{ color: "var(--muted)", fontSize: ".78rem" }}>Loading...</div>}
-					{error.value && <div style={{ color: "var(--danger, #ef4444)", fontSize: ".78rem" }}>{error.value}</div>}
+					{error.value && <div style={{ color: "var(--danger)", fontSize: ".78rem" }}>{error.value}</div>}
 					{s && (
 						<>
 							<div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>

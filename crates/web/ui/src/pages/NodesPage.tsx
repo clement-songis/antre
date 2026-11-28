@@ -347,7 +347,7 @@ function TabBar(): VNode {
 				<button
 					type="button"
 					key={tab.id}
-					className={`px-3 py-1.5 text-sm rounded-md transition-colors ${activeTab.value === tab.id ? "bg-[var(--accent)] text-white" : "bg-[var(--surface-alt)] text-[var(--text-muted)] hover:bg-[var(--hover)]"}`}
+					className={`px-3 py-1.5 text-sm rounded-md transition-colors ${activeTab.value === tab.id ? "bg-lake text-on-lake" : "bg-[var(--surface-alt)] text-[var(--text-muted)] hover:bg-[var(--hover)]"}`}
 					onClick={() => {
 						activeTab.value = tab.id;
 					}}
@@ -824,7 +824,7 @@ function Toasts(): VNode | null {
 			{toasts.value.map((t) => (
 				<div
 					key={t.id}
-					className={`px-4 py-2 rounded-lg text-sm shadow-lg ${t.type === "error" ? "bg-red-600 text-white" : "bg-green-600 text-white"}`}
+					className={`px-4 py-2 rounded-lg text-sm shadow-lg ${t.type === "error" ? "bg-state-error text-ground" : "bg-state-ok text-ground"}`}
 				>
 					{t.message}
 				</div>

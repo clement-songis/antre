@@ -62,6 +62,8 @@ export default {
 		signOut: "Sign out",
 		discussions: "Discussions",
 		commandPalette: "Command palette",
+		newChat: "New chat",
+		search: "Search",
 	},
 	banners: {
 		authDisabled: "Authentication is disabled. Anyone with network access can control moltis and your computer.",

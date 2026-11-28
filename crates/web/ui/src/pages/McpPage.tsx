@@ -276,11 +276,11 @@ function Toasts(): VNode {
 	return (
 		<div className="skills-toast-container">
 			{toasts.value.map((t) => {
-				const cls = t.type === "error" ? "bg-[var(--error)]" : "bg-[var(--accent)]";
+				const cls = t.type === "error" ? "bg-state-error text-ground" : "bg-lake text-on-lake";
 				return (
 					<div
 						key={t.id}
-						className={`pointer-events-auto max-w-[420px] px-4 py-2.5 rounded-md text-xs font-medium text-white shadow-lg ${cls}`}
+						className={`pointer-events-auto max-w-[420px] px-4 py-2.5 rounded-md text-xs font-medium shadow-lg ${cls}`}
 					>
 						{t.message}
 					</div>
@@ -835,7 +835,7 @@ function ServerCard({ server }: { server: McpServer }): VNode {
 						{server.tool_count} tool{server.tool_count === 1 ? "" : "s"}
 					</span>
 					{needsReauth && (
-						<span className="text-[0.62rem] px-1.5 py-px rounded-full bg-[var(--error)] text-white font-medium">
+						<span className="text-[0.62rem] px-1.5 py-px rounded-full bg-state-error text-ground font-medium">
 							{server.auth_state === "failed" ? "Auth failed" : "OAuth required"}
 						</span>
 					)}

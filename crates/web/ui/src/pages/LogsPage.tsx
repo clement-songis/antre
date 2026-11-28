@@ -46,8 +46,8 @@ function levelColor(level: string): string {
 
 function levelBg(level: string): string {
 	const l = level.toUpperCase();
-	if (l === "ERROR") return "rgba(239,68,68,0.08)";
-	if (l === "WARN") return "rgba(245,158,11,0.06)";
+	if (l === "ERROR") return "var(--state-error-wash)";
+	if (l === "WARN") return "var(--state-warn-wash)";
 	return "transparent";
 }
 

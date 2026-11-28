@@ -452,9 +452,7 @@ export function VoiceSection(): VNode {
 											<div className="flex items-center gap-2 flex-wrap">
 												<span className="text-sm font-medium text-[var(--text-strong)]">{pr.persona.label}</span>
 												{pr.isActive ? (
-													<span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--accent)] text-white">
-														active
-													</span>
+													<span className="text-[10px] px-1.5 py-0.5 rounded bg-lake text-on-lake">active</span>
 												) : null}
 												{(pr.persona.provider_bindings || []).map((b) => (
 													<span
@@ -714,9 +712,7 @@ function VoiceProviderRow({
 			<div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "2px" }}>
 				<div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
 					<span className="text-sm text-[var(--text-strong)]">{meta.name}</span>
-					{preferred ? (
-						<span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--accent)] text-white">preferred</span>
-					) : null}
+					{preferred ? <span className="text-[10px] px-1.5 py-0.5 rounded bg-lake text-on-lake">preferred</span> : null}
 					{provider.category === "local" ? <span className="provider-item-badge">local</span> : null}
 					{keySourceLabel ? <span className="text-xs text-[var(--muted)]">{keySourceLabel}</span> : null}
 				</div>

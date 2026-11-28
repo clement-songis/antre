@@ -755,7 +755,7 @@ function renderSenderRow(s: SenderEntry, onAction: (sender: SenderEntry, action:
 	const statusBadge = s.otp_pending ? (
 		<span
 			className="provider-item-badge cursor-pointer select-none"
-			style={{ background: "var(--warning-bg, #fef3c7)", color: "var(--warning-text, #92400e)" }}
+			style={{ background: "var(--warning-bg)", color: "var(--warning-text)" }}
 			onClick={() => copyToClipboard(s.otp_pending?.code ?? "", "OTP code copied")}
 		>
 			OTP: <code className="text-xs">{s.otp_pending.code}</code>

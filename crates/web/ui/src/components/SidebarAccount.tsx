@@ -80,20 +80,31 @@ function accountMenu(): MenuSpec {
 	return { label: t("chat:a11y.accountMenu"), items };
 }
 
+function initials(name: string): string {
+	const parts = name.trim().split(/\s+/).filter(Boolean);
+	const letters = parts.length > 1 ? `${parts[0][0]}${parts[parts.length - 1][0]}` : name.trim().slice(0, 2);
+	return letters.toUpperCase() || "?";
+}
+
 export function SidebarAccount() {
 	const { t: commonT } = useTranslation("common");
 	const identity = gon.get("identity");
 	const name = identity?.user_name || commonT("header.settings");
 	return (
-		<div className="sidebar-account flex items-center gap-2 px-3 py-2">
+		<div className="sidebar-account flex items-center gap-2 px-1 py-1.5">
 			<button
 				type="button"
-				className="sidebar-account-btn flex-1 min-w-0 flex items-center gap-2 text-xs text-ink bg-transparent border-0 cursor-pointer text-left p-1 rounded"
+				className="sidebar-account-btn flex-1 min-w-0 flex items-center gap-2 bg-transparent border-0 cursor-pointer text-left p-1 rounded-corner-m"
 				onClick={() => navigate(routes.profile as string)}
 				title={commonT("header.settings")}
 			>
-				<span className="icon icon-sm icon-settings shrink-0" aria-hidden="true" />
-				<span className="truncate">{name}</span>
+				<span
+					className="sidebar-account-avatar shrink-0 w-7 h-7 grid place-items-center rounded-corner-m bg-raised-2 border border-line font-display text-[11px] font-semibold text-ink-strong"
+					aria-hidden="true"
+				>
+					{initials(name)}
+				</span>
+				<span className="truncate font-display text-label text-ink-strong">{name}</span>
 			</button>
 			<MenuButton label={commonT("chat:a11y.accountMenu")} getMenu={accountMenu} />
 		</div>

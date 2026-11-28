@@ -93,45 +93,6 @@ body {
 /* ── Sessions Panel Mobile Styles ── */
 
 @media (max-width: 767px) {
-  /* Sessions as bottom sheet on mobile */
-  #sessionsPanel {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    width: 100%;
-    height: 70vh;
-    max-height: calc(100vh - 60px - var(--safe-top));
-    z-index: 90;
-    transform: translateY(100%);
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    border-radius: 16px 16px 0 0;
-    border-right: none;
-    border-top: 1px solid var(--border);
-    padding-bottom: var(--safe-bottom);
-    pointer-events: none;
-    visibility: hidden;
-  }
-
-  #sessionsPanel.open {
-    transform: translateY(0);
-    pointer-events: auto;
-    visibility: visible;
-  }
-
-  /* Bottom sheet drag handle */
-  #sessionsPanel::before {
-    content: "";
-    position: absolute;
-    top: 8px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 36px;
-    height: 4px;
-    background: var(--border-strong);
-    border-radius: 2px;
-  }
-
   /* Sessions overlay */
   .sessions-overlay {
     position: fixed;
@@ -163,18 +124,6 @@ body {
 }
 
 @media (min-width: 768px) {
-  #sessionsPanel {
-    position: relative;
-    transform: translateY(0);
-    height: auto;
-    max-height: none;
-    border-radius: 0;
-  }
-
-  #sessionsPanel::before {
-    display: none;
-  }
-
   .sessions-overlay {
     display: none;
   }
@@ -188,111 +137,9 @@ body {
     padding-right: calc(6px + var(--safe-right));
   }
 
-  /* Hide bot name on mobile, keep emoji only */
-  #titleName {
-    display: none;
-  }
-
   #memoryInfo,
   #statusText {
     display: none;
-  }
-
-  /* Hide theme toggle on mobile */
-  .theme-toggle {
-    display: none;
-  }
-
-  /* Replace desktop header actions with a compact mobile menu. */
-  .header-actions,
-  #logoutBtn {
-    display: none;
-  }
-
-  #mobileMenuBtn {
-    display: inline-flex;
-    border: 1px solid var(--border);
-    background: var(--surface2);
-    color: var(--muted);
-    width: 42px;
-    height: 30px;
-    min-height: 0;
-    padding: 0;
-    align-items: center;
-    justify-content: center;
-    border-radius: var(--radius-sm);
-  }
-
-  #mobileMenuBtn:hover {
-    color: var(--text);
-    border-color: var(--border-strong);
-    background: var(--bg-hover);
-  }
-
-  .mobile-menu-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 92;
-    background: rgba(0, 0, 0, 0.4);
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-    transition: opacity 0.2s, visibility 0.2s;
-  }
-
-  .mobile-menu-overlay.visible {
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
-  }
-
-  .mobile-menu-panel {
-    position: fixed;
-    top: calc(var(--safe-top) + 48px);
-    right: calc(6px + var(--safe-right));
-    z-index: 93;
-    min-width: 160px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow-lg);
-    display: none;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  .mobile-menu-panel.open {
-    display: flex;
-  }
-
-  .mobile-menu-item {
-    border: none;
-    border-bottom: 1px solid var(--border);
-    background: transparent;
-    color: var(--text);
-    text-align: left;
-    padding: 10px 12px;
-    font-size: 0.82rem;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-  }
-
-  .mobile-menu-item:last-child {
-    border-bottom: none;
-  }
-
-  .mobile-menu-panel.logout-hidden #mobileMenuSettingsBtn {
-    border-bottom: none;
-  }
-
-  .mobile-menu-item:hover {
-    background: var(--bg-hover);
-  }
-
-  .mobile-menu-item-danger {
-    color: var(--error);
   }
 }
 
@@ -433,80 +280,53 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
-    padding: 8px;
-    border-bottom: 1px solid var(--border);
-    background: var(--surface);
+    gap: var(--space-2);
+    padding: var(--space-2);
+    border-bottom: 1px solid var(--line);
+    background: var(--ground);
     flex-shrink: 0;
   }
 
-  .settings-mobile-chat-btn {
-    border: 1px solid var(--border);
-    background: var(--surface2);
-    color: var(--muted);
-    border-radius: var(--radius-sm);
-    padding: 6px 10px;
-    font-size: 0.78rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    cursor: pointer;
-  }
-
-  .settings-mobile-chat-btn:hover {
-    color: var(--text);
-    border-color: var(--border-strong);
-    background: var(--bg-hover);
-  }
-
+  .settings-mobile-chat-btn,
   .settings-mobile-menu-btn {
-    border: 1px solid var(--border);
-    background: var(--surface2);
-    color: var(--muted);
-    border-radius: var(--radius-sm);
-    padding: 6px 10px;
-    font-size: 0.78rem;
+    border: 1px solid var(--line-strong);
+    background: var(--raised);
+    color: var(--ink);
+    border-radius: var(--corner-m);
+    min-height: 40px;
+    padding: 0 var(--space-3);
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 500;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: var(--space-2);
     cursor: pointer;
   }
 
+  .settings-mobile-chat-btn:hover,
   .settings-mobile-menu-btn:hover {
-    color: var(--text);
-    border-color: var(--border-strong);
-    background: var(--bg-hover);
+    color: var(--ink-strong);
+    background: var(--raised-2);
   }
 
   .settings-sidebar {
     width: 100%;
     border-right: none;
-    border-bottom: 1px solid var(--border);
     flex: 1 1 auto;
     min-height: 0;
     overflow: hidden;
   }
 
   .settings-sidebar-nav {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    padding: 8px;
-    align-content: flex-start;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    padding-bottom: calc(8px + var(--safe-bottom));
-  }
-
-  .settings-group-label {
-    display: none;
+    padding-bottom: calc(var(--space-4) + var(--safe-bottom));
   }
 
   .settings-nav-item {
-    padding: 8px 12px;
-    border-radius: var(--radius-sm);
-    background: var(--surface2);
-    flex: 0 0 auto;
+    min-height: 44px;
+    font-size: 15px;
   }
 }
 
@@ -658,15 +478,6 @@ body {
 }
 
 /* ── Mobile Sessions Toggle Button ── */
-
-@media (min-width: 768px) {
-  #mobileMenuBtn,
-  .mobile-menu-overlay,
-  .mobile-menu-panel {
-    display: none;
-  }
-
-}
 
 .sessions-toggle-btn {
   display: none !important;

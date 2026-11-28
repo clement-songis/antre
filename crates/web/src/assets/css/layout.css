@@ -300,7 +300,6 @@
 
 .session-item {
   cursor: pointer;
-  border-bottom: 1px solid var(--border);
   justify-content: space-between;
   align-items: center;
   padding: 8px 12px;
@@ -318,8 +317,7 @@
 }
 
 .session-item.active {
-  background: var(--accent-subtle);
-  border-left: 3px solid var(--accent);
+  background: var(--raised);
 }
 
 .session-info {

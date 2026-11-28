@@ -35,15 +35,15 @@ const entryCount = signal(0);
 const maxEntries = 2000;
 
 function actionColor(action: string): string {
-	if (action === "allowed" || action === "approved_by_user") return "var(--ok, #22c55e)";
-	if (action === "denied") return "var(--error, #ef4444)";
-	if (action === "timeout") return "var(--warn, #f59e0b)";
+	if (action === "allowed" || action === "approved_by_user") return "var(--ok)";
+	if (action === "denied") return "var(--error)";
+	if (action === "timeout") return "var(--warn)";
 	return "var(--text)";
 }
 
 function actionBg(action: string): string {
-	if (action === "denied") return "rgba(239,68,68,0.08)";
-	if (action === "timeout") return "rgba(245,158,11,0.06)";
+	if (action === "denied") return "var(--state-error-wash)";
+	if (action === "timeout") return "var(--state-warn-wash)";
 	return "transparent";
 }
 
@@ -70,7 +70,7 @@ function renderEntry(entry: AuditEntry): HTMLDivElement {
 	// Protocol badge
 	const proto = document.createElement("span");
 	proto.className = "logs-level";
-	proto.style.color = "var(--accent, #3b82f6)";
+	proto.style.color = "var(--accent)";
 	proto.textContent = entry.protocol === "http_connect" ? "CONNECT" : "HTTP";
 
 	// Action badge

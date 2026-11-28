@@ -82,7 +82,7 @@ export function Toasts(): VNode {
 	return (
 		<div class="skills-toast-container">
 			{toasts.value.map((toast) => {
-				const bg = toast.type === "error" ? "var(--error, #e55)" : "var(--accent)";
+				const bg = toast.type === "error" ? "var(--error)" : "var(--accent)";
 				return (
 					<div
 						key={toast.id}
@@ -95,7 +95,7 @@ export function Toasts(): VNode {
 							fontWeight: 500,
 							color: "#fff",
 							background: bg,
-							boxShadow: "0 4px 12px rgba(0,0,0,.15)",
+							boxShadow: "var(--elev-2)",
 						}}
 						role="status"
 					>
