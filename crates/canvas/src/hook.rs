@@ -7,8 +7,8 @@
 use std::{path::Path, sync::Arc};
 
 use {
+    antre_common::hooks::{HookAction, HookEvent, HookHandler, HookPayload},
     async_trait::async_trait,
-    moltis_common::hooks::{HookAction, HookEvent, HookHandler, HookPayload},
     serde_json::Value,
     tracing::debug,
 };
@@ -97,7 +97,7 @@ impl HookHandler for DesignVersionHook {
         &self,
         _event: HookEvent,
         payload: &HookPayload,
-    ) -> moltis_common::Result<HookAction> {
+    ) -> antre_common::Result<HookAction> {
         match payload {
             HookPayload::BeforeToolCall {
                 session_key,

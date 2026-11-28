@@ -7,10 +7,10 @@
 use std::sync::Arc;
 
 use {
+    antre_agents::tool_registry::AgentTool,
+    antre_browser::RenderFormat,
     async_trait::async_trait,
     base64::{Engine, engine::general_purpose::STANDARD},
-    moltis_agents::tool_registry::AgentTool,
-    moltis_browser::RenderFormat,
     serde::Deserialize,
     serde_json::{Value, json},
 };

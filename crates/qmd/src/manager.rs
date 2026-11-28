@@ -27,7 +27,7 @@ pub struct QmdManagerConfig {
     pub timeout_ms: u64,
     /// Working directory for QMD commands.
     pub work_dir: PathBuf,
-    /// Named QMD index used to isolate Moltis-managed collections.
+    /// Named QMD index used to isolate Antre-managed collections.
     pub index_name: String,
     /// Optional environment overrides for spawned qmd commands.
     pub env_overrides: HashMap<String, String>,
@@ -41,7 +41,7 @@ impl Default for QmdManagerConfig {
             max_results: 10,
             timeout_ms: 30_000,
             work_dir: PathBuf::from("."),
-            index_name: "moltis".into(),
+            index_name: "antre".into(),
             env_overrides: HashMap::new(),
         }
     }
@@ -576,7 +576,7 @@ exit 0
         assert_eq!(config.command, "qmd");
         assert_eq!(config.max_results, 10);
         assert_eq!(config.timeout_ms, 30_000);
-        assert_eq!(config.index_name, "moltis");
+        assert_eq!(config.index_name, "antre");
     }
 
     #[test]
@@ -708,7 +708,7 @@ exit 0
             max_results: 5,
             timeout_ms: 60_000,
             work_dir: tmp.path().to_path_buf(),
-            index_name: "moltis-live-manager".into(),
+            index_name: "antre-live-manager".into(),
             env_overrides: real_qmd_env(&tmp),
         });
 

@@ -209,13 +209,13 @@ mod tests {
             "managementState": {
                 "netbirdIp": "100.96.0.10"
             },
-            "fqdn": "moltis.netbird.cloud."
+            "fqdn": "antre.netbird.cloud."
         });
 
         assert_eq!(extract_peer_ip(&value).as_deref(), Some("100.96.0.10"));
         assert_eq!(
             extract_dns_name(&value).as_deref(),
-            Some("moltis.netbird.cloud")
+            Some("antre.netbird.cloud")
         );
     }
 

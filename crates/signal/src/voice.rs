@@ -1,6 +1,6 @@
 //! Inbound Signal voice-note transcription.
 
-use moltis_channels::{ChannelEventSink, InboundMediaDownloader, InboundMediaSource};
+use antre_channels::{ChannelEventSink, InboundMediaDownloader, InboundMediaSource};
 
 use crate::attachments::SignalAttachment;
 

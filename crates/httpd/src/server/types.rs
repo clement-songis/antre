@@ -7,10 +7,10 @@ use std::sync::Weak;
 
 use axum::Router;
 
-use moltis_gateway::{auth_webauthn::SharedWebAuthnRegistry, state::GatewayState};
+use antre_gateway::{auth_webauthn::SharedWebAuthnRegistry, state::GatewayState};
 
 #[cfg(feature = "tailscale")]
-use moltis_gateway::tailscale::TailscaleMode;
+use antre_gateway::tailscale::TailscaleMode;
 
 #[cfg(feature = "cloudflare-tunnel")]
 use super::cloudflare_tunnel::{CloudflareTunnelController, CloudflareTunnelRuntimeStatus};
@@ -31,7 +31,7 @@ pub struct TailscaleOpts {
 #[derive(Clone)]
 pub struct AppState {
     pub gateway: Arc<GatewayState>,
-    pub methods: Arc<moltis_gateway::methods::MethodRegistry>,
+    pub methods: Arc<antre_gateway::methods::MethodRegistry>,
     pub request_throttle: Arc<crate::request_throttle::RequestThrottle>,
     pub webauthn_registry: Option<SharedWebAuthnRegistry>,
     #[cfg(feature = "ngrok")]
@@ -49,11 +49,11 @@ pub struct AppState {
     #[cfg(feature = "netbird")]
     pub netbird_runtime: Arc<tokio::sync::RwLock<Option<NetbirdRuntimeStatus>>>,
     #[cfg(feature = "tailscale")]
-    pub tailscale_manager: Arc<moltis_gateway::tailscale::CachedTailscaleManager>,
+    pub tailscale_manager: Arc<antre_gateway::tailscale::CachedTailscaleManager>,
     #[cfg(feature = "push-notifications")]
-    pub push_service: Option<Arc<moltis_gateway::push::PushService>>,
+    pub push_service: Option<Arc<antre_gateway::push::PushService>>,
     #[cfg(feature = "graphql")]
-    pub graphql_schema: moltis_graphql::MoltisSchema,
+    pub graphql_schema: antre_graphql::AntreSchema,
 }
 
 impl axum::extract::FromRef<AppState> for Arc<GatewayState> {
@@ -91,7 +91,7 @@ pub struct PreparedGateway {
     /// Network audit buffer for real-time streaming (present when
     /// the `trusted-network` feature is enabled and the proxy is active).
     #[cfg(feature = "trusted-network")]
-    pub audit_buffer: Option<moltis_gateway::network_audit::NetworkAuditBuffer>,
+    pub audit_buffer: Option<antre_gateway::network_audit::NetworkAuditBuffer>,
     /// Keeps the trusted-network proxy alive for the server's full lifetime.
     /// Dropping this sender closes the watch channel, which is the proxy's
     /// shutdown signal.
@@ -115,9 +115,9 @@ pub struct BannerMeta {
     pub cloudflare_tunnel_controller: Arc<CloudflareTunnelController>,
     #[cfg(feature = "netbird")]
     pub netbird_controller: Arc<NetbirdController>,
-    pub browser_for_lifecycle: Arc<dyn moltis_gateway::services::BrowserService>,
-    pub browser_tool_for_warmup: Option<Arc<dyn moltis_agents::tool_registry::AgentTool>>,
-    pub config: moltis_config::schema::MoltisConfig,
+    pub browser_for_lifecycle: Arc<dyn antre_gateway::services::BrowserService>,
+    pub browser_tool_for_warmup: Option<Arc<dyn antre_agents::tool_registry::AgentTool>>,
+    pub config: antre_config::schema::AntreConfig,
     #[cfg(feature = "tailscale")]
     pub tailscale_mode: TailscaleMode,
     #[cfg(feature = "tailscale")]

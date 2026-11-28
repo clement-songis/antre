@@ -8,9 +8,9 @@ use {
         model::{ChatMessage, CompletionResponse, LlmProvider, StreamEvent, ToolCall, Usage},
         tool_parsing::new_synthetic_tool_call_id,
     },
+    antre_common::hooks::{HookAction, HookEvent, HookHandler, HookPayload, HookRegistry},
     anyhow::Result,
     async_trait::async_trait,
-    moltis_common::hooks::{HookAction, HookEvent, HookHandler, HookPayload, HookRegistry},
     std::pin::Pin,
     tokio_stream::Stream,
 };
@@ -103,7 +103,7 @@ fn test_explicit_shell_command_extracts_command() {
 
 #[test]
 fn test_explicit_shell_command_supports_telegram_style_bot_mention() {
-    let uc = UserContent::text("/sh@MoltisBot uname -a");
+    let uc = UserContent::text("/sh@AntreBot uname -a");
     assert_eq!(
         explicit_shell_command_from_user_content(&uc).as_deref(),
         Some("uname -a")
@@ -276,7 +276,7 @@ impl HookHandler for InjectBeforeLlmSystemHook {
         &self,
         _event: HookEvent,
         payload: &HookPayload,
-    ) -> moltis_common::error::Result<HookAction> {
+    ) -> antre_common::error::Result<HookAction> {
         let HookPayload::BeforeLLMCall { messages, .. } = payload else {
             return Ok(HookAction::Continue);
         };

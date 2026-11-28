@@ -4,8 +4,7 @@ use std::{
 };
 
 use {
-    async_trait::async_trait,
-    moltis_caldav::{
+    antre_caldav::{
         client::CalDavClient,
         error::Result as ClientResult,
         types::{
@@ -13,10 +12,11 @@ use {
             CreatedEvent, EventSummary, NewEvent, TimeRange, UpdateEvent, UpdatedEvent,
         },
     },
-    moltis_connector_caldav::{
+    antre_connector_caldav::{
         CalDavAccountConfig, CalDavConnector, CalDavDatasetConfig, CalDavFilters, CalendarSelection,
     },
-    moltis_connectors::{SourceDisposition, SourceState, SourceStateMap},
+    antre_connectors::{SourceDisposition, SourceState, SourceStateMap},
+    async_trait::async_trait,
     secrecy::Secret,
     sha2::{Digest, Sha256},
     time::OffsetDateTime,
@@ -67,7 +67,7 @@ impl CalDavClient for FakeClient {
         _calendar_href: &str,
         _range: Option<TimeRange>,
     ) -> ClientResult<Vec<EventSummary>> {
-        Err(moltis_caldav::Error::Protocol(
+        Err(antre_caldav::Error::Protocol(
             "unused fake method".to_string(),
         ))
     }
@@ -103,7 +103,7 @@ impl CalDavClient for FakeClient {
         _calendar_href: &str,
         _event: NewEvent,
     ) -> ClientResult<CreatedEvent> {
-        Err(moltis_caldav::Error::Protocol(
+        Err(antre_caldav::Error::Protocol(
             "unused fake method".to_string(),
         ))
     }
@@ -114,13 +114,13 @@ impl CalDavClient for FakeClient {
         _etag: &str,
         _updates: UpdateEvent,
     ) -> ClientResult<UpdatedEvent> {
-        Err(moltis_caldav::Error::Protocol(
+        Err(antre_caldav::Error::Protocol(
             "unused fake method".to_string(),
         ))
     }
 
     async fn delete_event(&self, _href: &str, _etag: &str) -> ClientResult<()> {
-        Err(moltis_caldav::Error::Protocol(
+        Err(antre_caldav::Error::Protocol(
             "unused fake method".to_string(),
         ))
     }

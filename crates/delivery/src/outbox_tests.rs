@@ -8,7 +8,7 @@ use std::{
     },
 };
 
-use moltis_channels::ChannelType;
+use antre_channels::ChannelType;
 
 use {
     super::*,
@@ -462,18 +462,18 @@ async fn the_worker_resumes_sends_interrupted_by_a_restart() {
 
 #[test]
 fn channel_errors_map_to_retry_or_reject() {
-    let unknown = moltis_channels::Error::UnknownAccount {
+    let unknown = antre_channels::Error::UnknownAccount {
         account_id: "bot".into(),
     };
     assert!(matches!(SinkError::from(unknown), SinkError::Retryable(_)));
-    let unavailable = moltis_channels::Error::Unavailable {
+    let unavailable = antre_channels::Error::Unavailable {
         message: "starting".into(),
     };
     assert!(matches!(
         SinkError::from(unavailable),
         SinkError::Retryable(_)
     ));
-    let invalid = moltis_channels::Error::InvalidInput {
+    let invalid = antre_channels::Error::InvalidInput {
         message: "bad chat id".into(),
     };
     assert!(matches!(SinkError::from(invalid), SinkError::Rejected(_)));

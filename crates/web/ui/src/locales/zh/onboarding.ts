@@ -28,8 +28,8 @@ export default {
 		chooseHowToSecureRequired: "选择如何保护你的实例。",
 		setupCode: "设置码",
 		setupCodePlaceholder: "终端中的 6 位数字码",
-		setupCodeHint: "在 moltis 进程日志 (stdout) 中查找此码。",
-		setupCodePrefilledHint: "已从 moltis 打开的链接中填入设置码。",
+		setupCodeHint: "在 antre 进程日志 (stdout) 中查找此码。",
+		setupCodePrefilledHint: "已从 antre 打开的链接中填入设置码。",
 		enterSetupCode: "输入进程日志 (stdout) 中显示的设置码。",
 		setupFailed: "设置失败",
 		passkey: "通行密钥",
@@ -199,7 +199,7 @@ export default {
 	// ── Skills step ──────────────────────────────────────────
 	skills: {
 		title: "内置技能",
-		description: "Moltis 附带了许多领域的技能。禁用不需要的类别以保持代理专注。您可以稍后在设置中更改。",
+		description: "Antre 附带了许多领域的技能。禁用不需要的类别以保持代理专注。您可以稍后在设置中更改。",
 		enableAll: "全部启用",
 		disableAll: "全部禁用",
 	},

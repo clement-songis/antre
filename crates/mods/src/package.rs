@@ -211,7 +211,7 @@ fn copy_bounded(from: &Path, to: &Path, limit: u64) -> Result<()> {
 /// SHA-256 over every regular file (sorted relative path, length, bytes).
 pub fn hash_tree(root: &Path) -> Result<String> {
     let mut hasher = Sha256::new();
-    hasher.update(b"moltis-mod-package-v1\n");
+    hasher.update(b"antre-mod-package-v1\n");
     for entry in WalkDir::new(root)
         .follow_links(false)
         .min_depth(1)

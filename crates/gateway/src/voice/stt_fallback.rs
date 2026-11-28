@@ -1,8 +1,8 @@
 //! Ordered STT provider fallback chain.
 
 use {
-    moltis_agents::provider_chain::classify_error,
-    moltis_voice::{SttProvider, SttProviderId, TranscribeRequest, Transcript},
+    antre_agents::provider_chain::classify_error,
+    antre_voice::{SttProvider, SttProviderId, TranscribeRequest, Transcript},
     tracing::{debug, warn},
 };
 
@@ -94,9 +94,9 @@ where
 mod tests {
     use {
         super::*,
+        antre_voice::AudioFormat,
         async_trait::async_trait,
         bytes::Bytes,
-        moltis_voice::AudioFormat,
         std::sync::{Arc, Mutex},
     };
 

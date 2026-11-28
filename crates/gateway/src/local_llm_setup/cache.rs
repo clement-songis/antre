@@ -155,7 +155,7 @@ async fn download_unified_model(
     cache_dir: &Path,
     state: &Arc<GatewayState>,
 ) -> LocalModelCacheResult<bool> {
-    use moltis_providers::local_llm::models as llm_models;
+    use antre_providers::local_llm::models as llm_models;
 
     let model_id = model.id.to_string();
     let display_name = model.display_name.to_string();

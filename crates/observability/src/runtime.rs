@@ -281,8 +281,8 @@ impl ObservationSink for BatchSink {
         }
 
         #[cfg(feature = "metrics")]
-        moltis_metrics::counter!(
-            "moltis_observability_events_total",
+        antre_metrics::counter!(
+            "antre_observability_events_total",
             "sink" => self.name.clone()
         )
         .increment(1);
@@ -430,7 +430,7 @@ async fn deliver(
 
 /// Exponential backoff with full jitter, clamped to `max_backoff`.
 ///
-/// Jitter matters here: without it, every Moltis instance that hits the same
+/// Jitter matters here: without it, every Antre instance that hits the same
 /// rate limit retries in lockstep and re-creates the overload.
 fn backoff_delay(config: &BatchConfig, attempt: u32) -> Duration {
     let exponent = attempt.min(16);

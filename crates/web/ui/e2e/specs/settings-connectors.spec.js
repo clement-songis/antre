@@ -299,7 +299,7 @@ test.describe("Settings > Connectors", () => {
 		const pageErrors = watchPageErrors(page);
 		await page.addInitScript(() => {
 			let gonValue = { connectors_enabled: false };
-			Object.defineProperty(window, "__MOLTIS__", {
+			Object.defineProperty(window, "__ANTRE__", {
 				configurable: true,
 				get() {
 					return gonValue;
@@ -371,7 +371,7 @@ test.describe("Settings > Connectors", () => {
 		const revisedInstruction = `${instruction} Include calendars added later.`;
 		const saveDataset = modal.getByRole("button", { name: "Create dataset", exact: true });
 		await expect(saveDataset).toBeDisabled();
-		await modal.getByLabel("What should Moltis keep locally?", { exact: true }).fill(instruction);
+		await modal.getByLabel("What should Antre keep locally?", { exact: true }).fill(instruction);
 		await expect(modal.getByText("Examples", { exact: true })).toBeVisible();
 		await modal.getByText("Advanced dataset JSON", { exact: true }).click();
 		const overrides = modal.getByLabel("Dataset overrides (JSON)", { exact: true });
@@ -408,7 +408,7 @@ test.describe("Settings > Connectors", () => {
 			overrides: { scheduleMinutes: 60 },
 		});
 
-		await modal.getByLabel("What should Moltis keep locally?", { exact: true }).fill(revisedInstruction);
+		await modal.getByLabel("What should Antre keep locally?", { exact: true }).fill(revisedInstruction);
 		await expect(saveDataset).toBeDisabled();
 		await expect(
 			compiledPreview.getByText("Compile the current instruction and overrides before saving.", { exact: true }),
@@ -445,7 +445,7 @@ test.describe("Settings > Connectors", () => {
 		modal = page.locator(".modal-box").filter({
 			has: page.getByRole("heading", { name: "Edit CalDAV dataset", exact: true }),
 		});
-		await expect(modal.getByLabel("What should Moltis keep locally?", { exact: true })).toHaveValue(revisedInstruction);
+		await expect(modal.getByLabel("What should Antre keep locally?", { exact: true })).toHaveValue(revisedInstruction);
 		await expect(modal.getByText("Current saved dataset configuration.", { exact: true })).toBeVisible();
 		await expect(modal.getByRole("button", { name: "Save dataset", exact: true })).toBeDisabled();
 		await modal.getByRole("button", { name: "Compile", exact: true }).click();
@@ -606,7 +606,7 @@ test.describe("Settings > Connectors", () => {
 		});
 		await expect(
 			modal.getByText(
-				"Uses the existing Google Workspace authorization in Moltis. Gmail credentials are referenced and are not copied into the connector database.",
+				"Uses the existing Google Workspace authorization in Antre. Gmail credentials are referenced and are not copied into the connector database.",
 				{ exact: true },
 			),
 		).toBeVisible();
@@ -843,14 +843,14 @@ test.describe("Settings > Connectors", () => {
 		await page.getByRole("button", { name: "Refresh", exact: true }).click();
 
 		const accountCard = cardForHeading(page, "Configured calendar");
-		await expect(accountCard.getByText("Managed by moltis.toml", { exact: true })).toBeVisible();
+		await expect(accountCard.getByText("Managed by antre.toml", { exact: true })).toBeVisible();
 		await expect(accountCard.getByRole("button", { name: "Test connection", exact: true })).toBeDisabled();
 		await expect(accountCard.getByRole("button", { name: "Remove", exact: true })).toBeDisabled();
 		await accountCard.getByRole("button", { name: "Edit", exact: true }).click();
 		const modal = page.locator(".modal-box").filter({
 			has: page.getByRole("heading", { name: "Edit CalDAV connection", exact: true }),
 		});
-		await expect(modal.getByText(/identity and credentials come from moltis\.toml/)).toBeVisible();
+		await expect(modal.getByText(/identity and credentials come from antre\.toml/)).toBeVisible();
 		await expect(modal.getByLabel("Connection name", { exact: true })).toBeDisabled();
 		await expect(modal.getByLabel("Server URL", { exact: true })).toBeDisabled();
 		await expect(modal.getByLabel("Username", { exact: true })).toBeDisabled();

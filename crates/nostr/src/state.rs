@@ -3,7 +3,7 @@
 use std::sync::{Arc, Mutex, RwLock};
 
 use {
-    moltis_channels::otp::OtpState,
+    antre_channels::otp::OtpState,
     nostr_sdk::prelude::{Client, Keys, PublicKey, ToBech32},
     tokio_util::sync::CancellationToken,
 };

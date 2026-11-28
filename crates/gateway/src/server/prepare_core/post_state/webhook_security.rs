@@ -5,7 +5,7 @@ use serde_json::Value;
 /// Webhooks receive no tools unless their stored configuration explicitly opts
 /// into the host-owned public audience applied by the caller.
 pub(super) fn request_tool_policy(
-    policy: Option<&moltis_webhooks::types::ToolPolicy>,
+    policy: Option<&antre_webhooks::types::ToolPolicy>,
 ) -> anyhow::Result<Value> {
     policy.map_or_else(
         || Ok(serde_json::json!({ "deny": ["*"] })),
@@ -26,7 +26,7 @@ mod tests {
 
     #[test]
     fn explicit_policy_is_preserved_for_public_audience_filtering() -> anyhow::Result<()> {
-        let configured = moltis_webhooks::types::ToolPolicy {
+        let configured = antre_webhooks::types::ToolPolicy {
             allow: vec!["web_search".to_string()],
             deny: Vec::new(),
         };

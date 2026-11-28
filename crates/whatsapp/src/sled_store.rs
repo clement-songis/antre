@@ -1270,7 +1270,7 @@ mod tests {
             signed_pre_key_signature: [7u8; 64],
             adv_secret_key: [9u8; 32],
             account: None,
-            push_name: "Moltis".into(),
+            push_name: "Antre".into(),
             app_version_primary: 2,
             app_version_secondary: 3000,
             app_version_tertiary: 1,
@@ -1288,7 +1288,7 @@ mod tests {
         // Load must fall back to the legacy shim, not lose the pairing.
         let device = store.load().await.unwrap().unwrap();
         assert_eq!(device.registration_id, 42);
-        assert_eq!(device.push_name, "Moltis");
+        assert_eq!(device.push_name, "Antre");
         assert_eq!(device.next_pre_key_id, 5);
         assert_eq!(device.signed_pre_key_signature, [7u8; 64]);
         assert!(!device.server_has_prekeys);

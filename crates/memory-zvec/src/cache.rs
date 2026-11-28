@@ -4,9 +4,9 @@ use std::{
 };
 
 use {
+    antre_memory::schema::FileRow,
     anyhow::{Context, Result},
     half::f16,
-    moltis_memory::schema::FileRow,
     redb::{Database, ReadableTable, ReadableTableMetadata, TableDefinition},
     tracing::{debug, warn},
 };
@@ -632,7 +632,7 @@ mod tests {
     static TEST_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
     fn cache_path() -> std::path::PathBuf {
-        let dir = std::env::temp_dir().join("moltis-redb-cache-test");
+        let dir = std::env::temp_dir().join("antre-redb-cache-test");
         let _ = std::fs::create_dir_all(&dir);
         let count = TEST_COUNTER.fetch_add(1, Ordering::SeqCst);
         let file = format!("test_{}_{}.redb", std::process::id(), count);

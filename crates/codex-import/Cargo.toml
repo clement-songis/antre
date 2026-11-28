@@ -1,17 +1,17 @@
 [package]
-description       = "Import data from OpenAI Codex CLI into Moltis"
+description       = "Import data from OpenAI Codex CLI into Antre"
 edition.workspace = true
 license.workspace = true
-name              = "moltis-codex-import"
+name              = "antre-codex-import"
 version.workspace = true
 
 [dependencies]
-dirs-next          = { workspace = true }
-moltis-import-core = { workspace = true }
-serde              = { workspace = true }
-serde_json         = { workspace = true }
-toml               = { workspace = true }
-tracing            = { workspace = true }
+antre-import-core = { workspace = true }
+dirs-next         = { workspace = true }
+serde             = { workspace = true }
+serde_json        = { workspace = true }
+toml              = { workspace = true }
+tracing           = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }

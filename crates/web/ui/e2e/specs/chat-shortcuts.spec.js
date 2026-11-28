@@ -11,7 +11,7 @@ const {
 const MOD = process.platform === "darwin" ? "Meta" : "Control";
 
 function activeSessionKey(page) {
-	return page.evaluate(() => window.__moltis_stores?.sessionStore?.activeSessionKey?.value || "");
+	return page.evaluate(() => window.__antre_stores?.sessionStore?.activeSessionKey?.value || "");
 }
 
 async function chatEvent(page, payload) {
@@ -106,7 +106,7 @@ test.describe("Background session notices", () => {
 		await expect(page).not.toHaveTitle(/^\(\d+\) /);
 
 		await page.evaluate((key) => {
-			window.__moltis_stores.sessionStore.getByKey(key).replying.value = true;
+			window.__antre_stores.sessionStore.getByKey(key).replying.value = true;
 		}, other);
 		await expectRpcOk(page, "system-event", {
 			event: "chat",

@@ -4,7 +4,7 @@ This folder contains a single-file [Slidev](https://sli.dev) deck for the NFC Su
 
 ## Talk
 
-- Title: `AI-Assisted Software Engineering: Building Moltis as a Solo Founder`
+- Title: `AI-Assisted Software Engineering: Building Antre as a Solo Founder`
 - Event: Non Fungible Conference / NFC Summit
 - Date: June 4, 2026
 - Audience: entrepreneurs, artists, builders, and AI/software beginners
@@ -12,7 +12,7 @@ This folder contains a single-file [Slidev](https://sli.dev) deck for the NFC Su
 ## Files
 
 - `slides.md`: main presentation deck with embedded speaker notes
-- `git-stats.rb`: reproduces the Moltis vs Constellations first-14-weeks git activity data used in the deck
+- `git-stats.rb`: reproduces the Antre vs Constellations first-14-weeks git activity data used in the deck
 
 ## Run Locally
 

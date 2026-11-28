@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 #[cfg(feature = "ngrok")]
 use {
-    moltis_gateway::{auth_webauthn::SharedWebAuthnRegistry, state::GatewayState},
+    antre_gateway::{auth_webauthn::SharedWebAuthnRegistry, state::GatewayState},
     tracing::{info, warn},
 };
 
@@ -68,7 +68,7 @@ impl NgrokController {
 
     pub async fn apply(
         &self,
-        ngrok_config: &moltis_config::NgrokConfig,
+        ngrok_config: &antre_config::NgrokConfig,
     ) -> crate::error::Result<Option<NgrokRuntimeStatus>> {
         self.stop().await?;
 
@@ -93,7 +93,7 @@ impl NgrokController {
 
     async fn start(
         &self,
-        ngrok_config: &moltis_config::NgrokConfig,
+        ngrok_config: &antre_config::NgrokConfig,
     ) -> crate::error::Result<NgrokActiveTunnel> {
         let app = {
             let stored = self.inner.app.read().await;
@@ -162,7 +162,7 @@ impl NgrokController {
 #[cfg(feature = "ngrok")]
 pub async fn start_for_banner(
     controller: &NgrokController,
-    config: &moltis_config::NgrokConfig,
+    config: &antre_config::NgrokConfig,
 ) -> (Option<NgrokRuntimeStatus>, Option<String>) {
     match controller.apply(config).await {
         Ok(status) => (status, None),

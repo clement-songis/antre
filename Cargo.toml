@@ -201,7 +201,7 @@ unwrap_used = "deny"
 [workspace.package]
 edition      = "2024"
 license      = "MIT"
-repository   = "https://github.com/moltis-org/moltis"
+repository   = "https://github.com/antre-ai/antre"
 rust-version = "1.91"
 version      = "0.1.0"
 
@@ -420,82 +420,82 @@ tower-service = "0.3"
 zeroize       = { features = ["derive"], version = "1" }
 
 # Workspace crates
-moltis                    = { path = "crates/cli" }
-moltis-acp                = { path = "crates/acp" }
-moltis-agents             = { path = "crates/agents" }
-moltis-auth               = { path = "crates/auth" }
-moltis-auto-reply         = { path = "crates/auto-reply" }
-moltis-browser            = { path = "crates/browser" }
-moltis-caldav             = { path = "crates/caldav" }
-moltis-canvas             = { path = "crates/canvas" }
-moltis-channels           = { path = "crates/channels" }
-moltis-chat               = { path = "crates/chat" }
-moltis-claude-import      = { path = "crates/claude-import" }
-moltis-client             = { default-features = false, path = "crates/client" }
-moltis-code-index         = { path = "crates/code-index" }
-moltis-codex-import       = { path = "crates/codex-import" }
-moltis-common             = { path = "crates/common" }
-moltis-config             = { path = "crates/config" }
-moltis-connector-caldav   = { path = "crates/connector-caldav" }
-moltis-connector-gmail    = { path = "crates/connector-gmail" }
-moltis-connector-himalaya = { path = "crates/connector-himalaya" }
-moltis-connectors         = { path = "crates/connectors" }
-moltis-cron               = { path = "crates/cron" }
-moltis-delivery           = { path = "crates/delivery" }
-moltis-discord            = { path = "crates/discord" }
-moltis-external-agents    = { path = "crates/external-agents" }
-moltis-gateway            = { default-features = false, path = "crates/gateway" }
-moltis-graphql            = { path = "crates/graphql" }
-moltis-hermes-import      = { path = "crates/hermes-import" }
-moltis-home-assistant     = { path = "crates/home-assistant" }
-moltis-httpd              = { default-features = false, path = "crates/httpd" }
-moltis-import-core        = { path = "crates/import-core" }
-moltis-learning           = { path = "crates/learning" }
-moltis-matrix             = { path = "crates/matrix" }
-moltis-mcp                = { path = "crates/mcp" }
-moltis-mcp-agent-bridge   = { path = "crates/mcp-agent-bridge" }
-moltis-media              = { path = "crates/media" }
-moltis-memory             = { path = "crates/memory" }
-moltis-memory-zvec        = { path = "crates/memory-zvec" }
-moltis-metrics            = { path = "crates/metrics" }
-moltis-model-catalog      = { path = "crates/model-catalog" }
-moltis-mods               = { path = "crates/mods" }
-moltis-msteams            = { path = "crates/msteams" }
-moltis-netbird            = { path = "crates/netbird" }
-moltis-network-filter     = { default-features = false, path = "crates/network-filter" }
-moltis-node-host          = { path = "crates/node-host" }
-moltis-nostr              = { path = "crates/nostr" }
-moltis-oauth              = { path = "crates/oauth" }
-moltis-observability      = { default-features = false, path = "crates/observability" }
-moltis-onboarding         = { path = "crates/onboarding" }
-moltis-openclaw-import    = { path = "crates/openclaw-import" }
-moltis-plugins            = { path = "crates/plugins" }
-moltis-portable           = { path = "crates/portable" }
-moltis-projects           = { path = "crates/projects" }
-moltis-protocol           = { path = "crates/protocol" }
-moltis-provider-setup     = { path = "crates/provider-setup" }
-moltis-providers          = { features = ["provider-kimi-code", "provider-openai-codex"], path = "crates/providers" }
-moltis-qmd                = { path = "crates/qmd" }
-moltis-routing            = { path = "crates/routing" }
-moltis-schema-export      = { path = "crates/schema-export" }
-moltis-secret-store       = { default-features = false, path = "crates/secret-store" }
-moltis-service-traits     = { path = "crates/service-traits" }
-moltis-sessions           = { path = "crates/sessions" }
-moltis-signal             = { path = "crates/signal" }
-moltis-skills             = { path = "crates/skills" }
-moltis-slack              = { path = "crates/slack" }
-moltis-splitter           = { path = "crates/splitter" }
-moltis-swift-bridge       = { path = "crates/swift-bridge" }
-moltis-tailscale          = { path = "crates/tailscale" }
-moltis-telegram           = { path = "crates/telegram" }
-moltis-telephony          = { path = "crates/telephony" }
-moltis-tls                = { path = "crates/tls" }
-moltis-tools              = { path = "crates/tools" }
-moltis-vault              = { path = "crates/vault" }
-moltis-voice              = { path = "crates/voice" }
-moltis-web                = { default-features = false, path = "crates/web" }
-moltis-webhooks           = { path = "crates/webhooks" }
-moltis-whatsapp           = { path = "crates/whatsapp" }
+antre                    = { path = "crates/cli" }
+antre-acp                = { path = "crates/acp" }
+antre-agents             = { path = "crates/agents" }
+antre-auth               = { path = "crates/auth" }
+antre-auto-reply         = { path = "crates/auto-reply" }
+antre-browser            = { path = "crates/browser" }
+antre-caldav             = { path = "crates/caldav" }
+antre-canvas             = { path = "crates/canvas" }
+antre-channels           = { path = "crates/channels" }
+antre-chat               = { path = "crates/chat" }
+antre-claude-import      = { path = "crates/claude-import" }
+antre-client             = { default-features = false, path = "crates/client" }
+antre-code-index         = { path = "crates/code-index" }
+antre-codex-import       = { path = "crates/codex-import" }
+antre-common             = { path = "crates/common" }
+antre-config             = { path = "crates/config" }
+antre-connector-caldav   = { path = "crates/connector-caldav" }
+antre-connector-gmail    = { path = "crates/connector-gmail" }
+antre-connector-himalaya = { path = "crates/connector-himalaya" }
+antre-connectors         = { path = "crates/connectors" }
+antre-cron               = { path = "crates/cron" }
+antre-delivery           = { path = "crates/delivery" }
+antre-discord            = { path = "crates/discord" }
+antre-external-agents    = { path = "crates/external-agents" }
+antre-gateway            = { default-features = false, path = "crates/gateway" }
+antre-graphql            = { path = "crates/graphql" }
+antre-hermes-import      = { path = "crates/hermes-import" }
+antre-home-assistant     = { path = "crates/home-assistant" }
+antre-httpd              = { default-features = false, path = "crates/httpd" }
+antre-import-core        = { path = "crates/import-core" }
+antre-learning           = { path = "crates/learning" }
+antre-matrix             = { path = "crates/matrix" }
+antre-mcp                = { path = "crates/mcp" }
+antre-mcp-agent-bridge   = { path = "crates/mcp-agent-bridge" }
+antre-media              = { path = "crates/media" }
+antre-memory             = { path = "crates/memory" }
+antre-memory-zvec        = { path = "crates/memory-zvec" }
+antre-metrics            = { path = "crates/metrics" }
+antre-model-catalog      = { path = "crates/model-catalog" }
+antre-mods               = { path = "crates/mods" }
+antre-msteams            = { path = "crates/msteams" }
+antre-netbird            = { path = "crates/netbird" }
+antre-network-filter     = { default-features = false, path = "crates/network-filter" }
+antre-node-host          = { path = "crates/node-host" }
+antre-nostr              = { path = "crates/nostr" }
+antre-oauth              = { path = "crates/oauth" }
+antre-observability      = { default-features = false, path = "crates/observability" }
+antre-onboarding         = { path = "crates/onboarding" }
+antre-openclaw-import    = { path = "crates/openclaw-import" }
+antre-plugins            = { path = "crates/plugins" }
+antre-portable           = { path = "crates/portable" }
+antre-projects           = { path = "crates/projects" }
+antre-protocol           = { path = "crates/protocol" }
+antre-provider-setup     = { path = "crates/provider-setup" }
+antre-providers          = { features = ["provider-kimi-code", "provider-openai-codex"], path = "crates/providers" }
+antre-qmd                = { path = "crates/qmd" }
+antre-routing            = { path = "crates/routing" }
+antre-schema-export      = { path = "crates/schema-export" }
+antre-secret-store       = { default-features = false, path = "crates/secret-store" }
+antre-service-traits     = { path = "crates/service-traits" }
+antre-sessions           = { path = "crates/sessions" }
+antre-signal             = { path = "crates/signal" }
+antre-skills             = { path = "crates/skills" }
+antre-slack              = { path = "crates/slack" }
+antre-splitter           = { path = "crates/splitter" }
+antre-swift-bridge       = { path = "crates/swift-bridge" }
+antre-tailscale          = { path = "crates/tailscale" }
+antre-telegram           = { path = "crates/telegram" }
+antre-telephony          = { path = "crates/telephony" }
+antre-tls                = { path = "crates/tls" }
+antre-tools              = { path = "crates/tools" }
+antre-vault              = { path = "crates/vault" }
+antre-voice              = { path = "crates/voice" }
+antre-web                = { default-features = false, path = "crates/web" }
+antre-webhooks           = { path = "crates/webhooks" }
+antre-whatsapp           = { path = "crates/whatsapp" }
 
 [profile.release]
 codegen-units = 1

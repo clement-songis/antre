@@ -1,8 +1,8 @@
-# Moltis Desktop: a native gpui client for a running moltis daemon.
+# Antre Desktop: a native gpui client for a running antre daemon.
 #
 # Its own workspace (and lockfile) so gpui's dependency tree stays out of the
 # main workspace's builds and CI. It shares the wire protocol with the daemon
-# through path dependencies on `moltis-protocol` and `moltis-client`.
+# through path dependencies on `antre-protocol` and `antre-client`.
 [workspace]
 members  = ["."]
 resolver = "2"
@@ -16,15 +16,15 @@ expect_used = "deny"
 unwrap_used = "deny"
 
 [package]
-description = "Native desktop client for the Moltis daemon"
+description = "Native desktop client for the Antre daemon"
 edition     = "2024"
 license     = "MIT"
-name        = "moltis-desktop"
+name        = "antre-desktop"
 publish     = false
 version     = "0.1.0"
 
 [[bin]]
-name = "moltis-desktop"
+name = "antre-desktop"
 path = "src/main.rs"
 
 [[test]]
@@ -42,17 +42,17 @@ gpui        = { package = "gpui-pre", version = "=0.3.6" }
 # Linux backend, text silently goes to a no-op text system.
 gpui_platform = { features = ["font-kit", "runtime_shaders", "wayland", "x11"], package = "gpui-pre-platform", version = "=0.3.6" }
 # PNG encoding for `capture` screenshots; the version gpui already links.
-image           = { default-features = false, features = ["png"], version = "0.25" }
-moltis-client   = { default-features = false, features = ["local"], path = "../../crates/client" }
-moltis-config   = { path = "../../crates/config" }
-moltis-protocol = { path = "../../crates/protocol" }
-pulldown-cmark  = { default-features = false, version = "0.13" }
-rcgen           = "0.13"
-rustls          = { features = ["ring"], version = "0.23" }
-secrecy         = { features = ["serde"], version = "0.8" }
-serde           = { features = ["derive"], version = "1" }
-serde_json      = "1"
-sha2            = "0.10"
+antre-client   = { default-features = false, features = ["local"], path = "../../crates/client" }
+antre-config   = { path = "../../crates/config" }
+antre-protocol = { path = "../../crates/protocol" }
+image          = { default-features = false, features = ["png"], version = "0.25" }
+pulldown-cmark = { default-features = false, version = "0.13" }
+rcgen          = "0.13"
+rustls         = { features = ["ring"], version = "0.23" }
+secrecy        = { features = ["serde"], version = "0.8" }
+serde          = { features = ["derive"], version = "1" }
+serde_json     = "1"
+sha2           = "0.10"
 # Code block colouring: bundled grammars, pure-Rust regex engine, no themes
 # (colours come from the app theme).
 syntect              = { default-features = false, features = ["default-syntaxes", "parsing", "regex-fancy"], version = "5.3" }
@@ -66,15 +66,15 @@ unicode-segmentation = "1"
 uuid                 = { features = ["v4"], version = "1" }
 
 [dependencies]
+antre-client         = { workspace = true }
+antre-config         = { workspace = true }
+antre-protocol       = { workspace = true }
 anyhow               = { workspace = true }
 futures              = { workspace = true }
 gethostname          = { workspace = true }
 gpui                 = { workspace = true }
 gpui_platform        = { workspace = true }
 image                = { optional = true, workspace = true }
-moltis-client        = { workspace = true }
-moltis-config        = { workspace = true }
-moltis-protocol      = { workspace = true }
 pulldown-cmark       = { workspace = true }
 secrecy              = { workspace = true }
 serde                = { workspace = true }
@@ -96,20 +96,20 @@ sha2     = { workspace = true }
 tempfile = { workspace = true }
 
 [features]
-# Save a PNG of the window when MOLTIS_DESKTOP_CAPTURE is set (visual QA and
+# Save a PNG of the window when ANTRE_DESKTOP_CAPTURE is set (visual QA and
 # E2E screenshots; needs no screen-recording permission).
 capture = ["dep:image", "gpui_platform/test-support"]
 default = ["mdns", "metrics", "ssh", "tracing"]
 # Discover daemons on the local network.
-mdns    = ["moltis-client/mdns"]
-metrics = ["moltis-client/metrics"]
-# Development only: `--mockup` shows UI variants from MOLTIS_MOCKUP_FILE side by
+mdns    = ["antre-client/mdns"]
+metrics = ["antre-client/metrics"]
+# Development only: `--mockup` shows UI variants from ANTRE_MOCKUP_FILE side by
 # side for the gpui-mockup agent skill (`just desktop-mockup FILE`).
 mockup = ["capture"]
 # Reach remote daemons through SSH port forwarding.
-ssh = ["moltis-client/ssh"]
-# Log to stderr (filtered by MOLTIS_DESKTOP_LOG).
-tracing = ["dep:tracing", "dep:tracing-subscriber", "moltis-client/tracing"]
+ssh = ["antre-client/ssh"]
+# Log to stderr (filtered by ANTRE_DESKTOP_LOG).
+tracing = ["antre-client/tracing", "dep:tracing", "dep:tracing-subscriber"]
 
 [lints]
 workspace = true

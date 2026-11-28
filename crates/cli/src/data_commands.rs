@@ -1,4 +1,4 @@
-//! CLI subcommand for exporting and importing Moltis data archives.
+//! CLI subcommand for exporting and importing Antre data archives.
 
 use std::path::PathBuf;
 
@@ -8,7 +8,7 @@ use clap::Subcommand;
 pub enum DataAction {
     /// Export config, databases, and sessions to a .tar.gz archive.
     Export {
-        /// Output file path (default: moltis-backup-<timestamp>.tar.gz in current directory).
+        /// Output file path (default: antre-backup-<timestamp>.tar.gz in current directory).
         #[arg(short, long)]
         output: Option<PathBuf>,
         /// Include session media files (audio, images). Can make archives large.
@@ -70,10 +70,10 @@ async fn handle_export(
     no_provider_keys: bool,
 ) -> anyhow::Result<()> {
     let config_dir =
-        moltis_config::config_dir().ok_or_else(|| anyhow::anyhow!("config directory not set"))?;
-    let data_dir = moltis_config::data_dir();
+        antre_config::config_dir().ok_or_else(|| anyhow::anyhow!("config directory not set"))?;
+    let data_dir = antre_config::data_dir();
 
-    let opts = moltis_portable::ExportOptions {
+    let opts = antre_portable::ExportOptions {
         include_provider_keys: !no_provider_keys,
         include_media,
         include_files,
@@ -82,7 +82,7 @@ async fn handle_export(
     let output_path = output.unwrap_or_else(|| {
         let now = time::OffsetDateTime::now_utc();
         PathBuf::from(format!(
-            "moltis-backup-{:04}{:02}{:02}-{:02}{:02}{:02}.tar.gz",
+            "antre-backup-{:04}{:02}{:02}-{:02}{:02}{:02}.tar.gz",
             now.year(),
             now.month() as u8,
             now.day(),
@@ -93,7 +93,7 @@ async fn handle_export(
     });
 
     let file = std::fs::File::create(&output_path)?;
-    let manifest = moltis_portable::export_archive(&config_dir, &data_dir, &opts, file).await?;
+    let manifest = antre_portable::export_archive(&config_dir, &data_dir, &opts, file).await?;
 
     println!("Export complete: {}", output_path.display());
     println!("  Config files: {}", manifest.inventory.config_files.len());
@@ -112,7 +112,7 @@ async fn handle_export(
             manifest.inventory.managed_files.total_bytes
         );
     }
-    println!("  moltis.db: {}", manifest.inventory.has_moltis_db);
+    println!("  antre.db: {}", manifest.inventory.has_antre_db);
     println!("  memory.db: {}", manifest.inventory.has_memory_db);
 
     Ok(())
@@ -125,22 +125,22 @@ async fn handle_import(
     json: bool,
 ) -> anyhow::Result<()> {
     let config_dir =
-        moltis_config::config_dir().ok_or_else(|| anyhow::anyhow!("config directory not set"))?;
-    let data_dir = moltis_config::data_dir();
+        antre_config::config_dir().ok_or_else(|| anyhow::anyhow!("config directory not set"))?;
+    let data_dir = antre_config::data_dir();
 
     let conflict_strategy = match conflict {
-        "skip" => moltis_portable::ConflictStrategy::Skip,
-        "overwrite" => moltis_portable::ConflictStrategy::Overwrite,
+        "skip" => antre_portable::ConflictStrategy::Skip,
+        "overwrite" => antre_portable::ConflictStrategy::Overwrite,
         other => anyhow::bail!("unknown conflict strategy: {other} (use 'skip' or 'overwrite')"),
     };
 
-    let opts = moltis_portable::ImportOptions {
+    let opts = antre_portable::ImportOptions {
         conflict: conflict_strategy,
         dry_run,
     };
 
     let file = std::fs::File::open(&archive)?;
-    let result = moltis_portable::import_archive(&config_dir, &data_dir, &opts, file).await?;
+    let result = antre_portable::import_archive(&config_dir, &data_dir, &opts, file).await?;
 
     if json {
         println!("{}", serde_json::to_string_pretty(&result)?);
@@ -175,7 +175,7 @@ async fn handle_import(
 
 fn handle_inspect(archive: PathBuf, json: bool) -> anyhow::Result<()> {
     let file = std::fs::File::open(&archive)?;
-    let manifest = moltis_portable::inspect_archive(file)?;
+    let manifest = antre_portable::inspect_archive(file)?;
 
     if json {
         println!("{}", serde_json::to_string_pretty(&manifest)?);
@@ -183,7 +183,7 @@ fn handle_inspect(archive: PathBuf, json: bool) -> anyhow::Result<()> {
     }
 
     println!("Archive format version: {}", manifest.format_version);
-    println!("Moltis version: {}", manifest.moltis_version);
+    println!("Antre version: {}", manifest.antre_version);
     println!("Created: {}", manifest.created_at);
     println!("Contents:");
     println!("  Config files: {}", manifest.inventory.config_files.len());
@@ -197,7 +197,7 @@ fn handle_inspect(archive: PathBuf, json: bool) -> anyhow::Result<()> {
     for f in &manifest.inventory.workspace_files {
         println!("    {f}");
     }
-    println!("  moltis.db: {}", manifest.inventory.has_moltis_db);
+    println!("  antre.db: {}", manifest.inventory.has_antre_db);
     println!("  memory.db: {}", manifest.inventory.has_memory_db);
     println!("  Sessions: {}", manifest.inventory.session_count());
     println!("  Media files: {}", manifest.inventory.media_count());

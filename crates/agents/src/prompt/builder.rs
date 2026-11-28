@@ -1,11 +1,11 @@
 use {
     crate::{
-        docs::MOLTIS_DOCS_URL,
+        docs::ANTRE_DOCS_URL,
         model::{ContentPart, UserContent},
         prompt::{
             formatting::{
-                append_truncated_text_block, format_compact_tool_schema, format_host_runtime_line,
-                format_moltis_runtime_line, format_nodes_runtime_section,
+                append_truncated_text_block, format_antre_runtime_line, format_compact_tool_schema,
+                format_host_runtime_line, format_nodes_runtime_section,
                 format_sandbox_runtime_line, tool_call_guidance, truncate_prompt_text,
             },
             types::{
@@ -15,8 +15,8 @@ use {
         },
         tool_registry::ToolRegistry,
     },
-    moltis_config::{AgentIdentity, DEFAULT_SOUL, UserProfile},
-    moltis_skills::types::SkillMetadata,
+    antre_config::{AgentIdentity, DEFAULT_SOUL, UserProfile},
+    antre_skills::types::SkillMetadata,
 };
 
 use crate::prompt::types::WorkspaceFilePromptStatus;
@@ -34,7 +34,7 @@ const EXEC_ROUTING_GUIDANCE_SANDBOX: &str = "Execution routing:\n\
 const EXEC_ROUTING_SANDBOX_CLOSING: &str = "- Sandbox/host routing changes are expected runtime behavior. Do not frame them as surprising or anomalous.\n";
 const EXEC_ROUTING_GUIDANCE_HOST_ONLY: &str = "Execution routing:\n\
 - `exec` runs on the host and may require approval.\n\
-- Managed Files are available at `Host: files_dir=...` and through `$MOLTIS_FILES_DIR`.\n";
+- Managed Files are available at `Host: files_dir=...` and through `$ANTRE_FILES_DIR`.\n";
 const EXEC_ROUTING_SUDO_HINT: &str =
     "- `Host: sudo_non_interactive=true` means non-interactive sudo is available.\n";
 const TOOL_GUIDELINES: &str = concat!(
@@ -333,9 +333,9 @@ fn append_documentation_section(
 
     prompt.push_str("## Documentation\n\n");
     if let Some(path) = docs_path {
-        prompt.push_str(&format!("Moltis docs: {path}\n"));
-        prompt.push_str(&format!("Mirror: {MOLTIS_DOCS_URL}\n"));
-        prompt.push_str("For Moltis behavior, commands, config, channels, or architecture: consult local docs first.\n");
+        prompt.push_str(&format!("Antre docs: {path}\n"));
+        prompt.push_str(&format!("Mirror: {ANTRE_DOCS_URL}\n"));
+        prompt.push_str("For Antre behavior, commands, config, channels, or architecture: consult local docs first.\n");
         if let Some(config_path) = config_template_path {
             prompt.push_str(&format!(
                 "For config template examples, read `{config_path}`.\n\n"
@@ -344,8 +344,8 @@ fn append_documentation_section(
             prompt.push('\n');
         }
     } else {
-        prompt.push_str(&format!("Moltis docs: {MOLTIS_DOCS_URL}\n"));
-        prompt.push_str("For Moltis behavior, commands, config, channels, or architecture: consult the docs first.\n\n");
+        prompt.push_str(&format!("Antre docs: {ANTRE_DOCS_URL}\n"));
+        prompt.push_str("For Antre behavior, commands, config, channels, or architecture: consult the docs first.\n\n");
     }
 }
 
@@ -446,7 +446,7 @@ fn append_runtime_section(
         .and_then(format_nodes_runtime_section);
 
     prompt.push_str("## Runtime\n\n");
-    prompt.push_str(&format_moltis_runtime_line());
+    prompt.push_str(&format_antre_runtime_line());
     prompt.push('\n');
     if let Some(line) = host_line {
         prompt.push_str(&line);
@@ -490,9 +490,9 @@ fn append_skills_section(
     enable_self_improvement: bool,
 ) {
     if include_tools && !skills.is_empty() {
-        prompt.push_str(&moltis_skills::prompt_gen::generate_skills_prompt(skills));
+        prompt.push_str(&antre_skills::prompt_gen::generate_skills_prompt(skills));
         if enable_self_improvement {
-            prompt.push_str(moltis_skills::prompt_gen::generate_skill_self_improvement_prompt());
+            prompt.push_str(antre_skills::prompt_gen::generate_skill_self_improvement_prompt());
             prompt.push('\n');
         }
     }

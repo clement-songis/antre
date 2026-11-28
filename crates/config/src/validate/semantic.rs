@@ -1,6 +1,6 @@
 use {
     super::*,
-    crate::schema::{KNOWN_PROVIDER_NAMES, MoltisConfig},
+    crate::schema::{AntreConfig, KNOWN_PROVIDER_NAMES},
     secrecy::ExposeSecret,
     std::path::Path,
 };
@@ -138,7 +138,7 @@ pub(super) fn check_provider_names(
 }
 
 /// Run semantic checks on a successfully parsed config.
-pub(super) fn check_semantic_warnings(config: &MoltisConfig, diagnostics: &mut Vec<Diagnostic>) {
+pub(super) fn check_semantic_warnings(config: &AntreConfig, diagnostics: &mut Vec<Diagnostic>) {
     let is_localhost = crate::is_loopback_bind(&config.server.bind);
 
     let mods = &config.mods;
@@ -666,9 +666,9 @@ pub(super) fn check_semantic_warnings(config: &MoltisConfig, diagnostics: &mut V
         }
     }
 
-    let valid_agent_kinds = moltis_protocol::ExternalAgentKind::ALL
+    let valid_agent_kinds = antre_protocol::ExternalAgentKind::ALL
         .iter()
-        .map(moltis_protocol::ExternalAgentKind::as_str)
+        .map(antre_protocol::ExternalAgentKind::as_str)
         .collect::<Vec<_>>();
     for agent_kind in config.external_agents.agents.keys() {
         if !valid_agent_kinds.contains(&agent_kind.as_str()) {

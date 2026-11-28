@@ -11,7 +11,7 @@ use {
 use std::time::Instant;
 
 #[cfg(feature = "metrics")]
-use moltis_metrics::{counter, gauge, histogram, labels, mcp as mcp_metrics};
+use antre_metrics::{counter, gauge, histogram, labels, mcp as mcp_metrics};
 
 use crate::{
     auth::SharedAuthProvider,
@@ -221,8 +221,8 @@ impl McpClient {
             protocol_version: PROTOCOL_VERSION.into(),
             capabilities,
             client_info: ClientInfo {
-                name: "moltis".into(),
-                version: moltis_config::VERSION.into(),
+                name: "antre".into(),
+                version: antre_config::VERSION.into(),
             },
         };
 

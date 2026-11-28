@@ -44,7 +44,7 @@ impl StatusLine {
     }
 }
 
-impl moltis_httpd::StartupStatus for StatusLine {
+impl antre_httpd::StartupStatus for StatusLine {
     fn set(&self, message: &str) {
         if self.bar.is_hidden() {
             self.bar.set_draw_target(ProgressDrawTarget::stdout());
@@ -93,17 +93,17 @@ impl<'a> MakeWriter<'a> for StatusLineWriter {
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 #[cfg(test)]
 mod tests {
-    use {super::*, moltis_httpd::StartupStatus};
+    use {super::*, antre_httpd::StartupStatus};
 
     #[test]
     fn status_line_starts_hidden_and_keeps_latest_message() {
         let line = Arc::new(StatusLine::hidden());
         assert!(line.bar.is_hidden());
         line.set("▶ Finish setup at http://localhost:4000/onboarding");
-        line.set("● Moltis running at http://localhost:4000");
+        line.set("● Antre running at http://localhost:4000");
         assert_eq!(
             line.bar.message(),
-            "● Moltis running at http://localhost:4000"
+            "● Antre running at http://localhost:4000"
         );
         line.clear();
         assert!(line.bar.is_finished());

@@ -1,4 +1,4 @@
-//! Code-index crate for Moltis — workspace codebase intelligence.
+//! Code-index crate for Antre — workspace codebase intelligence.
 //!
 //! Supports multiple backends:
 //! - **QMD** (optional, `qmd` feature): External QMD binary for hybrid search.

@@ -6,8 +6,8 @@ use super::*;
 mod tests {
     use {
         super::*,
+        antre_common::hooks::{HookAction, HookEvent, HookHandler, HookPayload},
         async_trait::async_trait,
-        moltis_common::hooks::{HookAction, HookEvent, HookHandler, HookPayload},
     };
 
     struct RecordingHook {
@@ -29,7 +29,7 @@ mod tests {
             &self,
             _event: HookEvent,
             payload: &HookPayload,
-        ) -> moltis_common::error::Result<HookAction> {
+        ) -> antre_common::error::Result<HookAction> {
             self.payloads.lock().unwrap().push(payload.clone());
             Ok(HookAction::Continue)
         }
@@ -941,7 +941,7 @@ mod tests {
     async fn sqlite_pool() -> sqlx::SqlitePool {
         let pool = sqlx::SqlitePool::connect("sqlite::memory:").await.unwrap();
         // Projects table must exist before sessions (FK constraint).
-        moltis_projects::run_migrations(&pool).await.unwrap();
+        antre_projects::run_migrations(&pool).await.unwrap();
         SqliteSessionMetadata::init(&pool).await.unwrap();
         pool
     }
@@ -984,12 +984,12 @@ mod tests {
             .set_sandbox_enabled("session:abc", Some(true))
             .await;
 
-        let mut router = SandboxRouter::new(moltis_tools::sandbox::SandboxConfig {
+        let mut router = SandboxRouter::new(antre_tools::sandbox::SandboxConfig {
             backend: "docker".to_string(),
             ..Default::default()
         });
-        router.register_backend(Arc::new(moltis_tools::sandbox::RestrictedHostSandbox::new(
-            moltis_tools::sandbox::SandboxConfig::default(),
+        router.register_backend(Arc::new(antre_tools::sandbox::RestrictedHostSandbox::new(
+            antre_tools::sandbox::SandboxConfig::default(),
         )));
         let router = Arc::new(router);
         let service = LiveSessionService::new(store, Arc::clone(&metadata))
@@ -1016,10 +1016,10 @@ mod tests {
         let metadata = Arc::new(SqliteSessionMetadata::new(pool));
         let key = "telegram:bot-main:-100123";
         metadata.upsert(key, None).await.unwrap();
-        let binding_json = serde_json::to_string(&moltis_channels::ChannelReplyTarget {
+        let binding_json = serde_json::to_string(&antre_channels::ChannelReplyTarget {
             direct_chat: false,
             ack_message_id: None,
-            channel_type: moltis_channels::ChannelType::Telegram,
+            channel_type: antre_channels::ChannelType::Telegram,
             account_id: "bot-main".to_string(),
             chat_id: "-100123".to_string(),
             message_id: Some("9".to_string()),
@@ -1447,7 +1447,7 @@ mod tests {
             .await
             .unwrap();
 
-        let fs_state = moltis_tools::fs::new_fs_state(false);
+        let fs_state = antre_tools::fs::new_fs_state(false);
         {
             let mut guard = fs_state
                 .lock()

@@ -1,11 +1,11 @@
 ---
 name: gpui-mockup
-description: Explore visual directions for a Moltis Desktop (apps/desktop) UI element as real gpui code. Write 3–4 variants in one Rust file, show them side by side in a native mockup window in the app's light and dark themes, capture the window to check your work, and iterate on the picks and notes the user sends back. Use instead of an HTML mockup when the design is for the desktop app, so the variant the user picks is the code that ships.
+description: Explore visual directions for a Antre Desktop (apps/desktop) UI element as real gpui code. Write 3–4 variants in one Rust file, show them side by side in a native mockup window in the app's light and dark themes, capture the window to check your work, and iterate on the picks and notes the user sends back. Use instead of an HTML mockup when the design is for the desktop app, so the variant the user picks is the code that ships.
 disable-model-invocation: false
 argument-hint: <what to mock up: a sidebar row, chat message, composer, server card, or screen of apps/desktop>
 ---
 
-# GPUI mockup (Moltis Desktop)
+# GPUI mockup (Antre Desktop)
 
 Build several variants of an `apps/desktop` UI element as gpui code, compile
 them into the app's dev-only `--mockup` window, check a capture yourself, and
@@ -95,7 +95,7 @@ Repeat until the user settles on a direction.
 ## Writing variants
 
 The file is compiled into the app as `crate::mockup::scratch` through
-`include!` (see `apps/desktop/build.rs` and `MOLTIS_MOCKUP_FILE`):
+`include!` (see `apps/desktop/build.rs` and `ANTRE_MOCKUP_FILE`):
 
 ```rust
 use gpui::{prelude::*, *};
@@ -173,7 +173,7 @@ Once the user settles on a direction:
    repository root run `just desktop-lint` and `just desktop-test`, plus
    `cd apps/desktop && cargo fmt -- --check`. Check it natively with
    `just desktop-run`, or capture it with
-   `MOLTIS_DESKTOP_CAPTURE=$dir/app.png MOLTIS_DESKTOP_CAPTURE_QUIT=1 cargo run --features capture`
+   `ANTRE_DESKTOP_CAPTURE=$dir/app.png ANTRE_DESKTOP_CAPTURE_QUIT=1 cargo run --features capture`
    in `apps/desktop`.
 3. Stop the mockup process and delete `$dir`. The mockup file never enters the
    repository.
@@ -184,6 +184,6 @@ Once the user settles on a direction:
   the variants instead, or use an HTML mockup.
 - `--capture` uses gpui's renderer readback, which works on macOS. Elsewhere it
   reports `capture failed`.
-- `just desktop-mockup` writes `apps/desktop/target/debug/moltis-desktop` with
+- `just desktop-mockup` writes `apps/desktop/target/debug/antre-desktop` with
   the `mockup` feature (and the agent's file) compiled in; `just desktop-run`
   rebuilds without it.

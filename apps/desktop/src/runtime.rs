@@ -1,6 +1,6 @@
 //! A tokio runtime beside gpui's executor.
 //!
-//! `moltis-client` is tokio-based; gpui runs its own executor. Network work
+//! `antre-client` is tokio-based; gpui runs its own executor. Network work
 //! runs on this runtime, and gpui tasks await the results through channels.
 //! tokio's channels do not need a tokio runtime to be awaited, so the gpui
 //! side can `recv().await` directly.
@@ -22,7 +22,7 @@ impl Tokio {
     pub fn install(cx: &mut App) -> anyhow::Result<()> {
         let runtime = tokio::runtime::Builder::new_multi_thread()
             .worker_threads(2)
-            .thread_name("moltis-net")
+            .thread_name("antre-net")
             .enable_all()
             .build()?;
         cx.set_global(Self(Arc::new(runtime)));

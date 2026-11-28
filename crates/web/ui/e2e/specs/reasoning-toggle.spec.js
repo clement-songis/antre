@@ -277,14 +277,14 @@ test.describe("configured reasoning default", () => {
 	test.beforeEach(async ({ page }) => {
 		await page.addInitScript(() => {
 			let data;
-			Object.defineProperty(window, "__MOLTIS__", {
+			Object.defineProperty(window, "__ANTRE__", {
 				get: () => data,
 				set: (value) => {
 					data = { ...value, reasoning_default: "high" };
 				},
 				configurable: true,
 			});
-			localStorage.setItem("moltis-reasoning-effort", "low");
+			localStorage.setItem("antre-reasoning-effort", "low");
 		});
 		await navigateAndWait(page, "/");
 		await waitForWsConnected(page);
@@ -303,7 +303,7 @@ test.describe("configured reasoning default", () => {
 		await setMockModels(page, models, "reasoning-model");
 		await expect(page.locator("#reasoningCombo").getByRole("button")).toHaveText("High");
 		await page.evaluate(() => {
-			const store = window.__moltis_stores.modelStore;
+			const store = window.__antre_stores.modelStore;
 			const models = store.models.value;
 			store.models.value = [];
 			store.models.value = models;
@@ -320,7 +320,7 @@ test.describe("configured reasoning default", () => {
 			const errors = watchPageErrors(page);
 			await setMockModels(page, models, "reasoning-model");
 			await createSession(page);
-			const key = await page.evaluate(() => window.__moltis_stores.sessionStore.activeSessionKey.value);
+			const key = await page.evaluate(() => window.__antre_stores.sessionStore.activeSessionKey.value);
 			await expect(page.locator("#reasoningCombo").getByRole("button")).toHaveText("High");
 			await page.locator("#reasoningCombo").getByRole("button").click();
 			await page.locator("#reasoningDropdownList").getByText(label, { exact: true }).click();
@@ -329,7 +329,7 @@ test.describe("configured reasoning default", () => {
 			const saved = await sendRpcFromPage(page, "sessions.switch", { key, include_history: false });
 			expect(saved.ok).toBe(true);
 			expect(saved.payload.entry.model).toBe(`reasoning-model${suffix}`);
-			await page.evaluate((key) => window.__moltis_modules.sessions.switchSession(key), key);
+			await page.evaluate((key) => window.__antre_modules.sessions.switchSession(key), key);
 			await waitForChatSessionReady(page);
 			await expect(page.locator("#reasoningCombo").getByRole("button")).toHaveText(label);
 			expect(errors).toEqual([]);
@@ -364,8 +364,8 @@ test.describe("configured reasoning default", () => {
 		});
 		try {
 			await page.evaluate(() => {
-				window.__moltis_modules["stores/session-history-cache"].clearSessionHistory("main");
-				window.__moltis_modules.sessions.switchSession("main");
+				window.__antre_modules["stores/session-history-cache"].clearSessionHistory("main");
+				window.__antre_modules.sessions.switchSession("main");
 			});
 			await historyStarted;
 			await expect(button).toBeDisabled();
@@ -375,7 +375,7 @@ test.describe("configured reasoning default", () => {
 			// Even an already queued option click must not save an override while loading.
 			await page.locator("#reasoningDropdownList").getByText("Off", { exact: true }).dispatchEvent("click");
 			await page.locator("#modelDropdownList").getByText("Plain Model", { exact: true }).dispatchEvent("click");
-			expect(await page.evaluate(() => window.__moltis_stores.modelStore.selectedModelId.value)).toBe(
+			expect(await page.evaluate(() => window.__antre_stores.modelStore.selectedModelId.value)).toBe(
 				"reasoning-model",
 			);
 			await expect(button).toHaveText("High");
@@ -410,7 +410,7 @@ test.describe("configured reasoning default", () => {
 			const errors = watchPageErrors(page);
 			await setMockModels(page, models, "reasoning-model");
 			await page.evaluate(() => {
-				const session = window.__moltis_stores.sessionStore.activeSession.value;
+				const session = window.__antre_stores.sessionStore.activeSession.value;
 				session.update({ ...session.toMeta(), model: "reasoning-model@reasoning-high" });
 				window.__modelPatches = [];
 				const originalSend = WebSocket.prototype.send;
@@ -426,7 +426,7 @@ test.describe("configured reasoning default", () => {
 			const button = page.locator("#reasoningCombo").getByRole("button");
 			await button.click();
 			await page.locator("#reasoningDropdownList").getByText("Off", { exact: true }).click();
-			const cachedModel = () => page.evaluate(() => window.__moltis_stores.sessionStore.activeSession.value.model);
+			const cachedModel = () => page.evaluate(() => window.__antre_stores.sessionStore.activeSession.value.model);
 			await expect.poll(cachedModel).toBe("reasoning-model");
 			if (change === "newer choice") {
 				await button.click();
@@ -434,7 +434,7 @@ test.describe("configured reasoning default", () => {
 			} else if (change === "authoritative refresh") {
 				// Even a refresh with the same model value must supersede the optimistic write.
 				await page.evaluate(() => {
-					const session = window.__moltis_stores.sessionStore.activeSession.value;
+					const session = window.__antre_stores.sessionStore.activeSession.value;
 					session.update({ ...session.toMeta(), label: "Refreshed session" });
 				});
 			}
@@ -452,7 +452,7 @@ test.describe("configured reasoning default", () => {
 				);
 			});
 			expect(
-				await page.evaluate(() => window.__moltis_modules.state.pending[window.__modelPatches[0].frame.id]),
+				await page.evaluate(() => window.__antre_modules.state.pending[window.__modelPatches[0].frame.id]),
 			).toBeUndefined();
 			await expect
 				.poll(cachedModel)
@@ -471,8 +471,8 @@ test.describe("configured reasoning default", () => {
 		const errors = watchPageErrors(page);
 		await setMockModels(page, models, "plain-model");
 		await expect(page.locator("#reasoningCombo")).toBeHidden();
-		expect(await page.evaluate(() => window.__moltis_stores.modelStore.effectiveModelId.value)).toBe("plain-model");
-		await page.evaluate(() => window.__moltis_stores.modelStore.select("reasoning-model"));
+		expect(await page.evaluate(() => window.__antre_stores.modelStore.effectiveModelId.value)).toBe("plain-model");
+		await page.evaluate(() => window.__antre_stores.modelStore.select("reasoning-model"));
 		await expect(page.locator("#reasoningCombo").getByRole("button")).toHaveText("High");
 		expect(errors).toEqual([]);
 	});

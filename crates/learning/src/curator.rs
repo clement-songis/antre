@@ -6,8 +6,8 @@
 use std::collections::{BTreeMap, HashMap};
 
 use {
-    moltis_config::LearningCuratorConfig,
-    moltis_skills::usage::SkillUsageEntry,
+    antre_config::LearningCuratorConfig,
+    antre_skills::usage::SkillUsageEntry,
     serde::{Deserialize, Serialize},
     time::{Duration, OffsetDateTime},
 };

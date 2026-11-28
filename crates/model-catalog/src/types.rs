@@ -173,7 +173,7 @@ impl<'de> Deserialize<'de> for RateLimitTz {
 }
 
 /// Metadata for one model, every field optional so sources can be merged
-/// field by field. Field names follow the Moltis config; OpenClaw's
+/// field by field. Field names follow the Antre config; OpenClaw's
 /// camelCase names are accepted as aliases so its model files load as-is.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]

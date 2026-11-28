@@ -1,6 +1,6 @@
 # Managed Files
 
-Managed Files are a persistent, user-managed file tree that Moltis can expose
+Managed Files are a persistent, user-managed file tree that Antre can expose
 to agents. Use it for documents and other files that should be available across
 sessions without placing them in long-term memory or a sandbox home directory.
 
@@ -57,16 +57,16 @@ The canonical host location is:
 <data_dir>/files
 ```
 
-With the default data directory this is `~/.moltis/files`. If
-`MOLTIS_DATA_DIR` or `--data-dir` changes the data directory, the Files root
+With the default data directory this is `~/.antre/files`. If
+`ANTRE_DATA_DIR` or `--data-dir` changes the data directory, the Files root
 moves with it.
 
-Moltis advertises the resolved path to agents and supplies
-`MOLTIS_FILES_DIR` to local command-based agents and `exec`. Code should use
-that variable rather than assuming `~/.moltis/files`:
+Antre advertises the resolved path to agents and supplies
+`ANTRE_FILES_DIR` to local command-based agents and `exec`. Code should use
+that variable rather than assuming `~/.antre/files`:
 
 ```sh
-ls "$MOLTIS_FILES_DIR"
+ls "$ANTRE_FILES_DIR"
 ```
 
 Inside a supported local container sandbox, the canonical path and injected
@@ -76,8 +76,8 @@ value are:
 /home/sandbox/files
 ```
 
-There is no dedicated `moltis files` CLI command. For local CLI and shell
-workflows, use the resolved host path or `MOLTIS_FILES_DIR` when Moltis has
+There is no dedicated `antre files` CLI command. For local CLI and shell
+workflows, use the resolved host path or `ANTRE_FILES_DIR` when Antre has
 provided it.
 
 ## Sandbox Access

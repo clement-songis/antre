@@ -65,8 +65,8 @@ These events run hooks in parallel for performance. They cannot modify or block.
 | `MessageSent` | After logical assistant response publication (not a transport receipt) |
 | `SessionStart` | When a new session begins |
 | `SessionEnd` | When a session ends |
-| `GatewayStart` | When Moltis starts |
-| `GatewayStop` | When Moltis shuts down |
+| `GatewayStart` | When Antre starts |
+| `GatewayStop` | When Antre shuts down |
 | `Command` | When a slash command is used |
 
 ### Outbound Response Lifecycle
@@ -240,7 +240,7 @@ exit 0
 ### 1. Create the Hook Directory
 
 ```bash
-mkdir -p ~/.moltis/hooks/my-hook
+mkdir -p ~/.antre/hooks/my-hook
 ```
 
 ### 2. Create HOOK.md
@@ -286,7 +286,7 @@ exit 0
 ### 4. Make it Executable
 
 ```bash
-chmod +x ~/.moltis/hooks/my-hook/handler.sh
+chmod +x ~/.antre/hooks/my-hook/handler.sh
 ```
 
 ## Shell Hook Protocol
@@ -380,7 +380,7 @@ and answers the Claude way:
 
 Claude Code event names are accepted everywhere an event is named, as aliases:
 
-| Claude name | Moltis event |
+| Claude name | Antre event |
 |---|---|
 | `UserPromptSubmit` | `BeforeAgentStart` |
 | `Stop` | `AgentEnd` |
@@ -393,7 +393,7 @@ Claude Code event names are accepted everywhere an event is named, as aliases:
 ## Content pinning
 
 Shell hooks run with your permissions. When the mod runtime is enabled
-(`[mods] pin_shell_hooks = true`, the default), Moltis records a hash of each
+(`[mods] pin_shell_hooks = true`, the default), Antre records a hash of each
 hook folder:
 
 - the first time it starts with mods, every existing hook is pinned as
@@ -407,17 +407,17 @@ See [Mods](mods.md) for WASM hooks, which run sandboxed and need no pinning.
 
 ## Hook Discovery
 
-Hooks are discovered from `HOOK.md` files and `moltis.toml` config entries:
+Hooks are discovered from `HOOK.md` files and `antre.toml` config entries:
 
-1. **Project-local**: `<workspace>/.moltis/hooks/<name>/HOOK.md`
-2. **User-global**: `~/.moltis/hooks/<name>/HOOK.md`
+1. **Project-local**: `<workspace>/.antre/hooks/<name>/HOOK.md`
+2. **User-global**: `~/.antre/hooks/<name>/HOOK.md`
 
 Project-local hooks take precedence over global hooks with the same name. If a hook declared in
-`moltis.toml` has the same name as a filesystem hook, the filesystem hook takes precedence and the
+`antre.toml` has the same name as a filesystem hook, the filesystem hook takes precedence and the
 config hook is skipped to avoid running the same hook twice. Config hooks appear with source
 `config` in the hooks UI/status output.
 
-## Configuration in moltis.toml
+## Configuration in antre.toml
 
 You can also define hooks directly in the config file:
 
@@ -469,25 +469,25 @@ This prevents a broken hook from blocking all operations.
 
 ```bash
 # List all discovered hooks
-moltis hooks list
+antre hooks list
 
 # List only eligible hooks (requirements met)
-moltis hooks list --eligible
+antre hooks list --eligible
 
 # Output as JSON
-moltis hooks list --json
+antre hooks list --json
 
 # Show details for a specific hook
-moltis hooks info my-hook
+antre hooks info my-hook
 ```
 
 ## Bundled Hooks
 
-Moltis includes several built-in hooks:
+Antre includes several built-in hooks:
 
 ## Workspace Context Files
 
-Moltis supports several workspace markdown files in `data_dir`.
+Antre supports several workspace markdown files in `data_dir`.
 
 ### BOOT.md
 
@@ -511,7 +511,7 @@ If `TOOLS.md` is empty or missing, it is not injected.
 
 ### AGENTS.md (workspace)
 
-Moltis also supports a workspace-level `AGENTS.md` in `data_dir`.
+Antre also supports a workspace-level `AGENTS.md` in `data_dir`.
 
 This is separate from project `AGENTS.md`/`CLAUDE.md` discovery. Use workspace
 `AGENTS.md` for global instructions that should apply across projects in this workspace.
@@ -561,8 +561,8 @@ bash /tmp/dcg-install.sh && rm /tmp/dcg-install.sh
 Copy the bundled hook example to your hooks directory:
 
 ```bash
-cp -r examples/hooks/dcg-guard ~/.moltis/hooks/dcg-guard
-chmod +x ~/.moltis/hooks/dcg-guard/handler.sh
+cp -r examples/hooks/dcg-guard ~/.antre/hooks/dcg-guard
+chmod +x ~/.antre/hooks/dcg-guard/handler.sh
 ```
 
 The hook subscribes to `BeforeToolCall`, extracts exec commands, pipes them

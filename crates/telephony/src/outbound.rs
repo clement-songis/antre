@@ -3,12 +3,12 @@
 //! Sends messages to active calls by playing TTS audio.
 
 use {
-    async_trait::async_trait,
-    moltis_channels::{
+    antre_channels::{
         Result,
         plugin::{ChannelOutbound, ChannelStreamOutbound, StreamReceiver},
     },
-    moltis_common::types::ReplyPayload,
+    antre_common::types::ReplyPayload,
+    async_trait::async_trait,
     std::sync::Arc,
     tokio::sync::RwLock,
     tracing::debug,

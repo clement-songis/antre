@@ -43,10 +43,10 @@ final class ConnectionStore: ObservableObject {
     @Published var agentName: String?
     @Published var agentEmoji: String?
 
-    let wsClient = MoltisWSClient()
-    let graphqlClient = MoltisGraphQLClient()
+    let wsClient = AntreWSClient()
+    let graphqlClient = AntreGraphQLClient()
 
-    private let logger = Logger(subsystem: "org.moltis.ios", category: "connection")
+    private let logger = Logger(subsystem: "ai.antre.ios", category: "connection")
 
     lazy var chatStore: ChatStore = ChatStore(connectionStore: self)
     lazy var sessionStore: SessionStore = SessionStore(connectionStore: self)
@@ -109,7 +109,7 @@ final class ConnectionStore: ObservableObject {
         agentEmoji = nil
     }
 
-    private func applyWSState(_ wsState: MoltisWSClient.State) {
+    private func applyWSState(_ wsState: AntreWSClient.State) {
         let wasConnected = state.isConnected
         switch wsState {
         case .disconnected:
@@ -134,7 +134,7 @@ final class ConnectionStore: ObservableObject {
             await fetchIdentity()
             await sessionStore.loadSessions()
             await modelStore.loadModels()
-            // Location sharing reconnection is handled by MoltisApp via
+            // Location sharing reconnection is handled by AntreApp via
             // .onChange(of: connectionStore.state).
         }
     }
@@ -187,11 +187,11 @@ final class ConnectionStore: ObservableObject {
         }
 
         if error.localizedDescription.lowercased().contains("protocol mismatch") {
-            return "Client/server protocol mismatch. Update the iOS app and restart the Moltis gateway."
+            return "Client/server protocol mismatch. Update the iOS app and restart the Antre gateway."
         }
 
         if isCertificateTrustError(nsError) {
-            return "TLS certificate is not trusted yet. Download and trust the Moltis Local CA for this server."
+            return "TLS certificate is not trusted yet. Download and trust the Antre Local CA for this server."
         }
 
         if isSocketNotConnectedError(nsError) {

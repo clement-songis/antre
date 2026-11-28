@@ -488,7 +488,7 @@ mod tests {
             &client,
             &format!("{}/register", server.url()),
             vec!["http://127.0.0.1:9999/auth/callback".to_string()],
-            "moltis-test",
+            "antre-test",
             &["read".to_string(), "write".to_string()],
         )
         .await
@@ -521,7 +521,7 @@ mod tests {
             &client,
             &format!("{}/register", server.url()),
             vec!["http://127.0.0.1:9999/auth/callback".to_string()],
-            "moltis",
+            "antre",
             &[],
         )
         .await
@@ -546,7 +546,7 @@ mod tests {
             &client,
             &format!("{}/register", server.url()),
             vec!["http://127.0.0.1:9999/auth/callback".to_string()],
-            "moltis",
+            "antre",
             &[],
         )
         .await;

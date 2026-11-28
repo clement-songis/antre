@@ -2,8 +2,8 @@ use std::collections::HashMap;
 
 use secrecy::Secret;
 
-const PROVIDER_ENV_CANDIDATES: &[&str] = &["MOLTIS_PROVIDER", "PROVIDER"];
-const API_KEY_ENV_CANDIDATES: &[&str] = &["MOLTIS_API_KEY", "API_KEY"];
+const PROVIDER_ENV_CANDIDATES: &[&str] = &["ANTRE_PROVIDER", "PROVIDER"];
+const API_KEY_ENV_CANDIDATES: &[&str] = &["ANTRE_API_KEY", "API_KEY"];
 
 #[derive(Clone)]
 pub struct GenericProviderEnv {
@@ -41,8 +41,8 @@ pub fn env_value_with_overrides(
 
 /// Resolve the generic provider selector and API key from environment variables.
 ///
-/// `MOLTIS_*` keys win over the bare aliases, but provider and API key are resolved
-/// independently so mixed pairs such as `MOLTIS_PROVIDER` + `API_KEY` are accepted.
+/// `ANTRE_*` keys win over the bare aliases, but provider and API key are resolved
+/// independently so mixed pairs such as `ANTRE_PROVIDER` + `API_KEY` are accepted.
 /// The concrete variable names used are returned for diagnostics and UI source labels.
 pub fn generic_provider_env(env_overrides: &HashMap<String, String>) -> Option<GenericProviderEnv> {
     let (provider_var, provider_raw) = PROVIDER_ENV_CANDIDATES
@@ -107,10 +107,10 @@ mod tests {
     #[test]
     fn env_value_with_overrides_prefers_overrides() {
         let env_overrides =
-            HashMap::from([("MOLTIS_API_KEY".to_string(), "override-key".to_string())]);
+            HashMap::from([("ANTRE_API_KEY".to_string(), "override-key".to_string())]);
 
         assert_eq!(
-            env_value_from_source(&env_overrides, "MOLTIS_API_KEY", |_| Some(
+            env_value_from_source(&env_overrides, "ANTRE_API_KEY", |_| Some(
                 "ambient-key".to_string()
             ))
             .as_deref(),
@@ -123,17 +123,17 @@ mod tests {
         let env_overrides = HashMap::from([
             ("PROVIDER".to_string(), "anthropic".to_string()),
             ("API_KEY".to_string(), "fallback-key".to_string()),
-            ("MOLTIS_PROVIDER".to_string(), "openai".to_string()),
-            ("MOLTIS_API_KEY".to_string(), "primary-key".to_string()),
+            ("ANTRE_PROVIDER".to_string(), "openai".to_string()),
+            ("ANTRE_API_KEY".to_string(), "primary-key".to_string()),
         ]);
 
         let Some(resolved) = generic_provider_env(&env_overrides) else {
             panic!("generic provider env should resolve");
         };
         assert_eq!(resolved.provider, "openai");
-        assert_eq!(resolved.provider_var, "MOLTIS_PROVIDER");
+        assert_eq!(resolved.provider_var, "ANTRE_PROVIDER");
         assert_eq!(resolved.api_key.expose_secret(), "primary-key");
-        assert_eq!(resolved.api_key_var, "MOLTIS_API_KEY");
+        assert_eq!(resolved.api_key_var, "ANTRE_API_KEY");
     }
 
     #[test]
@@ -194,7 +194,7 @@ mod tests {
     #[test]
     fn generic_provider_env_accepts_mixed_namespace_pairs() {
         let env_overrides = HashMap::from([
-            ("MOLTIS_PROVIDER".to_string(), "openai".to_string()),
+            ("ANTRE_PROVIDER".to_string(), "openai".to_string()),
             ("API_KEY".to_string(), "test-key".to_string()),
         ]);
 
@@ -202,7 +202,7 @@ mod tests {
             panic!("generic provider env should resolve");
         };
         assert_eq!(resolved.provider, "openai");
-        assert_eq!(resolved.provider_var, "MOLTIS_PROVIDER");
+        assert_eq!(resolved.provider_var, "ANTRE_PROVIDER");
         assert_eq!(resolved.api_key.expose_secret(), "test-key");
         assert_eq!(resolved.api_key_var, "API_KEY");
     }
@@ -210,8 +210,8 @@ mod tests {
     #[test]
     fn generic_provider_api_key_matches_only_selected_provider() {
         let env_overrides = HashMap::from([
-            ("MOLTIS_PROVIDER".to_string(), "openai".to_string()),
-            ("MOLTIS_API_KEY".to_string(), "sk-test".to_string()),
+            ("ANTRE_PROVIDER".to_string(), "openai".to_string()),
+            ("ANTRE_API_KEY".to_string(), "sk-test".to_string()),
         ]);
 
         assert_eq!(

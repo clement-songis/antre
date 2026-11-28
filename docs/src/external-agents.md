@@ -1,15 +1,15 @@
 # External Agents
 
-Moltis can bind a chat session to an external CLI coding agent. When a session is bound, `chat.send` persists the user turn in Moltis, sends the prompt and recent session context to the external process, streams the CLI output back to the web UI, and persists the assistant response.
+Antre can bind a chat session to an external CLI coding agent. When a session is bound, `chat.send` persists the user turn in Antre, sends the prompt and recent session context to the external process, streams the CLI output back to the web UI, and persists the assistant response.
 
-ACP, the Agent Client Protocol, is a JSON-RPC protocol for connecting editor or coding agents to a host application. Moltis can run ACP-compatible command-line agents as external agents, route their permission prompts through Moltis approvals, and show them alongside provider-backed models in the chat composer selector as `ACP: <agent>`. The canonical ACP agent catalog is https://agentclientprotocol.com/get-started/agents.
+ACP, the Agent Client Protocol, is a JSON-RPC protocol for connecting editor or coding agents to a host application. Antre can run ACP-compatible command-line agents as external agents, route their permission prompts through Antre approvals, and show them alongside provider-backed models in the chat composer selector as `ACP: <agent>`. The canonical ACP agent catalog is https://agentclientprotocol.com/get-started/agents.
 
 Supported agent kinds:
 
 | Kind | Default command | Notes |
 |------|-----------------|-------|
 | `claude-code` | `claude -p --output-format json` | Print mode with `session_id` capture; later turns add `--resume <id>`. |
-| `codex` | `codex app-server` | Persistent app-server process; Moltis reuses the Codex `threadId` across turns. |
+| `codex` | `codex app-server` | Persistent app-server process; Antre reuses the Codex `threadId` across turns. |
 | `acp` | `acp` | Persistent ACP JSON-RPC stdio session configured by `[external_agents.agents.acp]`. |
 | `acp-copilot` | `copilot --acp` | Named ACP session shown as `ACP: Copilot` in the chat model selector. |
 | `acp-codex` | `codex-acp` | Codex via Zed's ACP adapter, shown as `ACP: Codex`. |
@@ -28,7 +28,7 @@ Supported agent kinds:
 
 ## Default ACP detection
 
-External agent discovery is enabled by default. On startup, Moltis checks for the built-in ACP agent commands on `$PATH`:
+External agent discovery is enabled by default. On startup, Antre checks for the built-in ACP agent commands on `$PATH`:
 
 | Selector label | Config key | Command checked |
 |----------------|------------|-----------------|
@@ -49,7 +49,7 @@ External agent discovery is enabled by default. On startup, Moltis checks for th
 
 Installed ACP agents appear automatically alongside normal models in each chat session's composer selector. Missing commands are hidden, so a fresh install with no ACP agents available continues to show only provider-backed models.
 
-Default detection only checks whether the named command exists on Moltis' `$PATH`; it does not verify the binary publisher or installation source. Only install ACP agents from trusted sources, keep untrusted directories out of the service `$PATH`, and use explicit `binary = "/absolute/path/to/agent"` overrides when you want to pin the executable Moltis may launch after a user selects that agent for a session.
+Default detection only checks whether the named command exists on Antre' `$PATH`; it does not verify the binary publisher or installation source. Only install ACP agents from trusted sources, keep untrusted directories out of the service `$PATH`, and use explicit `binary = "/absolute/path/to/agent"` overrides when you want to pin the executable Antre may launch after a user selects that agent for a session.
 
 If you want to disable all external agent discovery, set:
 
@@ -58,7 +58,7 @@ If you want to disable all external agent discovery, set:
 enabled = false
 ```
 
-After changing `moltis.toml`, restart Moltis so the gateway reloads the external agent registry.
+After changing `antre.toml`, restart Antre so the gateway reloads the external agent registry.
 
 ## Add ACP agents
 
@@ -125,11 +125,11 @@ binary = "fast-agent-acp"
 args = []
 ```
 
-Claude ACP support is not provided by plain `claude`; Moltis detects the separate `claude-agent-acp` adapter binary. Install it from the upstream package/repository and ensure that binary is on the Moltis service `$PATH`, or set `binary = "/absolute/path/to/claude-agent-acp"`.
+Claude ACP support is not provided by plain `claude`; Antre detects the separate `claude-agent-acp` adapter binary. Install it from the upstream package/repository and ensure that binary is on the Antre service `$PATH`, or set `binary = "/absolute/path/to/claude-agent-acp"`.
 
-MiniMax Code is available as the `@minimax-ai/code` npm package. Once its `mcode` binary is on the Moltis service `$PATH`, Moltis detects it automatically and launches `mcode acp` when selected.
+MiniMax Code is available as the `@minimax-ai/code` npm package. Once its `mcode` binary is on the Antre service `$PATH`, Antre detects it automatically and launches `mcode acp` when selected.
 
-Cursor CLI supports ACP with `agent acp`, but Moltis does not auto-detect it because `agent` is a generic executable name that can collide with unrelated tools. Configure Cursor manually with the generic `acp` entry and an absolute `binary` path if you want to use it.
+Cursor CLI supports ACP with `agent acp`, but Antre does not auto-detect it because `agent` is a generic executable name that can collide with unrelated tools. Configure Cursor manually with the generic `acp` entry and an absolute `binary` path if you want to use it.
 
 For advanced/manual ACP servers that are not one of the named options, use the generic `acp` kind:
 
@@ -156,7 +156,7 @@ COPILOT_AGENT_MODE = "workspace"
 
 ## Add native CLI agents
 
-Moltis also supports native, non-ACP external agent integrations:
+Antre also supports native, non-ACP external agent integrations:
 
 ```toml
 [external_agents]
@@ -172,26 +172,26 @@ binary = "codex"
 
 ## Select an ACP agent for a session
 
-The model selector below the chat text field includes installed ACP agents, labeled with the protocol and agent name, such as `ACP: Copilot`. Selecting an ACP entry binds that chat session to the external agent. Select any normal model in the same menu to unbind the ACP agent and return the session to the provider-backed Moltis agent.
+The model selector below the chat text field includes installed ACP agents, labeled with the protocol and agent name, such as `ACP: Copilot`. Selecting an ACP entry binds that chat session to the external agent. Select any normal model in the same menu to unbind the ACP agent and return the session to the provider-backed Antre agent.
 
-Binding is per session. You can bind one chat session to `ACP: Copilot`, another to `ACP: Claude`, and leave other sessions on the normal Moltis agent.
+Binding is per session. You can bind one chat session to `ACP: Copilot`, another to `ACP: Claude`, and leave other sessions on the normal Antre agent.
 
-Moltis keeps live external sessions in memory while the gateway process is running. Binding, unbinding, clearing, resetting, deleting, or clearing all sessions shuts down the matching live external process. Persisted external session IDs are stored in session metadata for UI/status visibility and for runtimes that can resume from their own IDs.
+Antre keeps live external sessions in memory while the gateway process is running. Binding, unbinding, clearing, resetting, deleting, or clearing all sessions shuts down the matching live external process. Persisted external session IDs are stored in session metadata for UI/status visibility and for runtimes that can resume from their own IDs.
 
 ## ACP permissions and capabilities
 
-ACP agents can ask Moltis for permission before running tools. Moltis converts ACP permission requests into normal Moltis approval prompts and selects the matching ACP allow or reject option based on the user decision.
+ACP agents can ask Antre for permission before running tools. Antre converts ACP permission requests into normal Antre approval prompts and selects the matching ACP allow or reject option based on the user decision.
 
-Moltis advertises ACP file-system and terminal capabilities to agents. File reads and writes are handled through the ACP client bridge. Terminal requests are supported by the ACP bridge but run inside the Moltis gateway environment, so configure `working_dir` and environment variables deliberately.
+Antre advertises ACP file-system and terminal capabilities to agents. File reads and writes are handled through the ACP client bridge. Terminal requests are supported by the ACP bridge but run inside the Antre gateway environment, so configure `working_dir` and environment variables deliberately.
 
 ## Troubleshooting ACP agents
 
-- If an ACP agent does not appear in the selector, confirm `[external_agents] enabled = true`, restart Moltis, and verify the configured `binary` exists on `$PATH` or is an absolute path.
-- If an ACP entry appears as unavailable, run the configured command manually from the same shell or service environment that starts Moltis.
+- If an ACP agent does not appear in the selector, confirm `[external_agents] enabled = true`, restart Antre, and verify the configured `binary` exists on `$PATH` or is an absolute path.
+- If an ACP entry appears as unavailable, run the configured command manually from the same shell or service environment that starts Antre.
 - If the wrong ACP agent is bound, use the selector below the chat text field and choose the desired `ACP: <agent>` entry; choose a normal model to unbind.
 - If the agent needs project-local context, set `working_dir` in that agent's config entry.
 
 Current limitations:
 
 - Claude Code persistence uses print-mode `--resume`; it does not yet keep an interactive PTY alive.
-- Live external processes are not restored automatically after a Moltis gateway restart.
+- Live external processes are not restored automatically after a Antre gateway restart.

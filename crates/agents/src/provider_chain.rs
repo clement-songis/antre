@@ -21,7 +21,7 @@ use {
 };
 
 #[cfg(feature = "metrics")]
-use moltis_metrics::{counter, histogram, labels, llm as llm_metrics};
+use antre_metrics::{counter, histogram, labels, llm as llm_metrics};
 
 use crate::{
     model::{

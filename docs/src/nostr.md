@@ -1,6 +1,6 @@
 # Nostr
 
-Moltis can receive and send encrypted direct messages over
+Antre can receive and send encrypted direct messages over
 [Nostr](https://nostr.com), the decentralized social protocol. The integration
 uses [NIP-04](https://github.com/nostr-protocol/nips/blob/master/04.md)
 encrypted DMs (kind:4) and connects to relays via `nostr-sdk` — no public URL
@@ -19,7 +19,7 @@ including Block's [Buzz](https://github.com/block/buzz) channels — see
                    │  WebSocket subscription (kind:4)
                    ▼
 ┌──────────────────────────────────────────────────────┐
-│                moltis-nostr crate                     │
+│                antre-nostr crate                     │
 │  ┌────────────┐  ┌────────────┐  ┌────────────────┐  │
 │  │    Bus     │  │  Outbound  │  │     Plugin     │  │
 │  │ (inbound)  │  │ (replies)  │  │  (lifecycle)   │  │
@@ -28,7 +28,7 @@ including Block's [Buzz](https://github.com/block/buzz) channels — see
                    │
                    ▼
 ┌──────────────────────────────────────────────────────┐
-│                 Moltis Gateway                        │
+│                 Antre Gateway                        │
 │         (chat dispatch, tools, memory)                │
 └──────────────────────────────────────────────────────┘
 ```
@@ -39,7 +39,7 @@ between the sender and the bot using NIP-04.
 
 ## Prerequisites
 
-Before configuring Moltis, you need a Nostr secret key:
+Before configuring Antre, you need a Nostr secret key:
 
 1. Generate a new key pair using any Nostr client (e.g.
    [Damus](https://damus.io), [Amethyst](https://github.com/vitorpamplona/amethyst),
@@ -51,14 +51,14 @@ Before configuring Moltis, you need a Nostr secret key:
 
 ```admonish warning
 The secret key is highly sensitive — it controls the bot's Nostr identity.
-Never commit it to version control. Moltis stores it with `secrecy::Secret` and
-redacts it from logs, but your `moltis.toml` file is plain text on disk.
+Never commit it to version control. Antre stores it with `secrecy::Secret` and
+redacts it from logs, but your `antre.toml` file is plain text on disk.
 Consider using [Vault](vault.md) for encryption at rest.
 ```
 
 ## Configuration
 
-Add a `[channels.nostr.<account-id>]` section to your `moltis.toml`:
+Add a `[channels.nostr.<account-id>]` section to your `antre.toml`:
 
 ```toml
 [channels.nostr.my-bot]
@@ -118,7 +118,7 @@ otp_self_approval = true
 otp_cooldown_secs = 300
 
 [channels.nostr.my-bot.profile]
-name = "Moltis Bot"
+name = "Antre Bot"
 about = "AI assistant on Nostr"
 nip05 = "bot@example.com"
 ```
@@ -148,7 +148,7 @@ is [NIP-29](https://github.com/nostr-protocol/nips/blob/master/29.md)
 relay-based group chat over a connection authenticated with
 [NIP-42](https://github.com/nostr-protocol/nips/blob/master/42.md).
 
-Because Buzz speaks plain Nostr, Moltis participates as an ordinary NIP-29
+Because Buzz speaks plain Nostr, Antre participates as an ordinary NIP-29
 client — the same code path works against Buzz relays and any other NIP-29
 relay. A Buzz channel is a group identified by an `h` tag; messages are
 `kind:9` (standard NIP-29) or `kind:40002` (Buzz) chat events — both are read,
@@ -173,7 +173,7 @@ group_ack_reactions = true      # 👀 on receipt, ✅/❌ on completion
 ### Live-Streaming Replies (Buzz only)
 
 Buzz supports editing a published message (`kind:40003`,
-`KIND_STREAM_MESSAGE_EDIT`). In a Buzz channel, Moltis publishes its reply as
+`KIND_STREAM_MESSAGE_EDIT`). In a Buzz channel, Antre publishes its reply as
 soon as the first tokens arrive and then edits it in place as the rest stream
 in, so the channel sees the answer forming rather than waiting for the whole
 turn. Edits are throttled (~1/second) so a long answer does not become hundreds
@@ -187,7 +187,7 @@ posted once, as before. DMs are unchanged (gift wrap has no edit path).
 With `group_ack_reactions` enabled (the default), the bot reacts 👀 to a message
 it has picked up, swaps in a phase glyph as the agent works (🌐 browsing, 💻
 shell, ✏️ editing, 🏗️ building, 🛫 deploying, 🛠️ any other tool, ⏳ stalled), and
-finishes with ✅ or ❌ — the same acknowledgement pattern Moltis uses on Slack.
+finishes with ✅ or ❌ — the same acknowledgement pattern Antre uses on Slack.
 
 Reactions are NIP-25 `kind:7` events, so each swap publishes one and retracts
 the previous with a NIP-09 deletion (`kind:5`). Relays honour deletions at their
@@ -212,7 +212,7 @@ Buzz's own architecture notes, a client filtering `kind:9` alone never receives
 `kind:40002` messages and vice versa — so speaking only one dialect makes the
 bot invisible in the other.
 
-Moltis therefore **always reads both**, and **replies mirror the kind of the
+Antre therefore **always reads both**, and **replies mirror the kind of the
 message they answer**, which makes Buzz channels work without any configuration.
 `group_message_kind` only decides bot-*initiated* messages in a group nothing
 has been received from yet; once a message arrives, the group's observed dialect
@@ -265,7 +265,7 @@ subscribes to *and* the set it accepts messages from. There is deliberately no
 A group's `h` tag is an unauthenticated label. An event's signature proves who
 wrote it, not which group it belongs to, and a relay can push any event down
 the socket — `nostr-sdk` does not verify that delivered events match the filters
-you subscribed with. Moltis therefore re-checks every inbound group message
+you subscribed with. Antre therefore re-checks every inbound group message
 (`kind:9` and `kind:40002` alike) against `groups` and drops anything else, so
 a hostile or buggy relay cannot inject text into the agent by inventing an `h`
 tag. Keep `groups` to channels you actually intend the bot to work in.

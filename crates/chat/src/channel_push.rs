@@ -47,7 +47,7 @@ pub(crate) fn push_notification_url(session_key: &str) -> String {
 /// Use a generic title so private session labels never appear on a lock screen.
 #[cfg(any(feature = "push-notifications", test))]
 pub(crate) fn push_notification_title() -> &'static str {
-    "moltis"
+    "antre"
 }
 
 #[cfg(any(feature = "push-notifications", test))]
@@ -176,7 +176,7 @@ mod tests {
 
     #[test]
     fn notification_title_is_generic_to_avoid_label_leaks() {
-        assert_eq!(push_notification_title(), "moltis");
+        assert_eq!(push_notification_title(), "antre");
     }
 
     #[test]

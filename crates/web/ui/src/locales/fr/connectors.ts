@@ -12,7 +12,7 @@ export default {
 		himalayaAccount: "Nom du compte Himalaya",
 		himalayaBackend: "Moteur de stockage",
 		gmailCredentialHelp:
-			"Utilise l’autorisation Google Workspace existante dans Moltis. Les identifiants Gmail sont référencés et ne sont pas copiés dans la base de données des connecteurs.",
+			"Utilise l’autorisation Google Workspace existante dans Antre. Les identifiants Gmail sont référencés et ne sont pas copiés dans la base de données des connecteurs.",
 		emailRequired: "Saisissez un nom de connexion et, le cas échéant, le nom du compte Himalaya configuré.",
 		googleWorkspaceCredentials: "Identifiants Google Workspace",
 		testEmailTitle: "État de préparation de la connexion de messagerie",

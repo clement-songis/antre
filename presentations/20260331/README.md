@@ -1,4 +1,4 @@
-# 2026-03-31 Moltis Meetup Deck
+# 2026-03-31 Antre Meetup Deck
 
 This folder contains a single-file [Slidev](https://sli.dev) deck for the OpenClaw Meetup Lisbon talk.
 

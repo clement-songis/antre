@@ -251,11 +251,11 @@ mod tests {
 
     #[test]
     fn string_values_serialize_under_string_value() {
-        let kv = KeyValue::string("service.name", "moltis");
+        let kv = KeyValue::string("service.name", "antre");
         let json = serde_json::to_value(&kv).expect("serializable");
 
         assert_eq!(json["key"], "service.name");
-        assert_eq!(json["value"]["stringValue"], "moltis");
+        assert_eq!(json["value"]["stringValue"], "antre");
     }
 
     #[test]

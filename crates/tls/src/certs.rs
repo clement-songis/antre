@@ -19,7 +19,7 @@ use super::{Context, Result};
 
 /// The hostname used for loopback URLs instead of raw `127.0.0.1`.
 /// Subdomains of `.localhost` resolve to loopback per RFC 6761.
-pub const LOCALHOST_DOMAIN: &str = "moltis.localhost";
+pub const LOCALHOST_DOMAIN: &str = "antre.localhost";
 
 /// Additional SAN entries that should be present on the auto-generated server
 /// certificate for this runtime.
@@ -148,10 +148,10 @@ impl FsCertManager {
     }
 }
 
-/// Returns the certificate storage directory (`~/.config/moltis/certs/`).
+/// Returns the certificate storage directory (`~/.config/antre/certs/`).
 pub fn cert_dir() -> Result<PathBuf> {
-    let dir = moltis_config::config_dir()
-        .unwrap_or_else(|| PathBuf::from(".moltis"))
+    let dir = antre_config::config_dir()
+        .unwrap_or_else(|| PathBuf::from(".antre"))
         .join("certs");
     std::fs::create_dir_all(&dir).context("failed to create certs directory")?;
     crate::ca::restrict_dir(&dir)?;

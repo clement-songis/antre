@@ -10,7 +10,7 @@
 
 use http::HeaderMap;
 
-use moltis_channels::channel_webhook_middleware::{
+use antre_channels::channel_webhook_middleware::{
     ChannelWebhookDedupeResult, ChannelWebhookRejection, ChannelWebhookVerifier, TimestampGuard,
     VerifiedChannelWebhook,
 };
@@ -41,9 +41,9 @@ pub fn verify_channel_webhook(
 
     #[cfg(feature = "metrics")]
     {
-        use moltis_metrics::{counter, labels};
+        use antre_metrics::{counter, labels};
         counter!(
-            moltis_metrics::channel_webhook::REQUESTS_TOTAL,
+            antre_metrics::channel_webhook::REQUESTS_TOTAL,
             labels::CHANNEL => verifier.channel_type().as_str()
         )
         .increment(1);
@@ -54,14 +54,14 @@ pub fn verify_channel_webhook(
         Ok(env) => {
             #[cfg(feature = "metrics")]
             {
-                use moltis_metrics::{counter, histogram, labels};
+                use antre_metrics::{counter, histogram, labels};
                 counter!(
-                    moltis_metrics::channel_webhook::VERIFIED_TOTAL,
+                    antre_metrics::channel_webhook::VERIFIED_TOTAL,
                     labels::CHANNEL => verifier.channel_type().as_str()
                 )
                 .increment(1);
                 histogram!(
-                    moltis_metrics::channel_webhook::VERIFY_DURATION_SECONDS,
+                    antre_metrics::channel_webhook::VERIFY_DURATION_SECONDS,
                     labels::CHANNEL => verifier.channel_type().as_str()
                 )
                 .record(start.elapsed().as_secs_f64());
@@ -71,9 +71,9 @@ pub fn verify_channel_webhook(
         Err(rejection) => {
             #[cfg(feature = "metrics")]
             {
-                use moltis_metrics::{counter, labels};
+                use antre_metrics::{counter, labels};
                 counter!(
-                    moltis_metrics::channel_webhook::REJECTED_TOTAL,
+                    antre_metrics::channel_webhook::REJECTED_TOTAL,
                     labels::CHANNEL => verifier.channel_type().as_str(),
                     labels::REJECTION_REASON => rejection.reason_label()
                 )
@@ -89,9 +89,9 @@ pub fn verify_channel_webhook(
     {
         #[cfg(feature = "metrics")]
         {
-            use moltis_metrics::{counter, labels};
+            use antre_metrics::{counter, labels};
             counter!(
-                moltis_metrics::channel_webhook::REJECTED_TOTAL,
+                antre_metrics::channel_webhook::REJECTED_TOTAL,
                 labels::CHANNEL => verifier.channel_type().as_str(),
                 labels::REJECTION_REASON => rejection.reason_label()
             )
@@ -109,9 +109,9 @@ pub fn verify_channel_webhook(
     ) {
         #[cfg(feature = "metrics")]
         {
-            use moltis_metrics::{counter, labels};
+            use antre_metrics::{counter, labels};
             counter!(
-                moltis_metrics::channel_webhook::RATE_LIMITED_TOTAL,
+                antre_metrics::channel_webhook::RATE_LIMITED_TOTAL,
                 labels::CHANNEL => verifier.channel_type().as_str()
             )
             .increment(1);
@@ -149,9 +149,9 @@ pub fn channel_webhook_gate(
         ) {
             #[cfg(feature = "metrics")]
             {
-                use moltis_metrics::{counter, labels};
+                use antre_metrics::{counter, labels};
                 counter!(
-                    moltis_metrics::channel_webhook::DEDUPED_TOTAL,
+                    antre_metrics::channel_webhook::DEDUPED_TOTAL,
                     labels::CHANNEL => verifier.channel_type().as_str()
                 )
                 .increment(1);
@@ -170,7 +170,7 @@ pub fn channel_webhook_gate(
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod tests {
-    use {super::*, bytes::Bytes, moltis_channels::plugin::ChannelType};
+    use {super::*, antre_channels::plugin::ChannelType, bytes::Bytes};
 
     /// Dummy verifier that always passes for testing the pipeline.
     struct PassVerifier;
@@ -399,8 +399,8 @@ mod tests {
                 })
             }
 
-            fn rate_policy(&self) -> moltis_channels::ChannelWebhookRatePolicy {
-                moltis_channels::ChannelWebhookRatePolicy {
+            fn rate_policy(&self) -> antre_channels::ChannelWebhookRatePolicy {
+                antre_channels::ChannelWebhookRatePolicy {
                     max_requests_per_minute: 6,
                     burst: 0,
                 }

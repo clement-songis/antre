@@ -17,7 +17,7 @@ use crate::{
 };
 
 /// Name of the daemon's session cookie.
-pub const SESSION_COOKIE: &str = "moltis_session";
+pub const SESSION_COOKIE: &str = "antre_session";
 
 /// Scopes requested for desktop API keys: chat and approvals, never admin.
 pub const DESKTOP_SCOPES: &[&str] = &["operator.read", "operator.write", "operator.approvals"];
@@ -207,11 +207,11 @@ mod tests {
     #[test]
     fn parses_session_cookie() {
         assert_eq!(
-            session_token("moltis_session=abc; Path=/; HttpOnly").as_deref(),
+            session_token("antre_session=abc; Path=/; HttpOnly").as_deref(),
             Some("abc")
         );
         assert_eq!(session_token("other=1; Path=/"), None);
-        assert_eq!(session_token("moltis_session=; Max-Age=0"), None);
+        assert_eq!(session_token("antre_session=; Max-Age=0"), None);
     }
 
     #[test]
@@ -242,10 +242,7 @@ mod tests {
         let login = post(|Json(body): Json<Value>| async move {
             if body["password"] == "secret" {
                 (
-                    [(
-                        header::SET_COOKIE,
-                        "moltis_session=tok123; Path=/; HttpOnly",
-                    )],
+                    [(header::SET_COOKIE, "antre_session=tok123; Path=/; HttpOnly")],
                     "ok",
                 )
                     .into_response()
@@ -295,14 +292,14 @@ mod tests {
         assert!(client.status(None).await.unwrap().can_login_with_password());
 
         let key = client
-            .exchange_password_for_key(&SecretString::new("secret".into()), "Moltis Desktop")
+            .exchange_password_for_key(&SecretString::new("secret".into()), "Antre Desktop")
             .await
             .unwrap();
         assert_eq!(key.expose_secret(), "mk_new");
         let seen = seen.lock().unwrap();
         let (cookie, body) = seen.key_request.clone().unwrap();
-        assert_eq!(cookie, "moltis_session=tok123");
-        assert_eq!(body["label"], "Moltis Desktop");
+        assert_eq!(cookie, "antre_session=tok123");
+        assert_eq!(body["label"], "Antre Desktop");
         assert_eq!(body["scopes"], json!(DESKTOP_SCOPES));
         assert!(seen.logged_out);
     }

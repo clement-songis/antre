@@ -17,7 +17,7 @@ static SHARED_CLIENT: std::sync::OnceLock<reqwest::Client> = std::sync::OnceLock
 ///
 /// Call once at gateway startup; subsequent calls are no-ops.
 pub fn init_shared_http_client(proxy_url: Option<&str>) {
-    let _ = SHARED_CLIENT.set(moltis_common::http_client::build_http_client(proxy_url));
+    let _ = SHARED_CLIENT.set(antre_common::http_client::build_http_client(proxy_url));
 }
 
 /// Shared HTTP client for LLM providers.
@@ -28,7 +28,7 @@ pub fn init_shared_http_client(proxy_url: Option<&str>) {
 /// Falls back to a client with default headers (including User-Agent)
 /// if [`init_shared_http_client`] was never called (e.g. in tests).
 pub fn shared_http_client() -> &'static reqwest::Client {
-    SHARED_CLIENT.get_or_init(moltis_common::http_client::build_default_http_client)
+    SHARED_CLIENT.get_or_init(antre_common::http_client::build_default_http_client)
 }
 
 /// Parse `Retry-After` header as milliseconds.
@@ -53,7 +53,7 @@ pub(crate) fn with_retry_after_marker(base: String, retry_after_ms: Option<u64>)
 /// Timezone in which `provider` prints offset-less reset times for
 /// `model`, from the model catalog (`rate_limit_tz`); UTC when unknown.
 fn rate_limit_tz(provider: &str, model: &str) -> time::UtcOffset {
-    moltis_model_catalog::global::read(|catalog| catalog.resolve(provider, model, None))
+    antre_model_catalog::global::read(|catalog| catalog.resolve(provider, model, None))
         .spec
         .rate_limit_tz
         .map_or(time::UtcOffset::UTC, |tz| tz.0)
@@ -69,10 +69,10 @@ pub(crate) fn http_failure(
     headers: &reqwest::header::HeaderMap,
     body: &str,
     message: String,
-) -> moltis_agents::provider_error::ProviderFailure {
+) -> antre_agents::provider_error::ProviderFailure {
     let message = with_retry_after_marker(message, retry_after_ms_from_headers(headers));
-    moltis_agents::provider_error::reset::classify_http(
-        moltis_agents::provider_error::reset::HttpFailure {
+    antre_agents::provider_error::reset::classify_http(
+        antre_agents::provider_error::reset::HttpFailure {
             provider,
             status,
             headers,
@@ -95,7 +95,7 @@ mod tests {
 
     #[test]
     fn http_failure_uses_catalog_timezone_for_glm() {
-        use moltis_agents::provider_error::{ProviderError, QuotaWindow};
+        use antre_agents::provider_error::{ProviderError, QuotaWindow};
         let body = r#"{"error":{"code":"1308","message":"Usage limit reached for 5 hour. Your limit will reset at 2099-01-01 08:00:00"}}"#;
         let failure = http_failure(
             "zai-code",
@@ -136,7 +136,7 @@ mod tests {
         assert_eq!(failure.message, "HTTP 429: slow down (retry_after_ms=4000)");
         assert!(matches!(
             failure.error,
-            moltis_agents::provider_error::ProviderError::RateLimited { .. }
+            antre_agents::provider_error::ProviderError::RateLimited { .. }
         ));
     }
 

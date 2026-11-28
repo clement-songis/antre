@@ -1,7 +1,7 @@
 use {
     super::*,
-    moltis_agents::model::{ChatMessage, CompletionResponse, StreamEvent, Usage},
-    moltis_config::schema::{AgentIdentity, PresetToolPolicy},
+    antre_agents::model::{ChatMessage, CompletionResponse, StreamEvent, Usage},
+    antre_config::schema::{AgentIdentity, PresetToolPolicy},
     std::{
         path::PathBuf,
         pin::Pin,
@@ -31,7 +31,7 @@ impl DataDirOverrideGuard {
         let mut lock = DATA_DIR_TEST_LOCK
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
-        moltis_config::set_data_dir(path.clone());
+        antre_config::set_data_dir(path.clone());
         lock.path = Some(path);
         Self { _lock: lock }
     }
@@ -40,7 +40,7 @@ impl DataDirOverrideGuard {
 impl Drop for DataDirOverrideGuard {
     fn drop(&mut self) {
         self._lock.path = None;
-        moltis_config::clear_data_dir();
+        antre_config::clear_data_dir();
     }
 }
 
@@ -771,7 +771,7 @@ fn test_workspace_persona_injected_into_system_prompt() {
     let dir = tempfile::tempdir().unwrap();
     let _guard = DataDirOverrideGuard::acquire(dir.path().to_path_buf());
 
-    let workspace = moltis_config::agent_workspace_dir("research");
+    let workspace = antre_config::agent_workspace_dir("research");
     std::fs::create_dir_all(&workspace).unwrap();
     std::fs::write(
         workspace.join("SOUL.md"),
@@ -824,9 +824,9 @@ fn test_workspace_agents_md_respects_size_cap() {
     let dir = tempfile::tempdir().unwrap();
     let _guard = DataDirOverrideGuard::acquire(dir.path().to_path_buf());
 
-    let workspace = moltis_config::agent_workspace_dir("bulky");
+    let workspace = antre_config::agent_workspace_dir("bulky");
     std::fs::create_dir_all(&workspace).unwrap();
-    let max = moltis_config::discover_and_load()
+    let max = antre_config::discover_and_load()
         .chat
         .workspace_file_max_chars
         .max(1);
@@ -845,12 +845,12 @@ fn test_no_identity_uses_default_prompt() {
     let _lock = DATA_DIR_TEST_LOCK
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner());
-    let managed_files = moltis_config::managed_files_dir().display().to_string();
+    let managed_files = antre_config::managed_files_dir().display().to_string();
     let prompt = build_sub_agent_prompt("do work", "", None, None);
 
     assert!(prompt.contains("You are a sub-agent"));
     assert!(prompt.contains("Task: do work"));
-    assert!(prompt.contains("Managed Files: use $MOLTIS_FILES_DIR"));
+    assert!(prompt.contains("Managed Files: use $ANTRE_FILES_DIR"));
     assert!(prompt.contains(crate::sandbox::SANDBOX_FILES_DIR));
     assert!(prompt.contains(&managed_files));
     assert!(!prompt.contains("Context:"));

@@ -1,6 +1,6 @@
 use {
     super::*,
-    moltis_media::documents::{
+    antre_media::documents::{
         MAX_INLINE_DOCUMENT_BYTES, MAX_INLINE_DOCUMENT_CHARS, should_inline_document_text,
     },
 };

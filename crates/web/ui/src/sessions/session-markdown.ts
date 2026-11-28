@@ -53,7 +53,7 @@ function messageContentToMarkdown(content: unknown): string {
 }
 
 function inlineTitle(title: string): string {
-	return title.replace(/\s+/g, " ").trim() || "Moltis session";
+	return title.replace(/\s+/g, " ").trim() || "Antre session";
 }
 
 export function sessionHistoryToMarkdown(title: string, history: HistoryMessage[]): string {
@@ -85,8 +85,8 @@ export function sessionMarkdownFilename(title: string): string {
 		.slice(0, 100)
 		.join("")
 		.replace(/[. ]+$/g, "");
-	if (!stem) stem = "moltis-session";
-	if (/^(aux|con|nul|prn|com[1-9]|lpt[1-9])(?:\.|$)/i.test(stem)) stem = `moltis-${stem}`;
+	if (!stem) stem = "antre-session";
+	if (/^(aux|con|nul|prn|com[1-9]|lpt[1-9])(?:\.|$)/i.test(stem)) stem = `antre-${stem}`;
 	return `${stem}.md`;
 }
 

@@ -55,7 +55,7 @@ async function markSessionAttached(page) {
 		.poll(
 			() =>
 				page.evaluate(() => {
-					const store = window.__moltis_stores?.sessionStore;
+					const store = window.__antre_stores?.sessionStore;
 					const session = store?.activeSession?.value;
 					if (!session) return false;
 					session.channelBinding = {
@@ -76,7 +76,7 @@ test.describe("Releasing a session from its channel", () => {
 		const pageErrors = await navigateAndWait(page, "/");
 		await waitForWsConnected(page);
 		await createSession(page);
-		const sessionKey = await page.evaluate(() => window.__moltis_stores?.sessionStore?.activeSessionKey?.value || "");
+		const sessionKey = await page.evaluate(() => window.__antre_stores?.sessionStore?.activeSessionKey?.value || "");
 		expect(sessionKey).not.toBe("");
 
 		await markSessionAttached(page);
@@ -110,7 +110,7 @@ test.describe("Releasing a session from its channel", () => {
 			.poll(
 				() =>
 					page.evaluate(() => {
-						const store = window.__moltis_stores?.sessionStore;
+						const store = window.__antre_stores?.sessionStore;
 						const session = store?.activeSession?.value;
 						if (!session) return false;
 						// Binding whose default session key *is* this session's key.

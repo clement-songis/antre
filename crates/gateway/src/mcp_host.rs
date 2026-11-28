@@ -14,8 +14,8 @@ use {
 };
 
 use {
-    moltis_agents::model::{ChatMessage, ContentPart, LlmProvider, StreamEvent},
-    moltis_mcp::{
+    antre_agents::model::{ChatMessage, ContentPart, LlmProvider, StreamEvent},
+    antre_mcp::{
         ElicitationRequest, McpHost, McpToolApprover, PendingElicitations, SamplingRequest,
         SamplingResponse, ToolApprovalRequest,
         protocol::{
@@ -23,8 +23,8 @@ use {
         },
         types::ContentBlock,
     },
-    moltis_providers::ProviderRegistry,
-    moltis_tools::{
+    antre_providers::ProviderRegistry,
+    antre_tools::{
         approval::{ApprovalDecision, ApprovalManager},
         exec::ApprovalBroadcaster,
     },
@@ -91,7 +91,7 @@ impl GatewayMcpHost {
         &self,
         model: Option<&str>,
         session_key: Option<&str>,
-    ) -> moltis_mcp::Result<Arc<dyn LlmProvider>> {
+    ) -> antre_mcp::Result<Arc<dyn LlmProvider>> {
         let session_model = match (session_key, self.state.services.session_metadata.as_ref()) {
             (Some(key), Some(metadata)) => metadata.get(key).await.and_then(|entry| entry.model),
             _ => None,
@@ -106,7 +106,7 @@ impl GatewayMcpHost {
         registry
             .first_with_tools()
             .or_else(|| registry.first())
-            .ok_or_else(|| moltis_mcp::Error::message("no LLM provider is configured"))
+            .ok_or_else(|| antre_mcp::Error::message("no LLM provider is configured"))
     }
 }
 
@@ -114,7 +114,7 @@ impl GatewayMcpHost {
 /// directory.
 pub async fn workspace_roots(
     data_dir: &std::path::Path,
-    projects: &dyn moltis_projects::ProjectStore,
+    projects: &dyn antre_projects::ProjectStore,
 ) -> Vec<Root> {
     let mut roots: Vec<Root> = Root::from_path(data_dir, Some("workspace".into()))
         .into_iter()
@@ -186,7 +186,7 @@ pub(crate) async fn stream_sampling(
     messages: Vec<ChatMessage>,
     max_tokens: u32,
     input_estimate: usize,
-) -> moltis_mcp::Result<(String, u64, bool)> {
+) -> antre_mcp::Result<(String, u64, bool)> {
     let char_budget = usize::try_from(max_tokens)
         .unwrap_or(usize::MAX)
         .saturating_mul(CHARS_PER_TOKEN);
@@ -216,7 +216,7 @@ pub(crate) async fn stream_sampling(
                 return Ok((text, tokens, false));
             },
             StreamEvent::Error(error) => {
-                return Err(moltis_mcp::Error::message(format!("model error: {error}")));
+                return Err(antre_mcp::Error::message(format!("model error: {error}")));
             },
             _ => {},
         }
@@ -244,10 +244,10 @@ impl McpHost for GatewayMcpHost {
     async fn create_message(
         &self,
         request: SamplingRequest,
-    ) -> moltis_mcp::Result<SamplingResponse> {
+    ) -> antre_mcp::Result<SamplingResponse> {
         let session_key = request.session_key.as_deref();
         if request.requires_approval && !self.ask(&sampling_preview(&request), session_key).await {
-            return Err(moltis_mcp::Error::message(
+            return Err(antre_mcp::Error::message(
                 "the user declined the sampling request",
             ));
         }
@@ -290,7 +290,7 @@ impl McpHost for GatewayMcpHost {
         })
     }
 
-    async fn elicit(&self, request: ElicitationRequest) -> moltis_mcp::Result<ElicitResult> {
+    async fn elicit(&self, request: ElicitationRequest) -> antre_mcp::Result<ElicitResult> {
         let (view, rx) = self
             .elicitations
             .create(
@@ -324,7 +324,7 @@ impl McpHost for GatewayMcpHost {
             BroadcastOpts::default(),
         )
         .await;
-        if result.action == moltis_mcp::protocol::ElicitAction::Cancel
+        if result.action == antre_mcp::protocol::ElicitAction::Cancel
             && let Err(error) = notify_session_channel(
                 &self.state,
                 view.session_key.as_deref(),
@@ -395,7 +395,7 @@ impl McpHost for GatewayMcpHost {
 
 #[async_trait]
 impl McpToolApprover for GatewayMcpHost {
-    async fn approve(&self, request: ToolApprovalRequest) -> moltis_mcp::Result<bool> {
+    async fn approve(&self, request: ToolApprovalRequest) -> antre_mcp::Result<bool> {
         let arguments = request.arguments.to_string();
         let preview = truncate_command_preview(&arguments, MAX_COMMAND_PREVIEW_LEN);
         let description = format!(
@@ -411,8 +411,8 @@ impl McpToolApprover for GatewayMcpHost {
 mod tests {
     use {
         super::*,
+        antre_agents::model::{CompletionResponse, Usage, UserContent},
         futures::stream,
-        moltis_agents::model::{CompletionResponse, Usage, UserContent},
         std::pin::Pin,
     };
 

@@ -60,7 +60,7 @@ async function renderDiagrams(container: HTMLElement): Promise<void> {
 		const source = code.textContent || "";
 		try {
 			diagramCounter += 1;
-			const { svg } = await mermaid.render(`moltis-mermaid-${diagramCounter}`, source);
+			const { svg } = await mermaid.render(`antre-mermaid-${diagramCounter}`, source);
 			const figure = document.createElement("figure");
 			figure.className = "mermaid-diagram";
 			// Safe: mermaid's strict mode sanitises the SVG it returns.

@@ -3,7 +3,7 @@ use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 
 #[cfg(feature = "vault")]
-use moltis_vault::Vault;
+use antre_vault::Vault;
 use sqlx::SqlitePool;
 
 mod api_keys;

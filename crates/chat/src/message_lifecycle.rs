@@ -3,7 +3,7 @@
 use std::{collections::HashSet, sync::Arc};
 
 use {
-    moltis_common::hooks::{HookAction, HookEvent, HookPayload, HookRegistry},
+    antre_common::hooks::{HookAction, HookEvent, HookPayload, HookRegistry},
     tokio::sync::RwLock,
 };
 
@@ -101,7 +101,7 @@ pub(crate) async fn sent(hooks: Option<&HookRegistry>, session_key: &str, conten
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod tests {
-    use {super::*, moltis_common::hooks::HookHandler, std::sync::Mutex};
+    use {super::*, antre_common::hooks::HookHandler, std::sync::Mutex};
 
     struct Handler {
         action: Mutex<Option<HookAction>>,
@@ -127,10 +127,10 @@ mod tests {
             &self,
             _: HookEvent,
             payload: &HookPayload,
-        ) -> moltis_common::Result<HookAction> {
+        ) -> antre_common::Result<HookAction> {
             self.seen.lock().unwrap().push(payload.clone());
             if self.fail {
-                return Err(moltis_common::Error::message("hook failed"));
+                return Err(antre_common::Error::message("hook failed"));
             }
             Ok(if matches!(payload, HookPayload::MessageSending { .. }) {
                 self.action

@@ -39,7 +39,7 @@ consolidate = true
         paths.is_empty(),
         "unexpected learning diagnostics: {paths:?}"
     );
-    let defaults = MoltisConfig::default().learning;
+    let defaults = AntreConfig::default().learning;
     assert!(!defaults.enabled);
     assert!(defaults.write_approval);
     assert_eq!(defaults.curator.stale_after_days, 14);

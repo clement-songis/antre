@@ -1,7 +1,7 @@
 use std::{collections::HashSet, sync::mpsc, time::Duration};
 
 use {
-    moltis_oauth::TokenStore,
+    antre_oauth::TokenStore,
     secrecy::{ExposeSecret, Secret},
     tracing::{debug, info, warn},
 };
@@ -28,7 +28,7 @@ pub(super) const DEFAULT_CODEX_MODELS: &[(&str, &str)] = &[
 ];
 
 /// Parse tokens from Codex CLI auth.json content.
-pub(super) fn parse_codex_cli_tokens(data: &str) -> Option<moltis_oauth::OAuthTokens> {
+pub(super) fn parse_codex_cli_tokens(data: &str) -> Option<antre_oauth::OAuthTokens> {
     let json: serde_json::Value = serde_json::from_str(data).ok()?;
     let tokens = json.get("tokens")?;
     let access_token = tokens.get("access_token")?.as_str()?.to_string();
@@ -44,7 +44,7 @@ pub(super) fn parse_codex_cli_tokens(data: &str) -> Option<moltis_oauth::OAuthTo
         .get("refresh_token")
         .and_then(|v| v.as_str())
         .map(|s| s.to_string());
-    Some(moltis_oauth::OAuthTokens {
+    Some(antre_oauth::OAuthTokens {
         access_token: Secret::new(access_token),
         refresh_token: refresh_token.map(Secret::new),
         id_token: id_token.map(Secret::new),
@@ -53,7 +53,7 @@ pub(super) fn parse_codex_cli_tokens(data: &str) -> Option<moltis_oauth::OAuthTo
     })
 }
 
-/// Whether the user consented to Moltis reading the Codex CLI's own tokens
+/// Whether the user consented to Antre reading the Codex CLI's own tokens
 /// (`[providers] external_credentials = ["codex-cli"]`). Off until the
 /// gateway applies the config: another tool's credentials are never read
 /// silently.
@@ -72,7 +72,7 @@ pub fn codex_cli_tokens_allowed() -> bool {
 
 /// Load tokens from the Codex CLI file at `~/.codex/auth.json`, only with
 /// the user's consent ([`allow_codex_cli_tokens`]).
-pub(super) fn load_codex_cli_tokens() -> Option<moltis_oauth::OAuthTokens> {
+pub(super) fn load_codex_cli_tokens() -> Option<antre_oauth::OAuthTokens> {
     if !codex_cli_tokens_allowed() {
         return None;
     }
@@ -190,10 +190,10 @@ fn parse_model_entry(entry: &serde_json::Value) -> Option<crate::DiscoveredModel
     Some(
         crate::DiscoveredModel::new(model_id, normalize_display_name(model_id, display_name))
             .with_created_at(created_at)
-            .with_metadata(moltis_model_catalog::ModelSpec {
+            .with_metadata(antre_model_catalog::ModelSpec {
                 display_name: crate::live_metadata::api_name(model_id, display_name),
                 context_window,
-                ..moltis_model_catalog::ModelSpec::default()
+                ..antre_model_catalog::ModelSpec::default()
             }),
     )
 }

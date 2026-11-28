@@ -1,26 +1,26 @@
 [package]
 edition.workspace = true
-name              = "moltis-sessions"
+name              = "antre-sessions"
 version.workspace = true
 
 [features]
 default = ["metrics"]
-metrics = ["dep:moltis-metrics"]
+metrics = ["dep:antre-metrics"]
 
 [dependencies]
-fd-lock         = { workspace = true }
-hex             = { workspace = true }
-libc            = { workspace = true }
-moltis-common   = { workspace = true }
-moltis-metrics  = { optional = true, workspace = true }
-moltis-protocol = { workspace = true }
-serde           = { workspace = true }
-serde_json      = { workspace = true }
-sqlx            = { workspace = true }
-thiserror       = { workspace = true }
-tokio           = { workspace = true }
-tracing         = { workspace = true }
-uuid            = { workspace = true }
+antre-common   = { workspace = true }
+antre-metrics  = { optional = true, workspace = true }
+antre-protocol = { workspace = true }
+fd-lock        = { workspace = true }
+hex            = { workspace = true }
+libc           = { workspace = true }
+serde          = { workspace = true }
+serde_json     = { workspace = true }
+sqlx           = { workspace = true }
+thiserror      = { workspace = true }
+tokio          = { workspace = true }
+tracing        = { workspace = true }
+uuid           = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }

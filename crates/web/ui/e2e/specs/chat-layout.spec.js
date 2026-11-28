@@ -95,9 +95,9 @@ test.describe("Chat layout — sandbox availability", () => {
 		const pageErrors = watchPageErrors(page);
 
 		await page.addInitScript(() => {
-			var m = window.__MOLTIS__ || {};
+			var m = window.__ANTRE__ || {};
 			m.sandbox = Object.assign(m.sandbox || {}, { backend: "restricted-host" });
-			window.__MOLTIS__ = m;
+			window.__ANTRE__ = m;
 		});
 
 		await page.route("**/api/gon*", async (route) => {

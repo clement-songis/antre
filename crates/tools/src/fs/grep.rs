@@ -13,13 +13,13 @@
 //! honors the same policy layer as every other native tool.
 
 use {
+    antre_agents::tool_registry::AgentTool,
     async_trait::async_trait,
     globset::{Glob as GlobPattern, GlobMatcher},
     grep_matcher::Matcher,
     grep_regex::RegexMatcherBuilder,
     grep_searcher::{BinaryDetection, Searcher, SearcherBuilder, Sink, SinkMatch},
     ignore::WalkBuilder,
-    moltis_agents::tool_registry::AgentTool,
     serde_json::{Value, json},
     std::{
         io,
@@ -30,7 +30,7 @@ use {
 };
 
 #[cfg(feature = "metrics")]
-use moltis_metrics::{counter, labels, tools as tools_metrics};
+use antre_metrics::{counter, labels, tools as tools_metrics};
 
 use crate::{
     Result,

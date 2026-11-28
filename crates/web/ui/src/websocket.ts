@@ -40,10 +40,10 @@ import {
 
 import type { StreamMeta, WsFrame } from "./types/ws-events";
 
-// Extend Window for moltis-specific global
+// Extend Window for antre-specific global
 declare global {
 	interface Window {
-		__moltisSuppressNextPasswordChangedRedirect?: boolean;
+		__antreSuppressNextPasswordChangedRedirect?: boolean;
 	}
 }
 
@@ -100,7 +100,7 @@ const connectOpts: ConnectOptions = {
 			minute: "2-digit",
 			second: "2-digit",
 		});
-		chatAddMsg("system", `Connected to moltis gateway v${hello.server.version} at ${ts}`);
+		chatAddMsg("system", `Connected to antre gateway v${hello.server.version} at ${ts}`);
 		if ((S.sandboxInfo as Record<string, unknown> | null)?.image_building) {
 			handleSandboxImageBuild({ phase: "start" });
 		}

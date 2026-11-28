@@ -3,7 +3,7 @@
 use {
     super::{tests::registry, *},
     crate::{runtime::TtsOverride, service::ActiveAssistantDraft},
-    moltis_agents::model::{ChatMessage, CompletionResponse, LlmProvider, StreamEvent, Usage},
+    antre_agents::model::{ChatMessage, CompletionResponse, LlmProvider, StreamEvent, Usage},
     serde_json::Value,
     std::{collections::HashMap, pin::Pin, sync::Mutex},
 };
@@ -12,7 +12,7 @@ use {
 struct Runtime {
     broadcasts: Mutex<Vec<Value>>,
     error: Mutex<Option<String>>,
-    targets: Mutex<Vec<moltis_channels::ChannelReplyTarget>>,
+    targets: Mutex<Vec<antre_channels::ChannelReplyTarget>>,
     outbound: Arc<Outbound>,
     tts: Tts,
 }
@@ -20,18 +20,18 @@ struct Runtime {
 #[derive(Default)]
 struct Outbound {
     texts: Mutex<Vec<String>>,
-    streams: Mutex<Vec<moltis_channels::StreamEvent>>,
+    streams: Mutex<Vec<antre_channels::StreamEvent>>,
 }
 
 #[async_trait::async_trait]
-impl moltis_channels::ChannelOutbound for Outbound {
+impl antre_channels::ChannelOutbound for Outbound {
     async fn send_text(
         &self,
         _: &str,
         _: &str,
         text: &str,
         _: Option<&str>,
-    ) -> moltis_channels::Result<()> {
+    ) -> antre_channels::Result<()> {
         self.texts.lock().unwrap().push(text.into());
         Ok(())
     }
@@ -40,22 +40,22 @@ impl moltis_channels::ChannelOutbound for Outbound {
         &self,
         _: &str,
         _: &str,
-        _: &moltis_common::types::ReplyPayload,
+        _: &antre_common::types::ReplyPayload,
         _: Option<&str>,
-    ) -> moltis_channels::Result<()> {
+    ) -> antre_channels::Result<()> {
         panic!("unexpected media delivery")
     }
 }
 
 #[async_trait::async_trait]
-impl moltis_channels::ChannelStreamOutbound for Outbound {
+impl antre_channels::ChannelStreamOutbound for Outbound {
     async fn send_stream(
         &self,
         _: &str,
         _: &str,
         _: Option<&str>,
-        mut stream: moltis_channels::StreamReceiver,
-    ) -> moltis_channels::Result<()> {
+        mut stream: antre_channels::StreamReceiver,
+    ) -> antre_channels::Result<()> {
         while let Some(event) = stream.recv().await {
             self.streams.lock().unwrap().push(event);
         }
@@ -67,30 +67,30 @@ impl moltis_channels::ChannelStreamOutbound for Outbound {
 struct Tts(Mutex<Vec<Value>>);
 
 #[async_trait::async_trait]
-impl moltis_service_traits::TtsService for Tts {
-    async fn status(&self) -> moltis_service_traits::ServiceResult {
+impl antre_service_traits::TtsService for Tts {
+    async fn status(&self) -> antre_service_traits::ServiceResult {
         Ok(serde_json::json!({"enabled": true}))
     }
 
-    async fn convert(&self, params: Value) -> moltis_service_traits::ServiceResult {
+    async fn convert(&self, params: Value) -> antre_service_traits::ServiceResult {
         self.0.lock().unwrap().push(params);
         // Exercise the normal text fallback without writing media files.
         Err("test synthesis failure".into())
     }
 
-    async fn providers(&self) -> moltis_service_traits::ServiceResult {
+    async fn providers(&self) -> antre_service_traits::ServiceResult {
         panic!("unused")
     }
 
-    async fn enable(&self, _: Value) -> moltis_service_traits::ServiceResult {
+    async fn enable(&self, _: Value) -> antre_service_traits::ServiceResult {
         panic!("unused")
     }
 
-    async fn disable(&self) -> moltis_service_traits::ServiceResult {
+    async fn disable(&self) -> antre_service_traits::ServiceResult {
         panic!("unused")
     }
 
-    async fn set_provider(&self, _: Value) -> moltis_service_traits::ServiceResult {
+    async fn set_provider(&self, _: Value) -> antre_service_traits::ServiceResult {
         panic!("unused")
     }
 }
@@ -99,7 +99,7 @@ impl moltis_service_traits::TtsService for Tts {
 struct Tool(Arc<Mutex<usize>>);
 
 #[async_trait::async_trait]
-impl moltis_agents::tool_registry::AgentTool for Tool {
+impl antre_agents::tool_registry::AgentTool for Tool {
     fn name(&self) -> &str {
         "lifecycle_test"
     }
@@ -124,13 +124,13 @@ impl ChatRuntime for Runtime {
         self.broadcasts.lock().unwrap().push(payload);
     }
 
-    async fn push_channel_reply(&self, _: &str, _: moltis_channels::ChannelReplyTarget) {}
+    async fn push_channel_reply(&self, _: &str, _: antre_channels::ChannelReplyTarget) {}
 
-    async fn drain_channel_replies(&self, _: &str) -> Vec<moltis_channels::ChannelReplyTarget> {
+    async fn drain_channel_replies(&self, _: &str) -> Vec<antre_channels::ChannelReplyTarget> {
         std::mem::take(&mut *self.targets.lock().unwrap())
     }
 
-    async fn peek_channel_replies(&self, _: &str) -> Vec<moltis_channels::ChannelReplyTarget> {
+    async fn peek_channel_replies(&self, _: &str) -> Vec<antre_channels::ChannelReplyTarget> {
         self.targets.lock().unwrap().clone()
     }
 
@@ -156,15 +156,15 @@ impl ChatRuntime for Runtime {
         "test"
     }
 
-    fn sandbox_router(&self) -> Option<&Arc<moltis_tools::sandbox::SandboxRouter>> {
+    fn sandbox_router(&self) -> Option<&Arc<antre_tools::sandbox::SandboxRouter>> {
         None
     }
 
-    fn memory_manager(&self) -> Option<&moltis_memory::runtime::DynMemoryRuntime> {
+    fn memory_manager(&self) -> Option<&antre_memory::runtime::DynMemoryRuntime> {
         None
     }
 
-    async fn cached_location(&self) -> Option<moltis_config::GeoLocation> {
+    async fn cached_location(&self) -> Option<antre_config::GeoLocation> {
         None
     }
 
@@ -172,27 +172,27 @@ impl ChatRuntime for Runtime {
         (None, None)
     }
 
-    fn channel_outbound(&self) -> Option<Arc<dyn moltis_channels::ChannelOutbound>> {
+    fn channel_outbound(&self) -> Option<Arc<dyn antre_channels::ChannelOutbound>> {
         Some(self.outbound.clone())
     }
 
-    fn channel_stream_outbound(&self) -> Option<Arc<dyn moltis_channels::ChannelStreamOutbound>> {
+    fn channel_stream_outbound(&self) -> Option<Arc<dyn antre_channels::ChannelStreamOutbound>> {
         Some(self.outbound.clone())
     }
 
-    fn tts_service(&self) -> &dyn moltis_service_traits::TtsService {
+    fn tts_service(&self) -> &dyn antre_service_traits::TtsService {
         &self.tts
     }
 
-    fn project_service(&self) -> &dyn moltis_service_traits::ProjectService {
-        &moltis_service_traits::NoopProjectService
+    fn project_service(&self) -> &dyn antre_service_traits::ProjectService {
+        &antre_service_traits::NoopProjectService
     }
 
-    fn mcp_service(&self) -> &dyn moltis_service_traits::McpService {
-        &moltis_service_traits::NoopMcpService
+    fn mcp_service(&self) -> &dyn antre_service_traits::McpService {
+        &antre_service_traits::NoopMcpService
     }
 
-    async fn chat_service(&self) -> Arc<dyn moltis_service_traits::ChatService> {
+    async fn chat_service(&self) -> Arc<dyn antre_service_traits::ChatService> {
         panic!("unused")
     }
 
@@ -302,9 +302,9 @@ async fn execute_mode(
             .targets
             .lock()
             .unwrap()
-            .push(moltis_channels::ChannelReplyTarget {
+            .push(antre_channels::ChannelReplyTarget {
                 ack_message_id: None,
-                channel_type: moltis_channels::ChannelType::Telegram,
+                channel_type: antre_channels::ChannelType::Telegram,
                 account_id: "test".into(),
                 chat_id: "123".into(),
                 message_id: None,
@@ -312,7 +312,7 @@ async fn execute_mode(
                 direct_chat: false,
             });
         let tool_calls = Arc::new(Mutex::new(0));
-        let mut registry = moltis_agents::tool_registry::ToolRegistry::new();
+        let mut registry = antre_agents::tool_registry::ToolRegistry::new();
         registry.register(Box::new(Tool(tool_calls.clone())));
         let output = crate::run_with_tools::run_with_tools(
             persona,
@@ -322,7 +322,7 @@ async fn execute_mode(
             provider,
             "test",
             &Arc::new(RwLock::new(registry)),
-            &moltis_agents::UserContent::Text("hello".into()),
+            &antre_agents::UserContent::Text("hello".into()),
             "test",
             &[],
             "session",
@@ -358,7 +358,7 @@ async fn execute_mode(
             "run",
             provider,
             "test",
-            &moltis_agents::UserContent::Text("hello".into()),
+            &antre_agents::UserContent::Text("hello".into()),
             "test",
             &[],
             "session",

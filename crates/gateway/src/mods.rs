@@ -11,8 +11,8 @@ use std::{
 };
 
 use {
-    moltis_agents::tool_registry::ToolRegistry,
-    moltis_mods::{
+    antre_agents::tool_registry::ToolRegistry,
+    antre_mods::{
         Error as ModError, InstallMode, ModId,
         host::HostLimits,
         service::{ModService, ModsSettings},
@@ -30,7 +30,7 @@ static TOOLS: OnceLock<Arc<RwLock<ToolRegistry>>> = OnceLock::new();
 /// Build runtime settings from `[mods]`.
 #[must_use]
 pub fn settings_from_config(
-    config: &moltis_config::schema::ModsConfig,
+    config: &antre_config::schema::ModsConfig,
     dir: PathBuf,
 ) -> ModsSettings {
     let defaults = HostLimits::default();
@@ -54,7 +54,7 @@ pub fn settings_from_config(
 
 /// Open the runtime at startup. Returns `None` when `[mods] enabled = false`
 /// or the runtime cannot start (logged; the gateway keeps running).
-pub async fn init(config: &moltis_config::schema::ModsConfig) -> Option<Arc<ModService>> {
+pub async fn init(config: &antre_config::schema::ModsConfig) -> Option<Arc<ModService>> {
     if !config.enabled {
         info!("mods disabled by config");
         return None;
@@ -62,7 +62,7 @@ pub async fn init(config: &moltis_config::schema::ModsConfig) -> Option<Arc<ModS
     if let Some(existing) = SERVICE.get() {
         return Some(Arc::clone(existing));
     }
-    let settings = settings_from_config(config, moltis_config::data_dir().join("mods"));
+    let settings = settings_from_config(config, antre_config::data_dir().join("mods"));
     match tokio::task::spawn_blocking(move || ModService::open(settings)).await {
         Ok(Ok(service)) => {
             let _ = SERVICE.set(Arc::clone(&service));
@@ -126,7 +126,7 @@ impl ModsApiError {
     /// Protocol error code for RPC responses.
     #[must_use]
     pub fn code(&self) -> &'static str {
-        use moltis_protocol::error_codes as codes;
+        use antre_protocol::error_codes as codes;
         match self.kind {
             ModsErrorKind::BadRequest => codes::INVALID_REQUEST,
             ModsErrorKind::NotFound => codes::NOT_FOUND,
@@ -290,7 +290,7 @@ pub async fn approve_shell_hook(name: &str, dir: PathBuf) -> Result<(), ModsApiE
 pub async fn shell_hook_approvals(
     hooks: Vec<(String, PathBuf)>,
 ) -> std::collections::HashMap<String, String> {
-    use moltis_mods::hook_pins::{ApprovalReason, HookAdmission};
+    use antre_mods::hook_pins::{ApprovalReason, HookAdmission};
     let Some(service) = service() else {
         return Default::default();
     };
@@ -326,7 +326,7 @@ mod tests {
 
     #[test]
     fn settings_follow_config() {
-        let config = moltis_config::schema::ModsConfig {
+        let config = antre_config::schema::ModsConfig {
             fuel: 7,
             memory_mb: 3,
             timeout_ms: 250,

@@ -36,10 +36,10 @@ final class ProviderStore: ObservableObject {
     @Published var selectedVoiceProviderName: String?
     @Published var voiceApiKeyDraft = ""
 
-    private let client: MoltisClient
+    private let client: AntreClient
     private let logStore: LogStore?
 
-    init(client: MoltisClient = MoltisClient(), logStore: LogStore? = nil) {
+    init(client: AntreClient = AntreClient(), logStore: LogStore? = nil) {
         self.client = client
         self.logStore = logStore
         loadAll()

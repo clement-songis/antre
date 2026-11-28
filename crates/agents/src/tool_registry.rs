@@ -1,7 +1,7 @@
 use {
+    antre_config::schema::McpServerId,
     anyhow::Result,
     async_trait::async_trait,
-    moltis_config::schema::McpServerId,
     std::{
         collections::HashMap,
         sync::{Arc, Mutex},

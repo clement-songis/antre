@@ -102,13 +102,13 @@ export function restoreSessionState(entry: SessionMeta, projectId?: string): voi
 	const effectiveProjectId = entry.projectId || projectId || "";
 	projectStore.setActiveProjectId(effectiveProjectId);
 	S.setActiveProjectId(effectiveProjectId);
-	localStorage.setItem("moltis-project", effectiveProjectId);
+	localStorage.setItem("antre-project", effectiveProjectId);
 	updateSessionProjectSelect(effectiveProjectId);
 	const baseModelId = restoreReasoningFromModelId(entry.model || "");
 	if (entry.model) {
 		modelStore.select(baseModelId);
 		S.setSelectedModelId(baseModelId);
-		localStorage.setItem("moltis-model", baseModelId);
+		localStorage.setItem("antre-model", baseModelId);
 		const found = modelStore.getById(baseModelId);
 		if (S.modelComboLabel) {
 			const label = found ? modelDisplayLabel(found) : baseModelId;
@@ -249,7 +249,7 @@ export function clearActiveSession(): Promise<RpcResponse> {
 export function switchSession(key: string, searchContext?: SearchContext | null, projectId?: string): void {
 	sessionStore.setActive(key);
 	S.setActiveSessionKey(key);
-	localStorage.setItem("moltis-session", key);
+	localStorage.setItem("antre-session", key);
 	history.replaceState(null, "", sessionPath(key));
 	resetSwitchViewState();
 	const cachedEntry = sessionStore.getByKey(key);

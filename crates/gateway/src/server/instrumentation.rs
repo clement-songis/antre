@@ -10,13 +10,13 @@ use std::{
 };
 
 use {
-    moltis_config::InstrumentationConfig,
-    moltis_observability::{ObservationSink, SinkStatsSnapshot, SkippedBackend},
+    antre_config::InstrumentationConfig,
+    antre_observability::{ObservationSink, SinkStatsSnapshot, SkippedBackend},
     tracing::{info, warn},
 };
 
 #[cfg(feature = "langfuse")]
-use moltis_observability::exporters::langfuse::LangfuseClient;
+use antre_observability::exporters::langfuse::LangfuseClient;
 
 /// Live instrumentation state, surfaced by the `instrumentation.*` RPC methods.
 #[derive(Default)]
@@ -55,10 +55,10 @@ impl InstrumentationState {
     /// flushes the replaced sink in the background; this synchronous method
     /// never waits on I/O.
     pub fn apply(&self, config: &InstrumentationConfig, release: &str) -> InstrumentationStatus {
-        let outcome = moltis_observability::build(config, release);
+        let outcome = antre_observability::build(config, release);
         let snapshot = match outcome.built {
             Some(built) => {
-                moltis_observability::set_global_sink(Arc::clone(&built.sink));
+                antre_observability::set_global_sink(Arc::clone(&built.sink));
                 info!(backends = ?built.backends, "agent instrumentation active");
                 InstrumentationSnapshot {
                     sink: Some(built.sink),
@@ -72,7 +72,7 @@ impl InstrumentationState {
             None => {
                 // Tear down rather than leaving a stale sink installed, so
                 // disabling instrumentation in the UI takes effect immediately.
-                moltis_observability::clear_global_sink();
+                antre_observability::clear_global_sink();
                 if !outcome.skipped.is_empty() {
                     warn!(
                         skipped = ?outcome.skipped,
@@ -151,11 +151,11 @@ impl InstrumentationState {
 
     /// Stop accepting new events and flush the currently installed sink.
     pub async fn shutdown(&self, timeout: Duration) {
-        moltis_observability::clear_global_sink();
+        antre_observability::clear_global_sink();
         let started = tokio::time::Instant::now();
         let flush_reserve = timeout.min(Duration::from_millis(100));
         let wait_budget = timeout.saturating_sub(flush_reserve);
-        if !moltis_observability::wait_for_active_turns(wait_budget).await {
+        if !antre_observability::wait_for_active_turns(wait_budget).await {
             warn!("instrumentation shutdown timed out waiting for active turns");
         }
         self.flush(timeout.saturating_sub(started.elapsed())).await;
@@ -187,8 +187,8 @@ impl InstrumentationSnapshot {
 #[allow(clippy::expect_used)]
 mod tests {
     use {
+        antre_config::LangfuseSettings,
         async_trait::async_trait,
-        moltis_config::LangfuseSettings,
         secrecy::Secret,
         std::sync::{
             Mutex,
@@ -229,7 +229,7 @@ mod tests {
             "tracking"
         }
 
-        fn record(&self, _event: moltis_observability::Event) {}
+        fn record(&self, _event: antre_observability::Event) {}
 
         async fn flush(&self, _timeout: Duration) -> anyhow::Result<()> {
             if let Some(flushed) = self
@@ -250,7 +250,7 @@ mod tests {
             "timeout-aware"
         }
 
-        fn record(&self, _event: moltis_observability::Event) {
+        fn record(&self, _event: antre_observability::Event) {
             self.queued.fetch_add(1, Ordering::Relaxed);
         }
 
@@ -280,9 +280,9 @@ mod tests {
 
         assert!(!status.active);
         assert!(status.backends.is_empty());
-        assert!(!moltis_observability::is_enabled());
+        assert!(!antre_observability::is_enabled());
 
-        moltis_observability::clear_global_sink();
+        antre_observability::clear_global_sink();
     }
 
     #[cfg(feature = "langfuse")]
@@ -303,10 +303,10 @@ mod tests {
             vec!["langfuse", "langfuse-scores"]
         );
         assert!(status.delivery.iter().all(|stats| stats.accepted == 0));
-        assert!(moltis_observability::is_enabled());
+        assert!(antre_observability::is_enabled());
         assert!(state.langfuse().is_some());
 
-        moltis_observability::clear_global_sink();
+        antre_observability::clear_global_sink();
     }
 
     #[cfg(feature = "langfuse")]
@@ -315,14 +315,14 @@ mod tests {
     async fn reapplying_a_disabled_config_tears_the_sink_down() {
         let state = InstrumentationState::default();
         state.apply(&valid_langfuse_config(), "test");
-        assert!(moltis_observability::is_enabled());
+        assert!(antre_observability::is_enabled());
 
         // Turning instrumentation off in the UI must take effect immediately
         // rather than leaving the previous sink exporting.
         let status = state.apply(&InstrumentationConfig::default(), "test");
 
         assert!(!status.active);
-        assert!(!moltis_observability::is_enabled());
+        assert!(!antre_observability::is_enabled());
         assert!(state.langfuse().is_none());
     }
 
@@ -344,7 +344,7 @@ mod tests {
         let current = state.status();
         assert_eq!(current.skipped, status.skipped);
 
-        moltis_observability::clear_global_sink();
+        antre_observability::clear_global_sink();
     }
 
     #[cfg(not(feature = "langfuse"))]
@@ -387,7 +387,7 @@ mod tests {
     #[tokio::test]
     #[serial_test::serial(instrumentation_global_sink)]
     async fn flush_without_a_sink_is_a_no_op() {
-        moltis_observability::clear_global_sink();
+        antre_observability::clear_global_sink();
         let state = InstrumentationState::default();
         state.flush(Duration::from_millis(10)).await;
     }
@@ -400,7 +400,7 @@ mod tests {
             flushed: Mutex::new(Some(flushed_tx)),
         });
         let state = InstrumentationState::default();
-        moltis_observability::set_global_sink(Arc::clone(&old_sink));
+        antre_observability::set_global_sink(Arc::clone(&old_sink));
         state.replace(InstrumentationSnapshot {
             sink: Some(old_sink),
             backends: vec!["tracking".into()],
@@ -414,7 +414,7 @@ mod tests {
             .await
             .expect("replaced sink flush should be scheduled")
             .expect("flush notification should be sent");
-        assert!(!moltis_observability::is_enabled());
+        assert!(!antre_observability::is_enabled());
     }
 
     #[tokio::test]
@@ -425,7 +425,7 @@ mod tests {
             flushed: Mutex::new(Some(flushed_tx)),
         });
         let state = InstrumentationState::default();
-        moltis_observability::set_global_sink(Arc::clone(&sink));
+        antre_observability::set_global_sink(Arc::clone(&sink));
         state.replace(InstrumentationSnapshot {
             sink: Some(sink),
             backends: vec!["tracking".into()],
@@ -437,7 +437,7 @@ mod tests {
         flushed_rx
             .await
             .expect("active sink should be flushed during shutdown");
-        assert!(!moltis_observability::is_enabled());
+        assert!(!antre_observability::is_enabled());
     }
 
     #[tokio::test]
@@ -448,16 +448,16 @@ mod tests {
             flushed: Mutex::new(Some(flushed_tx)),
         });
         let state = InstrumentationState::default();
-        moltis_observability::set_global_sink(Arc::clone(&sink));
+        antre_observability::set_global_sink(Arc::clone(&sink));
         state.replace(InstrumentationSnapshot {
             sink: Some(sink),
             backends: vec!["tracking".into()],
             ..Default::default()
         });
-        let recorder = moltis_observability::TurnRecorder::begin(
+        let recorder = antre_observability::TurnRecorder::begin(
             "active",
-            moltis_observability::TraceScope::default(),
-            moltis_observability::RecorderSettings::default(),
+            antre_observability::TraceScope::default(),
+            antre_observability::RecorderSettings::default(),
         )
         .expect("global sink installed");
 
@@ -487,23 +487,23 @@ mod tests {
         });
         let installed_sink: Arc<dyn ObservationSink> = sink;
         let state = InstrumentationState::default();
-        moltis_observability::set_global_sink(Arc::clone(&installed_sink));
+        antre_observability::set_global_sink(Arc::clone(&installed_sink));
         state.replace(InstrumentationSnapshot {
             sink: Some(installed_sink),
             backends: vec!["tracking".into()],
             ..Default::default()
         });
-        let completed = moltis_observability::TurnRecorder::begin(
+        let completed = antre_observability::TurnRecorder::begin(
             "completed",
-            moltis_observability::TraceScope::default(),
-            moltis_observability::RecorderSettings::default(),
+            antre_observability::TraceScope::default(),
+            antre_observability::RecorderSettings::default(),
         )
         .expect("global sink installed");
         completed.finish();
-        let recorder = moltis_observability::TurnRecorder::begin(
+        let recorder = antre_observability::TurnRecorder::begin(
             "active",
-            moltis_observability::TraceScope::default(),
-            moltis_observability::RecorderSettings::default(),
+            antre_observability::TraceScope::default(),
+            antre_observability::RecorderSettings::default(),
         )
         .expect("global sink installed");
 

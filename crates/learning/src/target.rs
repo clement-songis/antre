@@ -113,7 +113,7 @@ impl fmt::Display for Target {
 
 /// Personal skill directories use plain names: no `ns:` prefixes.
 pub fn validate_skill_name(name: &str) -> Result<()> {
-    if moltis_skills::parse::validate_name(name) && !name.contains(':') {
+    if antre_skills::parse::validate_name(name) && !name.contains(':') {
         return Ok(());
     }
     Err(Error::InvalidTarget(format!(

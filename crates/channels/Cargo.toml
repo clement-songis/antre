@@ -1,32 +1,32 @@
 [package]
 edition.workspace = true
-name              = "moltis-channels"
+name              = "antre-channels"
 version.workspace = true
 
 [dependencies]
-async-trait    = { workspace = true }
-bytes          = { workspace = true }
-http           = { workspace = true }
-moltis-common  = { workspace = true }
-moltis-config  = { workspace = true }
-moltis-metrics = { optional = true, workspace = true }
-moltis-observability = { workspace = true }
-rand           = { workspace = true }
-serde          = { workspace = true }
-serde_json     = { workspace = true }
-thiserror      = { workspace = true }
-time           = { workspace = true }
-tokio          = { workspace = true }
-tokio-util     = { workspace = true }
-tracing        = { workspace = true }
-url            = { workspace = true }
+antre-common        = { workspace = true }
+antre-config        = { workspace = true }
+antre-metrics       = { optional = true, workspace = true }
+antre-observability = { workspace = true }
+async-trait         = { workspace = true }
+bytes               = { workspace = true }
+http                = { workspace = true }
+rand                = { workspace = true }
+serde               = { workspace = true }
+serde_json          = { workspace = true }
+thiserror           = { workspace = true }
+time                = { workspace = true }
+tokio               = { workspace = true }
+tokio-util          = { workspace = true }
+tracing             = { workspace = true }
+url                 = { workspace = true }
 
 [dev-dependencies]
 anyhow = { workspace = true }
 
 [features]
 default = []
-metrics = ["dep:moltis-metrics"]
+metrics = ["dep:antre-metrics"]
 
 [lints]
 workspace = true

@@ -175,7 +175,7 @@ export default {
 	downloadingModel: "正在下載 {{modelName}}\u2026",
 	downloadProgressWithTotal: "{{downloaded}} / {{total}} MB",
 	downloadProgressNoTotal: "{{downloaded}} MB",
-	connectedToGateway: "已連線至 Moltis 閘道 v{{version}}，時間 {{time}}",
+	connectedToGateway: "已連線至 Antre 閘道 v{{version}}，時間 {{time}}",
 	statusHandshakeFailed: "交握失敗",
 	handshakeFailed: "交握失敗：{{reason}}",
 	statusDisconnectedReconnecting: "已斷線 \u2014 重新連線中\u2026",

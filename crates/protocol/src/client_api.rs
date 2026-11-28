@@ -209,7 +209,7 @@ impl ContextTokenUsage {
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct AgentIdentity {
-    /// The agent's name ("moltis" unless renamed).
+    /// The agent's name ("antre" unless renamed).
     pub name: String,
     pub emoji: Option<String>,
     /// The owner's name from the user profile.
@@ -320,10 +320,10 @@ mod tests {
     #[test]
     fn identity_reads_snake_case_fields() {
         let identity: AgentIdentity = serde_json::from_value(serde_json::json!({
-            "name": "moltis", "emoji": null, "user_name": "Fabien", "soul": "…"
+            "name": "antre", "emoji": null, "user_name": "Fabien", "soul": "…"
         }))
         .unwrap();
         assert_eq!(identity.user_name.as_deref(), Some("Fabien"));
-        assert_eq!(identity.name, "moltis");
+        assert_eq!(identity.name, "antre");
     }
 }

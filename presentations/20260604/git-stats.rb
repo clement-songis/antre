@@ -9,7 +9,7 @@ AUTHOR = "Fabien Penso"
 WEEKS = 14
 
 repos = [
-  Repo.new("Moltis", File.expand_path("../..", __dir__), Date.parse("2026-02-25")),
+  Repo.new("Antre", File.expand_path("../..", __dir__), Date.parse("2026-02-25")),
   Repo.new(
     "Constellations",
     "/Users/penso/code/constellations/constellations-indexer",

@@ -10,7 +10,7 @@ use {
     tracing::{debug, warn},
 };
 
-use moltis_channels::{
+use antre_channels::{
     Result,
     plugin::{ChannelStreamOutbound, StreamEvent, StreamReceiver},
 };

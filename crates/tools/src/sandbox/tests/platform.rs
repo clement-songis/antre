@@ -186,7 +186,7 @@ fn container_backend_serializes_kebab_case() {
 #[test]
 fn running_container_serializes_to_json() {
     let c = RunningContainer {
-        name: "moltis-sandbox-sess1".into(),
+        name: "antre-sandbox-sess1".into(),
         image: "ubuntu:25.10".into(),
         state: ContainerRunState::Running,
         backend: ContainerBackend::Docker,
@@ -196,7 +196,7 @@ fn running_container_serializes_to_json() {
         addr: None,
     };
     let json = serde_json::to_value(&c).unwrap();
-    assert_eq!(json["name"], "moltis-sandbox-sess1");
+    assert_eq!(json["name"], "antre-sandbox-sess1");
     assert_eq!(json["state"], "running");
     assert_eq!(json["backend"], "docker");
     assert_eq!(json["cpus"], 2);

@@ -10,9 +10,9 @@ use std::{
 };
 
 use {
-    moltis_channels::{ChannelAckOutcome, ChannelActivity, ChannelType},
-    moltis_common::types::ReplyPayload,
-    moltis_delivery::{DeliveryStore, RetryPolicy},
+    antre_channels::{ChannelAckOutcome, ChannelActivity, ChannelType},
+    antre_common::types::ReplyPayload,
+    antre_delivery::{DeliveryStore, RetryPolicy},
 };
 
 use {
@@ -40,7 +40,7 @@ impl FlakyOutbound {
         method: &'static str,
         text: &str,
         reply_to: Option<&str>,
-    ) -> moltis_channels::Result<Vec<String>> {
+    ) -> antre_channels::Result<Vec<String>> {
         if self
             .failures
             .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |left| {
@@ -48,7 +48,7 @@ impl FlakyOutbound {
             })
             .is_ok()
         {
-            return Err(moltis_channels::Error::Unavailable {
+            return Err(antre_channels::Error::Unavailable {
                 message: "telegram 502".into(),
             });
         }
@@ -63,14 +63,14 @@ impl FlakyOutbound {
 }
 
 #[async_trait]
-impl moltis_channels::ChannelOutbound for FlakyOutbound {
+impl antre_channels::ChannelOutbound for FlakyOutbound {
     async fn send_text(
         &self,
         _account_id: &str,
         _to: &str,
         text: &str,
         reply_to: Option<&str>,
-    ) -> moltis_channels::Result<()> {
+    ) -> antre_channels::Result<()> {
         self.record("send_text", text, reply_to).map(|_| ())
     }
 
@@ -80,7 +80,7 @@ impl moltis_channels::ChannelOutbound for FlakyOutbound {
         _to: &str,
         payload: &ReplyPayload,
         reply_to: Option<&str>,
-    ) -> moltis_channels::Result<()> {
+    ) -> antre_channels::Result<()> {
         self.record("send_media", &payload.text, reply_to)
             .map(|_| ())
     }
@@ -91,7 +91,7 @@ impl moltis_channels::ChannelOutbound for FlakyOutbound {
         _to: &str,
         text: &str,
         reply_to: Option<&str>,
-    ) -> moltis_channels::Result<Vec<String>> {
+    ) -> antre_channels::Result<Vec<String>> {
         self.record("send_text_reporting_ids", text, reply_to)
     }
 
@@ -102,7 +102,7 @@ impl moltis_channels::ChannelOutbound for FlakyOutbound {
         text: &str,
         suffix_html: &str,
         reply_to: Option<&str>,
-    ) -> moltis_channels::Result<Vec<String>> {
+    ) -> antre_channels::Result<Vec<String>> {
         self.record(
             "send_text_with_suffix_reporting_ids",
             &format!("{text}|{suffix_html}"),
@@ -116,7 +116,7 @@ impl moltis_channels::ChannelOutbound for FlakyOutbound {
         _to: &str,
         html: &str,
         reply_to: Option<&str>,
-    ) -> moltis_channels::Result<Vec<String>> {
+    ) -> antre_channels::Result<Vec<String>> {
         self.record("send_html_reporting_ids", html, reply_to)
     }
 }
@@ -154,7 +154,7 @@ async fn runtime_with(
         DeliveryStore::in_memory().await.unwrap(),
         policy(max_attempts),
     );
-    let mut runtime = TestRuntime::new(Arc::new(moltis_service_traits::NoopChatService))
+    let mut runtime = TestRuntime::new(Arc::new(antre_service_traits::NoopChatService))
         .with_outbox(Arc::clone(&outbox));
     if let Some(outbound) = outbound {
         runtime = runtime.with_outbound(outbound);

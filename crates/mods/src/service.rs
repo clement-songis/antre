@@ -12,8 +12,8 @@ use std::{
 };
 
 use {
-    moltis_agents::tool_registry::ToolRegistry,
-    moltis_common::hooks::HookHandler,
+    antre_agents::tool_registry::ToolRegistry,
+    antre_common::hooks::HookHandler,
     serde::Serialize,
     time::OffsetDateTime,
     tracing::{info, warn},

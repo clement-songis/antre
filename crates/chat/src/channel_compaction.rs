@@ -12,10 +12,10 @@ fn format_channel_compaction_notice(
     include_settings_hint: bool,
 ) -> String {
     let mode_label = match outcome.effective_mode {
-        moltis_config::CompactionMode::Deterministic => "Deterministic",
-        moltis_config::CompactionMode::RecencyPreserving => "Recency preserving",
-        moltis_config::CompactionMode::Structured => "Structured",
-        moltis_config::CompactionMode::LlmReplace => "LLM replace",
+        antre_config::CompactionMode::Deterministic => "Deterministic",
+        antre_config::CompactionMode::RecencyPreserving => "Recency preserving",
+        antre_config::CompactionMode::Structured => "Structured",
+        antre_config::CompactionMode::LlmReplace => "LLM replace",
     };
     let total = outcome.total_tokens();
     let token_line = if total == 0 {

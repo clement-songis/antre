@@ -11,9 +11,9 @@
 use std::{collections::HashSet, sync::Arc};
 
 use {
+    antre_agents::model::{ChatMessage, LlmProvider, ReasoningEffort, StreamEvent, ToolCall},
+    antre_providers::openai::OpenAiProvider,
     futures::StreamExt,
-    moltis_agents::model::{ChatMessage, LlmProvider, ReasoningEffort, StreamEvent, ToolCall},
-    moltis_providers::openai::OpenAiProvider,
     secrecy::{ExposeSecret, Secret},
 };
 

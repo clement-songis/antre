@@ -6,11 +6,11 @@ use {async_trait::async_trait, serde_json::Value};
 
 use crate::services::{OnboardingService, ServiceError, ServiceResult};
 
-/// Gateway-side onboarding service backed by `moltis_onboarding::service::LiveOnboardingService`.
+/// Gateway-side onboarding service backed by `antre_onboarding::service::LiveOnboardingService`.
 pub struct GatewayOnboardingService {
-    inner: moltis_onboarding::service::LiveOnboardingService,
+    inner: antre_onboarding::service::LiveOnboardingService,
     #[cfg_attr(not(feature = "openclaw-import"), allow(dead_code))]
-    session_metadata: Arc<moltis_sessions::metadata::SqliteSessionMetadata>,
+    session_metadata: Arc<antre_sessions::metadata::SqliteSessionMetadata>,
     #[cfg_attr(not(feature = "openclaw-import"), allow(dead_code))]
     agent_persona_store: Arc<crate::agent_persona::AgentPersonaStore>,
     gateway_state: Arc<tokio::sync::OnceCell<Arc<crate::state::GatewayState>>>,
@@ -18,8 +18,8 @@ pub struct GatewayOnboardingService {
 
 impl GatewayOnboardingService {
     pub fn new(
-        inner: moltis_onboarding::service::LiveOnboardingService,
-        session_metadata: Arc<moltis_sessions::metadata::SqliteSessionMetadata>,
+        inner: antre_onboarding::service::LiveOnboardingService,
+        session_metadata: Arc<antre_sessions::metadata::SqliteSessionMetadata>,
         agent_persona_store: Arc<crate::agent_persona::AgentPersonaStore>,
         gateway_state: Arc<tokio::sync::OnceCell<Arc<crate::state::GatewayState>>>,
     ) -> Self {
@@ -31,13 +31,13 @@ impl GatewayOnboardingService {
         }
     }
 
-    /// Create imported agents as Moltis agent personas.
+    /// Create imported agents as Antre agent personas.
     ///
     /// Skips agents that already exist or are the default ("main") agent.
     #[cfg(feature = "openclaw-import")]
     async fn create_imported_agents(
         &self,
-        agents: &moltis_openclaw_import::agents::ImportedAgents,
+        agents: &antre_openclaw_import::agents::ImportedAgents,
     ) -> Result<(), String> {
         for agent in &agents.agents {
             if agent.is_default {
@@ -45,17 +45,17 @@ impl GatewayOnboardingService {
             }
 
             // Skip if already exists
-            match self.agent_persona_store.get(&agent.moltis_id).await {
+            match self.agent_persona_store.get(&agent.antre_id).await {
                 Ok(Some(_)) => {
                     tracing::debug!(
-                        id = %agent.moltis_id,
+                        id = %agent.antre_id,
                         "openclaw import: agent already exists, skipping"
                     );
                     continue;
                 },
                 Err(e) => {
                     tracing::warn!(
-                        id = %agent.moltis_id,
+                        id = %agent.antre_id,
                         error = %e,
                         "openclaw import: failed to check agent existence"
                     );
@@ -64,13 +64,10 @@ impl GatewayOnboardingService {
                 Ok(None) => {},
             }
 
-            let name = agent
-                .name
-                .clone()
-                .unwrap_or_else(|| agent.moltis_id.clone());
+            let name = agent.name.clone().unwrap_or_else(|| agent.antre_id.clone());
 
             let params = crate::agent_persona::CreateAgentParams {
-                id: agent.moltis_id.clone(),
+                id: agent.antre_id.clone(),
                 name,
                 emoji: None,
                 theme: agent.theme.clone(),
@@ -81,13 +78,13 @@ impl GatewayOnboardingService {
             match self.agent_persona_store.create(params).await {
                 Ok(_) => {
                     tracing::info!(
-                        id = %agent.moltis_id,
+                        id = %agent.antre_id,
                         "openclaw import: created agent persona"
                     );
                 },
                 Err(e) => {
                     tracing::warn!(
-                        id = %agent.moltis_id,
+                        id = %agent.antre_id,
                         error = %e,
                         "openclaw import: failed to create agent persona"
                     );
@@ -107,7 +104,7 @@ impl GatewayOnboardingService {
             return Ok(());
         }
 
-        let legacy_metadata = moltis_sessions::metadata::SessionMetadata::load(metadata_path)
+        let legacy_metadata = antre_sessions::metadata::SessionMetadata::load(metadata_path)
             .map_err(|e| format!("failed to load imported metadata.json: {e}"))?;
 
         for entry in legacy_metadata.list() {
@@ -177,10 +174,10 @@ impl OnboardingService for GatewayOnboardingService {
 
     #[cfg(feature = "openclaw-import")]
     async fn openclaw_detect(&self) -> ServiceResult {
-        let detection = moltis_openclaw_import::detect();
+        let detection = antre_openclaw_import::detect();
         match detection {
             Some(d) => {
-                let scan = moltis_openclaw_import::scan(&d);
+                let scan = antre_openclaw_import::scan(&d);
                 tracing::info!(
                     home_dir = %d.home_dir.display(),
                     identity = scan.identity_available,
@@ -243,10 +240,10 @@ impl OnboardingService for GatewayOnboardingService {
 
     #[cfg(feature = "openclaw-import")]
     async fn openclaw_import(&self, params: Value) -> ServiceResult {
-        let detection = moltis_openclaw_import::detect()
+        let detection = antre_openclaw_import::detect()
             .ok_or_else(|| "no OpenClaw installation found".to_string())?;
 
-        let selection = moltis_openclaw_import::ImportSelection {
+        let selection = antre_openclaw_import::ImportSelection {
             identity: params
                 .get("identity")
                 .and_then(|v| v.as_bool())
@@ -281,11 +278,11 @@ impl OnboardingService for GatewayOnboardingService {
                 .unwrap_or(false),
         };
 
-        let config_dir = moltis_config::config_dir()
+        let config_dir = antre_config::config_dir()
             .ok_or_else(|| "could not determine config directory".to_string())?;
-        let data_dir = moltis_config::data_dir();
+        let data_dir = antre_config::data_dir();
 
-        let report = moltis_openclaw_import::import(&detection, &selection, &config_dir, &data_dir);
+        let report = antre_openclaw_import::import(&detection, &selection, &config_dir, &data_dir);
 
         // Create imported agent personas (non-default agents)
         if let Some(ref agents) = report.imported_agents
@@ -324,11 +321,11 @@ impl OnboardingService for GatewayOnboardingService {
 
     #[cfg(feature = "claude-import")]
     async fn claude_detect(&self) -> ServiceResult {
-        let detection = moltis_claude_import::detect::detect();
+        let detection = antre_claude_import::detect::detect();
         match detection {
             Some(d) => {
-                let skills = moltis_claude_import::skills::discover_skills(&d);
-                let commands = moltis_claude_import::skills::discover_commands(&d);
+                let skills = antre_claude_import::skills::discover_skills(&d);
+                let commands = antre_claude_import::skills::discover_commands(&d);
                 let has_mcp = d.user_claude_json_path.is_some() || d.desktop_config_path.is_some();
 
                 tracing::info!(
@@ -363,10 +360,10 @@ impl OnboardingService for GatewayOnboardingService {
 
     #[cfg(feature = "claude-import")]
     async fn claude_import(&self, params: Value) -> ServiceResult {
-        let detection = moltis_claude_import::detect::detect()
+        let detection = antre_claude_import::detect::detect()
             .ok_or_else(|| "no Claude Code installation found".to_string())?;
 
-        let data_dir = moltis_config::data_dir();
+        let data_dir = antre_config::data_dir();
         let mcp_path = data_dir.join("mcp-servers.json");
         let skills_dir = data_dir.join("skills");
 
@@ -386,18 +383,18 @@ impl OnboardingService for GatewayOnboardingService {
         let mut categories = Vec::new();
 
         if import_mcp {
-            categories.push(moltis_claude_import::mcp_servers::import_mcp_servers(
+            categories.push(antre_claude_import::mcp_servers::import_mcp_servers(
                 &detection, &mcp_path,
             ));
         }
         if import_skills {
-            categories.push(moltis_claude_import::skills::import_skills(
+            categories.push(antre_claude_import::skills::import_skills(
                 &detection,
                 &skills_dir,
             ));
         }
         if import_memory {
-            categories.push(moltis_claude_import::memory::import_memory(
+            categories.push(antre_claude_import::memory::import_memory(
                 &detection, &data_dir,
             ));
         }
@@ -419,10 +416,10 @@ impl OnboardingService for GatewayOnboardingService {
 
     #[cfg(feature = "codex-import")]
     async fn codex_detect(&self) -> ServiceResult {
-        let detection = moltis_codex_import::detect::detect();
+        let detection = antre_codex_import::detect::detect();
         match detection {
             Some(d) => {
-                let mcp_count = moltis_codex_import::mcp_servers::count_mcp_servers(&d);
+                let mcp_count = antre_codex_import::mcp_servers::count_mcp_servers(&d);
 
                 tracing::info!(
                     has_config = d.config_path.is_some(),
@@ -453,10 +450,10 @@ impl OnboardingService for GatewayOnboardingService {
 
     #[cfg(feature = "codex-import")]
     async fn codex_import(&self, params: Value) -> ServiceResult {
-        let detection = moltis_codex_import::detect::detect()
+        let detection = antre_codex_import::detect::detect()
             .ok_or_else(|| "no Codex CLI installation found".to_string())?;
 
-        let data_dir = moltis_config::data_dir();
+        let data_dir = antre_config::data_dir();
         let mcp_path = data_dir.join("mcp-servers.json");
 
         let import_mcp = params
@@ -471,12 +468,12 @@ impl OnboardingService for GatewayOnboardingService {
         let mut categories = Vec::new();
 
         if import_mcp {
-            categories.push(moltis_codex_import::mcp_servers::import_mcp_servers(
+            categories.push(antre_codex_import::mcp_servers::import_mcp_servers(
                 &detection, &mcp_path,
             ));
         }
         if import_memory {
-            categories.push(moltis_codex_import::memory::import_memory(
+            categories.push(antre_codex_import::memory::import_memory(
                 &detection, &data_dir,
             ));
         }
@@ -498,11 +495,11 @@ impl OnboardingService for GatewayOnboardingService {
 
     #[cfg(feature = "hermes-import")]
     async fn hermes_detect(&self) -> ServiceResult {
-        let detection = moltis_hermes_import::detect::detect();
+        let detection = antre_hermes_import::detect::detect();
         match detection {
             Some(d) => {
-                let creds = moltis_hermes_import::credentials::discover_credentials(&d);
-                let skills = moltis_hermes_import::skills::discover_skills(&d);
+                let creds = antre_hermes_import::credentials::discover_credentials(&d);
+                let skills = antre_hermes_import::skills::discover_skills(&d);
                 let has_memory = d.soul_path.is_some()
                     || d.memory_path.is_some()
                     || d.agents_path.is_some()
@@ -555,12 +552,12 @@ impl OnboardingService for GatewayOnboardingService {
 
     #[cfg(feature = "hermes-import")]
     async fn hermes_import(&self, params: Value) -> ServiceResult {
-        let detection = moltis_hermes_import::detect::detect()
+        let detection = antre_hermes_import::detect::detect()
             .ok_or_else(|| "no Hermes installation found".to_string())?;
 
-        let config_dir = moltis_config::config_dir()
+        let config_dir = antre_config::config_dir()
             .ok_or_else(|| "could not determine config directory".to_string())?;
-        let data_dir = moltis_config::data_dir();
+        let data_dir = antre_config::data_dir();
         let skills_dir = data_dir.join("skills");
 
         let import_credentials = params
@@ -579,19 +576,19 @@ impl OnboardingService for GatewayOnboardingService {
         let mut categories = Vec::new();
 
         if import_credentials {
-            categories.push(moltis_hermes_import::credentials::import_credentials(
+            categories.push(antre_hermes_import::credentials::import_credentials(
                 &detection,
                 &config_dir,
             ));
         }
         if import_skills {
-            categories.push(moltis_hermes_import::skills::import_skills(
+            categories.push(antre_hermes_import::skills::import_skills(
                 &detection,
                 &skills_dir,
             ));
         }
         if import_memory {
-            categories.push(moltis_hermes_import::memory::import_memory(
+            categories.push(antre_hermes_import::memory::import_memory(
                 &detection, &data_dir,
             ));
         }
@@ -610,7 +607,7 @@ impl OnboardingService for GatewayOnboardingService {
     }
 }
 
-fn parse_geo_location(value: &Value) -> Option<moltis_config::GeoLocation> {
+fn parse_geo_location(value: &Value) -> Option<antre_config::GeoLocation> {
     let latitude = value.get("latitude").and_then(|v| v.as_f64())?;
     let longitude = value.get("longitude").and_then(|v| v.as_f64())?;
     let place = value
@@ -619,7 +616,7 @@ fn parse_geo_location(value: &Value) -> Option<moltis_config::GeoLocation> {
         .map(|v| v.to_string());
     let updated_at = value.get("updated_at").and_then(|v| v.as_i64());
 
-    Some(moltis_config::GeoLocation {
+    Some(antre_config::GeoLocation {
         latitude,
         longitude,
         place,
@@ -686,7 +683,7 @@ mod tests {
             .execute(&pool)
             .await
             .unwrap();
-        moltis_sessions::metadata::SqliteSessionMetadata::init(&pool)
+        antre_sessions::metadata::SqliteSessionMetadata::init(&pool)
             .await
             .unwrap();
         sqlx::query(
@@ -706,8 +703,8 @@ mod tests {
         .unwrap();
 
         let service = GatewayOnboardingService::new(
-            moltis_onboarding::service::LiveOnboardingService::new(dir.path().join("moltis.toml")),
-            Arc::new(moltis_sessions::metadata::SqliteSessionMetadata::new(
+            antre_onboarding::service::LiveOnboardingService::new(dir.path().join("antre.toml")),
+            Arc::new(antre_sessions::metadata::SqliteSessionMetadata::new(
                 pool.clone(),
             )),
             Arc::new(crate::agent_persona::AgentPersonaStore::new(pool)),

@@ -5,7 +5,7 @@ async function openFreshChatSession(page) {
 	await navigateAndWait(page, "/");
 	await waitForWsConnected(page);
 	await createSession(page);
-	return page.evaluate(() => window.__moltis_stores?.sessionStore?.activeSessionKey?.value || "");
+	return page.evaluate(() => window.__antre_stores?.sessionStore?.activeSessionKey?.value || "");
 }
 
 async function startDocumentToolCall(page, sessionKey, toolCallId, filename) {

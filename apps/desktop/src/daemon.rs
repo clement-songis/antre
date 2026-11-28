@@ -6,8 +6,7 @@ mod history;
 use std::{collections::HashMap, path::PathBuf, time::Duration};
 
 use {
-    gpui::{App, AsyncApp, Context, EventEmitter, Task, WeakEntity},
-    moltis_client::{
+    antre_client::{
         ClientIdentity, ClientUpdate, ConnectOptions, Endpoint, FailureKind, ManagedClient,
         SecretString, TlsTrust,
         api::Rpc,
@@ -23,11 +22,12 @@ use {
         },
         tls,
     },
+    gpui::{App, AsyncApp, Context, EventEmitter, Task, WeakEntity},
     secrecy::ExposeSecret,
 };
 
 #[cfg(feature = "ssh")]
-use moltis_client::ssh::SshTunnel;
+use antre_client::ssh::SshTunnel;
 
 use crate::{
     local_daemon::{self, AutoStart, ServiceCheck},
@@ -79,7 +79,7 @@ pub enum Phase {
     },
     /// The local daemon is not running.
     NotRunning {
-        moltis: Option<PathBuf>,
+        antre: Option<PathBuf>,
         starting: bool,
         error: Option<String>,
     },
@@ -111,7 +111,7 @@ pub struct Daemon {
     /// The local daemon was found stopped and restarted once already; a
     /// second failure waits for the user instead of reinstalling the service
     /// in a loop. Only a daemon already installed as a service is started
-    /// unasked: otherwise the user chooses between running moltis here and
+    /// unasked: otherwise the user chooses between running antre here and
     /// connecting to another computer.
     auto_started: bool,
     /// The installed service was checked against the bundled daemon.
@@ -524,10 +524,10 @@ impl Daemon {
             },
             FailureKind::Unreachable if self.profile.is_local() && !self.connected_once => {
                 if !matches!(self.phase, Phase::NotRunning { .. }) {
-                    let moltis = local_daemon::find_moltis(
+                    let antre = local_daemon::find_antre(
                         local_daemon::bundled_dir().as_deref(),
                         std::env::var_os("PATH"),
-                        moltis_config::home_dir().as_deref(),
+                        antre_config::home_dir().as_deref(),
                     );
                     let auto_start = if self.auto_started {
                         None
@@ -536,7 +536,7 @@ impl Daemon {
                     };
                     self.set_phase(
                         Phase::NotRunning {
-                            moltis,
+                            antre,
                             starting: false,
                             error: None,
                         },
@@ -655,7 +655,7 @@ impl Daemon {
             return;
         }
         self.set_login_state(true, None, cx);
-        let label = format!("Moltis Desktop ({})", hostname());
+        let label = format!("Antre Desktop ({})", hostname());
         let key = runtime::spawn(cx, async move {
             AuthClient::new(endpoint)?
                 .exchange_password_for_key(&password, &label)
@@ -731,14 +731,13 @@ impl Daemon {
     /// Install and start the local daemon as a user service.
     pub fn start_local_daemon(&mut self, cx: &mut Context<Self>) {
         let Phase::NotRunning {
-            moltis: Some(moltis),
-            ..
+            antre: Some(antre), ..
         } = &self.phase
         else {
             return;
         };
-        let moltis = moltis.clone();
-        self.run_service_job(move || local_daemon::install_service(&moltis), cx);
+        let antre = antre.clone();
+        self.run_service_job(move || local_daemon::install_service(&antre), cx);
     }
 
     /// Start the service already installed here, as installed.
@@ -756,12 +755,12 @@ impl Daemon {
         job: impl FnOnce() -> anyhow::Result<()> + Send + 'static,
         cx: &mut Context<Self>,
     ) {
-        let Phase::NotRunning { moltis, .. } = &self.phase else {
+        let Phase::NotRunning { antre, .. } = &self.phase else {
             return;
         };
         self.set_phase(
             Phase::NotRunning {
-                moltis: moltis.clone(),
+                antre: antre.clone(),
                 starting: true,
                 error: None,
             },
@@ -773,9 +772,9 @@ impl Daemon {
             let _ = this.update(cx, |this, cx| match result {
                 Ok(()) => this.poll_started_daemon(cx),
                 Err(error) => {
-                    if let Phase::NotRunning { moltis, .. } = &this.phase {
+                    if let Phase::NotRunning { antre, .. } = &this.phase {
                         let phase = Phase::NotRunning {
-                            moltis: moltis.clone(),
+                            antre: antre.clone(),
                             starting: false,
                             error: Some(format!("{error:#}")),
                         };
@@ -804,8 +803,8 @@ impl Daemon {
         self.service_checked = true;
         let bundled = local_daemon::bundled_daemon();
         let service_path = bundled.as_deref().map(local_daemon::service_path);
-        let installed = moltis_config::home_dir().and_then(|home| {
-            local_daemon::installed_service_binary(&home, &moltis_config::data_dir())
+        let installed = antre_config::home_dir().and_then(|home| {
+            local_daemon::installed_service_binary(&home, &antre_config::data_dir())
         });
         let running = self
             .hello
@@ -819,13 +818,13 @@ impl Daemon {
         ) {
             ServiceCheck::Fine => {},
             ServiceCheck::Reinstall => {
-                let Some(moltis) = bundled else {
+                let Some(antre) = bundled else {
                     return;
                 };
-                crate::logging::info!(?installed, "moltis service points elsewhere; reinstalling");
+                crate::logging::info!(?installed, "antre service points elsewhere; reinstalling");
                 let install = cx
                     .background_executor()
-                    .spawn(async move { local_daemon::install_service(&moltis) });
+                    .spawn(async move { local_daemon::install_service(&antre) });
                 cx.spawn(async move |this, cx| {
                     let result = install.await;
                     let _ = this.update(cx, |this, cx| match result {
@@ -844,14 +843,14 @@ impl Daemon {
 
     /// Restart the user service so it runs the bundled (newer) daemon.
     pub fn restart_local_daemon(&mut self, cx: &mut Context<Self>) {
-        let Some(moltis) = local_daemon::bundled_daemon() else {
+        let Some(antre) = local_daemon::bundled_daemon() else {
             return;
         };
         self.outdated = None;
         cx.notify();
         let restart = cx
             .background_executor()
-            .spawn(async move { local_daemon::restart_service(&moltis) });
+            .spawn(async move { local_daemon::restart_service(&antre) });
         cx.spawn(async move |this, cx| {
             let result = restart.await;
             let _ = this.update(cx, |this, cx| match result {
@@ -1240,8 +1239,8 @@ async fn read_api_key(profile: &ServerProfile, cx: &mut AsyncApp) -> Option<Secr
 
 fn identity() -> ClientIdentity {
     ClientIdentity {
-        display_name: Some(format!("Moltis Desktop on {}", hostname())),
-        ..ClientIdentity::new("moltis-desktop", env!("CARGO_PKG_VERSION"))
+        display_name: Some(format!("Antre Desktop on {}", hostname())),
+        ..ClientIdentity::new("antre-desktop", env!("CARGO_PKG_VERSION"))
     }
 }
 
@@ -1254,12 +1253,12 @@ fn hostname() -> String {
         .unwrap_or_else(|| "this computer".into())
 }
 
-/// A service installed on this computer means the user chose to run moltis
+/// A service installed on this computer means the user chose to run antre
 /// here, so a stopped daemon is started without asking.
 fn installed_auto_start() -> Option<AutoStart> {
-    let home = moltis_config::home_dir()?;
-    let installed = local_daemon::installed_service_binary(&home, &moltis_config::data_dir());
-    let bundled = local_daemon::bundled_daemon().map(|moltis| local_daemon::service_path(&moltis));
+    let home = antre_config::home_dir()?;
+    let installed = local_daemon::installed_service_binary(&home, &antre_config::data_dir());
+    let bundled = local_daemon::bundled_daemon().map(|antre| local_daemon::service_path(&antre));
     local_daemon::auto_start(installed.as_deref(), bundled.as_deref())
 }
 

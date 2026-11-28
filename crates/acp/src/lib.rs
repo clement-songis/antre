@@ -1,9 +1,9 @@
-//! Moltis as an ACP *agent*.
+//! Antre as an ACP *agent*.
 //!
-//! Moltis has long been an ACP client (`moltis-external-agents` spawns and
+//! Antre has long been an ACP client (`antre-external-agents` spawns and
 //! drives `codex-acp`, `claude-agent-acp`, and friends). This crate is the
 //! inverse: it lets any ACP client — Zed, `buzz-acp`, a bespoke harness — drive
-//! Moltis the way it would drive any other agent, with Moltis's sessions,
+//! Antre the way it would drive any other agent, with Antre's sessions,
 //! memory, tool policy, and providers staying behind the protocol.
 //!
 //! ACP is a *surface*, not a channel: there is no correspondent to allowlist
@@ -12,9 +12,9 @@
 //!
 //! # Layout
 //!
-//! - [`backend`] — the `Send` seam Moltis implements ([`AcpBackend`])
-//! - [`agent`] — the `!Send` protocol handler ([`MoltisAgent`])
-//! - [`session`] — ACP session ids ↔ namespaced Moltis session keys
+//! - [`backend`] — the `Send` seam Antre implements ([`AcpBackend`])
+//! - [`agent`] — the `!Send` protocol handler ([`AntreAgent`])
+//! - [`session`] — ACP session ids ↔ namespaced Antre session keys
 //! - [`server`] — transport wiring ([`server::run_stdio`])
 //! - [`echo`] — a backend-free implementation for smoke tests
 
@@ -26,7 +26,7 @@ pub mod session;
 pub mod setup;
 
 pub use crate::{
-    agent::MoltisAgent,
+    agent::AntreAgent,
     backend::{AcpBackend, BackendCapabilities, SessionNotFound, TurnUpdates, validate_history},
     echo::EchoBackend,
     server::{run_stdio, serve},

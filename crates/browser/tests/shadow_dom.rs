@@ -9,7 +9,7 @@ use std::time::{Duration, Instant};
 
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-use moltis_browser::{
+use antre_browser::{
     BrowserAction, BrowserConfig, BrowserManager, BrowserRequest, detect::detect_browser,
 };
 
@@ -24,7 +24,7 @@ const SHADOW_PAGE: &str = r#"<!doctype html>
   const root = host.attachShadow({ mode: 'open' });
   root.innerHTML = '<button id="shadow-btn">Shadow button</button><div id="nested"></div>';
   root.getElementById('shadow-btn').addEventListener('click', () => {
-    window.__moltisClicked = true;
+    window.__antreClicked = true;
   });
   const nested = root.getElementById('nested').attachShadow({ mode: 'open' });
   nested.innerHTML = '<input type="text" placeholder="deep-input">';
@@ -152,7 +152,7 @@ async fn shadow_dom_lookups_pierce_open_roots() {
     assert!(click.success, "click failed: {:?}", click.error);
     let clicked = manager
         .handle_request(req(sid.clone(), BrowserAction::Evaluate {
-            code: "window.__moltisClicked === true".into(),
+            code: "window.__antreClicked === true".into(),
         }))
         .await;
     assert_eq!(
@@ -231,7 +231,7 @@ async fn shadow_dom_lookups_pierce_open_roots() {
     assert!(resnap.success, "re-snapshot failed: {:?}", resnap.error);
     let stale = manager
         .handle_request(req(sid.clone(), BrowserAction::Evaluate {
-            code: "document.getElementById('light').hasAttribute('data-moltis-ref')".into(),
+            code: "document.getElementById('light').hasAttribute('data-antre-ref')".into(),
         }))
         .await;
     assert_eq!(

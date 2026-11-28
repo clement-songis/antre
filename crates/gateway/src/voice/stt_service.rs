@@ -8,7 +8,7 @@ use {
     tracing::debug,
 };
 
-use moltis_voice::{
+use antre_voice::{
     AudioFormat, DeepgramStt, ElevenLabsStt, GeminiStt, GoogleStt, GroqStt, MistralStt,
     SherpaOnnxStt, SttProvider, SttProviderId, TranscribeRequest, VoxtralLocalStt, WhisperCliStt,
     WhisperLocalStt, WhisperStt,
@@ -346,7 +346,7 @@ impl LiveSttService {
 
     /// Resolve the active provider: explicit config value, or first configured.
     pub(super) fn resolve_provider(
-        config_provider: Option<moltis_config::VoiceSttProvider>,
+        config_provider: Option<antre_config::VoiceSttProvider>,
     ) -> Option<SttProviderId> {
         if let Some(p) = config_provider {
             return SttProviderId::parse(p.as_str());
@@ -485,7 +485,7 @@ impl SttService for LiveSttService {
         }
 
         // Update config file
-        moltis_config::update_config(|cfg| {
+        antre_config::update_config(|cfg| {
             cfg.voice.stt.provider = Some(provider_id);
         })
         .map_err(|e| format!("failed to update config: {}", e))?;
@@ -516,10 +516,10 @@ mod tests {
                 .unwrap_or_else(|error| panic!("config tempdir should be created: {error}"));
             let data_dir = tempfile::tempdir()
                 .unwrap_or_else(|error| panic!("data tempdir should be created: {error}"));
-            std::fs::write(config_dir.path().join("moltis.toml"), config_toml)
+            std::fs::write(config_dir.path().join("antre.toml"), config_toml)
                 .unwrap_or_else(|error| panic!("config should be written: {error}"));
-            moltis_config::set_config_dir(config_dir.path().to_path_buf());
-            moltis_config::set_data_dir(data_dir.path().to_path_buf());
+            antre_config::set_config_dir(config_dir.path().to_path_buf());
+            antre_config::set_data_dir(data_dir.path().to_path_buf());
             Self {
                 _lock: lock,
                 _config_dir: config_dir,
@@ -530,15 +530,15 @@ mod tests {
 
     impl Drop for VoiceConfigTestGuard {
         fn drop(&mut self) {
-            moltis_config::clear_config_dir();
-            moltis_config::clear_data_dir();
+            antre_config::clear_config_dir();
+            antre_config::clear_data_dir();
         }
     }
 
     #[test]
     fn test_live_stt_resolve_provider_handles_explicit_and_auto_selection() {
         assert_eq!(
-            LiveSttService::resolve_provider(Some(moltis_config::VoiceSttProvider::Whisper)),
+            LiveSttService::resolve_provider(Some(antre_config::VoiceSttProvider::Whisper)),
             Some(SttProviderId::Whisper)
         );
         assert!(LiveSttService::resolve_provider(None).is_some());
@@ -564,7 +564,7 @@ base_url = "http://127.0.0.1:8001/"
         assert_eq!(whisper, Some((SttProviderId::Whisper, true)));
         // With explicit provider selection, Whisper is chosen
         assert_eq!(
-            LiveSttService::resolve_provider(Some(moltis_config::VoiceSttProvider::Whisper)),
+            LiveSttService::resolve_provider(Some(antre_config::VoiceSttProvider::Whisper)),
             Some(SttProviderId::Whisper)
         );
     }

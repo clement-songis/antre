@@ -8,15 +8,15 @@ use std::{
 };
 
 use {
-    async_trait::async_trait,
-    axum::{Json, Router, extract::State, routing::post},
-    moltis_agents::{
+    antre_agents::{
         model::UserContent,
         runner::{AgentLoopLimits, run_agent_loop_with_context_and_limits},
         tool_registry::{AgentTool, ToolRegistry},
     },
-    moltis_config::schema::{ProviderEntry, ProvidersConfig},
-    moltis_providers::ProviderRegistry,
+    antre_config::schema::{ProviderEntry, ProvidersConfig},
+    antre_providers::ProviderRegistry,
+    async_trait::async_trait,
+    axum::{Json, Router, extract::State, routing::post},
     secrecy::Secret,
     serde_json::{Value, json},
 };

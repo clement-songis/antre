@@ -3,8 +3,8 @@
 use std::collections::{HashMap, HashSet};
 
 use {
-    moltis_agents::model::{ChatMessage, ContentPart, UserContent},
-    moltis_learning::review_digest::Turn,
+    antre_agents::model::{ChatMessage, ContentPart, UserContent},
+    antre_learning::review_digest::Turn,
 };
 
 const READ_SKILL_TOOL: &str = "read_skill";
@@ -69,7 +69,7 @@ pub(super) fn turns_from_messages(messages: &[ChatMessage]) -> (Vec<Turn>, HashS
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
-    use {super::*, moltis_agents::model::ToolCall, moltis_learning::review_digest::Role};
+    use {super::*, antre_agents::model::ToolCall, antre_learning::review_digest::Role};
 
     fn call(id: &str, name: &str, arguments: serde_json::Value) -> ToolCall {
         ToolCall {

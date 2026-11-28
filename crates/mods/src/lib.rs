@@ -1,8 +1,8 @@
 //! Mod SDK runtime (server side).
 //!
-//! A mod is a folder with an `moltis-mod.toml` manifest and, optionally, a
-//! WASM component implementing the `moltis:mods/plugin` world
-//! (`wit/mod/moltis-mod.wit`). This crate validates manifests, computes the
+//! A mod is a folder with an `antre-mod.toml` manifest and, optionally, a
+//! WASM component implementing the `antre:mods/plugin` world
+//! (`wit/mod/antre-mod.wit`). This crate validates manifests, computes the
 //! capability set and its consent hash, installs packages into a
 //! content-addressed store, runs components under fuel/epoch/memory limits and
 //! exposes their tools and hooks through a [`registry::ContributionRegistry`]

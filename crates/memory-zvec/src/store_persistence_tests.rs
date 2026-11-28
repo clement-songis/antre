@@ -5,7 +5,7 @@ fn ensure_init() {
 }
 
 fn cache_path() -> PathBuf {
-    let dir = std::env::temp_dir().join("moltis-zvec-store-test");
+    let dir = std::env::temp_dir().join("antre-zvec-store-test");
     let _ = std::fs::create_dir_all(&dir);
     let file = format!(
         "store_test_{}_{}.redb",
@@ -219,7 +219,7 @@ async fn test_rebuild_keyword_index_recovers_stale_fts() {
     }
 }
 
-// RRF vs weighted divergence is covered in moltis-memory's `search::tests`,
+// RRF vs weighted divergence is covered in antre-memory's `search::tests`,
 // which runs without the zvec feature enabled.
 
 /// Definitive test: vector search must survive flush + reopen.

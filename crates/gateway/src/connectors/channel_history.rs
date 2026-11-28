@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use {
-    moltis_channels::{ChannelRegistry, ChannelType},
-    moltis_connectors::{
+    antre_channels::{ChannelRegistry, ChannelType},
+    antre_connectors::{
         Account, ConnectorItemInput, Dataset, SourceDisposition, SourceObservation, SyncRun,
     },
     serde_json::json,
@@ -109,7 +109,7 @@ impl ConnectorManager {
             .map(|message| {
                 if message.message_id.trim().is_empty() {
                     return Err(ConnectorManagerError::Channel(
-                        moltis_channels::Error::unavailable(
+                        antre_channels::Error::unavailable(
                             "channel provider returned a message without a stable ID",
                         ),
                     ));

@@ -12,9 +12,9 @@ const releaseTagPattern = /^[0-9]{8}\.[0-9]{1,2}$/;
 
 function parseArgs(argv) {
 	const includeTags = new Set();
-	let publishedOnly = process.env.MOLTIS_CHANGELOG_PUBLISHED_ONLY === "1";
+	let publishedOnly = process.env.ANTRE_CHANGELOG_PUBLISHED_ONLY === "1";
 
-	const envInclude = process.env.MOLTIS_CHANGELOG_INCLUDE_TAGS ?? process.env.MOLTIS_CHANGELOG_INCLUDE_TAG ?? "";
+	const envInclude = process.env.ANTRE_CHANGELOG_INCLUDE_TAGS ?? process.env.ANTRE_CHANGELOG_INCLUDE_TAG ?? "";
 	for (const tag of envInclude.split(",").map((value) => value.trim())) {
 		if (tag) includeTags.add(tag);
 	}
@@ -58,7 +58,7 @@ function renderInline(raw) {
 	value = value.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
 	value = value.replace(/\*([^*]+)\*/g, "<em>$1</em>");
 	// Turn (#123) into PR/issue links
-	value = value.replace(/\(#(\d+)\)/g, '(<a href="https://github.com/moltis-org/moltis/pull/$1" target="_blank" rel="noopener" class="text-orange-600 dark:text-orange-400 hover:underline">#$1</a>)');
+	value = value.replace(/\(#(\d+)\)/g, '(<a href="https://github.com/antre-ai/antre/pull/$1" target="_blank" rel="noopener" class="text-orange-600 dark:text-orange-400 hover:underline">#$1</a>)');
 	return value;
 }
 
@@ -196,11 +196,11 @@ function releaseTagName(value) {
 }
 
 async function fetchPublishedReleaseVersions() {
-	const repo = process.env.MOLTIS_CHANGELOG_REPO ?? "moltis-org/moltis";
+	const repo = process.env.ANTRE_CHANGELOG_REPO ?? "antre-ai/antre";
 	const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN || "";
 	const headers = {
 		Accept: "application/vnd.github+json",
-		"User-Agent": "moltis-changelog-builder",
+		"User-Agent": "antre-changelog-builder",
 		"X-GitHub-Api-Version": "2022-11-28",
 	};
 	if (token) headers.Authorization = `Bearer ${token}`;
@@ -404,8 +404,8 @@ function buildHtml(contentHtml) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="color-scheme" content="light dark">
-    <title>Changelog - Moltis</title>
-    <meta name="description" content="Release history and changelog for Moltis.">
+    <title>Changelog - Antre</title>
+    <meta name="description" content="Release history and changelog for Antre.">
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

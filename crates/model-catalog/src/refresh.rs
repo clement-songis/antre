@@ -18,7 +18,7 @@ use crate::{
 /// outage or a format change upstream falls back to a known-good copy.
 pub const DEFAULT_REFRESH_URLS: &[&str] = &[
     "https://models.dev/api.json",
-    "https://raw.githubusercontent.com/clement-songis/moltis/main/crates/model-catalog/data/models-dev.json.gz",
+    "https://raw.githubusercontent.com/clement-songis/antre/main/crates/model-catalog/data/models-dev.json.gz",
 ];
 /// A download with fewer models is rejected as truncated or reformatted.
 pub const MIN_MODELS: usize = 500;
@@ -118,7 +118,7 @@ impl RefreshCache {
                 Err(error) => {
                     log_warn!(url, %error, "model catalog refresh failed, trying next source");
                     #[cfg(feature = "metrics")]
-                    moltis_metrics::counter!(moltis_metrics::model_catalog::REFRESH_ERRORS_TOTAL)
+                    antre_metrics::counter!(antre_metrics::model_catalog::REFRESH_ERRORS_TOTAL)
                         .increment(1);
                     last_error = error;
                 },
@@ -189,7 +189,7 @@ impl RefreshCache {
             "model catalog refreshed"
         );
         #[cfg(feature = "metrics")]
-        moltis_metrics::counter!(moltis_metrics::model_catalog::REFRESH_UPDATES_TOTAL).increment(1);
+        antre_metrics::counter!(antre_metrics::model_catalog::REFRESH_UPDATES_TOTAL).increment(1);
         Ok(RefreshOutcome::Updated(catalog))
     }
 }

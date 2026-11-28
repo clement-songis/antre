@@ -1,13 +1,13 @@
 //! Agent tools for MCP server management.
 //!
 //! These tools let the agent manage MCP servers directly without needing
-//! sandbox network access or the `moltis-ctl` CLI.
+//! sandbox network access or the `antre-ctl` CLI.
 
 use std::sync::Arc;
 
 use {
+    antre_agents::tool_registry::AgentTool,
     async_trait::async_trait,
-    moltis_agents::tool_registry::AgentTool,
     serde_json::{Map, Value, json},
 };
 
@@ -428,7 +428,7 @@ impl AgentTool for McpResourceReadTool {
 #[allow(clippy::unwrap_used)]
 #[cfg(test)]
 mod tests {
-    use moltis_service_traits::NoopMcpService;
+    use antre_service_traits::NoopMcpService;
 
     use super::*;
 

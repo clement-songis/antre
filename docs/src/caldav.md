@@ -1,11 +1,11 @@
 # CalDAV (Calendars)
 
-Moltis can read and manage remote calendars through the
+Antre can read and manage remote calendars through the
 [CalDAV](https://en.wikipedia.org/wiki/CalDAV) protocol. Once configured, the
 agent gains a `caldav` tool that can list calendars, query events, and create,
 update, or delete entries on your behalf.
 
-Moltis also provides a read-only **CalDAV connector** that synchronizes remote
+Antre also provides a read-only **CalDAV connector** that synchronizes remote
 calendar data into local datasets. The connector is configured from **Settings
 -> Connectors** and is independent from the agent tool described below.
 The same connector subsystem can also reuse supported channel accounts for
@@ -36,7 +36,7 @@ credential and re-enables the same connection.
 
 Config-managed connections are labeled in Settings. Their identity,
 credentials, timeout, enabled state, and removal are controlled by
-`moltis.toml`; only their advanced network permissions can be changed in the
+`antre.toml`; only their advanced network permissions can be changed in the
 connector UI. This restriction is enforced by the connector API as well as the
 UI. Manually created connections require the password to be re-entered whenever
 the server URL or username changes, preventing a stored credential from being
@@ -54,7 +54,7 @@ search without waiting for the CalDAV server:
 1. Open **Settings -> Connectors -> Connections**.
 2. Add a CalDAV connection with its HTTPS server URL, username, and an app
    password, or use an account imported automatically from `[caldav.accounts]`.
-3. Open **Datasets** and describe what Moltis should keep locally, for example:
+3. Open **Datasets** and describe what Antre should keep locally, for example:
 
    ```text
    Keep events from the past year where I accepted the invitation.
@@ -74,7 +74,7 @@ directly.
 Plan compilation sends the instruction and discovered calendar display names
 to the first configured tool-capable model, falling back to the first configured
 model. Private CalDAV hrefs are replaced by opaque identifiers before this
-request. Moltis does not send the password, username, server URL, dataset/account
+request. Antre does not send the password, username, server URL, dataset/account
 IDs, or event bodies. Compilation requires a configured model and is separate
 from scheduled synchronization. Configure only models whose privacy policy is
 appropriate for calendar names and the instructions you enter.
@@ -84,7 +84,7 @@ calendar metadata and raw iCalendar resources, including recurrence rules,
 exceptions, time zone definitions, alarms, and custom properties. Recurrences
 are preserved rather than expanded into an unbounded list of occurrences.
 
-On later runs, Moltis compares CalDAV ETags and fetches only new or changed
+On later runs, Antre compares CalDAV ETags and fetches only new or changed
 resources. Source state is retained for both included and filtered resources,
 so an unchanged rejected event is not repeatedly downloaded. Changing the
 compiled plan increments its revision and forces affected resources to be
@@ -116,7 +116,7 @@ static dashboards, and `items/*.md` contains generic Markdown records.
 Connector passwords are stored as secrets and are encrypted through the
 [Vault](vault.md) when encryption at rest is enabled and unlocked. API and UI
 responses never return the password. Calendar contents remain sensitive local
-data in `connectors.db` and projection files, so protect the Moltis data
+data in `connectors.db` and projection files, so protect the Antre data
 directory and exported files accordingly.
 
 HTTPS and public network targets are required by default. Advanced settings can
@@ -154,7 +154,7 @@ local `connectors` tool.
 
 ## Configuration
 
-Add a `[caldav]` section to your `moltis.toml` (usually `~/.moltis/moltis.toml`):
+Add a `[caldav]` section to your `antre.toml` (usually `~/.antre/antre.toml`):
 
 ```toml
 [caldav]
@@ -219,7 +219,7 @@ password = "secret"
 
 ```admonish warning
 Store passwords as app-specific passwords, never your main account password.
-Passwords are stored in `moltis.toml` and redacted in logs, but the file itself
+Passwords are stored in `antre.toml` and redacted in logs, but the file itself
 is plain text on disk. The Vault does not encrypt TOML configuration; use an app
 password and restrict access to the configuration file. Web-managed connector
 credentials use the vault-backed storage described above.
@@ -227,7 +227,7 @@ credentials use the vault-backed storage described above.
 
 ## How it works
 
-When Moltis starts and CalDAV is enabled with at least one account, a `caldav`
+When Antre starts and CalDAV is enabled with at least one account, a `caldav`
 tool is registered in the agent tool registry. The agent can then call it during
 conversations to interact with your calendars.
 
@@ -345,5 +345,5 @@ cargo build --release --no-default-features --features lightweight
 
 ## Validation
 
-`moltis config check` validates CalDAV configuration and warns about unknown
+`antre config check` validates CalDAV configuration and warns about unknown
 providers. Valid provider values are: `fastmail`, `icloud`, `generic`.

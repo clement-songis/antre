@@ -6,12 +6,12 @@
 	<true/>
 	<key>NSBonjourServices</key>
 	<array>
-		<string>_moltis._tcp</string>
+		<string>_antre._tcp</string>
 	</array>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>Moltis uses your local network to discover nearby Moltis gateways.</string>
+	<string>Antre uses your local network to discover nearby Antre gateways.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Moltis can share your location with your gateway so tools can use local context.</string>
+	<string>Antre can share your location with your gateway so tools can use local context.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsLocalNetworking</key>

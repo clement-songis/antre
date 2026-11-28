@@ -57,9 +57,9 @@ mod voicecall_commands;
 use std::sync::Arc;
 
 use {
+    antre_gateway::logs::{EnabledLogLevels, LogBroadcastLayer, LogBuffer},
     anyhow::anyhow,
     clap::{Parser, Subcommand},
-    moltis_gateway::logs::{EnabledLogLevels, LogBroadcastLayer, LogBuffer},
     status_line::StatusLine,
     tracing::info,
     tracing_subscriber::{
@@ -73,9 +73,9 @@ use {
 
 #[derive(Parser)]
 #[command(
-    name = "moltis",
-    about = "Moltis — personal AI gateway",
-    version = moltis_config::VERSION
+    name = "antre",
+    about = "Antre — personal AI gateway",
+    version = antre_config::VERSION
 )]
 struct Cli {
     #[command(subcommand)]
@@ -96,18 +96,18 @@ struct Cli {
     /// Port to listen on (overrides config value).
     #[arg(long, global = true)]
     port: Option<u16>,
-    /// Custom config directory (overrides default ~/.config/moltis/).
-    #[arg(long, global = true, env = "MOLTIS_CONFIG_DIR")]
+    /// Custom config directory (overrides default ~/.config/antre/).
+    #[arg(long, global = true, env = "ANTRE_CONFIG_DIR")]
     config_dir: Option<std::path::PathBuf>,
     /// Custom data directory (overrides default data dir).
-    #[arg(long, global = true, env = "MOLTIS_DATA_DIR")]
+    #[arg(long, global = true, env = "ANTRE_DATA_DIR")]
     data_dir: Option<std::path::PathBuf>,
     /// Custom share directory for external web/WASM assets (overrides default discovery).
-    #[arg(long, global = true, env = "MOLTIS_SHARE_DIR")]
+    #[arg(long, global = true, env = "ANTRE_SHARE_DIR")]
     share_dir: Option<std::path::PathBuf>,
     /// Disable TLS (for cloud deployments where the provider handles TLS).
     #[cfg(feature = "tls")]
-    #[arg(long, global = true, env = "MOLTIS_NO_TLS")]
+    #[arg(long, global = true, env = "ANTRE_NO_TLS")]
     no_tls: bool,
     /// Open the web UI in a browser on start (overrides `server.open_browser`).
     #[arg(long, global = true, conflicts_with = "no_open_browser")]
@@ -117,7 +117,7 @@ struct Cli {
     no_open_browser: bool,
     /// Tailscale mode: off, serve, or funnel.
     #[cfg(feature = "tailscale")]
-    #[arg(long, global = true, env = "MOLTIS_TAILSCALE")]
+    #[arg(long, global = true, env = "ANTRE_TAILSCALE")]
     tailscale: Option<String>,
     /// Reset tailscale serve/funnel when the gateway exits.
     #[cfg(feature = "tailscale")]
@@ -129,7 +129,7 @@ struct Cli {
 enum Commands {
     /// Start the gateway server (default when no subcommand is provided).
     Gateway,
-    /// Serve Moltis to an ACP client over stdio.
+    /// Serve Antre to an ACP client over stdio.
     #[cfg(feature = "acp")]
     Acp(acp_command::AcpArgs),
     /// Invoke an agent directly.
@@ -197,7 +197,7 @@ enum Commands {
         #[command(subcommand)]
         action: browser_commands::BrowserAction,
     },
-    /// Export and import Moltis data archives.
+    /// Export and import Antre data archives.
     Data {
         #[command(subcommand)]
         action: data_commands::DataAction,
@@ -217,7 +217,7 @@ enum Commands {
         #[command(subcommand)]
         action: node_commands::NodeAction,
     },
-    /// Install or manage moltis as an OS service.
+    /// Install or manage antre as an OS service.
     Service {
         #[command(subcommand)]
         action: service_commands::ServiceAction,
@@ -251,7 +251,7 @@ enum Commands {
         #[command(subcommand)]
         action: voicecall_commands::VoiceCallAction,
     },
-    /// Install the Moltis CA certificate into the system trust store.
+    /// Install the Antre CA certificate into the system trust store.
     #[cfg(feature = "tls")]
     TrustCa,
 }
@@ -281,13 +281,13 @@ enum SkillAction {
     Export {
         /// Source in owner/repo format.
         source: String,
-        /// Output file or directory. Defaults to ~/.moltis/skill-exports/.
+        /// Output file or directory. Defaults to ~/.antre/skill-exports/.
         #[arg(long)]
         output: Option<String>,
     },
     /// Import a portable skill bundle into the local registry in quarantine.
     Import {
-        /// Path to a .tar.gz bundle created by `moltis skills export`.
+        /// Path to a .tar.gz bundle created by `antre skills export`.
         path: String,
     },
     /// Show details about a skill.
@@ -315,7 +315,7 @@ fn default_telemetry_filter(log_level: &str) -> EnvFilter {
 /// Whether the chosen command uses stdout as a machine-readable wire, in which
 /// case logs must go to stderr instead.
 ///
-/// `moltis acp` frames JSON-RPC on stdout: a single log line written there
+/// `antre acp` frames JSON-RPC on stdout: a single log line written there
 /// corrupts the stream and the client disconnects with a parse error.
 fn command_reserves_stdout(command: Option<&Commands>) -> bool {
     #[cfg(feature = "acp")]
@@ -334,11 +334,11 @@ fn telemetry_target_allowed(target: &str, protocol_payloads_possible: bool) -> b
         return true;
     }
     ![
-        "moltis_agents",
-        "moltis_chat",
-        "moltis_mcp",
-        "moltis_providers",
-        "moltis_tools",
+        "antre_agents",
+        "antre_chat",
+        "antre_mcp",
+        "antre_providers",
+        "antre_tools",
     ]
     .iter()
     .any(|prefix| target.starts_with(prefix))
@@ -349,10 +349,10 @@ fn command_starts_gateway(command: Option<&Commands>) -> bool {
 }
 
 /// `server.open_browser` override from `--open-browser` / `--no-open-browser`.
-fn open_browser_override(cli: &Cli) -> Option<moltis_config::OpenBrowser> {
+fn open_browser_override(cli: &Cli) -> Option<antre_config::OpenBrowser> {
     match (cli.open_browser, cli.no_open_browser) {
-        (true, _) => Some(moltis_config::OpenBrowser::Always),
-        (_, true) => Some(moltis_config::OpenBrowser::Never),
+        (true, _) => Some(antre_config::OpenBrowser::Always),
+        (_, true) => Some(antre_config::OpenBrowser::Never),
         _ => None,
     }
 }
@@ -437,7 +437,7 @@ fn init_telemetry(cli: &Cli, log_buffer: Option<LogBuffer>) -> Option<Arc<Status
 
 #[cfg(feature = "tls")]
 async fn trust_ca() -> anyhow::Result<()> {
-    let cert_dir = moltis_httpd::tls::cert_dir()?;
+    let cert_dir = antre_httpd::tls::cert_dir()?;
     let ca_path = cert_dir.join("ca.pem");
 
     if !ca_path.exists() {
@@ -449,7 +449,7 @@ async fn trust_ca() -> anyhow::Result<()> {
     }
 
     eprintln!("Installing CA certificate: {}", ca_path.display());
-    let report = moltis_httpd::tls::trust::install_ca(&ca_path);
+    let report = antre_httpd::tls::trust::install_ca(&ca_path);
     for step in &report.steps {
         match &step.result {
             Ok(()) => eprintln!("  ✓ {}", step.store),
@@ -477,7 +477,7 @@ async fn main() -> anyhow::Result<()> {
 
     // Create the log buffer only for the gateway command so the web UI can
     // display captured log entries. Default capacity (1000) can be overridden
-    // via `server.log_buffer_size` in moltis.toml.
+    // via `server.log_buffer_size` in antre.toml.
     let log_buffer = if command_starts_gateway(cli.command.as_ref()) {
         Some(LogBuffer::default())
     } else {
@@ -485,29 +485,29 @@ async fn main() -> anyhow::Result<()> {
     };
 
     let status_line = init_telemetry(&cli, log_buffer.clone());
-    let launch = moltis_httpd::LaunchOptions {
+    let launch = antre_httpd::LaunchOptions {
         open_browser: open_browser_override(&cli),
-        status: status_line.map(|line| line as Arc<dyn moltis_httpd::StartupStatus>),
+        status: status_line.map(|line| line as Arc<dyn antre_httpd::StartupStatus>),
     };
 
-    info!(version = moltis_config::VERSION, "moltis starting");
+    info!(version = antre_config::VERSION, "antre starting");
 
     // Apply directory overrides before any command so all subcommands
     // (config check, db, sandbox, etc.) respect --config-dir / --data-dir.
     if let Some(ref dir) = cli.config_dir {
-        moltis_config::set_config_dir(dir.clone());
+        antre_config::set_config_dir(dir.clone());
     }
     if let Some(ref dir) = cli.data_dir {
-        moltis_config::set_data_dir(dir.clone());
+        antre_config::set_data_dir(dir.clone());
     }
     if let Some(ref dir) = cli.share_dir {
-        moltis_config::set_share_dir(dir.clone());
+        antre_config::set_share_dir(dir.clone());
     }
 
     // Ensure config/data directories exist for every command path. This is a
     // hard requirement for startup; fail fast if directory initialization fails.
     let config_dir =
-        moltis_config::config_dir().ok_or_else(|| anyhow!("unable to resolve config directory"))?;
+        antre_config::config_dir().ok_or_else(|| anyhow!("unable to resolve config directory"))?;
     std::fs::create_dir_all(&config_dir).unwrap_or_else(|e| {
         panic!(
             "failed to create config directory {}: {e}",
@@ -515,7 +515,7 @@ async fn main() -> anyhow::Result<()> {
         )
     });
 
-    let data_dir = moltis_config::data_dir();
+    let data_dir = antre_config::data_dir();
     std::fs::create_dir_all(&data_dir).unwrap_or_else(|e| {
         panic!(
             "failed to create data directory {}: {e}",
@@ -525,13 +525,13 @@ async fn main() -> anyhow::Result<()> {
 
     // Initialize config directory once for all subcommands
     // (write defaults.toml, compact, persist random port).
-    moltis_config::initialize_config();
+    antre_config::initialize_config();
 
     match cli.command {
         // Default: start gateway when no subcommand is provided
         None | Some(Commands::Gateway) => {
             // Load config to get server settings
-            let config = moltis_config::discover_and_load();
+            let config = antre_config::discover_and_load();
 
             // CLI args override config values
             let bind = cli.bind.unwrap_or(config.server.bind);
@@ -543,7 +543,7 @@ async fn main() -> anyhow::Result<()> {
             let no_tls = false;
 
             #[cfg(feature = "tailscale")]
-            let tailscale_opts = cli.tailscale.map(|mode| moltis_httpd::TailscaleOpts {
+            let tailscale_opts = cli.tailscale.map(|mode| antre_httpd::TailscaleOpts {
                 mode,
                 reset_on_exit: cli.tailscale_reset_on_exit,
             });
@@ -551,11 +551,11 @@ async fn main() -> anyhow::Result<()> {
             let tailscale_opts: Option<()> = None;
             let _ = &tailscale_opts; // suppress unused warning when feature disabled
             #[cfg(feature = "web-ui")]
-            let extra_routes: Option<moltis_httpd::RouteEnhancer> = Some(moltis_web::web_routes);
+            let extra_routes: Option<antre_httpd::RouteEnhancer> = Some(antre_web::web_routes);
             #[cfg(not(feature = "web-ui"))]
-            let extra_routes: Option<moltis_httpd::RouteEnhancer> = None;
+            let extra_routes: Option<antre_httpd::RouteEnhancer> = None;
 
-            moltis_httpd::start_gateway(
+            antre_httpd::start_gateway(
                 &bind,
                 port,
                 no_tls,
@@ -573,12 +573,12 @@ async fn main() -> anyhow::Result<()> {
         #[cfg(feature = "acp")]
         Some(Commands::Acp(args)) => acp_command::handle_acp(args).await,
         Some(Commands::Agent { message, .. }) => {
-            let result = moltis_agents::runner::run_agent("default", "main", &message).await?;
+            let result = antre_agents::runner::run_agent("default", "main", &message).await?;
             println!("{result}");
             Ok(())
         },
         Some(Commands::Onboard) => {
-            moltis_onboarding::wizard::run_onboarding().await?;
+            antre_onboarding::wizard::run_onboarding().await?;
             Ok(())
         },
         Some(Commands::Channels { action }) => channel_commands::handle_channels(action).await,
@@ -616,7 +616,7 @@ async fn main() -> anyhow::Result<()> {
 }
 
 async fn handle_skills(action: SkillAction) -> anyhow::Result<()> {
-    use moltis_skills::{
+    use antre_skills::{
         discover::FsSkillDiscoverer,
         install,
         registry::{InMemoryRegistry, SkillRegistry},
@@ -656,7 +656,7 @@ async fn handle_skills(action: SkillAction) -> anyhow::Result<()> {
         },
         SkillAction::Export { source, output } => {
             let install_dir = install::default_install_dir()?;
-            let exported = moltis_skills::portability::export_repo_bundle(
+            let exported = antre_skills::portability::export_repo_bundle(
                 &source,
                 &install_dir,
                 output.as_deref().map(std::path::Path::new),
@@ -670,7 +670,7 @@ async fn handle_skills(action: SkillAction) -> anyhow::Result<()> {
         },
         SkillAction::Import { path } => {
             let install_dir = install::default_install_dir()?;
-            let imported = moltis_skills::portability::import_repo_bundle(
+            let imported = antre_skills::portability::import_repo_bundle(
                 std::path::Path::new(&path),
                 &install_dir,
             )
@@ -733,11 +733,11 @@ mod tests {
             "agent_client_protocol::rpc",
             false
         ));
-        assert!(!telemetry_target_allowed("moltis_providers::openai", true));
-        assert!(!telemetry_target_allowed("moltis_mcp::transport", true));
-        assert!(!telemetry_target_allowed("moltis_tools::exec", true));
-        assert!(telemetry_target_allowed("moltis_cli::acp_backend", true));
-        assert!(telemetry_target_allowed("moltis_providers::openai", false));
+        assert!(!telemetry_target_allowed("antre_providers::openai", true));
+        assert!(!telemetry_target_allowed("antre_mcp::transport", true));
+        assert!(!telemetry_target_allowed("antre_tools::exec", true));
+        assert!(telemetry_target_allowed("antre_cli::acp_backend", true));
+        assert!(telemetry_target_allowed("antre_providers::openai", false));
     }
 
     #[test]

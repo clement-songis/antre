@@ -13,9 +13,9 @@ pub mod state_store;
 mod storage_layout;
 pub mod store;
 
-/// Persisted message types live in `moltis-protocol` so clients can share them
+/// Persisted message types live in `antre-protocol` so clients can share them
 /// without depending on session storage.
-pub use moltis_protocol::message;
+pub use antre_protocol::message;
 pub use {
     error::{Error, Result},
     key::SessionKey,
@@ -26,7 +26,7 @@ pub use {
 /// Run database migrations for the sessions crate.
 ///
 /// This creates the `sessions` and `channel_sessions` tables. Should be called
-/// at application startup after [`moltis_projects::run_migrations`] (sessions
+/// at application startup after [`antre_projects::run_migrations`] (sessions
 /// has a foreign key to projects).
 pub async fn run_migrations(pool: &sqlx::SqlitePool) -> Result<()> {
     sqlx::migrate!("./migrations")

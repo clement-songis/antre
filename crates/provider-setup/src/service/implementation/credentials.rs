@@ -6,7 +6,7 @@ use {
     tracing::{info, warn},
 };
 
-use moltis_service_traits::{ServiceError, ServiceResult};
+use antre_service_traits::{ServiceError, ServiceResult};
 
 use {
     super::{LiveProviderSetupService, support::ProviderSetupTiming},
@@ -156,7 +156,7 @@ impl LiveProviderSetupService {
             #[cfg(feature = "local-llm")]
             if known.auth_type == AuthType::Local
                 && provider_name == "local-llm"
-                && let Some(config_dir) = moltis_config::config_dir()
+                && let Some(config_dir) = antre_config::config_dir()
             {
                 let config_path = config_dir.join("local-llm.json");
                 let _ = std::fs::remove_file(config_path);
@@ -287,7 +287,7 @@ mod tests {
 
     use {
         super::LiveProviderSetupService, crate::key_store::KeyStore,
-        moltis_config::schema::ProvidersConfig, moltis_providers::ProviderRegistry,
+        antre_config::schema::ProvidersConfig, antre_providers::ProviderRegistry,
     };
 
     fn test_service(

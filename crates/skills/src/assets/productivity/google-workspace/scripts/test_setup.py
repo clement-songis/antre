@@ -8,7 +8,7 @@ from pathlib import Path
 
 def load_script(name):
     path = Path(__file__).with_name(name)
-    spec = importlib.util.spec_from_file_location(f"moltis_{path.stem}", path)
+    spec = importlib.util.spec_from_file_location(f"antre_{path.stem}", path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
@@ -28,17 +28,17 @@ class GoogleSetupTest(unittest.TestCase):
 
     def test_data_dir_precedes_legacy_home(self):
         setup = load_setup()
-        previous_data = os.environ.get("MOLTIS_DATA_DIR")
+        previous_data = os.environ.get("ANTRE_DATA_DIR")
         previous_legacy = os.environ.get("HERMES_HOME")
         try:
-            os.environ["MOLTIS_DATA_DIR"] = "/tmp/moltis-data"
+            os.environ["ANTRE_DATA_DIR"] = "/tmp/antre-data"
             os.environ["HERMES_HOME"] = "/tmp/hermes-data"
-            self.assertEqual(setup.get_moltis_home(), Path("/tmp/moltis-data"))
+            self.assertEqual(setup.get_antre_home(), Path("/tmp/antre-data"))
         finally:
             if previous_data is None:
-                os.environ.pop("MOLTIS_DATA_DIR", None)
+                os.environ.pop("ANTRE_DATA_DIR", None)
             else:
-                os.environ["MOLTIS_DATA_DIR"] = previous_data
+                os.environ["ANTRE_DATA_DIR"] = previous_data
             if previous_legacy is None:
                 os.environ.pop("HERMES_HOME", None)
             else:

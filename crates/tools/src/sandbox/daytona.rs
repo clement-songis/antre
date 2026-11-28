@@ -128,7 +128,7 @@ impl DaytonaSandbox {
         let stderr_file = shell_words::quote(stderr_file);
 
         format!(
-            "decoded=$(mktemp /tmp/moltis-cmd.XXXXXX) || exit 125; \
+            "decoded=$(mktemp /tmp/antre-cmd.XXXXXX) || exit 125; \
              printf %s {encoded} | base64 -d > \"$decoded\"; status=$?; \
              if [ \"$status\" -ne 0 ]; then rm -f \"$decoded\"; exit \"$status\"; fi; \
              sh \"$decoded\" 2>{stderr_file}; status=$?; \
@@ -189,7 +189,7 @@ impl DaytonaSandbox {
         self.client
             .request(method, &url)
             .bearer_auth(self.daytona.api_key.expose_secret())
-            .header("X-Daytona-Source", "moltis")
+            .header("X-Daytona-Source", "antre")
     }
 
     /// Build an authenticated request to the sandbox toolbox proxy.
@@ -203,7 +203,7 @@ impl DaytonaSandbox {
         self.client
             .request(method, &url)
             .bearer_auth(self.daytona.api_key.expose_secret())
-            .header("X-Daytona-Source", "moltis")
+            .header("X-Daytona-Source", "antre")
     }
 
     /// Create a Daytona sandbox, returning (sandbox_id, toolbox_base_url, workspace_dir).
@@ -275,7 +275,7 @@ impl DaytonaSandbox {
         // The Daytona toolbox API combines stdout and stderr in the `result`
         // field. To separate them, wrap the command to redirect stderr to a
         // temp file, then read it back in a second call.
-        let stderr_file = format!("/tmp/moltis-stderr-{}", uuid::Uuid::new_v4());
+        let stderr_file = format!("/tmp/antre-stderr-{}", uuid::Uuid::new_v4());
         // Base64-encode the command to avoid any shell metacharacter issues
         // (braces, parentheses, quotes, etc.) in the wrapper.
         let wrapped = Self::wrapped_command(command, &stderr_file);

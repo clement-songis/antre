@@ -50,7 +50,7 @@ run_case() {
   else
     [[ ! -f "$TEST_DIR/log-called" ]]
   fi
-  [[ -z "$(find "$TEST_DIR" -name 'moltis-notary.*' -print)" ]]
+  [[ -z "$(find "$TEST_DIR" -name 'antre-notary.*' -print)" ]]
   if grep -q 'test-private-key' "$TEST_DIR/output"; then
     exit 1
   fi

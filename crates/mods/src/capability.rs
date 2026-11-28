@@ -4,7 +4,7 @@
 use std::{cmp::Ordering, collections::BTreeSet, fmt, str::FromStr};
 
 use {
-    moltis_common::hooks::HookEvent,
+    antre_common::hooks::HookEvent,
     serde::{Deserialize, Deserializer, Serialize, Serializer},
     sha2::{Digest, Sha256},
 };
@@ -366,7 +366,7 @@ impl CapabilitySet {
     #[must_use]
     pub fn consent_hash(&self) -> ConsentHash {
         let mut hasher = Sha256::new();
-        hasher.update(b"moltis-mod-capabilities-v1\n");
+        hasher.update(b"antre-mod-capabilities-v1\n");
         for capability in &self.0 {
             hasher.update(capability.to_string().as_bytes());
             hasher.update(b"\n");

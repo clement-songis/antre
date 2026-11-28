@@ -9,11 +9,11 @@ use {
 };
 
 use {
-    moltis_channels::{
+    antre_channels::{
         ChannelAttachment, ChannelEventSink, ChannelMessageKind, ChannelReplyTarget,
         SavedChannelFile,
     },
-    moltis_common::types::ChatType,
+    antre_common::types::ChatType,
 };
 
 use super::outbound_to_for_msg;
@@ -141,7 +141,7 @@ pub(super) fn extract_document_file(msg: &Message) -> Option<DocumentFileInfo> {
                         .file_name
                         .as_deref()
                         .and_then(|name| name.rsplit('.').next())
-                        .and_then(moltis_media::mime::mime_from_extension)
+                        .and_then(antre_media::mime::mime_from_extension)
                         .map(str::to_string)
                         .unwrap_or(normalized)
                 } else {
@@ -159,7 +159,7 @@ pub(super) fn extract_document_file(msg: &Message) -> Option<DocumentFileInfo> {
     }
 }
 
-pub(super) use moltis_media::documents::{
+pub(super) use antre_media::documents::{
     build_document_body, build_saved_document_filename, extract_pdf_document_content,
     extract_text_document_content, format_document_label, is_pdf_document_type,
     is_supported_document_type, normalize_media_type,
@@ -324,7 +324,7 @@ pub(super) async fn handle_voice_message(
     account_id: &str,
     caption: Option<&str>,
     event_sink: Option<&Arc<dyn ChannelEventSink>>,
-    outbound: &dyn moltis_channels::ChannelOutbound,
+    outbound: &dyn antre_channels::ChannelOutbound,
     voice_file: &VoiceFileInfo,
 ) -> Option<(String, Vec<ChannelAttachment>, Option<(Vec<u8>, String)>)> {
     let caption_text = caption
@@ -335,7 +335,7 @@ pub(super) async fn handle_voice_message(
     let reply_target = outbound_to_for_msg(msg);
 
     async fn send_direct_reply(
-        outbound: &dyn moltis_channels::ChannelOutbound,
+        outbound: &dyn antre_channels::ChannelOutbound,
         account_id: &str,
         to: &str,
         text: &str,

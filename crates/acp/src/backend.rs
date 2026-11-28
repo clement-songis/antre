@@ -1,9 +1,9 @@
-//! The seam between the (`!Send`) ACP protocol handler and Moltis's (`Send`)
+//! The seam between the (`!Send`) ACP protocol handler and Antre's (`Send`)
 //! services.
 //!
 //! `agent_client_protocol` declares its traits with `#[async_trait(?Send)]`, so
 //! every future the protocol handler produces is pinned to the thread running
-//! the [`tokio::task::LocalSet`]. Moltis's `ChatService` is `Send + Sync` and
+//! the [`tokio::task::LocalSet`]. Antre's `ChatService` is `Send + Sync` and
 //! expects to run on the multi-threaded runtime.
 //!
 //! [`AcpBackend`] is where the two meet. It is deliberately `Send + Sync`, so
@@ -133,14 +133,14 @@ pub struct BackendCapabilities {
     pub load_session: bool,
 }
 
-/// Moltis-side implementation of a single ACP conversation surface.
+/// Antre-side implementation of a single ACP conversation surface.
 ///
 /// One process serves one client, matching how ACP harnesses spawn agents, but
 /// a backend may hold several sessions at once because a client is free to open
 /// more than one.
 #[async_trait]
 pub trait AcpBackend: Send + Sync + 'static {
-    /// Creates a new session and returns its Moltis key.
+    /// Creates a new session and returns its Antre key.
     async fn create_session(&self, setup: &SessionSetup) -> anyhow::Result<SessionKey>;
 
     /// Resumes an existing session, returning its history so the protocol layer

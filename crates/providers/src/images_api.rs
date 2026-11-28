@@ -4,8 +4,8 @@
 use std::collections::HashMap;
 
 use {
-    moltis_config::schema::ProvidersConfig,
-    moltis_model_catalog::{ModelKind, global},
+    antre_config::schema::ProvidersConfig,
+    antre_model_catalog::{ModelKind, global},
     secrecy::{ExposeSecret, Secret},
     serde::Deserialize,
 };
@@ -343,7 +343,7 @@ async fn read_limited(response: reqwest::Response) -> anyhow::Result<Vec<u8>> {
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
-    use {super::*, moltis_config::schema::ProviderEntry};
+    use {super::*, antre_config::schema::ProviderEntry};
 
     fn request(model: &str) -> ImageGenerationRequest {
         ImageGenerationRequest {

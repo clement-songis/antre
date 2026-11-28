@@ -10,7 +10,7 @@ origin:
 
 # Trello Skill
 
-Manage Trello boards, lists, and cards directly from Moltis.
+Manage Trello boards, lists, and cards directly from Antre.
 
 ## Setup
 

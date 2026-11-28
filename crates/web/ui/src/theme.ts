@@ -21,16 +21,16 @@ function updateThemeButtons(activeMode: string): void {
 
 /** Apply and remember a theme mode ("light", "dark" or "system"). */
 export function setThemeMode(mode: string): void {
-	localStorage.setItem("moltis-theme", mode);
+	localStorage.setItem("antre-theme", mode);
 	applyTheme(mode);
 }
 
 export function initTheme(): void {
-	const saved = localStorage.getItem("moltis-theme") || "system";
+	const saved = localStorage.getItem("antre-theme") || "system";
 	applyTheme(saved);
 	const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
 	const onSystemThemeChange = (): void => {
-		const current = localStorage.getItem("moltis-theme") || "system";
+		const current = localStorage.getItem("antre-theme") || "system";
 		if (current === "system") applyTheme("system");
 	};
 	if (typeof mediaQuery.addEventListener === "function") {

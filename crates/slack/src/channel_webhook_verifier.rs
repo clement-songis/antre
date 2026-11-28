@@ -4,14 +4,14 @@
 //! [Slack verification protocol](https://api.slack.com/authentication/verifying-requests-from-slack).
 
 use {
-    bytes::Bytes,
-    http::HeaderMap,
-    moltis_channels::{
+    antre_channels::{
         channel_webhook_middleware::{
             ChannelWebhookRejection, ChannelWebhookVerifier, VerifiedChannelWebhook,
         },
         plugin::ChannelType,
     },
+    bytes::Bytes,
+    http::HeaderMap,
     secrecy::{ExposeSecret, Secret},
 };
 
@@ -121,8 +121,8 @@ impl ChannelWebhookVerifier for SlackChannelWebhookVerifier {
         })
     }
 
-    fn rate_policy(&self) -> moltis_channels::ChannelWebhookRatePolicy {
-        moltis_channels::ChannelWebhookRatePolicy {
+    fn rate_policy(&self) -> antre_channels::ChannelWebhookRatePolicy {
+        antre_channels::ChannelWebhookRatePolicy {
             max_requests_per_minute: 600,
             burst: 200,
         }
@@ -248,7 +248,7 @@ mod tests {
     #[test]
     fn command_trigger_id_is_used_for_idempotency() {
         let verifier = SlackChannelWebhookVerifier::new(Secret::new(TEST_SECRET.into()));
-        let body = b"command=%2Fmoltis&trigger_id=1337.42.command&text=hello+world";
+        let body = b"command=%2Fantre&trigger_id=1337.42.command&text=hello+world";
         let headers = make_signed_headers(TEST_SECRET, "1700000000", body);
 
         let envelope = verifier.verify(&headers, body).unwrap();
@@ -283,8 +283,8 @@ mod tests {
         // Slack posts commands as application/x-www-form-urlencoded, where a
         // space is `+` — not `%20`. Treating `+` literally would corrupt every
         // multi-word slash command argument.
-        let body = b"command=%2Fmoltis&text=hello+world%21&trigger_id=1.2.abc";
-        assert_eq!(form_value(body, "command").as_deref(), Some("/moltis"));
+        let body = b"command=%2Fantre&text=hello+world%21&trigger_id=1.2.abc";
+        assert_eq!(form_value(body, "command").as_deref(), Some("/antre"));
         assert_eq!(form_value(body, "text").as_deref(), Some("hello world!"));
         assert_eq!(form_value(body, "missing"), None);
     }
@@ -308,7 +308,7 @@ mod tests {
     #[test]
     fn contract_rejects_empty_signature() {
         let verifier = SlackChannelWebhookVerifier::new(Secret::new(TEST_SECRET.into()));
-        moltis_channels::contract::channel_webhook_verifier_rejects_empty_signature(&verifier);
+        antre_channels::contract::channel_webhook_verifier_rejects_empty_signature(&verifier);
     }
 
     #[test]
@@ -322,7 +322,7 @@ mod tests {
                 .parse()
                 .unwrap(),
         );
-        moltis_channels::contract::channel_webhook_verifier_rejects_bad_signature(
+        antre_channels::contract::channel_webhook_verifier_rejects_bad_signature(
             &verifier, &headers,
         );
     }
@@ -330,18 +330,18 @@ mod tests {
     #[test]
     fn contract_has_channel_type() {
         let verifier = SlackChannelWebhookVerifier::new(Secret::new(TEST_SECRET.into()));
-        moltis_channels::contract::channel_webhook_verifier_has_channel_type(&verifier);
+        antre_channels::contract::channel_webhook_verifier_has_channel_type(&verifier);
     }
 
     #[test]
     fn contract_has_positive_max_age() {
         let verifier = SlackChannelWebhookVerifier::new(Secret::new(TEST_SECRET.into()));
-        moltis_channels::contract::channel_webhook_verifier_has_positive_max_age(&verifier);
+        antre_channels::contract::channel_webhook_verifier_has_positive_max_age(&verifier);
     }
 
     #[test]
     fn contract_has_valid_rate_policy() {
         let verifier = SlackChannelWebhookVerifier::new(Secret::new(TEST_SECRET.into()));
-        moltis_channels::contract::channel_webhook_verifier_has_valid_rate_policy(&verifier);
+        antre_channels::contract::channel_webhook_verifier_has_valid_rate_policy(&verifier);
     }
 }

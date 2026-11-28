@@ -110,7 +110,7 @@ fn detect_openclaw(
 ) -> bool {
     #[cfg(feature = "openclaw-import")]
     {
-        let Some(detection) = moltis_openclaw_import::detect() else {
+        let Some(detection) = antre_openclaw_import::detect() else {
             if !json_output {
                 println!("OpenClaw: not detected");
             }
@@ -121,7 +121,7 @@ fn detect_openclaw(
             return false;
         };
 
-        let scan = moltis_openclaw_import::scan(&detection);
+        let scan = antre_openclaw_import::scan(&detection);
         if json_output {
             results.insert(
                 "openclaw".to_string(),
@@ -174,7 +174,7 @@ fn detect_claude(
 ) -> bool {
     #[cfg(feature = "claude-import")]
     {
-        let Some(detection) = moltis_claude_import::detect::detect() else {
+        let Some(detection) = antre_claude_import::detect::detect() else {
             if !json_output {
                 println!("Claude Code: not detected");
             }
@@ -182,8 +182,8 @@ fn detect_claude(
             return false;
         };
 
-        let skills = moltis_claude_import::skills::discover_skills(&detection);
-        let commands = moltis_claude_import::skills::discover_commands(&detection);
+        let skills = antre_claude_import::skills::discover_skills(&detection);
+        let commands = antre_claude_import::skills::discover_commands(&detection);
 
         if json_output {
             results.insert(
@@ -234,7 +234,7 @@ fn detect_hermes(
 ) -> bool {
     #[cfg(feature = "hermes-import")]
     {
-        let Some(detection) = moltis_hermes_import::detect::detect() else {
+        let Some(detection) = antre_hermes_import::detect::detect() else {
             if !json_output {
                 println!("Hermes: not detected");
             }
@@ -242,8 +242,8 @@ fn detect_hermes(
             return false;
         };
 
-        let creds = moltis_hermes_import::credentials::discover_credentials(&detection);
-        let skills = moltis_hermes_import::skills::discover_skills(&detection);
+        let creds = antre_hermes_import::credentials::discover_credentials(&detection);
+        let skills = antre_hermes_import::skills::discover_skills(&detection);
         let has_memory = detection.soul_path.is_some()
             || detection.memory_path.is_some()
             || detection.agents_path.is_some()
@@ -295,9 +295,9 @@ fn handle_import_all(
         return handle_detect(source, json_output);
     }
 
-    let config_dir = moltis_config::config_dir()
+    let config_dir = antre_config::config_dir()
         .ok_or_else(|| anyhow::anyhow!("could not determine config directory"))?;
-    let data_dir = moltis_config::data_dir();
+    let data_dir = antre_config::data_dir();
 
     let mut all_results = serde_json::Map::new();
 
@@ -332,7 +332,7 @@ fn import_openclaw_all(
 ) -> anyhow::Result<()> {
     #[cfg(feature = "openclaw-import")]
     {
-        let Some(detection) = moltis_openclaw_import::detect() else {
+        let Some(detection) = antre_openclaw_import::detect() else {
             if !json_output {
                 println!("OpenClaw: not detected, skipping");
             }
@@ -346,9 +346,9 @@ fn import_openclaw_all(
             );
         }
 
-        let report = moltis_openclaw_import::import(
+        let report = antre_openclaw_import::import(
             &detection,
-            &moltis_openclaw_import::ImportSelection::all(),
+            &antre_openclaw_import::ImportSelection::all(),
             config_dir,
             data_dir,
         );
@@ -376,7 +376,7 @@ fn import_claude_all(
 ) -> anyhow::Result<()> {
     #[cfg(feature = "claude-import")]
     {
-        let Some(detection) = moltis_claude_import::detect::detect() else {
+        let Some(detection) = antre_claude_import::detect::detect() else {
             if !json_output {
                 println!("Claude Code: not detected, skipping");
             }
@@ -391,9 +391,9 @@ fn import_claude_all(
         let skills_dir = data_dir.join("skills");
 
         let categories = vec![
-            moltis_claude_import::mcp_servers::import_mcp_servers(&detection, &mcp_path),
-            moltis_claude_import::skills::import_skills(&detection, &skills_dir),
-            moltis_claude_import::memory::import_memory(&detection, data_dir),
+            antre_claude_import::mcp_servers::import_mcp_servers(&detection, &mcp_path),
+            antre_claude_import::skills::import_skills(&detection, &skills_dir),
+            antre_claude_import::memory::import_memory(&detection, data_dir),
         ];
 
         let total: usize = categories.iter().map(|c| c.items_imported).sum();
@@ -422,7 +422,7 @@ fn import_hermes_all(
 ) -> anyhow::Result<()> {
     #[cfg(feature = "hermes-import")]
     {
-        let Some(detection) = moltis_hermes_import::detect::detect() else {
+        let Some(detection) = antre_hermes_import::detect::detect() else {
             if !json_output {
                 println!("Hermes: not detected, skipping");
             }
@@ -439,9 +439,9 @@ fn import_hermes_all(
         let skills_dir = data_dir.join("skills");
 
         let categories = vec![
-            moltis_hermes_import::credentials::import_credentials(&detection, config_dir),
-            moltis_hermes_import::skills::import_skills(&detection, &skills_dir),
-            moltis_hermes_import::memory::import_memory(&detection, data_dir),
+            antre_hermes_import::credentials::import_credentials(&detection, config_dir),
+            antre_hermes_import::skills::import_skills(&detection, &skills_dir),
+            antre_hermes_import::memory::import_memory(&detection, data_dir),
         ];
 
         let total: usize = categories.iter().map(|c| c.items_imported).sum();
@@ -473,9 +473,9 @@ fn handle_import_select(
         return handle_detect(Some(source), json_output);
     }
 
-    let config_dir = moltis_config::config_dir()
+    let config_dir = antre_config::config_dir()
         .ok_or_else(|| anyhow::anyhow!("could not determine config directory"))?;
-    let data_dir = moltis_config::data_dir();
+    let data_dir = antre_config::data_dir();
 
     match source {
         ImportSource::Openclaw => {
@@ -497,13 +497,13 @@ fn import_openclaw_select(
 ) -> anyhow::Result<()> {
     #[cfg(feature = "openclaw-import")]
     {
-        let Some(detection) = moltis_openclaw_import::detect() else {
+        let Some(detection) = antre_openclaw_import::detect() else {
             anyhow::bail!("No OpenClaw installation found");
         };
 
         let selection = parse_openclaw_selection(categories);
 
-        let report = moltis_openclaw_import::import(&detection, &selection, config_dir, data_dir);
+        let report = antre_openclaw_import::import(&detection, &selection, config_dir, data_dir);
 
         if json_output {
             print_json(serde_json::json!({
@@ -522,8 +522,8 @@ fn import_openclaw_select(
 }
 
 #[cfg(feature = "openclaw-import")]
-fn parse_openclaw_selection(categories: &[String]) -> moltis_openclaw_import::ImportSelection {
-    let mut sel = moltis_openclaw_import::ImportSelection::default();
+fn parse_openclaw_selection(categories: &[String]) -> antre_openclaw_import::ImportSelection {
+    let mut sel = antre_openclaw_import::ImportSelection::default();
     for cat in categories {
         match cat.trim().to_lowercase().as_str() {
             "identity" => sel.identity = true,
@@ -548,7 +548,7 @@ fn import_claude_select(
 ) -> anyhow::Result<()> {
     #[cfg(feature = "claude-import")]
     {
-        let Some(detection) = moltis_claude_import::detect::detect() else {
+        let Some(detection) = antre_claude_import::detect::detect() else {
             anyhow::bail!("No Claude Code installation found");
         };
 
@@ -561,18 +561,18 @@ fn import_claude_select(
         for cat in &cats {
             match cat.as_str() {
                 "mcp_servers" | "mcp-servers" | "mcp" => {
-                    reports.push(moltis_claude_import::mcp_servers::import_mcp_servers(
+                    reports.push(antre_claude_import::mcp_servers::import_mcp_servers(
                         &detection, &mcp_path,
                     ));
                 },
                 "skills" | "commands" => {
-                    reports.push(moltis_claude_import::skills::import_skills(
+                    reports.push(antre_claude_import::skills::import_skills(
                         &detection,
                         &skills_dir,
                     ));
                 },
                 "memory" => {
-                    reports.push(moltis_claude_import::memory::import_memory(
+                    reports.push(antre_claude_import::memory::import_memory(
                         &detection, data_dir,
                     ));
                 },
@@ -606,7 +606,7 @@ fn import_hermes_select(
 ) -> anyhow::Result<()> {
     #[cfg(feature = "hermes-import")]
     {
-        let Some(detection) = moltis_hermes_import::detect::detect() else {
+        let Some(detection) = antre_hermes_import::detect::detect() else {
             anyhow::bail!("No Hermes installation found");
         };
 
@@ -618,18 +618,18 @@ fn import_hermes_select(
         for cat in &cats {
             match cat.as_str() {
                 "providers" | "credentials" => {
-                    reports.push(moltis_hermes_import::credentials::import_credentials(
+                    reports.push(antre_hermes_import::credentials::import_credentials(
                         &detection, config_dir,
                     ));
                 },
                 "skills" => {
-                    reports.push(moltis_hermes_import::skills::import_skills(
+                    reports.push(antre_hermes_import::skills::import_skills(
                         &detection,
                         &skills_dir,
                     ));
                 },
                 "memory" | "workspace-files" | "workspace_files" => {
-                    reports.push(moltis_hermes_import::memory::import_memory(
+                    reports.push(antre_hermes_import::memory::import_memory(
                         &detection, data_dir,
                     ));
                 },
@@ -674,7 +674,7 @@ fn print_scan_item(name: &str, available: bool, detail: Option<String>) {
 }
 
 #[cfg(feature = "openclaw-import")]
-fn format_channel_detail(scan: &moltis_openclaw_import::ImportScan) -> Option<String> {
+fn format_channel_detail(scan: &antre_openclaw_import::ImportScan) -> Option<String> {
     let mut parts = Vec::new();
     if scan.telegram_accounts > 0 {
         parts.push(format!("{} Telegram", scan.telegram_accounts));
@@ -725,23 +725,23 @@ trait AsReport {
     fn as_report(&self) -> (&str, &str, usize, usize, usize, &[String], &[String]);
 }
 
-impl AsReport for moltis_import_core::report::CategoryReport {
+impl AsReport for antre_import_core::report::CategoryReport {
     fn as_report(&self) -> (&str, &str, usize, usize, usize, &[String], &[String]) {
         let status = match self.status {
-            moltis_import_core::report::ImportStatus::Success => "success",
-            moltis_import_core::report::ImportStatus::Partial => "partial",
-            moltis_import_core::report::ImportStatus::Skipped => "skipped",
-            moltis_import_core::report::ImportStatus::Failed => "failed",
+            antre_import_core::report::ImportStatus::Success => "success",
+            antre_import_core::report::ImportStatus::Partial => "partial",
+            antre_import_core::report::ImportStatus::Skipped => "skipped",
+            antre_import_core::report::ImportStatus::Failed => "failed",
         };
         let name = match self.category {
-            moltis_import_core::report::ImportCategory::Identity => "Identity",
-            moltis_import_core::report::ImportCategory::Providers => "Providers",
-            moltis_import_core::report::ImportCategory::Skills => "Skills",
-            moltis_import_core::report::ImportCategory::Memory => "Memory",
-            moltis_import_core::report::ImportCategory::Channels => "Channels",
-            moltis_import_core::report::ImportCategory::Sessions => "Sessions",
-            moltis_import_core::report::ImportCategory::McpServers => "MCP Servers",
-            moltis_import_core::report::ImportCategory::WorkspaceFiles => "Workspace Files",
+            antre_import_core::report::ImportCategory::Identity => "Identity",
+            antre_import_core::report::ImportCategory::Providers => "Providers",
+            antre_import_core::report::ImportCategory::Skills => "Skills",
+            antre_import_core::report::ImportCategory::Memory => "Memory",
+            antre_import_core::report::ImportCategory::Channels => "Channels",
+            antre_import_core::report::ImportCategory::Sessions => "Sessions",
+            antre_import_core::report::ImportCategory::McpServers => "MCP Servers",
+            antre_import_core::report::ImportCategory::WorkspaceFiles => "Workspace Files",
         };
         (
             name,
@@ -756,25 +756,25 @@ impl AsReport for moltis_import_core::report::CategoryReport {
 }
 
 #[cfg(feature = "openclaw-import")]
-impl AsReport for moltis_openclaw_import::report::CategoryReport {
+impl AsReport for antre_openclaw_import::report::CategoryReport {
     fn as_report(&self) -> (&str, &str, usize, usize, usize, &[String], &[String]) {
         let status = match self.status {
-            moltis_openclaw_import::report::ImportStatus::Success => "success",
-            moltis_openclaw_import::report::ImportStatus::Partial => "partial",
-            moltis_openclaw_import::report::ImportStatus::Skipped => "skipped",
-            moltis_openclaw_import::report::ImportStatus::Failed => "failed",
+            antre_openclaw_import::report::ImportStatus::Success => "success",
+            antre_openclaw_import::report::ImportStatus::Partial => "partial",
+            antre_openclaw_import::report::ImportStatus::Skipped => "skipped",
+            antre_openclaw_import::report::ImportStatus::Failed => "failed",
         };
         (
             // Reuse Display impl
             match self.category {
-                moltis_openclaw_import::report::ImportCategory::Identity => "Identity",
-                moltis_openclaw_import::report::ImportCategory::Providers => "Providers",
-                moltis_openclaw_import::report::ImportCategory::Skills => "Skills",
-                moltis_openclaw_import::report::ImportCategory::Memory => "Memory",
-                moltis_openclaw_import::report::ImportCategory::Channels => "Channels",
-                moltis_openclaw_import::report::ImportCategory::Sessions => "Sessions",
-                moltis_openclaw_import::report::ImportCategory::McpServers => "MCP Servers",
-                moltis_openclaw_import::report::ImportCategory::WorkspaceFiles => "Workspace Files",
+                antre_openclaw_import::report::ImportCategory::Identity => "Identity",
+                antre_openclaw_import::report::ImportCategory::Providers => "Providers",
+                antre_openclaw_import::report::ImportCategory::Skills => "Skills",
+                antre_openclaw_import::report::ImportCategory::Memory => "Memory",
+                antre_openclaw_import::report::ImportCategory::Channels => "Channels",
+                antre_openclaw_import::report::ImportCategory::Sessions => "Sessions",
+                antre_openclaw_import::report::ImportCategory::McpServers => "MCP Servers",
+                antre_openclaw_import::report::ImportCategory::WorkspaceFiles => "Workspace Files",
             },
             status,
             self.items_imported,

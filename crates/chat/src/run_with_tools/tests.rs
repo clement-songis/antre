@@ -1,7 +1,7 @@
 use super::*;
 
-fn mock_result(path: &str, text: &str) -> moltis_memory::search::SearchResult {
-    moltis_memory::search::SearchResult {
+fn mock_result(path: &str, text: &str) -> antre_memory::search::SearchResult {
+    antre_memory::search::SearchResult {
         chunk_id: "c1".into(),
         path: path.into(),
         source: "test".into(),
@@ -14,7 +14,7 @@ fn mock_result(path: &str, text: &str) -> moltis_memory::search::SearchResult {
 
 #[test]
 fn tool_lifecycle_events_map_to_name_only_channel_tasks() {
-    use moltis_channels::plugin::ChannelTaskStatus;
+    use antre_channels::plugin::ChannelTaskStatus;
 
     let known_tools = HashSet::from(["web_search".to_string(), "exec".to_string()]);
     let Some(started) = channel_task_update(

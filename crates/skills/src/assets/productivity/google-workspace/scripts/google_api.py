@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Google Workspace API CLI for Moltis.
+"""Google Workspace API CLI for Antre.
 
 Uses the Google Workspace CLI (`gws`) when available, but preserves the
-existing Moltis JSON contract and falls back to the Python client
+existing Antre JSON contract and falls back to the Python client
 libraries if `gws` is not installed.
 
 Usage:
@@ -32,9 +32,9 @@ from datetime import datetime, timedelta, timezone
 from email.mime.text import MIMEText
 from pathlib import Path
 
-MOLTIS_HOME = Path(os.getenv("MOLTIS_DATA_DIR") or os.getenv("HERMES_HOME") or Path.home() / ".moltis")
-TOKEN_PATH = MOLTIS_HOME / "google_token.json"
-CLIENT_SECRET_PATH = MOLTIS_HOME / "google_client_secret.json"
+ANTRE_HOME = Path(os.getenv("ANTRE_DATA_DIR") or os.getenv("HERMES_HOME") or Path.home() / ".antre")
+TOKEN_PATH = ANTRE_HOME / "google_token.json"
+CLIENT_SECRET_PATH = ANTRE_HOME / "google_client_secret.json"
 
 SCOPES = [
     "https://www.googleapis.com/auth/gmail.readonly",
@@ -750,7 +750,7 @@ def docs_get(args):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Google Workspace API for Moltis")
+    parser = argparse.ArgumentParser(description="Google Workspace API for Antre")
     sub = parser.add_subparsers(dest="service", required=True)
 
     # --- Gmail ---

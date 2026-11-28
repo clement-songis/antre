@@ -24,7 +24,7 @@ async fn get(app: &Router, uri: &str) -> Response {
             Request::builder()
                 .uri(uri)
                 .header(header::HOST, HOST)
-                .header(header::COOKIE, "moltis_session=secret")
+                .header(header::COOKIE, "antre_session=secret")
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -230,7 +230,7 @@ async fn vendor_route_serves_only_known_files() {
     );
     assert_common_headers(&response);
     assert_eq!(
-        get(&app, "/_vendor/..%2f..%2fmoltis.db").await.status(),
+        get(&app, "/_vendor/..%2f..%2fantre.db").await.status(),
         StatusCode::NOT_FOUND
     );
     assert_eq!(

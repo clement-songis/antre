@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 
 use {
-    moltis_channels::{
+    antre_channels::{
         config_view::ChannelConfigView,
         gating::{self, DmPolicy, GroupPolicy, MentionMode},
     },
-    moltis_common::secret_serde,
+    antre_common::secret_serde,
     secrecy::Secret,
     serde::{Deserialize, Serialize, ser::SerializeStruct},
 };

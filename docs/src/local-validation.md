@@ -1,6 +1,6 @@
 # Local Validation
 
-Moltis provides a local validation script that runs broad CI-style checks
+Antre provides a local validation script that runs broad CI-style checks
 (format, lint, build, line limits), plus targeted Rust and Playwright tests
 for tests changed or added on the branch.
 
@@ -75,7 +75,7 @@ checks in the PR.
   `crates/web/ui/e2e/specs/`. Override with `LOCAL_VALIDATE_E2E_CMD`.
 - Enable the live Ollama/Qwen regression check with
   `LOCAL_VALIDATE_OLLAMA_QWEN_E2E=1`. It starts a local Ollama server on
-  `MOLTIS_E2E_OLLAMA_QWEN_API_PORT` (default `11435`), pulls the configured
+  `ANTRE_E2E_OLLAMA_QWEN_API_PORT` (default `11435`), pulls the configured
   Qwen model if missing, and runs the dedicated Playwright project. Override
   the command with `LOCAL_VALIDATE_OLLAMA_QWEN_E2E_CMD`.
 - Coverage is opt-in because it runs Rust tests. Enable it with

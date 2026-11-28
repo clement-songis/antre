@@ -1,14 +1,14 @@
 <div align="center">
 
-<a href="https://moltis.org"><img src="https://raw.githubusercontent.com/moltis-org/moltis/main/website/favicon.svg" alt="Moltis" width="64"></a>
+<a href="https://moltis.org"><img src="https://raw.githubusercontent.com/antre-ai/antre/main/website/favicon.svg" alt="Antre" width="64"></a>
 
-# Moltis — A secure persistent personal agent server in Rust
+# Antre — A secure persistent personal agent server in Rust
 
 One binary — sandboxed, secure, yours.
 
-[![CI](https://github.com/moltis-org/moltis/actions/workflows/ci.yml/badge.svg)](https://github.com/moltis-org/moltis/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/moltis-org/moltis/graph/badge.svg)](https://codecov.io/gh/moltis-org/moltis)
-[![CodSpeed](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json&style=flat&label=CodSpeed)](https://codspeed.io/moltis-org/moltis)
+[![CI](https://github.com/antre-ai/antre/actions/workflows/ci.yml/badge.svg)](https://github.com/antre-ai/antre/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/antre-ai/antre/graph/badge.svg)](https://codecov.io/gh/antre-ai/antre)
+[![CodSpeed](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json&style=flat&label=CodSpeed)](https://codspeed.io/antre-ai/antre)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-1.91%2B-orange.svg)](https://www.rust-lang.org)
 [![Discord](https://img.shields.io/discord/1469505370169933837?color=5865F2&label=Discord&logo=discord&logoColor=white)](https://discord.gg/XnmrepsXp5)
@@ -19,7 +19,7 @@ One binary — sandboxed, secure, yours.
 
 ---
 
-Moltis recently hit [the front page of Hacker News](https://news.ycombinator.com/item?id=46993587). Please [open an issue](https://github.com/moltis-org/moltis/issues) for any friction at all. I'm focused on making Moltis excellent.
+Antre recently hit [the front page of Hacker News](https://news.ycombinator.com/item?id=46993587). Please [open an issue](https://github.com/antre-ai/antre/issues) for any friction at all. I'm focused on making Antre excellent.
 
 **Secure by design** — Your keys never leave your machine. Every command runs in a sandboxed container, never on your host.
 
@@ -36,18 +36,18 @@ Moltis recently hit [the front page of Hacker News](https://news.ycombinator.com
 curl -fsSL https://www.moltis.org/install.sh | sh
 
 # macOS / Linux via Homebrew
-brew install moltis-org/tap/moltis
+brew install antre-ai/tap/antre
 
 # Docker (multi-arch: amd64/arm64)
-docker pull ghcr.io/moltis-org/moltis:latest
+docker pull ghcr.io/antre-ai/antre:latest
 
 # Or build from source
-cargo install moltis --git https://github.com/moltis-org/moltis
+cargo install antre --git https://github.com/antre-ai/antre
 ```
 
 ## Comparison
 
-| | OpenClaw | Hermes Agent | **Moltis** |
+| | OpenClaw | Hermes Agent | **Antre** |
 |---|---|---|---|
 | Primary stack | TypeScript + Swift/Kotlin companion apps | Python + TypeScript TUI/web surfaces | **Rust** |
 | Runtime | Node.js + npm/pnpm/bun | Python + uv/pip, optional Node UI pieces | **Single Rust binary** |
@@ -73,35 +73,35 @@ Current Rust workspace: ~270K LoC across 59 crates. The table below groups the m
 
 | Crate | LoC | Role |
 |-------|-----|------|
-| `moltis-gateway` | 37.4K | HTTP/WS server, RPC, auth, startup wiring |
-| `moltis-tools` | 37.0K | Tool execution, sandboxing, WASM tools |
-| `moltis-providers` | 18.9K | LLM provider implementations |
-| `moltis-agents` | 14.5K | Agent loop, streaming, prompt assembly |
-| `moltis-chat` | 14.2K | Chat engine, agent orchestration |
-| `moltis-config` | 10.3K | Configuration, validation |
-| `moltis-httpd` | 9.9K | HTTP server primitives and middleware |
-| `moltis` (CLI) | 4.7K | Entry point, CLI commands |
-| `moltis-sessions` | 3.5K | Session persistence |
-| `moltis-common` | 1.5K | Shared utilities |
-| `moltis-service-traits` | 1.2K | Shared service interfaces |
-| `moltis-protocol` | 0.7K | Wire protocol types |
+| `antre-gateway` | 37.4K | HTTP/WS server, RPC, auth, startup wiring |
+| `antre-tools` | 37.0K | Tool execution, sandboxing, WASM tools |
+| `antre-providers` | 18.9K | LLM provider implementations |
+| `antre-agents` | 14.5K | Agent loop, streaming, prompt assembly |
+| `antre-chat` | 14.2K | Chat engine, agent orchestration |
+| `antre-config` | 10.3K | Configuration, validation |
+| `antre-httpd` | 9.9K | HTTP server primitives and middleware |
+| `antre` (CLI) | 4.7K | Entry point, CLI commands |
+| `antre-sessions` | 3.5K | Session persistence |
+| `antre-common` | 1.5K | Shared utilities |
+| `antre-service-traits` | 1.2K | Shared service interfaces |
+| `antre-protocol` | 0.7K | Wire protocol types |
 
 **Feature and integration crates**:
 
 | Category | Crates | Combined LoC |
 |----------|--------|-------------|
-| Channels | `moltis-telegram`, `moltis-whatsapp`, `moltis-signal`, `moltis-discord`, `moltis-msteams`, `moltis-matrix`, `moltis-slack`, `moltis-nostr`, `moltis-channels` | 34.0K |
-| Web and APIs | `moltis-web`, `moltis-graphql`, `moltis-webhooks` | 10.8K |
-| Extensibility | `moltis-mcp`, `moltis-mcp-agent-bridge`, `moltis-skills`, `moltis-plugins` | 11.5K |
-| Memory and context | `moltis-memory`, `moltis-qmd`, `moltis-code-index`, `moltis-projects` | 11.7K |
-| Voice and browser | `moltis-voice`, `moltis-browser` | 9.2K |
-| Auth and security | `moltis-auth`, `moltis-oauth`, `moltis-vault`, `moltis-secret-store`, `moltis-network-filter`, `moltis-tls` | 8.5K |
-| Scheduling and automation | `moltis-cron`, `moltis-caldav`, `moltis-auto-reply` | 4.7K |
-| Setup and import | `moltis-provider-setup`, `moltis-openclaw-import`, `moltis-onboarding` | 11.7K |
-| Native and node hosts | `moltis-swift-bridge`, `moltis-node-host`, `moltis-courier` | 5.7K |
-| WASM tools | `moltis-wasm-precompile`, `moltis-wasm-calc`, `moltis-wasm-web-fetch`, `moltis-wasm-web-search` | 1.4K |
-| Mods | `moltis-mods` | 5.7K |
-| Supporting crates | `moltis-media`, `moltis-metrics`, `moltis-tailscale`, `moltis-routing`, `moltis-canvas`, `moltis-schema-export`, `benchmarks` | 2.1K |
+| Channels | `antre-telegram`, `antre-whatsapp`, `antre-signal`, `antre-discord`, `antre-msteams`, `antre-matrix`, `antre-slack`, `antre-nostr`, `antre-channels` | 34.0K |
+| Web and APIs | `antre-web`, `antre-graphql`, `antre-webhooks` | 10.8K |
+| Extensibility | `antre-mcp`, `antre-mcp-agent-bridge`, `antre-skills`, `antre-plugins` | 11.5K |
+| Memory and context | `antre-memory`, `antre-qmd`, `antre-code-index`, `antre-projects` | 11.7K |
+| Voice and browser | `antre-voice`, `antre-browser` | 9.2K |
+| Auth and security | `antre-auth`, `antre-oauth`, `antre-vault`, `antre-secret-store`, `antre-network-filter`, `antre-tls` | 8.5K |
+| Scheduling and automation | `antre-cron`, `antre-caldav`, `antre-auto-reply` | 4.7K |
+| Setup and import | `antre-provider-setup`, `antre-openclaw-import`, `antre-onboarding` | 11.7K |
+| Native and node hosts | `antre-swift-bridge`, `antre-node-host`, `antre-courier` | 5.7K |
+| WASM tools | `antre-wasm-precompile`, `antre-wasm-calc`, `antre-wasm-web-fetch`, `antre-wasm-web-search` | 1.4K |
+| Mods | `antre-mods` | 5.7K |
+| Supporting crates | `antre-media`, `antre-metrics`, `antre-tailscale`, `antre-routing`, `antre-canvas`, `antre-schema-export`, `benchmarks` | 2.1K |
 
 Use `--no-default-features --features lightweight` for constrained devices (Raspberry Pi, etc.).
 
@@ -114,10 +114,10 @@ Use `--no-default-features --features lightweight` for constrained devices (Rasp
 - **SSRF protection** — DNS-resolved, blocks loopback/private/link-local
 - **Origin validation** — rejects cross-origin WebSocket upgrades
 - **Hook gating** — `BeforeToolCall` hooks can inspect/block any tool invocation
-- **Supply chain integrity** — [artifact attestations](https://github.com/moltis-org/moltis/attestations), Sigstore keyless signing, GPG signing (YubiKey), SHA-256/SHA-512 checksums
+- **Supply chain integrity** — [artifact attestations](https://github.com/antre-ai/antre/attestations), Sigstore keyless signing, GPG signing (YubiKey), SHA-256/SHA-512 checksums
 
 See [Security Architecture](https://docs.moltis.org/security.html) for details.
-Verify releases with `gh attestation verify <artifact> -R moltis-org/moltis` or see [Release Verification](https://docs.moltis.org/release-verification.html).
+Verify releases with `gh attestation verify <artifact> -R antre-ai/antre` or see [Release Verification](https://docs.moltis.org/release-verification.html).
 
 ## Features
 
@@ -134,14 +134,14 @@ Verify releases with `gh attestation verify <artifact> -R moltis-org/moltis` or 
 - **Learning Loop** — Opt-in background review that turns finished conversations into skill and memory patches under strict anti-hoarding rules, a curator that ages and archives unused skills, write-approval staging and an append-only ledger with single-change rollback (`learning.*` RPC)
 - **Extensibility** — MCP servers (stdio + HTTP/SSE) with resources, prompts, roots, sampling with spend limits, elicitation, per-server trust tiers and deferred tool schemas, skill system, 15 lifecycle hook events with circuit breaker (Claude Code hook format accepted), destructive command guard
 - **Mods** — sandboxed WASM mods that add tools and hooks, with capability manifests, a consent hash re-asked when an update widens access, and content-pinned shell hooks
-- **Agent Client Protocol** — drives external ACP agents (`codex-acp`, `claude-agent-acp`, Cursor), and serves Moltis to ACP clients over stdio via `moltis acp`
+- **Agent Client Protocol** — drives external ACP agents (`codex-acp`, `claude-agent-acp`, Cursor), and serves Antre to ACP clients over stdio via `antre acp`
 - **First Run** — Opens onboarding in your browser with the setup code pre-filled, serves certificate-free `http://localhost`, offers once to trust a name-constrained local CA for LAN HTTPS, and pins the web UI URL below the terminal logs (with an `ssh -L` hint over SSH)
 - **Security** — Encryption-at-rest vault (XChaCha20-Poly1305 + Argon2id), password + passkey + API key auth, sandbox isolation, SSRF/CSWSH protection
 - **Operations** — Cron scheduling, durable local CalDAV, Gmail, Himalaya email, and reusable Slack/Discord/Matrix/Teams message datasets, provider-specific read-only agent tools, fast full-text search, JSONL/Markdown projections, agent instrumentation (Langfuse for LLM traces, OTLP for Grafana/Datadog), Prometheus metrics, cloud deploy (Fly.io, DigitalOcean), Tailscale integration, managed SSH deploy keys, host-pinned remote targets, live tool inventory in Settings, and CLI/web remote-exec doctor flows
 
 ## How It Works
 
-Moltis is a **local-first persistent agent server** — a single Rust binary that
+Antre is a **local-first persistent agent server** — a single Rust binary that
 sits between you and multiple LLM providers, keeps durable session state, and
 can meet you across channels without handing your data to a cloud relay.
 
@@ -189,21 +189,21 @@ See [Quickstart](https://docs.moltis.org/quickstart.html) for gateway startup, m
 Requires [just](https://github.com/casey/just) (command runner) and Node.js (for Tailwind CSS).
 
 ```bash
-git clone https://github.com/moltis-org/moltis.git
-cd moltis
+git clone https://github.com/antre-ai/antre.git
+cd antre
 just build-css                  # Build Tailwind CSS for the web UI
 just build-release              # Build in release mode
-cargo run --release --bin moltis
+cargo run --release --bin antre
 ```
 
 For a full release build including WASM sandbox tools:
 
 ```bash
 just build-release-with-wasm    # Builds WASM artifacts + release binary
-cargo run --release --bin moltis
+cargo run --release --bin antre
 ```
 
-Open `https://moltis.localhost:3000`. On first run, a setup code is printed to
+Open `https://antre.localhost:3000`. On first run, a setup code is printed to
 the terminal — enter it in the web UI to set your password or register a passkey.
 
 Optional flags: `--config-dir /path/to/config --data-dir /path/to/data`
@@ -213,18 +213,18 @@ Optional flags: `--config-dir /path/to/config --data-dir /path/to/data`
 ```bash
 # Docker / OrbStack
 docker run -d \
-  --name moltis \
+  --name antre \
   -p 13131:13131 \
   -p 13132:13132 \
   -p 1455:1455 \
-  -v moltis-config:/home/moltis/.config/moltis \
-  -v moltis-data:/home/moltis/.moltis \
+  -v antre-config:/home/antre/.config/antre \
+  -v antre-data:/home/antre/.antre \
   -v /var/run/docker.sock:/var/run/docker.sock \
-  ghcr.io/moltis-org/moltis:latest
+  ghcr.io/antre-ai/antre:latest
 ```
 
 Open `https://localhost:13131` and complete the setup. For unattended Docker
-deployments, set `MOLTIS_PASSWORD`, `MOLTIS_PROVIDER`, and `MOLTIS_API_KEY`
+deployments, set `ANTRE_PASSWORD`, `ANTRE_PROVIDER`, and `ANTRE_API_KEY`
 before first boot to skip the setup wizard. See [Docker docs](https://docs.moltis.org/docker.html)
 for Podman, OrbStack, TLS trust, and persistence details.
 
@@ -232,13 +232,13 @@ for Podman, OrbStack, TLS trust, and persistence details.
 
 | Provider | Deploy |
 |----------|--------|
-| DigitalOcean | [![Deploy to DO](https://www.deploytodo.com/do-btn-blue.svg)](https://cloud.digitalocean.com/apps/new?repo=https://github.com/moltis-org/moltis/tree/main) |
+| DigitalOcean | [![Deploy to DO](https://www.deploytodo.com/do-btn-blue.svg)](https://cloud.digitalocean.com/apps/new?repo=https://github.com/antre-ai/antre/tree/main) |
 
 **Fly.io** (CLI):
 
 ```bash
-fly launch --image ghcr.io/moltis-org/moltis:latest
-fly secrets set MOLTIS_PASSWORD="your-password"
+fly launch --image ghcr.io/antre-ai/antre:latest
+fly secrets set ANTRE_PASSWORD="your-password"
 ```
 
 All cloud configs use `--no-tls` because the provider handles TLS termination.

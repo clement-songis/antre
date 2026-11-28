@@ -29,20 +29,20 @@ async fn test_apple_container_name_generation_rotation() {
     };
 
     let first_name = sandbox.container_name(&id).await;
-    assert_eq!(first_name, "moltis-sandbox-session-abc");
+    assert_eq!(first_name, "antre-sandbox-session-abc");
 
     let rotated_name = sandbox.bump_container_generation(&id).await;
-    assert_eq!(rotated_name, "moltis-sandbox-session-abc-g1");
+    assert_eq!(rotated_name, "antre-sandbox-session-abc-g1");
 
     let current_name = sandbox.container_name(&id).await;
-    assert_eq!(current_name, "moltis-sandbox-session-abc-g1");
+    assert_eq!(current_name, "antre-sandbox-session-abc-g1");
 }
 
 #[cfg(target_os = "macos")]
 #[tokio::test]
 async fn apple_container_names_fit_runtime_limit() {
     let sandbox = AppleContainerSandbox::new(SandboxConfig {
-        container_prefix: Some("moltis-moltis-sandbox".into()),
+        container_prefix: Some("antre-antre-sandbox".into()),
         ..Default::default()
     });
     let id = SandboxId {
@@ -60,7 +60,7 @@ async fn apple_container_names_fit_runtime_limit() {
 
     let failover = FailoverSandbox::new(
         Arc::new(AppleContainerSandbox::new(SandboxConfig {
-            container_prefix: Some("moltis-moltis-sandbox".into()),
+            container_prefix: Some("antre-antre-sandbox".into()),
             ..Default::default()
         })),
         Arc::new(DockerSandbox::new(SandboxConfig::default())),
@@ -149,7 +149,7 @@ fn test_is_apple_container_service_error() {
 #[test]
 fn test_is_apple_container_exists_error() {
     assert!(is_apple_container_exists_error(
-        "Error: exists: \"container with id moltis-sandbox-main already exists\""
+        "Error: exists: \"container with id antre-sandbox-main already exists\""
     ));
     assert!(is_apple_container_exists_error(
         "Error: container already exists"
@@ -171,10 +171,10 @@ fn test_is_apple_container_unavailable_error() {
     ));
     // notFound errors from get/inspect failures
     assert!(is_apple_container_unavailable_error(
-        "Error: notFound: \"get failed: container moltis-sandbox-main not found\""
+        "Error: notFound: \"get failed: container antre-sandbox-main not found\""
     ));
     assert!(is_apple_container_unavailable_error(
-        "container not found: moltis-sandbox-session-abc"
+        "container not found: antre-sandbox-session-abc"
     ));
     assert!(!is_apple_container_unavailable_error("permission denied"));
 }
@@ -219,7 +219,7 @@ fn test_apple_container_bootstrap_command_uses_portable_sleep() {
 #[test]
 fn test_apple_container_run_args_pin_workdir_and_bootstrap_home() {
     let args = apple_container_run_args(
-        "moltis-sandbox-test",
+        "antre-sandbox-test",
         "ubuntu:25.10",
         Some("UTC"),
         &[],
@@ -230,7 +230,7 @@ fn test_apple_container_run_args_pin_workdir_and_bootstrap_home() {
         "run",
         "-d",
         "--name",
-        "moltis-sandbox-test",
+        "antre-sandbox-test",
         "--workdir",
         "/tmp",
         "-e",
@@ -249,7 +249,7 @@ fn test_apple_container_run_args_pin_workdir_and_bootstrap_home() {
 #[test]
 fn test_apple_container_run_args_with_home_volume() {
     let args = apple_container_run_args(
-        "moltis-sandbox-test",
+        "antre-sandbox-test",
         "ubuntu:25.10",
         Some("UTC"),
         &["/tmp/home:/home/sandbox".to_string()],
@@ -260,7 +260,7 @@ fn test_apple_container_run_args_with_home_volume() {
         "run",
         "-d",
         "--name",
-        "moltis-sandbox-test",
+        "antre-sandbox-test",
         "--workdir",
         "/tmp",
         "-e",
@@ -285,7 +285,7 @@ fn test_apple_container_run_args_with_multiple_volumes() {
         "/tmp/files:/home/sandbox/files:ro".to_string(),
     ];
     let args = apple_container_run_args(
-        "moltis-sandbox-test",
+        "antre-sandbox-test",
         "ubuntu:25.10",
         None,
         &volumes,
@@ -305,7 +305,7 @@ fn test_apple_container_run_args_with_multiple_volumes() {
 #[test]
 fn test_apple_container_run_args_apply_resource_limits() {
     let args = apple_container_run_args(
-        "moltis-sandbox-test",
+        "antre-sandbox-test",
         "ubuntu:25.10",
         None,
         &[],
@@ -333,7 +333,7 @@ fn test_apple_container_run_args_apply_resource_limits() {
 #[test]
 fn test_apple_container_run_args_reject_fractional_cpu_quota() {
     let error = apple_container_run_args(
-        "moltis-sandbox-test",
+        "antre-sandbox-test",
         "ubuntu:25.10",
         None,
         &[],
@@ -379,7 +379,7 @@ fn test_apple_container_policy_fingerprint_includes_resource_limits() {
 #[test]
 fn test_apple_container_managed_files_mount_coexists_with_home_persistence() {
     let temp_dir = tempfile::tempdir().unwrap();
-    let host_data_dir = temp_dir.path().join("moltis-data");
+    let host_data_dir = temp_dir.path().join("antre-data");
     let sandbox = AppleContainerSandbox::new(SandboxConfig {
         host_data_dir: Some(host_data_dir.clone()),
         home_persistence: HomePersistence::Session,
@@ -407,12 +407,12 @@ fn test_apple_container_managed_files_mount_coexists_with_home_persistence() {
 
 #[test]
 fn test_apple_container_exec_args_pin_workdir_and_bootstrap_home() {
-    let args = apple_container_exec_args("moltis-sandbox-test", "true".to_string());
+    let args = apple_container_exec_args("antre-sandbox-test", "true".to_string());
     let expected = vec![
         "exec",
         "--workdir",
         "/tmp",
-        "moltis-sandbox-test",
+        "antre-sandbox-test",
         "sh",
         "-c",
         "mkdir -p /home/sandbox && true",
@@ -425,12 +425,12 @@ fn test_apple_container_exec_args_pin_workdir_and_bootstrap_home() {
 
 #[test]
 fn test_container_exec_shell_args_apple_container_uses_safe_wrapper() {
-    let args = container_exec_shell_args("container", "moltis-sandbox-test", "echo hi".into());
+    let args = container_exec_shell_args("container", "antre-sandbox-test", "echo hi".into());
     let expected = vec![
         "exec",
         "--workdir",
         "/tmp",
-        "moltis-sandbox-test",
+        "antre-sandbox-test",
         "sh",
         "-c",
         "mkdir -p /home/sandbox && echo hi",
@@ -443,8 +443,8 @@ fn test_container_exec_shell_args_apple_container_uses_safe_wrapper() {
 
 #[test]
 fn test_container_exec_shell_args_docker_keeps_standard_exec_shape() {
-    let args = container_exec_shell_args("docker", "moltis-sandbox-test", "echo hi".into());
-    let expected = vec!["exec", "moltis-sandbox-test", "sh", "-c", "echo hi"]
+    let args = container_exec_shell_args("docker", "antre-sandbox-test", "echo hi".into());
+    let expected = vec!["exec", "antre-sandbox-test", "sh", "-c", "echo hi"]
         .into_iter()
         .map(str::to_string)
         .collect::<Vec<_>>();

@@ -6,8 +6,8 @@
 use std::sync::Arc;
 
 use {
-    moltis_learning::LearningService,
-    moltis_protocol::{ErrorShape, error_codes},
+    antre_learning::LearningService,
+    antre_protocol::{ErrorShape, error_codes},
     serde_json::Value,
 };
 
@@ -46,8 +46,8 @@ fn to_value<T: serde::Serialize>(value: &T) -> Result<Value, ErrorShape> {
 
 /// Map library errors to RPC errors: bad input and conflicts are the
 /// caller's to fix, the rest is a server-side failure.
-fn rpc_error(error: moltis_learning::Error) -> ErrorShape {
-    use moltis_learning::Error;
+fn rpc_error(error: antre_learning::Error) -> ErrorShape {
+    use antre_learning::Error;
     let code = match &error {
         Error::InvalidTarget(_)
         | Error::Conflict(_)
@@ -249,9 +249,9 @@ mod tests {
 
     #[test]
     fn errors_map_to_request_or_server_codes() {
-        let caller = rpc_error(moltis_learning::Error::StaleTarget("MEMORY.md".into()));
+        let caller = rpc_error(antre_learning::Error::StaleTarget("MEMORY.md".into()));
         assert_eq!(caller.code, error_codes::INVALID_REQUEST);
-        let server = rpc_error(moltis_learning::Error::Model("timeout".into()));
+        let server = rpc_error(antre_learning::Error::Model("timeout".into()));
         assert_eq!(server.code, error_codes::UNAVAILABLE);
     }
 

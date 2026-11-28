@@ -9,7 +9,7 @@ use {
     tracing::info,
 };
 
-use moltis_agents::model::{ChatMessage, CompletionResponse, LlmProvider, StreamEvent};
+use antre_agents::model::{ChatMessage, CompletionResponse, LlmProvider, StreamEvent};
 
 use super::{backend, models};
 

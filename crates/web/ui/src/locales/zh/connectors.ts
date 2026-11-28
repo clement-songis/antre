@@ -11,8 +11,7 @@ export default {
 		emailNamePlaceholder: "工作邮箱",
 		himalayaAccount: "Himalaya 帐户名称",
 		himalayaBackend: "存储后端",
-		gmailCredentialHelp:
-			"使用 Moltis 中现有的 Google Workspace 授权。仅引用 Gmail 凭据，不会将其复制到连接器数据库中。",
+		gmailCredentialHelp: "使用 Antre 中现有的 Google Workspace 授权。仅引用 Gmail 凭据，不会将其复制到连接器数据库中。",
 		emailRequired: "请输入连接名称，并在适用时输入已配置的 Himalaya 帐户名称。",
 		googleWorkspaceCredentials: "Google Workspace 凭据",
 		testEmailTitle: "电子邮件连接就绪状态",

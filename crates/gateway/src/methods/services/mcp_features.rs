@@ -1,6 +1,6 @@
 //! `mcp.*` RPC methods for resources, prompts, elicitation and MCP Apps.
 
-use moltis_protocol::ErrorShape;
+use antre_protocol::ErrorShape;
 
 use super::MethodRegistry;
 

@@ -6,10 +6,10 @@ import { TabBar } from "../../components/forms";
 import * as gon from "../../gon";
 import { sendRpc } from "../../helpers";
 import type { RpcResponse } from "./_shared";
+import { AntreDataSection } from "./AntreDataSection";
 import { ClaudeImportSection } from "./ClaudeImportSection";
 import { CodexImportSection } from "./CodexImportSection";
 import { HermesImportSection } from "./HermesImportSection";
-import { MoltisDataSection } from "./MoltisDataSection";
 import { OpenClawImportSection } from "./OpenClawImportSection";
 
 interface ImportTabDef {
@@ -95,7 +95,7 @@ function getAllTabs(): ImportTabDef[] {
 
 export function ImportSection(): VNode {
 	const detectedTabs = getAllTabs().filter((t) => t.detected);
-	const [activeTab, setActiveTab] = useState("moltis");
+	const [activeTab, setActiveTab] = useState("antre");
 	const [badges, setBadges] = useState<Record<string, number>>({});
 
 	useEffect(() => {
@@ -111,10 +111,10 @@ export function ImportSection(): VNode {
 		}
 	}, []);
 
-	// Moltis tab is always first, then detected external sources.
-	const moltisTab = {
-		id: "moltis",
-		label: "Moltis",
+	// Antre tab is always first, then detected external sources.
+	const antreTab = {
+		id: "antre",
+		label: "Antre",
 		icon: <span className="icon icon-download" />,
 		badge: undefined as number | undefined,
 	};
@@ -126,9 +126,9 @@ export function ImportSection(): VNode {
 		badge: badges[t.id] as number | undefined,
 	}));
 
-	const tabs = [moltisTab, ...externalTabs];
+	const tabs = [antreTab, ...externalTabs];
 
-	// Only Moltis tab — render directly without tab bar
+	// Only Antre tab — render directly without tab bar
 	if (tabs.length === 1) {
 		return <div className="flex-1 flex flex-col min-w-0 p-4 gap-4 overflow-y-auto">{renderTab(tabs[0].id)}</div>;
 	}
@@ -145,8 +145,8 @@ export function ImportSection(): VNode {
 
 function renderTab(id: string): VNode | null {
 	switch (id) {
-		case "moltis":
-			return <MoltisDataSection />;
+		case "antre":
+			return <AntreDataSection />;
 		case "openclaw":
 			return <OpenClawImportSection />;
 		case "claude":

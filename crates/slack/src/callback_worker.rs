@@ -1,7 +1,7 @@
 use std::{future::Future, sync::Arc};
 
 use {
-    moltis_channels::{
+    antre_channels::{
         fair_queue::{Admission, FairQueue, FairQueueConfig, FairQueueJob},
         plugin::{ChannelEventSink, ChannelReplyTarget},
     },
@@ -220,7 +220,7 @@ mod tests {
     use super::*;
 
     use {
-        moltis_channels::{
+        antre_channels::{
             ChannelType,
             error::Result as ChannelResult,
             plugin::{ChannelEvent, ChannelMessageMeta},

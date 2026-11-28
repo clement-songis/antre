@@ -66,7 +66,7 @@ impl ChannelWebhookDedupeStore {
     pub fn new() -> Self {
         Self {
             partitions: HashMap::new(),
-            ttl: std::time::Duration::from_millis(moltis_protocol::DEDUPE_TTL_MS),
+            ttl: std::time::Duration::from_millis(antre_protocol::DEDUPE_TTL_MS),
             max_entries_per_scope: MAX_ENTRIES_PER_SCOPE,
         }
     }

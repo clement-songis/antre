@@ -10,7 +10,7 @@ This page documents how `apps/macos` currently bridges Swift to Rust through FFI
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────┐
-│ Moltis.app (single macOS process)                                        │
+│ Antre.app (single macOS process)                                        │
 │                                                                          │
 │  SwiftUI Views                                                           │
 │  (ContentView, OnboardingView, SettingsView, ...)                        │
@@ -20,16 +20,16 @@ This page documents how `apps/macos` currently bridges Swift to Rust through FFI
 │  (ChatStore, ProviderStore, LogStore)                                    │
 │                    │                                                     │
 │                    ▼                                                     │
-│  Swift FFI facade: MoltisClient.swift                                    │
+│  Swift FFI facade: AntreClient.swift                                    │
 │  - encodes requests to JSON                                              │
-│  - calls C symbols from `moltis_bridge.h`                                │
+│  - calls C symbols from `antre_bridge.h`                                │
 │  - decodes JSON responses / bridge errors                                │
 └────────────────────┬─────────────────────────────────────────────────────┘
                      │
-                     │ C ABI (`moltis_*`)
+                     │ C ABI (`antre_*`)
                      ▼
 ┌──────────────────────────────────────────────────────────────────────────┐
-│ Rust bridge static library: `libmoltis_bridge.a`                         │
+│ Rust bridge static library: `libantre_bridge.a`                         │
 │ crate: `crates/swift-bridge`                                             │
 │                                                                          │
 │  `extern "C"` exports                                                    │
@@ -44,14 +44,14 @@ This page documents how `apps/macos` currently bridges Swift to Rust through FFI
                      │
                      ▼
 ┌──────────────────────────────────────────────────────────────────────────┐
-│ Reused Moltis crates                                                     │
-│ (`moltis-providers`, `moltis-sessions`, `moltis-gateway`, etc.)          │
+│ Reused Antre crates                                                     │
+│ (`antre-providers`, `antre-sessions`, `antre-gateway`, etc.)          │
 └──────────────────────────────────────────────────────────────────────────┘
 
 Reverse direction callbacks:
-- Rust logs: `moltis_set_log_callback(...)` -> Swift `LogStore`
-- Rust streaming events: `moltis_*_chat_stream(...)` callback -> Swift closures
-- Rust session events: `moltis_set_session_event_callback(...)` -> Swift `ChatStore`
+- Rust logs: `antre_set_log_callback(...)` -> Swift `LogStore`
+- Rust streaming events: `antre_*_chat_stream(...)` callback -> Swift closures
+- Rust session events: `antre_set_session_event_callback(...)` -> Swift `ChatStore`
 ```
 
 ## Build and Link Pipeline
@@ -61,10 +61,10 @@ Reverse direction callbacks:
         │
         ▼
 scripts/build-swift-bridge.sh
-  1) cargo build -p moltis-swift-bridge --target x86_64-apple-darwin
-  2) cargo build -p moltis-swift-bridge --target aarch64-apple-darwin
-  3) lipo -create -> universal `libmoltis_bridge.a`
-  4) cbindgen -> `moltis_bridge.h`
+  1) cargo build -p antre-swift-bridge --target x86_64-apple-darwin
+  2) cargo build -p antre-swift-bridge --target aarch64-apple-darwin
+  3) lipo -create -> universal `libantre_bridge.a`
+  4) cbindgen -> `antre_bridge.h`
   5) copy both artifacts into `apps/macos/Generated/`
         │
         ▼
@@ -74,14 +74,14 @@ scripts/build-swift-bridge.sh
 Xcode build
   - header search path: `apps/macos/Generated`
   - library search path: `apps/macos/Generated`
-  - links `-lmoltis_bridge`
-  - uses `Sources/Bridging-Header.h` -> includes `moltis_bridge.h`
+  - links `-lantre_bridge`
+  - uses `Sources/Bridging-Header.h` -> includes `antre_bridge.h`
 ```
 
 ## Main FFI Touchpoints
 
 - Swift header import: `apps/macos/Sources/Bridging-Header.h`
-- Swift facade: `apps/macos/Sources/MoltisClient.swift`
+- Swift facade: `apps/macos/Sources/AntreClient.swift`
 - Rust exports: `crates/swift-bridge/src/lib.rs`
 - Artifact builder: `scripts/build-swift-bridge.sh`
 - Xcode linking config: `apps/macos/project.yml`
@@ -109,11 +109,11 @@ so both share the same channel. Events:
 
 | Kind      | Trigger                                    |
 |-----------|--------------------------------------------|
-| `created` | `sessions.resolve` (new), `sessions.fork`, bridge `moltis_create_session` |
+| `created` | `sessions.resolve` (new), `sessions.fork`, bridge `antre_create_session` |
 | `patched` | `sessions.patch`                           |
 | `deleted` | `sessions.delete`                          |
 
-Swift receives events via `moltis_set_session_event_callback` — each event is a
+Swift receives events via `antre_set_session_event_callback` — each event is a
 JSON object `{"kind":"created","sessionKey":"..."}` dispatched to
 `ChatStore.handleSessionEvent()` on the main thread.
 

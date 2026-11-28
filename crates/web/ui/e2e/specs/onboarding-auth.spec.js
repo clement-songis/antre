@@ -128,10 +128,10 @@ async function completePasswordAuthStep(page) {
 		return true;
 	}
 
-	const setupCodeInput = page.getByPlaceholder("Code from the moltis terminal");
+	const setupCodeInput = page.getByPlaceholder("Code from the antre terminal");
 	await expect(setupCodeInput).toBeVisible();
 	await expect(page.getByText("Setup code", { exact: true })).toBeVisible();
-	await expect(page.getByText("Find this code in the moltis process log (stdout).", { exact: true })).toBeVisible();
+	await expect(page.getByText("Find this code in the antre process log (stdout).", { exact: true })).toBeVisible();
 	await expect(
 		page.getByText("Set a password and enable the encryption vault for stored secrets", { exact: true }),
 	).toBeVisible();
@@ -169,8 +169,8 @@ async function completeIdentityStep(page) {
 /**
  * Onboarding tests for remote access (auth required).
  *
- * Uses a gateway started with MOLTIS_BEHIND_PROXY=true (simulates remote)
- * and MOLTIS_E2E_SETUP_CODE=123456 (deterministic setup code).
+ * Uses a gateway started with ANTRE_BEHIND_PROXY=true (simulates remote)
+ * and ANTRE_E2E_SETUP_CODE=123456 (deterministic setup code).
  * The test verifies that after completing auth, the WebSocket reconnects
  * immediately so subsequent RPC calls (identity save) succeed.
  */
@@ -190,30 +190,30 @@ test.describe("Onboarding with forced auth (remote)", () => {
 			return;
 		}
 
-		await expect(page.getByPlaceholder("Code from the moltis terminal")).toHaveValue("123456");
-		await expect(page.getByText("Filled in from the link moltis opened.", { exact: true })).toBeVisible();
+		await expect(page.getByPlaceholder("Code from the antre terminal")).toHaveValue("123456");
+		await expect(page.getByText("Filled in from the link antre opened.", { exact: true })).toBeVisible();
 		expect(new URL(page.url()).hash).toBe("");
 
 		await page.evaluate(() => {
-			localStorage.setItem("moltis-locale", "fr");
+			localStorage.setItem("antre-locale", "fr");
 			window.history.replaceState(window.history.state, "", "#setup=123456");
 		});
 		await page.reload();
-		await expect(page.getByText("Prérempli à partir du lien ouvert par moltis.", { exact: true })).toBeVisible();
+		await expect(page.getByText("Prérempli à partir du lien ouvert par antre.", { exact: true })).toBeVisible();
 		expect(new URL(page.url()).hash).toBe("");
 
 		await page.evaluate(() => {
-			localStorage.setItem("moltis-locale", "zh");
+			localStorage.setItem("antre-locale", "zh");
 			// Preserve the launch fragment without triggering in-page navigation.
 			window.history.replaceState(window.history.state, "", "#setup=123456");
 		});
 		await page.reload();
-		const setupCodeInput = page.getByPlaceholder("Code from the moltis terminal");
+		const setupCodeInput = page.getByPlaceholder("Code from the antre terminal");
 		await expect(setupCodeInput).toHaveValue("123456");
-		await expect(page.getByText("已从 moltis 打开的链接中填入设置码。", { exact: true })).toBeVisible();
+		await expect(page.getByText("已从 antre 打开的链接中填入设置码。", { exact: true })).toBeVisible();
 		expect(new URL(page.url()).hash).toBe("");
 		await setupCodeInput.fill("654321");
-		await expect(page.getByText("在 moltis 进程日志 (stdout) 中查找此码。", { exact: true })).toBeVisible();
+		await expect(page.getByText("在 antre 进程日志 (stdout) 中查找此码。", { exact: true })).toBeVisible();
 		expect(pageErrors).toEqual([]);
 	});
 
@@ -264,7 +264,7 @@ test.describe("Onboarding with forced auth (remote)", () => {
 			.poll(() =>
 				page
 					.evaluate(() => {
-						const state = window.__moltis_state;
+						const state = window.__antre_state;
 						return state?.connected === true && state.ws?.readyState === WebSocket.OPEN;
 					})
 					.catch(() => false),

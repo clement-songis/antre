@@ -3,12 +3,12 @@
 use std::{collections::HashMap, sync::Arc};
 
 use {
-    async_trait::async_trait,
-    moltis_channels::{
+    antre_channels::{
         ChannelEventSink, ChannelOtpProvider, ChannelOutbound, ChannelPlugin, ChannelStatus,
         ChannelStreamOutbound, Result as ChannelResult, config_view::ChannelConfigView,
         message_log::MessageLog, otp::OtpChallengeInfo, plugin::ChannelHealthSnapshot,
     },
+    async_trait::async_trait,
     nostr_sdk::prelude::*,
     secrecy::ExposeSecret,
     serde_json::Value,
@@ -25,7 +25,7 @@ use crate::{
 };
 
 #[cfg(feature = "metrics")]
-use moltis_metrics::{gauge, nostr as nostr_metrics};
+use antre_metrics::{gauge, nostr as nostr_metrics};
 
 /// Sentinel value used by `RedactedConfig` — must be detected on update to
 /// avoid overwriting the real secret key with the redacted placeholder.
@@ -100,7 +100,7 @@ impl ChannelPlugin for NostrPlugin {
 
     async fn start_account(&mut self, account_id: &str, config: Value) -> ChannelResult<()> {
         let nostr_config: NostrAccountConfig = serde_json::from_value(config).map_err(|e| {
-            moltis_channels::Error::invalid_input(format!("invalid nostr config: {e}"))
+            antre_channels::Error::invalid_input(format!("invalid nostr config: {e}"))
         })?;
 
         if !nostr_config.enabled {
@@ -110,7 +110,7 @@ impl ChannelPlugin for NostrPlugin {
 
         // Parse keys
         let bot_keys = keys::derive_keys(&nostr_config.secret_key).map_err(|e| {
-            moltis_channels::Error::invalid_input(format!("invalid secret key: {e}"))
+            antre_channels::Error::invalid_input(format!("invalid secret key: {e}"))
         })?;
 
         let npub = bot_keys
@@ -149,7 +149,7 @@ impl ChannelPlugin for NostrPlugin {
         let event_sink = self
             .event_sink
             .clone()
-            .ok_or_else(|| moltis_channels::Error::unavailable("event sink not configured"))?;
+            .ok_or_else(|| antre_channels::Error::unavailable("event sink not configured"))?;
 
         // Pre-parse allowlist and create shared config — the bus loop and
         // update_account_config both use this same Arc so policy changes
@@ -159,7 +159,7 @@ impl ChannelPlugin for NostrPlugin {
         )));
         let otp_cooldown = nostr_config.otp_cooldown_secs;
         let shared_config = Arc::new(tokio::sync::RwLock::new(nostr_config));
-        let shared_otp = Arc::new(std::sync::Mutex::new(moltis_channels::otp::OtpState::new(
+        let shared_otp = Arc::new(std::sync::Mutex::new(antre_channels::otp::OtpState::new(
             otp_cooldown,
         )));
         let shared_reply_ctx =
@@ -277,7 +277,7 @@ impl ChannelPlugin for NostrPlugin {
 
     async fn update_account_config(&self, account_id: &str, config: Value) -> ChannelResult<()> {
         let mut new_config: NostrAccountConfig = serde_json::from_value(config).map_err(|e| {
-            moltis_channels::Error::invalid_input(format!("invalid nostr config: {e}"))
+            antre_channels::Error::invalid_input(format!("invalid nostr config: {e}"))
         })?;
 
         // Clone the handles out before awaiting: the accounts map is a
@@ -385,7 +385,7 @@ impl ChannelOtpProvider for NostrPlugin {
 
 #[cfg(test)]
 mod tests {
-    use {super::*, moltis_channels::ChannelPlugin, nostr_sdk::prelude::Keys};
+    use {super::*, antre_channels::ChannelPlugin, nostr_sdk::prelude::Keys};
 
     /// Build a minimal `NostrPlugin` with one dummy account inserted.
     ///
@@ -399,7 +399,7 @@ mod tests {
             &config.allowed_pubkeys,
         )));
         let shared_config = Arc::new(tokio::sync::RwLock::new(config));
-        let otp = Arc::new(std::sync::Mutex::new(moltis_channels::otp::OtpState::new(
+        let otp = Arc::new(std::sync::Mutex::new(antre_channels::otp::OtpState::new(
             300,
         )));
         let cancel = CancellationToken::new();

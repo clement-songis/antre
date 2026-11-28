@@ -6,7 +6,7 @@ use std::{
 };
 
 use {
-    moltis_agents::model::{
+    antre_agents::model::{
         ChatMessage as AgentChatMessage, LlmProvider, StreamEvent, Usage, UserContent,
     },
     serde::Serialize,
@@ -143,7 +143,7 @@ pub(crate) fn build_chat_response(request: ChatRequest) -> String {
         model,
         provider: provider_name,
         config_dir: config_dir_string(),
-        default_soul: moltis_config::DEFAULT_SOUL.to_owned(),
+        default_soul: antre_config::DEFAULT_SOUL.to_owned(),
         validation,
         input_tokens,
         output_tokens,
@@ -225,13 +225,13 @@ impl StreamCallbackCtx {
 ///   event (done or error).
 #[allow(unsafe_code)]
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn moltis_chat_stream(
+pub unsafe extern "C" fn antre_chat_stream(
     request_json: *const c_char,
     callback: StreamCallback,
     user_data: *mut c_void,
 ) {
-    record_call("moltis_chat_stream");
-    trace_call("moltis_chat_stream");
+    record_call("antre_chat_stream");
+    trace_call("antre_chat_stream");
 
     // Helper to send an error event before `ctx` is constructed.
     let send_error = |msg: String| {
@@ -250,7 +250,7 @@ pub unsafe extern "C" fn moltis_chat_stream(
     let raw = match crate::helpers::read_c_string(request_json) {
         Ok(value) => value,
         Err(message) => {
-            record_error("moltis_chat_stream", "null_pointer_or_invalid_utf8");
+            record_error("antre_chat_stream", "null_pointer_or_invalid_utf8");
             send_error(message);
             return;
         },
@@ -259,7 +259,7 @@ pub unsafe extern "C" fn moltis_chat_stream(
     let request = match serde_json::from_str::<ChatRequest>(&raw) {
         Ok(request) => request,
         Err(error) => {
-            record_error("moltis_chat_stream", "invalid_json");
+            record_error("antre_chat_stream", "invalid_json");
             send_error(error.to_string());
             return;
         },

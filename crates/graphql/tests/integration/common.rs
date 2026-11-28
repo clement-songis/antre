@@ -4,7 +4,7 @@ use std::{
 };
 
 use {
-    moltis_service_traits::{ServiceResult, Services},
+    antre_service_traits::{ServiceResult, Services},
     serde_json::{Value, json},
     tokio::sync::broadcast,
 };
@@ -87,7 +87,7 @@ mock_svc_struct!(MockLocalLlm);
 mock_svc_struct!(MockSystemInfo);
 
 #[async_trait::async_trait]
-impl moltis_service_traits::AgentService for MockAgent {
+impl antre_service_traits::AgentService for MockAgent {
     async fn run(&self, params: Value) -> ServiceResult {
         self.0.call("agent", params)
     }
@@ -106,7 +106,7 @@ impl moltis_service_traits::AgentService for MockAgent {
 }
 
 #[async_trait::async_trait]
-impl moltis_service_traits::SessionService for MockSession {
+impl antre_service_traits::SessionService for MockSession {
     async fn list(&self) -> ServiceResult {
         self.0.call("sessions.list", json!({}))
     }
@@ -183,7 +183,7 @@ impl moltis_service_traits::SessionService for MockSession {
 }
 
 #[async_trait::async_trait]
-impl moltis_service_traits::ChannelService for MockChannel {
+impl antre_service_traits::ChannelService for MockChannel {
     async fn status(&self) -> ServiceResult {
         self.0.call("channels.status", json!({}))
     }
@@ -226,7 +226,7 @@ impl moltis_service_traits::ChannelService for MockChannel {
 }
 
 #[async_trait::async_trait]
-impl moltis_service_traits::ConfigService for MockConfig {
+impl antre_service_traits::ConfigService for MockConfig {
     async fn get(&self, p: Value) -> ServiceResult {
         self.0.call("config.get", p)
     }
@@ -249,7 +249,7 @@ impl moltis_service_traits::ConfigService for MockConfig {
 }
 
 #[async_trait::async_trait]
-impl moltis_service_traits::CronService for MockCron {
+impl antre_service_traits::CronService for MockCron {
     async fn list(&self) -> ServiceResult {
         self.0.call("cron.list", json!({}))
     }
@@ -280,7 +280,7 @@ impl moltis_service_traits::CronService for MockCron {
 }
 
 #[async_trait::async_trait]
-impl moltis_service_traits::ChatService for MockChat {
+impl antre_service_traits::ChatService for MockChat {
     async fn send(&self, p: Value) -> ServiceResult {
         self.0.call("chat.send", p)
     }
@@ -323,7 +323,7 @@ impl moltis_service_traits::ChatService for MockChat {
 }
 
 #[async_trait::async_trait]
-impl moltis_service_traits::TtsService for MockTts {
+impl antre_service_traits::TtsService for MockTts {
     async fn status(&self) -> ServiceResult {
         self.0.call("tts.status", json!({}))
     }
@@ -350,7 +350,7 @@ impl moltis_service_traits::TtsService for MockTts {
 }
 
 #[async_trait::async_trait]
-impl moltis_service_traits::SttService for MockStt {
+impl antre_service_traits::SttService for MockStt {
     async fn status(&self) -> ServiceResult {
         self.0.call("stt.status", json!({}))
     }
@@ -380,7 +380,7 @@ impl moltis_service_traits::SttService for MockStt {
 }
 
 #[async_trait::async_trait]
-impl moltis_service_traits::SkillsService for MockSkills {
+impl antre_service_traits::SkillsService for MockSkills {
     async fn status(&self) -> ServiceResult {
         self.0.call("skills.status", json!({}))
     }
@@ -495,7 +495,7 @@ impl moltis_service_traits::SkillsService for MockSkills {
 }
 
 #[async_trait::async_trait]
-impl moltis_service_traits::McpService for MockMcp {
+impl antre_service_traits::McpService for MockMcp {
     async fn list(&self) -> ServiceResult {
         self.0.call("mcp.list", json!({}))
     }
@@ -546,14 +546,14 @@ impl moltis_service_traits::McpService for MockMcp {
 }
 
 #[async_trait::async_trait]
-impl moltis_service_traits::BrowserService for MockBrowser {
+impl antre_service_traits::BrowserService for MockBrowser {
     async fn request(&self, p: Value) -> ServiceResult {
         self.0.call("browser.request", p)
     }
 }
 
 #[async_trait::async_trait]
-impl moltis_service_traits::UsageService for MockUsage {
+impl antre_service_traits::UsageService for MockUsage {
     async fn status(&self) -> ServiceResult {
         self.0.call("usage.status", json!({}))
     }
@@ -564,7 +564,7 @@ impl moltis_service_traits::UsageService for MockUsage {
 }
 
 #[async_trait::async_trait]
-impl moltis_service_traits::ExecApprovalService for MockExecApproval {
+impl antre_service_traits::ExecApprovalService for MockExecApproval {
     async fn get(&self) -> ServiceResult {
         self.0.call("exec.approvals.get", json!({}))
     }
@@ -591,7 +591,7 @@ impl moltis_service_traits::ExecApprovalService for MockExecApproval {
 }
 
 #[async_trait::async_trait]
-impl moltis_service_traits::OnboardingService for MockOnboarding {
+impl antre_service_traits::OnboardingService for MockOnboarding {
     async fn wizard_start(&self, p: Value) -> ServiceResult {
         self.0.call("wizard.start", p)
     }
@@ -659,14 +659,14 @@ impl moltis_service_traits::OnboardingService for MockOnboarding {
 }
 
 #[async_trait::async_trait]
-impl moltis_service_traits::UpdateService for MockUpdate {
+impl antre_service_traits::UpdateService for MockUpdate {
     async fn run(&self, p: Value) -> ServiceResult {
         self.0.call("update.run", p)
     }
 }
 
 #[async_trait::async_trait]
-impl moltis_service_traits::ModelService for MockModel {
+impl antre_service_traits::ModelService for MockModel {
     async fn list(&self) -> ServiceResult {
         self.0.call("models.list", json!({}))
     }
@@ -697,7 +697,7 @@ impl moltis_service_traits::ModelService for MockModel {
 }
 
 #[async_trait::async_trait]
-impl moltis_service_traits::WebLoginService for MockWebLogin {
+impl antre_service_traits::WebLoginService for MockWebLogin {
     async fn start(&self, p: Value) -> ServiceResult {
         self.0.call("web.login.start", p)
     }
@@ -708,7 +708,7 @@ impl moltis_service_traits::WebLoginService for MockWebLogin {
 }
 
 #[async_trait::async_trait]
-impl moltis_service_traits::VoicewakeService for MockVoicewake {
+impl antre_service_traits::VoicewakeService for MockVoicewake {
     async fn get(&self) -> ServiceResult {
         self.0.call("voicewake.get", json!({}))
     }
@@ -727,7 +727,7 @@ impl moltis_service_traits::VoicewakeService for MockVoicewake {
 }
 
 #[async_trait::async_trait]
-impl moltis_service_traits::LogsService for MockLogs {
+impl antre_service_traits::LogsService for MockLogs {
     async fn tail(&self, p: Value) -> ServiceResult {
         self.0.call("logs.tail", p)
     }
@@ -750,7 +750,7 @@ impl moltis_service_traits::LogsService for MockLogs {
 }
 
 #[async_trait::async_trait]
-impl moltis_service_traits::ProviderSetupService for MockProviderSetup {
+impl antre_service_traits::ProviderSetupService for MockProviderSetup {
     async fn available(&self) -> ServiceResult {
         self.0.call("providers.available", json!({}))
     }
@@ -793,7 +793,7 @@ impl moltis_service_traits::ProviderSetupService for MockProviderSetup {
 }
 
 #[async_trait::async_trait]
-impl moltis_service_traits::ProjectService for MockProject {
+impl antre_service_traits::ProjectService for MockProject {
     async fn list(&self) -> ServiceResult {
         self.0.call("projects.list", json!({}))
     }
@@ -824,7 +824,7 @@ impl moltis_service_traits::ProjectService for MockProject {
 }
 
 #[async_trait::async_trait]
-impl moltis_service_traits::LocalLlmService for MockLocalLlm {
+impl antre_service_traits::LocalLlmService for MockLocalLlm {
     async fn system_info(&self) -> ServiceResult {
         self.0.call("providers.local.system_info", json!({}))
     }
@@ -867,7 +867,7 @@ impl moltis_service_traits::LocalLlmService for MockLocalLlm {
 }
 
 #[async_trait::async_trait]
-impl moltis_service_traits::SystemInfoService for MockSystemInfo {
+impl antre_service_traits::SystemInfoService for MockSystemInfo {
     async fn health(&self) -> ServiceResult {
         self.0.call("health", json!({}))
     }
@@ -926,18 +926,18 @@ fn build_mock_services(mock: &Arc<MockDispatch>) -> Arc<Services> {
         project: Arc::new(MockProject(mock.clone())),
         local_llm: Arc::new(MockLocalLlm(mock.clone())),
         system_info: Arc::new(MockSystemInfo(mock.clone())),
-        external_agent: Arc::new(moltis_service_traits::NoopExternalAgentService),
+        external_agent: Arc::new(antre_service_traits::NoopExternalAgentService),
     })
 }
 
 pub(crate) fn build_test_schema(
     mock: Arc<MockDispatch>,
 ) -> (
-    moltis_graphql::MoltisSchema,
+    antre_graphql::AntreSchema,
     broadcast::Sender<(String, Value)>,
 ) {
     let (tx, _) = broadcast::channel(16);
     let services = build_mock_services(&mock);
-    let schema = moltis_graphql::build_schema(services, tx.clone());
+    let schema = antre_graphql::build_schema(services, tx.clone());
     (schema, tx)
 }

@@ -29,11 +29,11 @@ use crate::{
 };
 
 use {
-    moltis_protocol::{SystemExecRequest, filter_remote_env},
-    moltis_tools::nodes::{NodeInfo, NodeInfoProvider, NodeProviderInfo},
+    antre_protocol::{SystemExecRequest, filter_remote_env},
+    antre_tools::nodes::{NodeInfo, NodeInfoProvider, NodeProviderInfo},
 };
 
-pub use moltis_protocol::SYSTEM_EXEC_COMMAND;
+pub use antre_protocol::SYSTEM_EXEC_COMMAND;
 
 /// Result of a remote command execution on a node.
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
@@ -161,7 +161,7 @@ pub async fn exec_on_node(
 
     // Build and send the invoke request.
     let invoke_id = uuid::Uuid::new_v4().to_string();
-    let invoke_event = moltis_protocol::EventFrame::new(
+    let invoke_event = antre_protocol::EventFrame::new(
         "node.invoke.request",
         serde_json::json!({
             "invokeId": invoke_id,
@@ -399,7 +399,7 @@ pub async fn query_node_providers(
     };
 
     let invoke_id = uuid::Uuid::new_v4().to_string();
-    let invoke_event = moltis_protocol::EventFrame::new(
+    let invoke_event = antre_protocol::EventFrame::new(
         "node.invoke.request",
         serde_json::json!({
             "invokeId": invoke_id,
@@ -567,7 +567,7 @@ fn parse_exec_result(value: &serde_json::Value) -> anyhow::Result<NodeExecResult
     })
 }
 
-/// Bridge that implements [`moltis_tools::exec::NodeExecProvider`] by
+/// Bridge that implements [`antre_tools::exec::NodeExecProvider`] by
 /// delegating to [`exec_on_node`] / [`resolve_node_id`] with a shared
 /// `GatewayState`.
 pub struct GatewayNodeExecProvider {
@@ -599,7 +599,7 @@ impl GatewayNodeExecProvider {
 }
 
 #[async_trait]
-impl moltis_tools::exec::NodeExecProvider for GatewayNodeExecProvider {
+impl antre_tools::exec::NodeExecProvider for GatewayNodeExecProvider {
     async fn exec_on_node(
         &self,
         node_id: &str,
@@ -607,7 +607,7 @@ impl moltis_tools::exec::NodeExecProvider for GatewayNodeExecProvider {
         timeout_secs: u64,
         cwd: Option<&str>,
         env: Option<&HashMap<String, String>>,
-    ) -> anyhow::Result<moltis_tools::exec::ExecResult> {
+    ) -> anyhow::Result<antre_tools::exec::ExecResult> {
         if node_id.starts_with(SSH_ID_PREFIX) {
             if let Some(store) = self.state.credential_store.as_ref()
                 && let Some(target) = store.resolve_ssh_target(node_id).await?
@@ -622,7 +622,7 @@ impl moltis_tools::exec::NodeExecProvider for GatewayNodeExecProvider {
                     self.max_output_bytes,
                 )
                 .await?;
-                return Ok(moltis_tools::exec::ExecResult {
+                return Ok(antre_tools::exec::ExecResult {
                     stdout: result.stdout,
                     stderr: result.stderr,
                     exit_code: result.exit_code,
@@ -642,7 +642,7 @@ impl moltis_tools::exec::NodeExecProvider for GatewayNodeExecProvider {
                     self.max_output_bytes,
                 )
                 .await?;
-                return Ok(moltis_tools::exec::ExecResult {
+                return Ok(antre_tools::exec::ExecResult {
                     stdout: result.stdout,
                     stderr: result.stderr,
                     exit_code: result.exit_code,
@@ -651,7 +651,7 @@ impl moltis_tools::exec::NodeExecProvider for GatewayNodeExecProvider {
         }
 
         let result = exec_on_node(&self.state, node_id, command, timeout_secs, cwd, env).await?;
-        Ok(moltis_tools::exec::ExecResult {
+        Ok(antre_tools::exec::ExecResult {
             stdout: result.stdout,
             stderr: result.stderr,
             exit_code: result.exit_code,
@@ -879,7 +879,7 @@ mod tests {
         env.insert("LD_PRELOAD".into(), "/evil.so".into());
         env.insert("NODE_OPTIONS".into(), "--inspect".into());
         env.insert("OPENAI_API_KEY".into(), "sk-secret".into());
-        env.insert("MOLTIS_AUTH_TOKEN".into(), "token".into());
+        env.insert("ANTRE_AUTH_TOKEN".into(), "token".into());
         env.insert("CUSTOM_VAR".into(), "value".into());
 
         let filtered = filter_env(&env);
@@ -891,7 +891,7 @@ mod tests {
         assert!(!filtered.contains_key("LD_PRELOAD"));
         assert!(!filtered.contains_key("NODE_OPTIONS"));
         assert!(!filtered.contains_key("OPENAI_API_KEY"));
-        assert!(!filtered.contains_key("MOLTIS_AUTH_TOKEN"));
+        assert!(!filtered.contains_key("ANTRE_AUTH_TOKEN"));
         assert!(!filtered.contains_key("CUSTOM_VAR"));
     }
 

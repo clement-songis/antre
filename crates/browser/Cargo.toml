@@ -1,26 +1,26 @@
 [package]
 edition.workspace = true
-name              = "moltis-browser"
+name              = "antre-browser"
 version.workspace = true
 
 [dependencies]
-async-trait    = "0.1"
-base64         = { workspace = true }
-chromiumoxide  = { default-features = false, features = ["tokio-runtime"], version = "0.8" }
-futures        = { workspace = true }
-moltis-common  = { workspace = true }
-moltis-config  = { workspace = true }
-moltis-metrics = { optional = true, workspace = true }
-rand           = { workspace = true }
-serde          = { workspace = true }
-serde_json     = { workspace = true }
-sysinfo        = { workspace = true }
-thiserror      = { workspace = true }
-tokio          = { workspace = true }
-tracing        = { workspace = true }
-url            = "2.5"
-uuid           = { workspace = true }
-which          = "8.0"
+antre-common  = { workspace = true }
+antre-config  = { workspace = true }
+antre-metrics = { optional = true, workspace = true }
+async-trait   = "0.1"
+base64        = { workspace = true }
+chromiumoxide = { default-features = false, features = ["tokio-runtime"], version = "0.8" }
+futures       = { workspace = true }
+rand          = { workspace = true }
+serde         = { workspace = true }
+serde_json    = { workspace = true }
+sysinfo       = { workspace = true }
+thiserror     = { workspace = true }
+tokio         = { workspace = true }
+tracing       = { workspace = true }
+url           = "2.5"
+uuid          = { workspace = true }
+which         = "8.0"
 
 [dev-dependencies]
 serial_test = { workspace = true }
@@ -28,7 +28,7 @@ tempfile    = { workspace = true }
 
 [features]
 default = []
-metrics = ["dep:moltis-metrics"]
+metrics = ["dep:antre-metrics"]
 tracing = []
 
 [lints]

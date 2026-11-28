@@ -12,8 +12,8 @@ test.describe("context meter with an unknown window", () => {
 		const pageErrors = watchPageErrors(page);
 		const read = (windowKnown) =>
 			page.evaluate((isKnown) => {
-				var S = window.__moltis_modules.state;
-				var ui = window.__moltis_modules["chat-ui"];
+				var S = window.__antre_modules.state;
+				var ui = window.__antre_modules["chat-ui"];
 				S.setSessionCurrentContextTokens(64000);
 				S.setSessionContextWindow(128000);
 				S.setSessionContextWindowKnown(isKnown);

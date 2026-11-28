@@ -1,7 +1,7 @@
 ---
 theme: none
 colorSchema: light
-title: "AI-Assisted Software Engineering: Building Moltis as a Solo Founder"
+title: "AI-Assisted Software Engineering: Building Antre as a Solo Founder"
 info: |
   Non Fungible Conference / NFC Summit
   Lisbon, June 4, 2026
@@ -19,7 +19,7 @@ drawings:
       <span class="opacity-50">•</span>
       <span>June 4, 2026</span>
     </div>
-    <img src="https://www.moltis.org/favicon.svg" alt="Moltis logo" class="h-16 w-16" />
+    <img src="https://www.moltis.org/favicon.svg" alt="Antre logo" class="h-16 w-16" />
   </div>
 
   <div class="mt-9 max-w-5xl text-6xl leading-[1.05] font-semibold tracking-tight text-gray-950">
@@ -27,7 +27,7 @@ drawings:
   </div>
 
   <div class="mt-5 max-w-4xl text-3xl leading-10 text-gray-700">
-    Building Moltis as a solo founder
+    Building Antre as a solo founder
   </div>
 
   <div class="mt-9 text-3xl font-semibold text-gray-900">
@@ -76,7 +76,7 @@ real products are built.
   </div>
   <div class="rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-4 shadow-sm">
     <div class="text-xs uppercase tracking-[0.18em] text-cyan-700">Solo builder</div>
-    <div class="mt-2 text-xl font-semibold leading-tight text-gray-950">Constellations -> Moltis</div>
+    <div class="mt-2 text-xl font-semibold leading-tight text-gray-950">Constellations -> Antre</div>
     <div class="mt-3 text-sm leading-6 text-gray-700">Two serious solo Rust projects: before and after daily AI-assisted engineering.</div>
   </div>
 </div>
@@ -98,7 +98,7 @@ so I have a baseline for what solo engineering used to feel like."
 -->
 ---
 
-# What Moltis is
+# What Antre is
 
 <div class="mt-1 text-base leading-6 text-gray-600">
   A <strong>local-first persistent personal agent server</strong>: one Rust binary between you, your tools, your memory, your channels, and multiple LLM providers.
@@ -108,7 +108,7 @@ so I have a baseline for what solo engineering used to feel like."
   <div class="rounded-2xl border border-gray-200 bg-white px-4 py-2 shadow-sm">
     <div class="text-xs uppercase tracking-[0.18em] text-gray-500">GitHub stars</div>
     <div class="mt-1 text-4xl font-semibold text-gray-950">2.7K</div>
-    <div class="mt-1 text-sm text-gray-600">moltis-org/moltis</div>
+    <div class="mt-1 text-sm text-gray-600">antre-ai/antre</div>
   </div>
   <div class="rounded-2xl border border-gray-200 bg-white px-4 py-2 shadow-sm">
     <div class="text-xs uppercase tracking-[0.18em] text-gray-500">Issues</div>
@@ -156,7 +156,7 @@ GitHub counts checked during prep:
 - 12 open PRs, 667 closed PRs, 566 merged PRs
 
 Useful spoken version:
-"Moltis is not just a chat UI. It is the server I wanted between me and AI
+"Antre is not just a chat UI. It is the server I wanted between me and AI
 models: persistent sessions, memory, tools, channels, auth, sandboxing, and
 deployment. And it is not a private toy anymore: thousands of stars, hundreds of
 issues and PRs, and real user pressure. The key idea is continuity."
@@ -217,7 +217,7 @@ Use this slide to make the comparison credible:
 - It had meaningful traffic and hard operational constraints.
 
 Useful line:
-"So when I compare Moltis to Constellations, I am not comparing AI work to a
+"So when I compare Antre to Constellations, I am not comparing AI work to a
 toy. I am comparing two serious solo Rust projects, one mostly before AI and
 one built with AI as part of the daily engineering workflow."
 -->
@@ -232,14 +232,14 @@ one built with AI as part of the daily engineering workflow."
     <div class="flex items-center justify-between">
       <div>
         <div class="text-lg font-semibold text-gray-950">Codebase size by elapsed project time</div>
-        <div class="mt-1 text-sm text-gray-500">Same 18-week window: <span class="font-semibold text-fuchsia-700">26.1x more LoC</span> with Moltis</div>
+        <div class="mt-1 text-sm text-gray-500">Same 18-week window: <span class="font-semibold text-fuchsia-700">26.1x more LoC</span> with Antre</div>
       </div>
       <div class="text-xs uppercase tracking-[0.18em] text-gray-500">linear scale</div>
     </div>
     <div class="mt-4 space-y-4">
       <div>
         <div class="mb-2 flex items-baseline justify-between gap-4">
-          <div><span class="font-semibold text-fuchsia-700">Moltis</span><span class="ml-2 text-sm text-gray-500">after 18 weeks with AI</span></div>
+          <div><span class="font-semibold text-fuchsia-700">Antre</span><span class="ml-2 text-sm text-gray-500">after 18 weeks with AI</span></div>
           <div class="text-2xl font-semibold text-fuchsia-700">474.6K LoC</div>
         </div>
         <div class="h-7 rounded-full bg-fuchsia-100"><div class="h-7 rounded-full bg-fuchsia-600" style="width: 100%"></div></div>
@@ -271,7 +271,7 @@ About 90 seconds.
 LoC numbers are plain `tokei` code totals.
 
 Data source:
-- Moltis current checkout: 474,550 code lines after 127 days / 18 weeks
+- Antre current checkout: 474,550 code lines after 127 days / 18 weeks
 - Constellations detached worktree at the same elapsed time from 2022-07-01: 18,184 code lines
 - Constellations current checkout: 118,225 code lines after 882 days / 126 weeks
 - Same-time factor: 474,550 / 18,184 = 26.1x
@@ -417,7 +417,7 @@ not change existing login routes."
   <div class="rounded-2xl border border-fuchsia-200 bg-fuchsia-50 px-4 py-2 shadow-sm">
     <div class="text-xs uppercase tracking-[0.18em] text-fuchsia-700">Queue</div>
     <div class="mt-1 text-lg font-semibold text-gray-950">Issues first</div>
-    <div class="mt-1 text-sm leading-5 text-gray-700">Bugs first, because I want Moltis to be stable.</div>
+    <div class="mt-1 text-sm leading-5 text-gray-700">Bugs first, because I want Antre to be stable.</div>
   </div>
   <div class="rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-2 shadow-sm">
     <div class="text-xs uppercase tracking-[0.18em] text-cyan-700">Isolation</div>
@@ -486,7 +486,7 @@ and review loops that are isolated enough to be safe."
     <div class="text-sm uppercase tracking-[0.18em] text-cyan-700">New lesson</div>
     <div class="mt-3 text-2xl font-semibold tracking-tight text-gray-950">Bound the agent</div>
     <div class="mt-4 text-base leading-7 text-gray-700">
-      In Moltis, CI is the immune system that keeps AI output from drifting away from the project.
+      In Antre, CI is the immune system that keeps AI output from drifting away from the project.
     </div>
   </div>
   <div class="rounded-3xl border border-gray-200 bg-white px-5 py-5 shadow-sm">
@@ -517,7 +517,7 @@ the model has to pass them."
 -->
 ---
 
-# Moltis CI is the immune system
+# Antre CI is the immune system
 
 <div class="mt-3 max-w-5xl text-xl leading-8 text-gray-600">
   These gates turn taste, architecture, and release risk into executable constraints.
@@ -557,7 +557,7 @@ the model has to pass them."
 <!--
 About 75 seconds.
 
-Concrete Moltis examples:
+Concrete Antre examples:
 - rustfmt, Biome, TypeScript, i18n parity
 - Clippy -D warnings, nextest, coverage, contract tests
 - Playwright frontend E2E, provider live/E2E scenarios, sandbox runtime E2E
@@ -610,7 +610,7 @@ Concrete Moltis examples:
 <!--
 About 75 seconds.
 
-Concrete Moltis details:
+Concrete Antre details:
 - .github/actions/sign-artifacts creates SHA256/SHA512 and Sigstore keyless .sig/.crt files.
 - Release workflow grants id-token: write only where needed for Sigstore signing.
 - gpg-sign-release.sh downloads release assets, verifies SHA256 where present, and uploads detached .asc signatures.
@@ -663,7 +663,7 @@ Concrete Moltis details:
 <!--
 About 75 seconds.
 
-Concrete Moltis details:
+Concrete Antre details:
 - Zizmor runs on CI, release, docs, Homebrew, and Codspeed workflows.
 - Release gates wait for clippy, test, e2e, and provider integration results.
 - Third-party skills/plugins persist pinned source commit SHAs, resolve GitHub metadata, and require re-trust on source drift.
@@ -864,17 +864,17 @@ the emotional relationship with coding for people who loved doing it by hand."
 # Thank you
 
 <div class="mt-16 text-center">
-  <div class="text-5xl font-semibold text-gray-950">Moltis</div>
+  <div class="text-5xl font-semibold text-gray-950">Antre</div>
   <div class="mt-6 text-3xl text-fuchsia-700">https://www.moltis.org</div>
-  <div class="mt-4 text-2xl text-gray-700">https://github.com/moltis-org/moltis</div>
+  <div class="mt-4 text-2xl text-gray-700">https://github.com/antre-ai/antre</div>
   <div class="mt-10 text-2xl font-medium text-gray-900">Fabien Penso · https://pen.so · @fabienpenso</div>
 </div>
 
 <!--
 Backup / Q&A slide.
 
-If people ask what Moltis is, use the short answer:
-"Moltis is a local-first persistent agent server: one place where your AI agent
+If people ask what Antre is, use the short answer:
+"Antre is a local-first persistent agent server: one place where your AI agent
 can keep sessions, memory, tools, and channels under your control."
 -->
 ---
@@ -887,7 +887,7 @@ can keep sessions, memory, tools, and channels under your control."
     <div class="mt-3 text-base leading-7 text-gray-700">Issue, isolated workspace, agent pass, review feedback, tests, merge.</div>
   </div>
   <div class="rounded-2xl border border-gray-200 bg-white px-6 py-5 shadow-sm">
-    <div class="text-xl font-semibold text-fuchsia-700">Open Moltis briefly</div>
+    <div class="text-xl font-semibold text-fuchsia-700">Open Antre briefly</div>
     <div class="mt-3 text-base leading-7 text-gray-700">Use it only to make the talk concrete, not as a product tour.</div>
   </div>
   <div class="rounded-2xl border border-gray-200 bg-white px-6 py-5 shadow-sm">

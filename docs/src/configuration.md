@@ -1,13 +1,13 @@
 # Configuration
 
-Moltis uses a **layered config model** with two files:
+Antre uses a **layered config model** with two files:
 
 | File | Owner | Purpose |
 |------|-------|---------|
-| `defaults.toml` | **Moltis** | Shipped defaults, regenerated on every startup |
-| `moltis.toml` | **You** | Your overrides only |
+| `defaults.toml` | **Antre** | Shipped defaults, regenerated on every startup |
+| `antre.toml` | **You** | Your overrides only |
 
-On first run, both files are created in `~/.config/moltis/`. Your `moltis.toml`
+On first run, both files are created in `~/.config/antre/`. Your `antre.toml`
 starts nearly empty — only the installation-specific port is set. All other
 settings inherit from `defaults.toml` automatically.
 
@@ -15,18 +15,18 @@ settings inherit from `defaults.toml` automatically.
 
 Settings are resolved in this order (later wins):
 
-1. **Built-in defaults** — compiled into Moltis (`MoltisConfig::default()`)
-2. **`defaults.toml`** — Moltis-managed, refreshed on every startup
-3. **`moltis.toml`** — your overrides (additive deep merge)
-4. **`MOLTIS_*` environment variables** — highest precedence
+1. **Built-in defaults** — compiled into Antre (`AntreConfig::default()`)
+2. **`defaults.toml`** — Antre-managed, refreshed on every startup
+3. **`antre.toml`** — your overrides (additive deep merge)
+4. **`ANTRE_*` environment variables** — highest precedence
 
-This means you only need to put values in `moltis.toml` that you intentionally
-want to differ from the shipped defaults. When Moltis upgrades and improves a
+This means you only need to put values in `antre.toml` that you intentionally
+want to differ from the shipped defaults. When Antre upgrades and improves a
 default, your installation picks it up automatically — unless you've overridden
 that specific setting.
 
-```admonish tip title="Don't copy defaults into moltis.toml"
-Copying a built-in default into `moltis.toml` "freezes" it — future built-in
+```admonish tip title="Don't copy defaults into antre.toml"
+Copying a built-in default into `antre.toml` "freezes" it — future built-in
 improvements for that setting won't apply. The Settings UI shows **Built-in**,
 **Overridden**, and **Custom** badges so you can see which values are yours
 and which are inherited.
@@ -36,35 +36,35 @@ and which are inherited.
 
 | Platform | Default Path |
 |----------|--------------|
-| macOS/Linux | `~/.config/moltis/moltis.toml` |
-| Custom | Set via `--config-dir` or `MOLTIS_CONFIG_DIR` |
+| macOS/Linux | `~/.config/antre/antre.toml` |
+| Custom | Set via `--config-dir` or `ANTRE_CONFIG_DIR` |
 
 The `defaults.toml` file lives in the same directory. Do not edit it — your
 changes will be overwritten on the next startup.
 
 ## Checking Config
 
-`moltis config check` validates your override file (`moltis.toml`) against the
-known config schema. It also checks that Moltis-managed `defaults.toml` exists
+`antre config check` validates your override file (`antre.toml`) against the
+known config schema. It also checks that Antre-managed `defaults.toml` exists
 and can be parsed, but it does not treat `defaults.toml` as user-authored input.
 
 New config fields should be added to the Rust config schema and its `Default`
-implementation. Moltis regenerates `defaults.toml` from those built-in defaults
-on startup, while `moltis.toml` should contain only values you intentionally
+implementation. Antre regenerates `defaults.toml` from those built-in defaults
+on startup, while `antre.toml` should contain only values you intentionally
 override.
 
 ## Agent-Readable Docs
 
-Moltis packages the documentation as local markdown files when the install
+Antre packages the documentation as local markdown files when the install
 format supports external share files, such as `.deb`, `.rpm`, Homebrew, and
 similar system packages. Agents are pointed at those local files through the
 system prompt so they can read setup, configuration, channel, and
 troubleshooting docs without needing web access.
 
-Resolution order is `MOLTIS_DOCS_DIR`, the packaged share docs directory
+Resolution order is `ANTRE_DOCS_DIR`, the packaged share docs directory
 (`<share>/docs`), the source checkout docs in development, then an embedded
-fallback copied to `~/.moltis/docs/moltis/`. Moltis also writes a generated
-`config-template.md` under `~/.moltis/docs/moltis/` for the current server port
+fallback copied to `~/.antre/docs/antre/`. Antre also writes a generated
+`config-template.md` under `~/.antre/docs/antre/` for the current server port
 and points agents at it separately.
 
 ## Basic Settings
@@ -75,7 +75,7 @@ port = 13131                    # HTTP/WebSocket port
 bind = "0.0.0.0"               # Listen address
 
 [identity]
-name = "Moltis"                 # Agent display name
+name = "Antre"                 # Agent display name
 
 [tools]
 agent_timeout_secs = 600        # Agent run timeout (seconds, 0 = no timeout)
@@ -84,7 +84,7 @@ agent_max_iterations = 25       # Max tool call iterations per run
 
 ## LLM Providers
 
-Configure providers through the web UI or directly in `moltis.toml`. API keys can be set
+Configure providers through the web UI or directly in `antre.toml`. API keys can be set
 via environment variables (e.g. `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`) or
 in the config file.
 
@@ -125,26 +125,26 @@ host = "local"                 # "local", "node", or "ssh"
 # ssh_target = "deploy@box"    # default SSH target when host = "ssh"
 ```
 
-When `host = "ssh"`, Moltis can work in two modes:
+When `host = "ssh"`, Antre can work in two modes:
 
 - **System OpenSSH**: reuse your existing host aliases, agent forwarding policy,
   and `~/.ssh/config`.
 - **Managed targets**: create or import a deploy key in **Settings → SSH**,
-  then bind that key to a named target. Moltis stores the private key in its
+  then bind that key to a named target. Antre stores the private key in its
   credential store and encrypts it with the vault whenever the vault is
-  unsealed. Imported keys may be passphrase-protected, Moltis strips the
+  unsealed. Imported keys may be passphrase-protected, Antre strips the
   passphrase during import so runtime execution can stay non-interactive.
 
 For stricter SSH verification, managed targets also accept a pasted
 `known_hosts` line from `ssh-keyscan -H host`. The SSH settings page can scan
 that for you, and saved targets can refresh or clear their stored pin later.
-When present, Moltis uses that pin instead of your global OpenSSH known-host
+When present, Antre uses that pin instead of your global OpenSSH known-host
 policy for that target.
 
 Managed targets appear in the Nodes page and chat node picker, so users can see
 where `exec` will run without digging through config. If multiple managed
 targets exist, the default one is used when `tools.exec.host = "ssh"` and no
-session-specific route is selected. `moltis doctor` also reports remote-exec
+session-specific route is selected. `antre doctor` also reports remote-exec
 inventory, active backend mode, and obvious SSH setup problems from the CLI.
 
 `Settings -> Tools` shows the effective tool inventory for the active session
@@ -181,13 +181,13 @@ packages = [
 ]
 ```
 
-If Moltis runs inside Docker and also mounts the host container socket
-(`/var/run/docker.sock`), Moltis now auto-detects the host path backing
-`/home/moltis/.moltis` from the parent container's mount table. If that
+If Antre runs inside Docker and also mounts the host container socket
+(`/var/run/docker.sock`), Antre now auto-detects the host path backing
+`/home/antre/.antre` from the parent container's mount table. If that
 inspection cannot resolve the correct path, set `host_data_dir` explicitly.
 
 ```admonish info
-When you modify the packages list and restart, Moltis automatically rebuilds the sandbox image with a new tag.
+When you modify the packages list and restart, Antre automatically rebuilds the sandbox image with a new tag.
 ```
 
 ## Web Search
@@ -218,10 +218,10 @@ proxy, which still answer through `/chat/completions`.
 
 If no search API key is configured:
 
-- with `duckduckgo_fallback = false` (default), Moltis returns a clear hint to set `BRAVE_API_KEY` or `PERPLEXITY_API_KEY`
-- with `duckduckgo_fallback = true`, Moltis attempts DuckDuckGo HTML search, which may hit CAPTCHA/rate limits
+- with `duckduckgo_fallback = false` (default), Antre returns a clear hint to set `BRAVE_API_KEY` or `PERPLEXITY_API_KEY`
+- with `duckduckgo_fallback = true`, Antre attempts DuckDuckGo HTML search, which may hit CAPTCHA/rate limits
 
-`provider = "keenable"` needs no API key: Moltis calls Keenable's public search endpoint.
+`provider = "keenable"` needs no API key: Antre calls Keenable's public search endpoint.
 Set `KEENABLE_API_KEY` (or `api_key`) only to raise the keyless rate limits.
 
 `provider = "ollama"` uses Ollama's hosted web search with an ollama.com API
@@ -240,12 +240,12 @@ enable_agent_sidecar_files = false  # Opt-in: allow agents to write sidecar text
 enable_self_improvement = true     # System prompt guidance for autonomous skill creation/update
 ```
 
-`enable_agent_sidecar_files` is disabled by default. When enabled, Moltis
+`enable_agent_sidecar_files` is disabled by default. When enabled, Antre
 registers the `write_skill_files` tool so agents can write supplementary files
 such as `script.sh`, `Dockerfile`, templates, or `_meta.json` inside
 `<data_dir>/skills/<name>/`. Writes stay confined to that personal skill
 directory, reject path traversal and symlink escapes, and are recorded in
-`~/.moltis/logs/security-audit.jsonl`.
+`~/.antre/logs/security-audit.jsonl`.
 
 `enable_self_improvement` (default: true) injects system prompt guidance that
 encourages the agent to proactively create and update skills after complex
@@ -273,7 +273,7 @@ individual levels depends on the selected model and provider.
 
 ## Chat Message Queue
 
-When a new message arrives while an agent run is already active, Moltis can either
+When a new message arrives while an agent run is already active, Antre can either
 replay queued messages one-by-one or merge them into a single follow-up message.
 
 ```toml
@@ -311,16 +311,16 @@ See [Memory Surfaces](memory-surfaces.md) for the boundary between
 `memory.style` chooses the high-level behavior, while
 `chat.prompt_memory_mode` only affects prompt-visible `MEMORY.md`.
 `memory.agent_write_mode` controls where agent-authored writes are allowed to
-land. `memory.user_profile_write_mode` controls whether Moltis writes the
+land. `memory.user_profile_write_mode` controls whether Antre writes the
 managed `USER.md` surface, and whether browser/channel timezone or location
 signals may update it silently. `memory.session_export` controls whether
 session rollover exports are written at all.
 
 ## Authentication
 
-Authentication is **only required when accessing Moltis from a non-localhost address**. When running on `localhost` or `127.0.0.1`, no authentication is needed by default.
+Authentication is **only required when accessing Antre from a non-localhost address**. When running on `localhost` or `127.0.0.1`, no authentication is needed by default.
 
-When you access Moltis from a network address (e.g., `http://192.168.1.100:13131`), a one-time setup code is printed to the terminal. Use it to set up a password or passkey.
+When you access Antre from a network address (e.g., `http://192.168.1.100:13131`), a one-time setup code is printed to the terminal. Use it to set up a password or passkey.
 
 ```toml
 [auth]
@@ -328,7 +328,7 @@ disabled = false                # Set true to disable auth entirely
 ```
 
 ```admonish warning
-Only set `disabled = true` if Moltis is running on a trusted private network. Never expose an unauthenticated instance to the internet.
+Only set `disabled = true` if Antre is running on a trusted private network. Never expose an unauthenticated instance to the internet.
 ```
 
 ## Hooks
@@ -379,7 +379,7 @@ url = "https://mcp.example.com/mcp"
 headers = { Authorization = "Bearer ${API_KEY}" }
 ```
 
-Remote MCP URLs and headers support `$NAME` or `${NAME}` placeholders. For live remote servers, values resolve from Moltis-managed env overrides, either `[env]` in config or **Settings** → **Environment Variables**.
+Remote MCP URLs and headers support `$NAME` or `${NAME}` placeholders. For live remote servers, values resolve from Antre-managed env overrides, either `[env]` in config or **Settings** → **Environment Variables**.
 
 ## Telegram Integration
 
@@ -429,9 +429,9 @@ See [Slack](slack.md) for full configuration reference and setup instructions.
 ```toml
 [tls]
 enabled = true
-cert_path = "~/.config/moltis/cert.pem"
-key_path = "~/.config/moltis/key.pem"
-# If custom paths are not set and auto_generate is true, Moltis generates a
+cert_path = "~/.config/antre/cert.pem"
+key_path = "~/.config/antre/key.pem"
+# If custom paths are not set and auto_generate is true, Antre generates a
 # local CA and server certificate for localhost/private-network names. Public
 # VPS IP access should set public_ip; public domains should use a reverse proxy
 # or custom CA-issued certificates.
@@ -446,7 +446,7 @@ key_path = "~/.config/moltis/key.pem"
 loopback_http = true
 ```
 
-Override via environment variable: `MOLTIS_TLS__HTTP_REDIRECT_PORT=8080`.
+Override via environment variable: `ANTRE_TLS__HTTP_REDIRECT_PORT=8080`.
 
 ### Loopback over plain HTTP
 
@@ -459,7 +459,7 @@ example if you already rely on `https://localhost` bookmarks or passkeys.
 
 ### Trusting the local CA
 
-When TLS is active with auto-generated certificates and Moltis runs from a
+When TLS is active with auto-generated certificates and Antre runs from a
 terminal on your desktop, it asks once whether to trust its local CA:
 
 - **macOS:** the login keychain, which shows a password dialog.
@@ -467,8 +467,8 @@ terminal on your desktop, it asks once whether to trust its local CA:
 - **Windows:** the user root store.
 - **Firefox and Chromium:** their NSS databases, when NSS `certutil` is installed.
 
-Moltis remembers your answer for that CA in `certs/ca-trust.txt`. Run
-`moltis trust-ca` at any time to install the CA manually.
+Antre remembers your answer for that CA in `certs/ca-trust.txt`. Run
+`antre trust-ca` at any time to install the CA manually.
 
 The CA carries X.509 name constraints that limit it to `localhost`,
 `*.localhost`, `.local`, loopback, private (RFC 1918), CGNAT and link-local
@@ -490,7 +490,7 @@ open_browser = "first-run"   # "first-run" | "always" | "never"
 - `always` opens it on every start.
 - `never` never opens a browser.
 
-A browser is opened only when Moltis runs in an interactive terminal on a
+A browser is opened only when Antre runs in an interactive terminal on a
 desktop session: never over SSH, inside a container, in CI, or under a service
 manager. On Linux, a `DISPLAY` or `WAYLAND_DISPLAY` is also required. The
 `--open-browser` and `--no-open-browser` flags override this setting for a
@@ -498,7 +498,7 @@ single run. The `BROWSER` environment variable selects which browser to use.
 
 ## Tailscale Integration
 
-Expose Moltis over your Tailscale network:
+Expose Antre over your Tailscale network:
 
 ```toml
 [tailscale]
@@ -516,7 +516,7 @@ prometheus_endpoint = true
 
 ## Process Environment Variables (`[env]`)
 
-The `[env]` section injects variables into the Moltis process at startup.
+The `[env]` section injects variables into the Antre process at startup.
 This is useful in Docker deployments where passing individual `-e` flags is
 inconvenient, or when you want API keys stored in the config file rather
 than the host environment.
@@ -534,7 +534,7 @@ If `BRAVE_API_KEY` is already set via `docker -e` or the host shell, the
 
 ```admonish info title="Settings UI vs [env]"
 Environment variables configured through the Settings UI (Settings >
-Environment) are also injected into the Moltis process at startup.
+Environment) are also injected into the Antre process at startup.
 Precedence: host/`docker -e` > config `[env]` > Settings UI.
 ```
 
@@ -544,14 +544,14 @@ All settings can be overridden via environment variables:
 
 | Variable | Description |
 |----------|-------------|
-| `MOLTIS_CONFIG_DIR` | Configuration directory |
-| `MOLTIS_DATA_DIR` | Data directory |
-| `MOLTIS_SERVER__PORT` | Server port override |
-| `MOLTIS_SERVER__BIND` | Server bind address override |
-| `MOLTIS_TOOLS__AGENT_TIMEOUT_SECS` | Agent run timeout override |
-| `MOLTIS_TOOLS__AGENT_MAX_ITERATIONS` | Agent loop iteration cap override |
+| `ANTRE_CONFIG_DIR` | Configuration directory |
+| `ANTRE_DATA_DIR` | Data directory |
+| `ANTRE_SERVER__PORT` | Server port override |
+| `ANTRE_SERVER__BIND` | Server bind address override |
+| `ANTRE_TOOLS__AGENT_TIMEOUT_SECS` | Agent run timeout override |
+| `ANTRE_TOOLS__AGENT_MAX_ITERATIONS` | Agent loop iteration cap override |
 
-`MOLTIS_FILES_DIR` is different from these startup overrides: Moltis supplies
+`ANTRE_FILES_DIR` is different from these startup overrides: Antre supplies
 it to local command agents and `exec` as the resolved
 [Managed Files](managed-files.md) path. Use it instead of assuming
 `<data_dir>/files`.
@@ -559,7 +559,7 @@ it to local command agents and `exec` as the resolved
 ## CLI Flags
 
 ```bash
-moltis --config-dir /path/to/config --data-dir /path/to/data
+antre --config-dir /path/to/config --data-dir /path/to/data
 ```
 
 ## Complete Example

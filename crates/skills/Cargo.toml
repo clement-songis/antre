@@ -1,16 +1,16 @@
 [package]
 edition.workspace = true
-name              = "moltis-skills"
+name              = "antre-skills"
 version.workspace = true
 
 [dependencies]
+antre-config          = { workspace = true }
+antre-metrics         = { optional = true, workspace = true }
 async-trait           = { workspace = true }
 cap-fs-ext            = { workspace = true }
 cap-std               = { workspace = true }
 flate2                = { workspace = true }
 include_dir           = { optional = true, workspace = true }
-moltis-config         = { workspace = true }
-moltis-metrics        = { optional = true, workspace = true }
 notify-debouncer-full = { optional = true, workspace = true }
 reqwest               = { workspace = true }
 serde                 = { workspace = true }
@@ -24,10 +24,10 @@ walkdir               = { workspace = true }
 zip                   = { workspace = true }
 
 [features]
-default        = []
 bundled-skills = ["dep:include_dir"]
+default        = []
 file-watcher   = ["dep:notify-debouncer-full"]
-metrics        = ["dep:moltis-metrics"]
+metrics        = ["dep:antre-metrics"]
 
 [dev-dependencies]
 rstest   = { workspace = true }

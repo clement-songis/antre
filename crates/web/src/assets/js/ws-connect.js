@@ -2,11 +2,11 @@
 //
 // With Vite bundling, individual modules are no longer served. The real
 // ws-connect module lives inside the bundle but is exposed on
-// window.__moltis_modules["ws-connect"] from main.tsx.
+// window.__antre_modules["ws-connect"] from main.tsx.
 //
 // This shim re-exports everything the e2e tests need.
 
-const M = window.__moltis_modules?.["ws-connect"] || {};
+const M = window.__antre_modules?.["ws-connect"] || {};
 
 export default M;
 

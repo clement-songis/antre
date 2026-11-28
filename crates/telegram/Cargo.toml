@@ -1,30 +1,30 @@
 [package]
 edition.workspace = true
-name              = "moltis-telegram"
+name              = "antre-telegram"
 version.workspace = true
 
 [dependencies]
-async-trait       = { workspace = true }
-base64            = { workspace = true }
-moltis-auto-reply = { workspace = true }
-moltis-channels   = { workspace = true }
-moltis-common     = { workspace = true }
-moltis-media      = { workspace = true }
-moltis-metrics    = { optional = true, workspace = true }
-rand              = { workspace = true }
-reqwest           = { workspace = true }
-secrecy           = { workspace = true }
-serde             = { workspace = true }
-serde_json        = { workspace = true }
-teloxide          = { workspace = true }
-thiserror         = { workspace = true }
-tokio             = { workspace = true }
-tokio-util        = { workspace = true }
-tracing           = { workspace = true }
+antre-auto-reply = { workspace = true }
+antre-channels   = { workspace = true }
+antre-common     = { workspace = true }
+antre-media      = { workspace = true }
+antre-metrics    = { optional = true, workspace = true }
+async-trait      = { workspace = true }
+base64           = { workspace = true }
+rand             = { workspace = true }
+reqwest          = { workspace = true }
+secrecy          = { workspace = true }
+serde            = { workspace = true }
+serde_json       = { workspace = true }
+teloxide         = { workspace = true }
+thiserror        = { workspace = true }
+tokio            = { workspace = true }
+tokio-util       = { workspace = true }
+tracing          = { workspace = true }
 
 [features]
 default = []
-metrics = ["dep:moltis-metrics"]
+metrics = ["dep:antre-metrics"]
 
 [dev-dependencies]
 axum     = { workspace = true }

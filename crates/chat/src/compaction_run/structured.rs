@@ -14,11 +14,11 @@
 //! `safeguard` compaction.
 
 use {
-    moltis_agents::model::{
+    antre_agents::model::{
         ChatMessage, LlmProvider, StreamEvent, Usage,
         values_to_chat_messages_with_tool_result_limit,
     },
-    moltis_config::{CompactionConfig, CompactionMode},
+    antre_config::{CompactionConfig, CompactionMode},
     serde_json::Value,
     tokio_stream::StreamExt,
     tracing::info,
@@ -111,7 +111,7 @@ fn iterative_instructions(previous_summary: &str) -> String {
 }
 
 /// Default value of `max_summary_tokens` the user can leave untouched.
-/// Mirrors `default_compaction_max_summary_tokens` in `moltis_config::schema`
+/// Mirrors `default_compaction_max_summary_tokens` in `antre_config::schema`
 /// so we can detect when the user has explicitly set something different.
 const DEFAULT_MAX_SUMMARY_TOKENS: u32 = 4_096;
 
@@ -128,7 +128,7 @@ static WARNED_UNUSED_AUXILIARY_CONFIG: std::sync::OnceLock<
 /// or a non-default `max_summary_tokens` but the `structured` strategy
 /// doesn't wire them yet.
 ///
-/// The auxiliary-model subsystem is tracked by beads issue `moltis-8me`.
+/// The auxiliary-model subsystem is tracked by beads issue `antre-8me`.
 /// Until that ships, `structured` always uses the session's primary
 /// provider regardless of these fields. Users who configured a cheap
 /// auxiliary model (e.g. "openrouter/google/gemini-3.8-flash") would
@@ -213,7 +213,7 @@ pub(super) async fn run(
 ) -> Result<CompactionOutcome, CompactionRunError> {
     // Warn once if the user configured `summary_model` or a non-default
     // `max_summary_tokens`: those fields are reserved for the auxiliary
-    // model subsystem tracked by beads issue moltis-8me and will not
+    // model subsystem tracked by beads issue antre-8me and will not
     // affect this run. The warning points at the tracking issue so users
     // aren't misled by the field appearing in the config template.
     warn_if_unused_auxiliary_model_config(config);
@@ -298,7 +298,7 @@ pub(super) async fn run(
     }
 
     // `config.max_summary_tokens` / `config.summary_model` aren't wired
-    // into the provider stream yet — tracked by beads issue moltis-8me.
+    // into the provider stream yet — tracked by beads issue antre-8me.
     // The warn-on-configured check runs at the top of this function so
     // users don't silently get default behaviour when they expected a
     // cheaper auxiliary model.
@@ -354,7 +354,7 @@ pub(super) async fn run(
 mod tests {
     use {
         super::{super::test_support::StubProvider, *},
-        moltis_config::CompactionMode,
+        antre_config::CompactionMode,
         serde_json::json,
     };
 

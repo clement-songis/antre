@@ -24,7 +24,7 @@ use std::{collections::HashMap, path::Path};
 
 use serde::{Deserialize, Serialize};
 
-use moltis_common::hooks::HookEvent;
+use antre_common::hooks::HookEvent;
 
 /// Requirements that must be met for a hook to be eligible.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]

@@ -38,7 +38,7 @@ async function waitForOnboardingStepLoaded(page) {
 
 async function waitForOnboardingWsOpen(page) {
 	await expect
-		.poll(() => page.evaluate(() => window.__moltis_state?.ws?.readyState === WebSocket.OPEN).catch(() => false))
+		.poll(() => page.evaluate(() => window.__antre_state?.ws?.readyState === WebSocket.OPEN).catch(() => false))
 		.toBe(true);
 }
 
@@ -373,7 +373,7 @@ test.describe("Onboarding wizard", () => {
 			return;
 		}
 
-		const voiceEnabledType = await page.evaluate(() => typeof window.__MOLTIS__?.voice_enabled);
+		const voiceEnabledType = await page.evaluate(() => typeof window.__ANTRE__?.voice_enabled);
 		expect(voiceEnabledType).toBe("boolean");
 		expect(pageErrors).toEqual([]);
 	});
@@ -496,8 +496,8 @@ test.describe("Onboarding wizard", () => {
 				contentType: "application/json",
 				body: JSON.stringify({
 					enabled: true,
-					hostname: "moltis.example.com",
-					public_url: "https://moltis.example.com",
+					hostname: "antre.example.com",
+					public_url: "https://antre.example.com",
 					token_source: "config",
 				}),
 			});
@@ -513,7 +513,7 @@ test.describe("Onboarding wizard", () => {
 		await page.getByRole("tab", { name: /NetBird/ }).click();
 		await expect(page.getByText("https://100.80.0.10:8443", { exact: true })).toBeVisible();
 		await page.getByRole("tab", { name: /Cloudflare/ }).click();
-		await expect(page.getByRole("link", { name: "https://moltis.example.com" }).last()).toBeVisible();
+		await expect(page.getByRole("link", { name: "https://antre.example.com" }).last()).toBeVisible();
 		expect(pageErrors).toEqual([]);
 	});
 
@@ -1135,7 +1135,7 @@ test.describe("Onboarding wizard", () => {
 			return;
 		}
 
-		await expect(page.getByText(/stored in Moltis's internal database \(.+moltis\.db\)/)).toBeVisible();
+		await expect(page.getByText(/stored in Antre's internal database \(.+antre\.db\)/)).toBeVisible();
 
 		const matrixSelectBtn = page.getByRole("button", { name: "Matrix", exact: true });
 		if (await isVisible(matrixSelectBtn)) {
@@ -1154,7 +1154,7 @@ test.describe("Onboarding wizard", () => {
 			page.getByText("Password is the default because it supports encrypted Matrix chats", { exact: false }),
 		).toBeVisible();
 		await expect(
-			page.getByText("Use OIDC (recommended) or Password so Moltis creates and persists its own Matrix device keys", {
+			page.getByText("Use OIDC (recommended) or Password so Antre creates and persists its own Matrix device keys", {
 				exact: false,
 			}),
 		).toBeVisible();
@@ -1199,7 +1199,7 @@ test.describe("Onboarding wizard", () => {
 		const authSelect = page.getByText("Authentication", { exact: true }).locator("xpath=following-sibling::select[1]");
 		await expect(authSelect).toHaveValue("password");
 		await homeserverInput.fill("https://matrix.example.com");
-		await expect(page.getByLabel("Let Moltis own this Matrix account", { exact: true })).toBeChecked();
+		await expect(page.getByLabel("Let Antre own this Matrix account", { exact: true })).toBeChecked();
 		await authSelect.selectOption("access_token");
 		await page.locator('input[name="matrix_credential"]').fill("syt_test_token");
 		await page.getByText("Advanced Config JSON", { exact: true }).click();

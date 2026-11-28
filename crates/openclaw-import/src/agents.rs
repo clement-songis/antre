@@ -2,7 +2,7 @@
 //!
 //! Reads the `agents.list` array from `openclaw.json` and resolves each
 //! agent's workspace, identity metadata (theme), and a
-//! sanitized Moltis agent ID.
+//! sanitized Antre agent ID.
 
 use std::{
     collections::HashSet,
@@ -24,8 +24,8 @@ use crate::{
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ImportedAgent {
     pub openclaw_id: String,
-    /// Sanitized Moltis-side agent ID; `"main"` for the default agent.
-    pub moltis_id: String,
+    /// Sanitized Antre-side agent ID; `"main"` for the default agent.
+    pub antre_id: String,
     pub is_default: bool,
     pub name: Option<String>,
     /// Agent theme (composed from creature/vibe, or explicit theme).
@@ -42,7 +42,7 @@ pub struct ImportedAgents {
     pub agents: Vec<ImportedAgent>,
 }
 
-/// Sanitize an OpenClaw agent ID into a valid Moltis agent ID.
+/// Sanitize an OpenClaw agent ID into a valid Antre agent ID.
 ///
 /// - Lowercase, replace non-alphanumeric with `-`, collapse `--`, trim `-`
 /// - Truncate to 50 characters
@@ -104,7 +104,7 @@ pub fn sanitize_agent_id(raw: &str, existing_ids: &HashSet<String>) -> String {
 /// Extract agent metadata from an OpenClaw installation.
 ///
 /// Reads `openclaw.json` and resolves each agent's workspace, identity,
-/// theme. The default agent gets `moltis_id = "main"`.
+/// theme. The default agent gets `antre_id = "main"`.
 pub fn import_agents(detection: &OpenClawDetection) -> ImportedAgents {
     let config = identity::load_config(&detection.home_dir);
     let mut agents = Vec::new();
@@ -130,14 +130,14 @@ pub fn import_agents(detection: &OpenClawDetection) -> ImportedAgents {
     ImportedAgents { agents }
 }
 
-/// Convert non-default imported agents into Moltis [`AgentPreset`] entries.
+/// Convert non-default imported agents into Antre [`AgentPreset`] entries.
 ///
-/// Each non-default agent becomes a named preset keyed by `moltis_id`,
+/// Each non-default agent becomes a named preset keyed by `antre_id`,
 /// with identity, model, and a system prompt suffix pointing to the
 /// agent's workspace files if they exist.
 pub fn agents_to_presets(
     agents: &ImportedAgents,
-) -> std::collections::HashMap<String, moltis_config::schema::AgentPreset> {
+) -> std::collections::HashMap<String, antre_config::schema::AgentPreset> {
     let mut presets = std::collections::HashMap::new();
 
     for agent in &agents.agents {
@@ -145,26 +145,26 @@ pub fn agents_to_presets(
             continue;
         }
 
-        let identity = moltis_config::schema::AgentIdentity {
+        let identity = antre_config::schema::AgentIdentity {
             name: agent.name.clone(),
             emoji: None,
             theme: agent.theme.clone(),
         };
 
-        let preset = moltis_config::schema::AgentPreset {
+        let preset = antre_config::schema::AgentPreset {
             identity,
             model: agent.model.clone(),
             ..Default::default()
         };
 
         debug!(
-            moltis_id = %agent.moltis_id,
+            antre_id = %agent.antre_id,
             name = ?agent.name,
             model = ?agent.model,
             "openclaw agents: created preset from imported agent"
         );
 
-        presets.insert(agent.moltis_id.clone(), preset);
+        presets.insert(agent.antre_id.clone(), preset);
     }
 
     presets
@@ -183,7 +183,7 @@ fn extract_from_config_list(
             || (config.agents.list.len() == 1)
             || (agents.is_empty() && entry.id == "main");
 
-        let moltis_id = if is_default {
+        let antre_id = if is_default {
             "main".to_string()
         } else {
             let id = sanitize_agent_id(&entry.id, used_ids);
@@ -203,7 +203,7 @@ fn extract_from_config_list(
 
         debug!(
             openclaw_id = %entry.id,
-            moltis_id = %moltis_id,
+            antre_id = %antre_id,
             is_default,
             name = ?entry.name,
             theme = ?theme,
@@ -214,7 +214,7 @@ fn extract_from_config_list(
 
         agents.push(ImportedAgent {
             openclaw_id: entry.id.clone(),
-            moltis_id,
+            antre_id,
             is_default,
             name: entry.name.clone(),
             theme,
@@ -238,7 +238,7 @@ fn synthesize_from_detection(
         let is_default =
             oc_id == "main" || (i == 0 && !detection.agent_ids.contains(&"main".to_string()));
 
-        let moltis_id = if is_default {
+        let antre_id = if is_default {
             "main".to_string()
         } else {
             let id = sanitize_agent_id(oc_id, used_ids);
@@ -252,14 +252,14 @@ fn synthesize_from_detection(
 
         debug!(
             openclaw_id = %oc_id,
-            moltis_id = %moltis_id,
+            antre_id = %antre_id,
             is_default,
             "openclaw agents: synthesized agent from filesystem"
         );
 
         agents.push(ImportedAgent {
             openclaw_id: oc_id.clone(),
-            moltis_id,
+            antre_id,
             is_default,
             name: None,
             theme: None,
@@ -455,7 +455,7 @@ mod tests {
 
         let result = import_agents(&detection);
         assert_eq!(result.agents.len(), 1);
-        assert_eq!(result.agents[0].moltis_id, "main");
+        assert_eq!(result.agents[0].antre_id, "main");
         assert!(result.agents[0].is_default);
         assert_eq!(result.agents[0].name.as_deref(), Some("Claude"));
     }
@@ -491,9 +491,9 @@ mod tests {
 
         let result = import_agents(&detection);
         assert_eq!(result.agents.len(), 2);
-        assert_eq!(result.agents[0].moltis_id, "main");
+        assert_eq!(result.agents[0].antre_id, "main");
         assert!(result.agents[0].is_default);
-        assert_eq!(result.agents[1].moltis_id, "research");
+        assert_eq!(result.agents[1].antre_id, "research");
         assert!(!result.agents[1].is_default);
     }
 
@@ -566,9 +566,9 @@ mod tests {
 
         let result = import_agents(&detection);
         assert_eq!(result.agents.len(), 2);
-        assert_eq!(result.agents[0].moltis_id, "main");
+        assert_eq!(result.agents[0].antre_id, "main");
         assert!(result.agents[0].is_default);
-        assert_eq!(result.agents[1].moltis_id, "helper");
+        assert_eq!(result.agents[1].antre_id, "helper");
         assert!(!result.agents[1].is_default);
     }
 
@@ -640,7 +640,7 @@ mod tests {
             agents: vec![
                 ImportedAgent {
                     openclaw_id: "main".to_string(),
-                    moltis_id: "main".to_string(),
+                    antre_id: "main".to_string(),
                     is_default: true,
                     name: Some("Claude".to_string()),
                     theme: Some("wise owl".to_string()),
@@ -648,7 +648,7 @@ mod tests {
                 },
                 ImportedAgent {
                     openclaw_id: "researcher".to_string(),
-                    moltis_id: "researcher".to_string(),
+                    antre_id: "researcher".to_string(),
                     is_default: false,
                     name: Some("Scout".to_string()),
                     theme: Some("curious fox".to_string()),

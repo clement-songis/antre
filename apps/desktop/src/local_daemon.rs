@@ -1,7 +1,7 @@
-//! Starting the moltis daemon on this machine when it is not running.
+//! Starting the antre daemon on this machine when it is not running.
 //!
 //! The desktop app never runs the daemon inside itself: it installs it as a
-//! user service (launchd / systemd) through `moltis service install`, so the
+//! user service (launchd / systemd) through `antre service install`, so the
 //! daemon keeps running after the app quits and starts again at login.
 
 use std::{
@@ -10,7 +10,7 @@ use std::{
     process::Command,
 };
 
-/// Where `moltis` is usually installed, beyond `PATH` (apps launched from
+/// Where `antre` is usually installed, beyond `PATH` (apps launched from
 /// the Finder get a minimal `PATH`).
 fn extra_dirs(home: Option<&Path>) -> Vec<PathBuf> {
     let mut dirs: Vec<PathBuf> = ["/opt/homebrew/bin", "/usr/local/bin", "/usr/bin"]
@@ -24,8 +24,8 @@ fn extra_dirs(home: Option<&Path>) -> Vec<PathBuf> {
     dirs
 }
 
-/// The directory of the running executable. A packaged app ships `moltis`
-/// next to it (`Moltis Desktop.app/Contents/MacOS/moltis`).
+/// The directory of the running executable. A packaged app ships `antre`
+/// next to it (`Antre Desktop.app/Contents/MacOS/antre`).
 #[must_use]
 pub fn bundled_dir() -> Option<PathBuf> {
     std::env::current_exe()
@@ -33,18 +33,18 @@ pub fn bundled_dir() -> Option<PathBuf> {
         .and_then(|exe| exe.parent().map(Path::to_path_buf))
 }
 
-/// Find an executable `moltis`: the one bundled with the app first, then
+/// Find an executable `antre`: the one bundled with the app first, then
 /// `path`, then the usual install locations.
 #[must_use]
-pub fn find_moltis(
+pub fn find_antre(
     bundled: Option<&Path>,
     path: Option<OsString>,
     home: Option<&Path>,
 ) -> Option<PathBuf> {
     let name = if cfg!(windows) {
-        "moltis.exe"
+        "antre.exe"
     } else {
-        "moltis"
+        "antre"
     };
     bundled
         .map(Path::to_path_buf)
@@ -70,16 +70,16 @@ fn is_executable(path: &Path) -> bool {
     }
 }
 
-/// `moltis service install` — installs and starts the user service.
+/// `antre service install` — installs and starts the user service.
 /// Blocking; run it off the UI thread.
-pub fn install_service(moltis: &Path) -> anyhow::Result<()> {
-    run_service_command(&service_binary(moltis)?, "install")
+pub fn install_service(antre: &Path) -> anyhow::Result<()> {
+    run_service_command(&service_binary(antre)?, "install")
 }
 
-fn run_service_command(moltis: &Path, action: &str) -> anyhow::Result<()> {
+fn run_service_command(antre: &Path, action: &str) -> anyhow::Result<()> {
     run_checked(
-        Command::new(moltis).args(["service", action]),
-        &format!("moltis service {action}"),
+        Command::new(antre).args(["service", action]),
+        &format!("antre service {action}"),
     )
 }
 
@@ -99,18 +99,18 @@ fn run_checked(command: &mut Command, what: &str) -> anyhow::Result<()> {
 }
 
 /// Start an installed service that is not running with the binary it was
-/// installed with (`moltis service restart` rewrites nothing). Blocking; run
+/// installed with (`antre service restart` rewrites nothing). Blocking; run
 /// it off the UI thread.
 pub fn start_installed_service(installed: &Path) -> anyhow::Result<()> {
     #[cfg(target_os = "macos")]
-    if let Some(home) = moltis_config::home_dir() {
+    if let Some(home) = antre_config::home_dir() {
         load_launch_agent(&home.join(LAUNCH_AGENT))?;
     }
     run_service_command(installed, "restart")
 }
 
-/// The launchd agent `moltis service install` writes, relative to home.
-const LAUNCH_AGENT: &str = "Library/LaunchAgents/org.moltis.gateway.plist";
+/// The launchd agent `antre service install` writes, relative to home.
+const LAUNCH_AGENT: &str = "Library/LaunchAgents/ai.antre.gateway.plist";
 
 /// Load the saved launch agent when launchd has unloaded it (`launchctl
 /// bootout`, or a failed launch): `service restart` only kickstarts a loaded
@@ -121,7 +121,7 @@ fn load_launch_agent(plist: &Path) -> anyhow::Result<()> {
     let uid = Command::new("id").arg("-u").output()?;
     let domain = format!("gui/{}", String::from_utf8_lossy(&uid.stdout).trim());
     let loaded = Command::new("launchctl")
-        .args(["print", &format!("{domain}/org.moltis.gateway")])
+        .args(["print", &format!("{domain}/ai.antre.gateway")])
         .output()?
         .status
         .success();
@@ -137,10 +137,10 @@ fn load_launch_agent(plist: &Path) -> anyhow::Result<()> {
     )
 }
 
-/// `moltis service restart`: restart the installed user service, for example
+/// `antre service restart`: restart the installed user service, for example
 /// to pick up a newer bundled binary. Blocking; run it off the UI thread.
-pub fn restart_service(moltis: &Path) -> anyhow::Result<()> {
-    run_service_command(&service_binary(moltis)?, "restart")
+pub fn restart_service(antre: &Path) -> anyhow::Result<()> {
+    run_service_command(&service_binary(antre)?, "restart")
 }
 
 /// The daemon bundled with this app, if it ships one.
@@ -149,39 +149,39 @@ pub fn bundled_daemon() -> Option<PathBuf> {
     bundled_dir()
         .map(|dir| {
             dir.join(if cfg!(windows) {
-                "moltis.exe"
+                "antre.exe"
             } else {
-                "moltis"
+                "antre"
             })
         })
         .filter(|path| path.is_file())
 }
 
-/// Where the service will run `moltis` from. An AppImage is mounted at a new
+/// Where the service will run `antre` from. An AppImage is mounted at a new
 /// temporary path on every launch and unmounted when the app quits, so a
-/// daemon inside it is copied to `<data_dir>/bin/moltis` for the service to
+/// daemon inside it is copied to `<data_dir>/bin/antre` for the service to
 /// outlive the app. Anything else runs where it is.
 #[must_use]
-pub fn service_path(moltis: &Path) -> PathBuf {
+pub fn service_path(antre: &Path) -> PathBuf {
     let appdir = std::env::var_os("APPDIR").map(PathBuf::from);
-    stable_path(moltis, appdir.as_deref(), &moltis_config::data_dir())
-        .unwrap_or_else(|| moltis.to_path_buf())
+    stable_path(antre, appdir.as_deref(), &antre_config::data_dir())
+        .unwrap_or_else(|| antre.to_path_buf())
 }
 
-fn stable_path(moltis: &Path, appdir: Option<&Path>, data_dir: &Path) -> Option<PathBuf> {
+fn stable_path(antre: &Path, appdir: Option<&Path>, data_dir: &Path) -> Option<PathBuf> {
     let appdir = appdir?;
-    moltis
+    antre
         .starts_with(appdir)
-        .then(|| data_dir.join("bin").join("moltis"))
+        .then(|| data_dir.join("bin").join("antre"))
 }
 
 /// [`service_path`], copying the daemon there first when it differs. The copy
 /// is renamed into place, so a daemon still running the old file is
 /// unaffected until it restarts.
-fn service_binary(moltis: &Path) -> anyhow::Result<PathBuf> {
-    let target = service_path(moltis);
-    if target != moltis {
-        copy_executable(moltis, &target)?;
+fn service_binary(antre: &Path) -> anyhow::Result<PathBuf> {
+    let target = service_path(antre);
+    if target != antre {
+        copy_executable(antre, &target)?;
     }
     Ok(target)
 }
@@ -202,17 +202,17 @@ fn copy_executable(from: &Path, to: &Path) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// The version this app was built as (`MOLTIS_VERSION` at build time), which
+/// The version this app was built as (`ANTRE_VERSION` at build time), which
 /// is also the version of the daemon it bundles. `None` in development builds.
 #[must_use]
 pub fn bundled_version() -> Option<&'static str> {
-    option_env!("MOLTIS_VERSION").filter(|version| !version.is_empty())
+    option_env!("ANTRE_VERSION").filter(|version| !version.is_empty())
 }
 
-/// The binary the installed user service runs, as `moltis service install`
+/// The binary the installed user service runs, as `antre service install`
 /// wrote it: the launchd plist on macOS
-/// (`~/Library/LaunchAgents/org.moltis.gateway.plist`); on Linux the systemd
-/// unit (`~/.config/systemd/user/moltis.service`) or, without systemd, the
+/// (`~/Library/LaunchAgents/ai.antre.gateway.plist`); on Linux the systemd
+/// unit (`~/.config/systemd/user/antre.service`) or, without systemd, the
 /// supervisor script in the data directory. `None` when no service is
 /// installed.
 #[must_use]
@@ -222,10 +222,10 @@ pub fn installed_service_binary(home: &Path, data_dir: &Path) -> Option<PathBuf>
         return read(home.join(LAUNCH_AGENT)).and_then(|plist| program_from_plist(&plist));
     }
     if cfg!(target_os = "linux") {
-        return read(home.join(".config/systemd/user/moltis.service"))
+        return read(home.join(".config/systemd/user/antre.service"))
             .and_then(|unit| program_from_systemd_unit(&unit))
             .or_else(|| {
-                read(data_dir.join("moltis-service-supervisor.sh"))
+                read(data_dir.join("antre-service-supervisor.sh"))
                     .and_then(|script| program_from_supervisor(&script))
             });
     }
@@ -260,11 +260,11 @@ fn program_from_systemd_unit(unit: &str) -> Option<PathBuf> {
     (!program.is_empty()).then(|| PathBuf::from(program))
 }
 
-/// The `MOLTIS_BIN='...'` assignment of the portable supervisor script.
+/// The `ANTRE_BIN='...'` assignment of the portable supervisor script.
 fn program_from_supervisor(script: &str) -> Option<PathBuf> {
     let value = script
         .lines()
-        .find_map(|line| line.trim().strip_prefix("MOLTIS_BIN="))?
+        .find_map(|line| line.trim().strip_prefix("ANTRE_BIN="))?
         .trim();
     let program = value
         .strip_prefix('\'')
@@ -285,7 +285,7 @@ pub enum AutoStart {
 }
 
 /// Decide how to start a stopped service without asking. `None` means no
-/// service is installed (the user has not chosen to run moltis here) or
+/// service is installed (the user has not chosen to run antre here) or
 /// nothing can start it.
 #[must_use]
 pub fn auto_start(installed: Option<&Path>, bundled: Option<&Path>) -> Option<AutoStart> {
@@ -352,7 +352,7 @@ mod tests {
     #[cfg(unix)]
     fn write_script(dir: &Path, body: &str) -> PathBuf {
         use std::os::unix::fs::PermissionsExt;
-        let path = dir.join("moltis");
+        let path = dir.join("antre");
         std::fs::write(&path, format!("#!/bin/sh\n{body}\n")).unwrap();
         std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o755)).unwrap();
         path
@@ -363,7 +363,7 @@ mod tests {
     fn finds_binary_on_path_before_fallbacks() {
         let dir = tempfile::tempdir().unwrap();
         let script = write_script(dir.path(), "exit 0");
-        let found = find_moltis(None, Some(dir.path().as_os_str().to_owned()), None).unwrap();
+        let found = find_antre(None, Some(dir.path().as_os_str().to_owned()), None).unwrap();
         assert_eq!(found, script);
     }
 
@@ -374,7 +374,7 @@ mod tests {
         let on_path = tempfile::tempdir().unwrap();
         let script = write_script(bundled.path(), "exit 0");
         write_script(on_path.path(), "exit 0");
-        let found = find_moltis(
+        let found = find_antre(
             Some(bundled.path()),
             Some(on_path.path().as_os_str().to_owned()),
             None,
@@ -389,11 +389,11 @@ mod tests {
         let home = tempfile::tempdir().unwrap();
         std::fs::create_dir_all(home.path().join(".cargo/bin")).unwrap();
         let script = write_script(&home.path().join(".cargo/bin"), "exit 0");
-        let found = find_moltis(None, Some(OsString::new()), Some(home.path()));
-        // A system-wide moltis would win; only check ours is found otherwise.
-        if !Path::new("/opt/homebrew/bin/moltis").exists()
-            && !Path::new("/usr/local/bin/moltis").exists()
-            && !Path::new("/usr/bin/moltis").exists()
+        let found = find_antre(None, Some(OsString::new()), Some(home.path()));
+        // A system-wide antre would win; only check ours is found otherwise.
+        if !Path::new("/opt/homebrew/bin/antre").exists()
+            && !Path::new("/usr/local/bin/antre").exists()
+            && !Path::new("/usr/bin/antre").exists()
         {
             assert_eq!(found.unwrap(), script);
         }
@@ -403,9 +403,9 @@ mod tests {
     #[test]
     fn non_executable_files_are_skipped() {
         let dir = tempfile::tempdir().unwrap();
-        std::fs::write(dir.path().join("moltis"), "data").unwrap();
-        let found = find_moltis(None, Some(dir.path().as_os_str().to_owned()), None);
-        assert_ne!(found.as_deref(), Some(dir.path().join("moltis").as_path()));
+        std::fs::write(dir.path().join("antre"), "data").unwrap();
+        let found = find_antre(None, Some(dir.path().as_os_str().to_owned()), None);
+        assert_ne!(found.as_deref(), Some(dir.path().join("antre").as_path()));
     }
 
     #[cfg(unix)]
@@ -423,74 +423,67 @@ mod tests {
     fn reads_program_from_service_plist() {
         let plist = r#"<plist><dict>
   <key>Label</key>
-  <string>org.moltis.gateway</string>
+  <string>ai.antre.gateway</string>
   <key>ProgramArguments</key>
   <array>
-    <string>/Applications/Moltis Desktop.app/Contents/MacOS/moltis</string>
+    <string>/Applications/Antre Desktop.app/Contents/MacOS/antre</string>
     <string>--log-level</string>
   </array></dict></plist>"#;
         assert_eq!(
             program_from_plist(plist),
             Some(PathBuf::from(
-                "/Applications/Moltis Desktop.app/Contents/MacOS/moltis"
+                "/Applications/Antre Desktop.app/Contents/MacOS/antre"
             ))
         );
         assert_eq!(
-            program_from_plist(
-                "<key>ProgramArguments</key><array><string>/a&amp;b/moltis</string>"
-            ),
-            Some(PathBuf::from("/a&b/moltis"))
+            program_from_plist("<key>ProgramArguments</key><array><string>/a&amp;b/antre</string>"),
+            Some(PathBuf::from("/a&b/antre"))
         );
         assert_eq!(program_from_plist("<plist/>"), None);
     }
 
     #[test]
     fn reads_program_from_systemd_unit() {
-        let unit =
-            "[Service]\nType=simple\nExecStart=/home/me/.moltis/bin/moltis --log-level info\n";
+        let unit = "[Service]\nType=simple\nExecStart=/home/me/.antre/bin/antre --log-level info\n";
         assert_eq!(
             program_from_systemd_unit(unit),
-            Some(PathBuf::from("/home/me/.moltis/bin/moltis"))
+            Some(PathBuf::from("/home/me/.antre/bin/antre"))
         );
         assert_eq!(
-            program_from_systemd_unit("ExecStart=\"/opt/my apps/moltis\" --log-level info"),
-            Some(PathBuf::from("/opt/my apps/moltis"))
+            program_from_systemd_unit("ExecStart=\"/opt/my apps/antre\" --log-level info"),
+            Some(PathBuf::from("/opt/my apps/antre"))
         );
         assert_eq!(program_from_systemd_unit("[Service]\n"), None);
     }
 
     #[test]
     fn reads_program_from_supervisor_script() {
-        let script =
-            "#!/bin/sh\nset -u\n\nMOLTIS_BIN='/home/me/.moltis/bin/moltis'\nDATA_DIR='/x'\n";
+        let script = "#!/bin/sh\nset -u\n\nANTRE_BIN='/home/me/.antre/bin/antre'\nDATA_DIR='/x'\n";
         assert_eq!(
             program_from_supervisor(script),
-            Some(PathBuf::from("/home/me/.moltis/bin/moltis"))
+            Some(PathBuf::from("/home/me/.antre/bin/antre"))
         );
         assert_eq!(
-            program_from_supervisor("MOLTIS_BIN='/it'\\''s/moltis'"),
-            Some(PathBuf::from("/it's/moltis"))
+            program_from_supervisor("ANTRE_BIN='/it'\\''s/antre'"),
+            Some(PathBuf::from("/it's/antre"))
         );
         assert_eq!(program_from_supervisor("#!/bin/sh\n"), None);
     }
 
     #[test]
     fn appimage_daemons_move_to_the_data_dir() {
-        let appdir = Path::new("/tmp/.mount_MoltisAbc");
-        let data = Path::new("/home/me/.moltis");
+        let appdir = Path::new("/tmp/.mount_AntreAbc");
+        let data = Path::new("/home/me/.antre");
         assert_eq!(
-            stable_path(&appdir.join("usr/bin/moltis"), Some(appdir), data),
-            Some(data.join("bin/moltis"))
+            stable_path(&appdir.join("usr/bin/antre"), Some(appdir), data),
+            Some(data.join("bin/antre"))
         );
         // Outside an AppImage, or a daemon not inside it, runs where it is.
         assert_eq!(
-            stable_path(Path::new("/usr/bin/moltis"), Some(appdir), data),
+            stable_path(Path::new("/usr/bin/antre"), Some(appdir), data),
             None
         );
-        assert_eq!(
-            stable_path(&appdir.join("usr/bin/moltis"), None, data),
-            None
-        );
+        assert_eq!(stable_path(&appdir.join("usr/bin/antre"), None, data), None);
     }
 
     #[cfg(unix)]
@@ -499,7 +492,7 @@ mod tests {
         use std::os::unix::fs::PermissionsExt;
         let dir = tempfile::tempdir().unwrap();
         let from = write_script(dir.path(), "exit 0");
-        let to = dir.path().join("bin/moltis");
+        let to = dir.path().join("bin/antre");
         copy_executable(&from, &to).unwrap();
         std::fs::write(&from, "#!/bin/sh\nexit 1\n").unwrap();
         copy_executable(&from, &to).unwrap();
@@ -508,14 +501,14 @@ mod tests {
             std::fs::metadata(&to).unwrap().permissions().mode() & 0o111,
             0
         );
-        assert!(!dir.path().join("bin/moltis.partial").exists());
+        assert!(!dir.path().join("bin/antre.partial").exists());
     }
 
     #[test]
     fn auto_start_keeps_other_installs() {
-        let bundled = Path::new("/Applications/Moltis Desktop.app/Contents/MacOS/moltis");
+        let bundled = Path::new("/Applications/Antre Desktop.app/Contents/MacOS/antre");
         let dir = tempfile::tempdir().unwrap();
-        let homebrew = dir.path().join("moltis");
+        let homebrew = dir.path().join("antre");
         std::fs::write(&homebrew, "").unwrap();
         // A Homebrew or cargo service is started as installed, never replaced.
         assert_eq!(
@@ -528,20 +521,20 @@ mod tests {
         );
         // This app's service whose binary moved is reinstalled.
         assert_eq!(
-            auto_start(Some(Path::new("/nonexistent/old/moltis")), Some(bundled)),
+            auto_start(Some(Path::new("/nonexistent/old/antre")), Some(bundled)),
             Some(AutoStart::Install)
         );
         // Nothing installed, or nothing left to run.
         assert_eq!(auto_start(None, Some(bundled)), None);
         assert_eq!(
-            auto_start(Some(Path::new("/nonexistent/moltis")), None),
+            auto_start(Some(Path::new("/nonexistent/antre")), None),
             None
         );
     }
 
     #[test]
     fn service_checks() {
-        let bundled = Path::new("/Applications/Moltis Desktop.app/Contents/MacOS/moltis");
+        let bundled = Path::new("/Applications/Antre Desktop.app/Contents/MacOS/antre");
         let check = |installed: &str, running: Option<&str>, version: Option<&str>| {
             check_service(Some(Path::new(installed)), Some(bundled), running, version)
         };
@@ -565,12 +558,12 @@ mod tests {
         );
         // Moved app: the old path is gone, or is another app copy.
         assert_eq!(
-            check("/nonexistent/old/moltis", None, None),
+            check("/nonexistent/old/antre", None, None),
             ServiceCheck::Reinstall
         );
         assert_eq!(
             check(
-                "/Users/me/Downloads/Moltis Desktop.app/Contents/MacOS/moltis",
+                "/Users/me/Downloads/Antre Desktop.app/Contents/MacOS/antre",
                 None,
                 None
             ),
@@ -578,7 +571,7 @@ mod tests {
         );
         // A daemon installed another way is left alone.
         let dir = tempfile::tempdir().unwrap();
-        let other = dir.path().join("moltis");
+        let other = dir.path().join("antre");
         std::fs::write(&other, "").unwrap();
         assert_eq!(
             check(other.to_str().unwrap(), Some("1"), Some("2")),

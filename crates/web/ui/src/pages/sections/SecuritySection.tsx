@@ -84,15 +84,15 @@ export function SecuritySection(): VNode {
 	});
 
 	function notifyAuthStatusChanged(): void {
-		window.dispatchEvent(new CustomEvent("moltis:auth-status-changed"));
+		window.dispatchEvent(new CustomEvent("antre:auth-status-changed"));
 	}
 
 	function deferNextPasswordChangedRedirect(): void {
-		window.__moltisSuppressNextPasswordChangedRedirect = true;
+		window.__antreSuppressNextPasswordChangedRedirect = true;
 	}
 
 	function clearPasswordChangedRedirectDeferral(): void {
-		window.__moltisSuppressNextPasswordChangedRedirect = false;
+		window.__antreSuppressNextPasswordChangedRedirect = false;
 	}
 
 	function refreshPasskeyHostStatus(): Promise<void> {

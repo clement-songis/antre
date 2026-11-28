@@ -230,7 +230,7 @@ fn identity_mapping(agents: &[&str]) -> HashMap<String, String> {
 }
 
 fn history(dest: &Path, key: &str) -> Result<Vec<Value>, Box<dyn std::error::Error>> {
-    let path = moltis_sessions::store::SessionStore::new(dest.to_path_buf()).history_path_for(key);
+    let path = antre_sessions::store::SessionStore::new(dest.to_path_buf()).history_path_for(key);
     let content = std::fs::read_to_string(path)?;
     content
         .lines()

@@ -2,7 +2,7 @@
 
 use {anyhow::Result, clap::Subcommand};
 
-use moltis_gateway::netbird::{
+use antre_gateway::netbird::{
     CliNetbirdManager, NetbirdManager, NetbirdMode, validate_netbird_config,
 };
 
@@ -19,7 +19,7 @@ pub enum NetbirdAction {
 pub async fn handle_netbird(action: NetbirdAction) -> Result<()> {
     match action {
         NetbirdAction::Status => {
-            let config = moltis_config::discover_and_load();
+            let config = antre_config::discover_and_load();
             let mode = config
                 .netbird
                 .mode
@@ -40,15 +40,15 @@ pub async fn handle_netbird(action: NetbirdAction) -> Result<()> {
             }
         },
         NetbirdAction::Serve => {
-            let config = moltis_config::discover_and_load();
+            let config = antre_config::discover_and_load();
             validate_netbird_config(NetbirdMode::Serve, &config.server.bind)?;
-            moltis_config::update_config(|config| {
+            antre_config::update_config(|config| {
                 config.netbird.mode = NetbirdMode::Serve.to_string();
             })?;
             println!("NetBird serve mode enabled in config");
         },
         NetbirdAction::Disable => {
-            moltis_config::update_config(|config| {
+            antre_config::update_config(|config| {
                 config.netbird.mode = NetbirdMode::Off.to_string();
             })?;
             println!("NetBird serve mode disabled");

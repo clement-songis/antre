@@ -1,8 +1,8 @@
 [package]
-description       = "Shared types and utilities for multi-source import into Moltis"
+description       = "Shared types and utilities for multi-source import into Antre"
 edition.workspace = true
 license.workspace = true
-name              = "moltis-import-core"
+name              = "antre-import-core"
 version.workspace = true
 
 [dependencies]

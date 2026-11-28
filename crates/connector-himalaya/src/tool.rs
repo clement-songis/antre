@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
 use {
+    antre_agents::tool_registry::AgentTool,
+    antre_connectors::{ConnectorItem, ConnectorKind, ConnectorReader, Dataset, ItemQuery},
     anyhow::{Context, Result, anyhow, bail},
     async_trait::async_trait,
-    moltis_agents::tool_registry::AgentTool,
-    moltis_connectors::{ConnectorItem, ConnectorKind, ConnectorReader, Dataset, ItemQuery},
     serde::{Deserialize, Serialize},
     serde_json::{Value, json},
 };
@@ -393,7 +393,7 @@ mod tests {
     use std::sync::Mutex;
 
     use {
-        moltis_connectors::{ConnectorError, ProjectionConfig},
+        antre_connectors::{ConnectorError, ProjectionConfig},
         time::OffsetDateTime,
     };
 

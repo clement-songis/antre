@@ -1,4 +1,4 @@
-//! Browse the local network for daemons advertising `_moltis._tcp`.
+//! Browse the local network for daemons advertising `_antre._tcp`.
 
 use std::{collections::BTreeMap, net::IpAddr, time::Duration};
 
@@ -10,8 +10,8 @@ use crate::{
     tls::TlsTrust,
 };
 
-/// DNS-SD service type the gateway registers (see `moltis-gateway::mdns`).
-pub const SERVICE_TYPE: &str = "_moltis._tcp.local.";
+/// DNS-SD service type the gateway registers (see `antre-gateway::mdns`).
+pub const SERVICE_TYPE: &str = "_antre._tcp.local.";
 
 /// A daemon seen on the network.
 #[derive(Debug, Clone, PartialEq, Eq)]

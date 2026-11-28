@@ -1,24 +1,24 @@
 [package]
 edition.workspace = true
-name              = "moltis-media"
+name              = "antre-media"
 version.workspace = true
 
 [dependencies]
-image          = { workspace = true }
-mime_guess     = { workspace = true }
-moltis-common  = { workspace = true }
-moltis-metrics = { optional = true, workspace = true }
-pdf-extract    = { workspace = true }
-reqwest        = { workspace = true }
-tempfile       = { workspace = true }
-thiserror      = { workspace = true }
-tokio          = { workspace = true }
-tracing        = { workspace = true }
-uuid           = { workspace = true }
+antre-common  = { workspace = true }
+antre-metrics = { optional = true, workspace = true }
+image         = { workspace = true }
+mime_guess    = { workspace = true }
+pdf-extract   = { workspace = true }
+reqwest       = { workspace = true }
+tempfile      = { workspace = true }
+thiserror     = { workspace = true }
+tokio         = { workspace = true }
+tracing       = { workspace = true }
+uuid          = { workspace = true }
 
 [features]
 default = []
-metrics = ["dep:moltis-metrics"]
+metrics = ["dep:antre-metrics"]
 
 [lints]
 workspace = true

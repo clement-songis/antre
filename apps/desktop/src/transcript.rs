@@ -2,7 +2,7 @@
 //! kept current by `chat` events. Pure state, no UI.
 
 use {
-    moltis_protocol::{
+    antre_protocol::{
         chat_event::{ChatErrorInfo, ChatEventKind, ChatFinal},
         message::{ContentBlock, MessageContent, PersistedMessage},
     },

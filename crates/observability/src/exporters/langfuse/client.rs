@@ -20,7 +20,7 @@ impl LangfuseClient {
     pub fn new(config: LangfuseConfig) -> Self {
         Self {
             config,
-            http: moltis_common::http_client::build_default_http_client(),
+            http: antre_common::http_client::build_default_http_client(),
         }
     }
 

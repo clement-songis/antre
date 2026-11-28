@@ -13,16 +13,16 @@ Local TTS using the sherpa-onnx offline CLI.
 
 ## Install
 
-1. Download the runtime for your OS (extracts into `$OPENCLAW_STATE_DIR/tools/sherpa-onnx-tts/runtime`, default `~/.moltis/tools/sherpa-onnx-tts/runtime`)
-2. Download a voice model (extracts into `$OPENCLAW_STATE_DIR/tools/sherpa-onnx-tts/models`, default `~/.moltis/tools/sherpa-onnx-tts/models`)
+1. Download the runtime for your OS (extracts into `$OPENCLAW_STATE_DIR/tools/sherpa-onnx-tts/runtime`, default `~/.antre/tools/sherpa-onnx-tts/runtime`)
+2. Download a voice model (extracts into `$OPENCLAW_STATE_DIR/tools/sherpa-onnx-tts/models`, default `~/.antre/tools/sherpa-onnx-tts/models`)
 
 Resolve the active state directory first:
 
 ```bash
-STATE_DIR="${OPENCLAW_STATE_DIR:-$HOME/.Moltis}"
+STATE_DIR="${OPENCLAW_STATE_DIR:-$HOME/.Antre}"
 ```
 
-Then write those resolved paths into the active Moltis config file (`$OPENCLAW_CONFIG_PATH`, default `~/.moltis/Moltis.json`):
+Then write those resolved paths into the active Antre config file (`$OPENCLAW_CONFIG_PATH`, default `~/.antre/Antre.json`):
 
 ```json5
 {

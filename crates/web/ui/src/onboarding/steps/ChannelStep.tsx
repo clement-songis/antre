@@ -60,7 +60,7 @@ function MatrixForm({ onConnected, error, setError }: ChannelFormProps): VNode {
 	const [userId, setUserId] = useState("");
 	const [credential, setCredential] = useState("");
 	const [deviceDisplayName, setDeviceDisplayName] = useState("");
-	const [ownershipMode, setOwnershipMode] = useState("moltis_owned");
+	const [ownershipMode, setOwnershipMode] = useState("antre_owned");
 	const [dmPolicy, setDmPolicy] = useState("allowlist");
 	const [roomPolicy, setRoomPolicy] = useState("allowlist");
 	const [mentionMode, setMentionMode] = useState("mention");
@@ -150,7 +150,7 @@ function MatrixForm({ onConnected, error, setError }: ChannelFormProps): VNode {
 					2. Password is the default because it supports encrypted Matrix chats. Access token auth is only for plain
 					Matrix traffic
 				</span>
-				<span>3. Moltis generates the local account ID automatically from the Matrix user or homeserver</span>
+				<span>3. Antre generates the local account ID automatically from the Matrix user or homeserver</span>
 			</div>
 			<div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-100 flex flex-col gap-1">
 				<span className="font-medium text-emerald-50">Encrypted chats require password auth</span>
@@ -188,12 +188,12 @@ function MatrixForm({ onConnected, error, setError }: ChannelFormProps): VNode {
 				<label className="flex items-start gap-2 rounded-md border border-[var(--border)] bg-[var(--surface2)] p-3">
 					<input
 						type="checkbox"
-						aria-label="Let Moltis own this Matrix account"
-						checked={normalizeMatrixOwnershipMode(ownershipMode) === "moltis_owned"}
-						onChange={(e) => setOwnershipMode(targetChecked(e) ? "moltis_owned" : "user_managed")}
+						aria-label="Let Antre own this Matrix account"
+						checked={normalizeMatrixOwnershipMode(ownershipMode) === "antre_owned"}
+						onChange={(e) => setOwnershipMode(targetChecked(e) ? "antre_owned" : "user_managed")}
 					/>
 					<span className="flex flex-col gap-1">
-						<span className="text-xs font-medium text-[var(--text-strong)]">Let Moltis own this Matrix account</span>
+						<span className="text-xs font-medium text-[var(--text-strong)]">Let Antre own this Matrix account</span>
 						<span className="text-xs text-[var(--muted)]">{matrixOwnershipModeGuidance(authMode, ownershipMode)}</span>
 					</span>
 				</label>
@@ -235,14 +235,14 @@ function MatrixForm({ onConnected, error, setError }: ChannelFormProps): VNode {
 					{authMode === "password" ? (
 						<>
 							Use the password for the dedicated Matrix bot account. This is the required mode for encrypted Matrix
-							chats because Moltis needs to create and persist its own Matrix device keys.
+							chats because Antre needs to create and persist its own Matrix device keys.
 						</>
 					) : (
 						<>
 							Get the access token in Element:{" "}
 							<span className="font-mono">Settings -&gt; Help &amp; About -&gt; Advanced -&gt; Access Token</span>.
 							Access token mode does <span className="font-medium">not</span> support encrypted Matrix chats because
-							Moltis cannot import that existing device's private encryption keys.
+							Antre cannot import that existing device's private encryption keys.
 						</>
 					)}{" "}
 					<a href={MATRIX_DOCS_URL} target="_blank" rel="noreferrer" className="text-[var(--accent)] underline">
@@ -257,7 +257,7 @@ function MatrixForm({ onConnected, error, setError }: ChannelFormProps): VNode {
 					className="provider-key-input w-full"
 					value={deviceDisplayName}
 					onInput={(e) => setDeviceDisplayName(targetValue(e))}
-					placeholder="Moltis Matrix Bot"
+					placeholder="Antre Matrix Bot"
 					autoComplete="off"
 					autoCapitalize="none"
 					autoCorrect="off"

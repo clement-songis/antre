@@ -2,7 +2,7 @@
 
 use {serde_json::Value, tracing::info};
 
-use moltis_service_traits::{ServiceError, ServiceResult};
+use antre_service_traits::{ServiceError, ServiceResult};
 
 use {
     super::{LiveProviderSetupService, support::ProviderSetupTiming},

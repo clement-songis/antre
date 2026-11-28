@@ -70,18 +70,18 @@ impl WasmSandbox {
         match self.config.home_persistence {
             HomePersistence::Shared => {
                 let base = self.config.shared_home_dir.clone().unwrap_or_else(|| {
-                    moltis_config::data_dir()
+                    antre_config::data_dir()
                         .join("sandbox")
                         .join("home")
                         .join("shared")
                 });
                 base.join("wasm")
             },
-            HomePersistence::Session => moltis_config::data_dir()
+            HomePersistence::Session => antre_config::data_dir()
                 .join("sandbox")
                 .join("wasm")
                 .join(sanitize_path_component(&id.key)),
-            HomePersistence::Off => moltis_config::data_dir()
+            HomePersistence::Off => antre_config::data_dir()
                 .join("sandbox")
                 .join("wasm")
                 .join(sanitize_path_component(&id.key)),

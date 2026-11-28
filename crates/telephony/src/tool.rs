@@ -4,9 +4,9 @@
 //! manage phone calls programmatically.
 
 use {
+    antre_agents::tool_registry::AgentTool,
+    antre_channels::ChannelPlugin as _,
     async_trait::async_trait,
-    moltis_agents::tool_registry::AgentTool,
-    moltis_channels::ChannelPlugin as _,
     serde_json::{Value, json},
     std::sync::Arc,
     tokio::sync::RwLock,

@@ -5,8 +5,8 @@ use std::sync::Arc;
 
 #[cfg(feature = "netbird")]
 use {
-    moltis_config::schema::NetbirdConfig,
-    moltis_gateway::netbird::{CliNetbirdManager, NetbirdManager, NetbirdMode},
+    antre_config::schema::NetbirdConfig,
+    antre_gateway::netbird::{CliNetbirdManager, NetbirdManager, NetbirdMode},
     tokio_util::sync::CancellationToken,
     tracing::{info, warn},
 };

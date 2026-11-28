@@ -24,7 +24,7 @@ use crate::{
 };
 
 #[cfg(feature = "metrics")]
-use moltis_metrics::{counter, nostr as nostr_metrics};
+use antre_metrics::{counter, nostr as nostr_metrics};
 
 /// Maximum plaintext message size in bytes.
 const MAX_MESSAGE_BYTES: usize = 64 * 1024;
@@ -46,7 +46,7 @@ pub async fn run_subscription_loop(
     otp: SharedOtp,
     reply_ctx: SharedReplyContexts,
     account_id: String,
-    event_sink: Arc<dyn moltis_channels::ChannelEventSink>,
+    event_sink: Arc<dyn antre_channels::ChannelEventSink>,
     cancel: CancellationToken,
 ) {
     let bot_pubkey = keys.public_key();
@@ -170,7 +170,7 @@ async fn handle_event(
     otp: &SharedOtp,
     reply_ctx: &SharedReplyContexts,
     account_id: &str,
-    event_sink: &Arc<dyn moltis_channels::ChannelEventSink>,
+    event_sink: &Arc<dyn antre_channels::ChannelEventSink>,
 ) {
     // 0. Route group chat (kind:9 / kind:40002) separately from encrypted DMs.
     if crate::groups::is_group_message_kind(event.kind) {
@@ -342,8 +342,8 @@ async fn handle_event(
     counter!(nostr_metrics::MESSAGES_RECEIVED_TOTAL).increment(1);
 
     event_sink
-        .emit(moltis_channels::ChannelEvent::InboundMessage {
-            channel_type: moltis_channels::ChannelType::Nostr,
+        .emit(antre_channels::ChannelEvent::InboundMessage {
+            channel_type: antre_channels::ChannelType::Nostr,
             account_id: account_id.to_string(),
             peer_id: sender_hex.clone(),
             username: Some(sender_npub.clone()),
@@ -354,10 +354,10 @@ async fn handle_event(
         .await;
 
     // 9. Intercept slash commands before dispatching to the LLM.
-    let reply_to = moltis_channels::ChannelReplyTarget {
+    let reply_to = antre_channels::ChannelReplyTarget {
         direct_chat: false,
         ack_message_id: None,
-        channel_type: moltis_channels::ChannelType::Nostr,
+        channel_type: antre_channels::ChannelType::Nostr,
         account_id: account_id.to_string(),
         chat_id: sender_hex.clone(),
         message_id: Some(event.id.to_hex()),
@@ -366,9 +366,9 @@ async fn handle_event(
 
     if let Some(cmd_text) = text.strip_prefix('/') {
         let cmd_name = cmd_text.split_whitespace().next().unwrap_or("");
-        if moltis_channels::commands::is_channel_command(cmd_name, cmd_text) {
+        if antre_channels::commands::is_channel_command(cmd_name, cmd_text) {
             let response = if cmd_name == "help" {
-                Ok(moltis_channels::commands::help_text())
+                Ok(antre_channels::commands::help_text())
             } else {
                 event_sink
                     .dispatch_command(cmd_text, reply_to, Some(&sender_hex))
@@ -389,12 +389,12 @@ async fn handle_event(
     }
 
     // 10. Dispatch to gateway
-    let meta = moltis_channels::ChannelMessageMeta {
-        channel_type: moltis_channels::ChannelType::Nostr,
+    let meta = antre_channels::ChannelMessageMeta {
+        channel_type: antre_channels::ChannelType::Nostr,
         sender_name: None,
         username: Some(sender_npub),
         sender_id: Some(sender_hex.clone()),
-        message_kind: Some(moltis_channels::ChannelMessageKind::Text),
+        message_kind: Some(antre_channels::ChannelMessageKind::Text),
         model: None,
         agent_id: None,
         audio_filename: None,
@@ -423,7 +423,7 @@ async fn handle_group_event(
     cached_allowlist: &Arc<RwLock<Vec<PublicKey>>>,
     reply_ctx: &SharedReplyContexts,
     account_id: &str,
-    event_sink: &Arc<dyn moltis_channels::ChannelEventSink>,
+    event_sink: &Arc<dyn antre_channels::ChannelEventSink>,
 ) {
     // Dedup, skip self-messages, skip stale events.
     if seen.check_and_insert(&event.id) {
@@ -512,8 +512,8 @@ async fn handle_group_event(
     counter!(nostr_metrics::MESSAGES_RECEIVED_TOTAL).increment(1);
 
     event_sink
-        .emit(moltis_channels::ChannelEvent::InboundMessage {
-            channel_type: moltis_channels::ChannelType::Nostr,
+        .emit(antre_channels::ChannelEvent::InboundMessage {
+            channel_type: antre_channels::ChannelType::Nostr,
             account_id: account_id.to_string(),
             peer_id: group_id.clone(),
             username: Some(sender_npub.clone()),
@@ -527,10 +527,10 @@ async fn handle_group_event(
     // message so NIP-29 clients render it as a reply.
     // Setting `ack_message_id` opts this message into the gateway's
     // acknowledgement reactions (👀 on receipt, ✅/❌ on completion).
-    let reply_to = moltis_channels::ChannelReplyTarget {
+    let reply_to = antre_channels::ChannelReplyTarget {
         direct_chat: false,
         ack_message_id: ack_reactions.then(|| event.id.to_hex()),
-        channel_type: moltis_channels::ChannelType::Nostr,
+        channel_type: antre_channels::ChannelType::Nostr,
         account_id: account_id.to_string(),
         // Prefixed so the target carries its own kind: a group id can look
         // exactly like a pubkey, and this target outlives the config.
@@ -543,7 +543,7 @@ async fn handle_group_event(
     // `/help` and friends work the same way in a Buzz channel.
     if let Some(cmd_text) = text.strip_prefix('/') {
         let cmd_name = cmd_text.split_whitespace().next().unwrap_or("");
-        if moltis_channels::commands::is_channel_command(cmd_name, cmd_text) {
+        if antre_channels::commands::is_channel_command(cmd_name, cmd_text) {
             // `/sh` and `/sandbox` control code execution. Group membership is
             // the relay's call, not ours, so restrict them to keys the owner
             // nominated — and say so rather than ignoring the message.
@@ -581,7 +581,7 @@ async fn handle_group_event(
                 }
             }
             let response = if cmd_name == "help" {
-                Ok(moltis_channels::commands::help_text())
+                Ok(antre_channels::commands::help_text())
             } else {
                 event_sink
                     .dispatch_command(cmd_text, reply_to, Some(&sender_hex))
@@ -614,12 +614,12 @@ async fn handle_group_event(
         }
     }
 
-    let meta = moltis_channels::ChannelMessageMeta {
-        channel_type: moltis_channels::ChannelType::Nostr,
+    let meta = antre_channels::ChannelMessageMeta {
+        channel_type: antre_channels::ChannelType::Nostr,
         sender_name: None,
         username: Some(sender_npub),
         sender_id: Some(sender_hex),
-        message_kind: Some(moltis_channels::ChannelMessageKind::Text),
+        message_kind: Some(antre_channels::ChannelMessageKind::Text),
         model: None,
         agent_id: None,
         audio_filename: None,
@@ -647,9 +647,9 @@ async fn handle_otp_verification(
     sender_hex: &str,
     sender_npub: &str,
     code: &str,
-    event_sink: &Arc<dyn moltis_channels::ChannelEventSink>,
+    event_sink: &Arc<dyn antre_channels::ChannelEventSink>,
 ) {
-    use moltis_channels::otp::{OtpVerifyResult, emit_otp_resolution};
+    use antre_channels::otp::{OtpVerifyResult, emit_otp_resolution};
 
     let result = {
         let mut guard = otp.lock().unwrap_or_else(|e| e.into_inner());
@@ -693,7 +693,7 @@ async fn handle_otp_verification(
     // Emit resolution event for admin UI.
     emit_otp_resolution(
         Some(event_sink.as_ref()),
-        moltis_channels::ChannelType::Nostr,
+        antre_channels::ChannelType::Nostr,
         account_id,
         sender_hex,
         Some(sender_npub),
@@ -716,9 +716,9 @@ async fn handle_otp_challenge(
     account_id: &str,
     sender_hex: &str,
     sender_npub: &str,
-    event_sink: &Arc<dyn moltis_channels::ChannelEventSink>,
+    event_sink: &Arc<dyn antre_channels::ChannelEventSink>,
 ) {
-    use moltis_channels::otp::{OtpInitResult, emit_otp_challenge};
+    use antre_channels::otp::{OtpInitResult, emit_otp_challenge};
 
     let init_result = {
         let mut otp_guard = otp.lock().unwrap_or_else(|e| e.into_inner());
@@ -744,7 +744,7 @@ async fn handle_otp_challenge(
 
             emit_otp_challenge(
                 Some(event_sink.as_ref()),
-                moltis_channels::ChannelType::Nostr,
+                antre_channels::ChannelType::Nostr,
                 account_id,
                 sender_hex,
                 Some(sender_npub),
@@ -764,8 +764,8 @@ async fn handle_otp_challenge(
 
     // Always emit InboundMessage with access_granted: false for the UI.
     event_sink
-        .emit(moltis_channels::ChannelEvent::InboundMessage {
-            channel_type: moltis_channels::ChannelType::Nostr,
+        .emit(antre_channels::ChannelEvent::InboundMessage {
+            channel_type: antre_channels::ChannelType::Nostr,
             account_id: account_id.to_string(),
             peer_id: sender_hex.to_string(),
             username: Some(sender_npub.to_string()),
@@ -782,11 +782,11 @@ mod tests {
     use std::sync::Mutex;
 
     use {
-        async_trait::async_trait,
-        moltis_channels::{
+        antre_channels::{
             ChannelEvent, ChannelEventSink, ChannelMessageMeta, ChannelReplyTarget,
             Result as ChannelResult,
         },
+        async_trait::async_trait,
         nostr_sdk::prelude::{EventBuilder, Keys},
     };
 
@@ -936,7 +936,7 @@ mod tests {
         }
     }
 
-    type MentionModeAlias = moltis_channels::gating::MentionMode;
+    type MentionModeAlias = antre_channels::gating::MentionMode;
 
     #[test]
     fn max_message_size_is_reasonable() {

@@ -1,8 +1,8 @@
 use {
     super::ProviderRegistry,
+    antre_agents::model::ChatMessage,
+    antre_config::schema::{ProviderEntry, ProvidersConfig},
     anyhow::Context as _,
-    moltis_agents::model::ChatMessage,
-    moltis_config::schema::{ProviderEntry, ProvidersConfig},
     secrecy::Secret,
     serde_json::Value,
     std::{

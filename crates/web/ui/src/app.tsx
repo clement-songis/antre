@@ -62,9 +62,9 @@ import * as _wsConnect from "./ws-connect";
 
 // Expose stores and modules on window for E2E test shims.
 // The shim files in assets/js/ proxy to these bundled modules.
-window.__moltis_stores = { sessionStore, modelStore, projectStore };
-window.__moltis_state = S;
-window.__moltis_modules = {
+window.__antre_stores = { sessionStore, modelStore, projectStore };
+window.__antre_state = S;
+window.__antre_modules = {
 	state: S,
 	helpers: _helpers,
 	events: _events,
@@ -150,7 +150,7 @@ interface SessionEntry {
 // ── Helpers ──────────────────────────────────────────────────
 
 function preferredChatPath(): string {
-	const key = localStorage.getItem("moltis-session") || "main";
+	const key = localStorage.getItem("antre-session") || "main";
 	return sessionPath(key);
 }
 
@@ -185,7 +185,7 @@ function startAppAfterI18n(): void {
 	});
 }
 
-const UPDATE_DISMISS_KEY = "moltis-update-dismissed-version";
+const UPDATE_DISMISS_KEY = "antre-update-dismissed-version";
 let currentUpdateVersion: string | null = null;
 
 // Apply server-injected identity immediately (no async wait), and
@@ -350,7 +350,7 @@ function refreshAuthChrome(): Promise<AuthStatus | null> {
 		.catch(() => null);
 }
 
-window.addEventListener("moltis:auth-status-changed", () => {
+window.addEventListener("antre:auth-status-changed", () => {
 	refreshAuthChrome()
 		.then((auth) => {
 			if (!auth) return;
@@ -365,7 +365,7 @@ window.addEventListener("moltis:auth-status-changed", () => {
 			}
 		})
 		.finally(() => {
-			window.dispatchEvent(new CustomEvent("moltis:auth-status-sync-complete"));
+			window.dispatchEvent(new CustomEvent("antre:auth-status-sync-complete"));
 		});
 });
 
@@ -530,7 +530,7 @@ function applyIdentity(identity: IdentityInfo | null): void {
 	const emojiEl = document.getElementById("titleEmoji");
 	const nameEl = document.getElementById("titleName");
 	if (emojiEl) emojiEl.textContent = identity?.emoji ? `${identity.emoji} ` : "";
-	if (nameEl) nameEl.textContent = identity?.name || "moltis";
+	if (nameEl) nameEl.textContent = identity?.name || "antre";
 	applyIdentityFavicon(identity);
 	const branch = gon.get("git_branch") as string | null;
 
@@ -549,7 +549,7 @@ function applyModels(models: ModelEntry[]): void {
 	// Dual-write to state.js for backward compat
 	S.setModels(arr);
 	if (arr.length === 0) return;
-	const saved = localStorage.getItem("moltis-model") || "";
+	const saved = localStorage.getItem("antre-model") || "";
 	const found = arr.find((m) => m.id === saved);
 	if (found) {
 		modelStore.select(found.id);
@@ -557,7 +557,7 @@ function applyModels(models: ModelEntry[]): void {
 	} else {
 		modelStore.select(arr[0].id);
 		S.setSelectedModelId(arr[0].id);
-		localStorage.setItem("moltis-model", modelStore.selectedModelId.value);
+		localStorage.setItem("antre-model", modelStore.selectedModelId.value);
 	}
 }
 
@@ -567,7 +567,7 @@ function fetchBootstrap(): void {
 	fetch("/api/bootstrap?include_sessions=false")
 		.then((r) => {
 			if (r.status === 401 || r.status === 403) {
-				window.dispatchEvent(new CustomEvent("moltis:auth-status-changed"));
+				window.dispatchEvent(new CustomEvent("antre:auth-status-changed"));
 				return Promise.reject(new Error("auth"));
 			}
 			return r.json();

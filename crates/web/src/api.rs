@@ -5,14 +5,14 @@ use std::path::Path as FsPath;
 use std::{collections::HashMap, path::PathBuf};
 
 use {
+    antre_httpd::{AppState, auth_middleware::RequireAdmin},
+    antre_tools::image_cache::ImageBuilder,
     axum::{
         Json,
         extract::{Path, Query, State},
         http::StatusCode,
         response::{IntoResponse, Response},
     },
-    moltis_httpd::{AppState, auth_middleware::RequireAdmin},
-    moltis_tools::image_cache::ImageBuilder,
     secrecy::{ExposeSecret, Secret},
     tracing::warn,
 };
@@ -67,7 +67,7 @@ fn configured_secret(secret: &Option<Secret<String>>) -> bool {
         .is_some_and(|secret| !secret.expose_secret().is_empty())
 }
 
-fn browser_image_repository(config: &moltis_config::MoltisConfig) -> Option<String> {
+fn browser_image_repository(config: &antre_config::AntreConfig) -> Option<String> {
     let image = config.tools.browser.sandbox_image.trim();
     let (repo, _) = image.rsplit_once(':').unwrap_or((image, "latest"));
     (!repo.is_empty()).then(|| repo.to_string())
@@ -100,20 +100,20 @@ struct RemoteBackendConfigUpdate {
     target: Option<Option<String>>,
 }
 
-fn shared_home_config_payload(config: &moltis_config::MoltisConfig) -> serde_json::Value {
-    let runtime_cfg = moltis_tools::sandbox::SandboxConfig::from(&config.tools.exec.sandbox);
+fn shared_home_config_payload(config: &antre_config::AntreConfig) -> serde_json::Value {
+    let runtime_cfg = antre_tools::sandbox::SandboxConfig::from(&config.tools.exec.sandbox);
     let mode = match config.tools.exec.sandbox.home_persistence {
-        moltis_config::schema::HomePersistenceConfig::Off => "off",
-        moltis_config::schema::HomePersistenceConfig::Session => "session",
-        moltis_config::schema::HomePersistenceConfig::Shared => "shared",
+        antre_config::schema::HomePersistenceConfig::Off => "off",
+        antre_config::schema::HomePersistenceConfig::Session => "session",
+        antre_config::schema::HomePersistenceConfig::Shared => "shared",
     };
     serde_json::json!({
         "enabled": matches!(
             config.tools.exec.sandbox.home_persistence,
-            moltis_config::schema::HomePersistenceConfig::Shared
+            antre_config::schema::HomePersistenceConfig::Shared
         ),
         "mode": mode,
-        "path": moltis_tools::sandbox::shared_home_dir_path(&runtime_cfg)
+        "path": antre_tools::sandbox::shared_home_dir_path(&runtime_cfg)
             .display()
             .to_string(),
         "configured_path": config.tools.exec.sandbox.shared_home_dir.clone(),
@@ -418,7 +418,7 @@ pub async fn api_session_media_handler(
             let content_type = filename
                 .rsplit('.')
                 .next()
-                .and_then(moltis_media::mime::mime_from_extension)
+                .and_then(antre_media::mime::mime_from_extension)
                 .unwrap_or("application/octet-stream");
             let disposition = media_content_disposition(&filename, content_type);
             (
@@ -452,7 +452,7 @@ pub async fn api_logs_download_handler(State(state): State<AppState>) -> impl In
         (header::CONTENT_TYPE, "application/x-ndjson"),
         (
             header::CONTENT_DISPOSITION,
-            "attachment; filename=\"moltis-logs.jsonl\"",
+            "attachment; filename=\"antre-logs.jsonl\"",
         ),
     ];
     (headers, body).into_response()
@@ -469,7 +469,7 @@ pub async fn api_bootstrap_handler(
 }
 
 async fn api_bootstrap_with_query(
-    gw: &moltis_gateway::state::GatewayState,
+    gw: &antre_gateway::state::GatewayState,
     query: &BootstrapQuery,
 ) -> Response {
     let channels_enabled = query.channels_enabled();
@@ -536,7 +536,7 @@ async fn api_bootstrap_with_query(
         serde_json::json!({
             "backend": "none",
             "os": std::env::consts::OS,
-            "default_image": moltis_tools::sandbox::DEFAULT_SANDBOX_IMAGE,
+            "default_image": antre_tools::sandbox::DEFAULT_SANDBOX_IMAGE,
         })
     };
     Json(serde_json::json!({
@@ -580,7 +580,7 @@ where
     let Ok(path) = path_result else {
         return Vec::new();
     };
-    let store = moltis_skills::manifest::ManifestStore::new(path);
+    let store = antre_skills::manifest::ManifestStore::new(path);
     store
         .load()
         .map(|m| {
@@ -612,28 +612,28 @@ pub async fn api_skills_handler(State(state): State<AppState>) -> impl IntoRespo
         .and_then(|v| v.as_array().cloned())
         .unwrap_or_default();
 
-    let config = moltis_config::discover_and_load();
-    let mut skills = enabled_from_manifest(moltis_skills::manifest::ManifestStore::default_path());
+    let config = antre_config::discover_and_load();
+    let mut skills = enabled_from_manifest(antre_skills::manifest::ManifestStore::default_path());
 
     {
-        use moltis_skills::discover::{FsSkillDiscoverer, SkillDiscoverer};
-        let data_dir = moltis_config::data_dir();
+        use antre_skills::discover::{FsSkillDiscoverer, SkillDiscoverer};
+        let data_dir = antre_config::data_dir();
         let search_paths = vec![
             (
                 data_dir.join("skills"),
-                moltis_skills::types::SkillSource::Personal,
+                antre_skills::types::SkillSource::Personal,
             ),
             (
-                data_dir.join(".moltis/skills"),
-                moltis_skills::types::SkillSource::Project,
+                data_dir.join(".antre/skills"),
+                antre_skills::types::SkillSource::Project,
             ),
         ];
         let fs_discoverer = FsSkillDiscoverer::new(search_paths);
 
         #[cfg(feature = "bundled-skills")]
         let discovered = {
-            let bundled = std::sync::Arc::new(moltis_skills::bundled::BundledSkillStore::new());
-            let composite = moltis_skills::discover::CompositeSkillDiscoverer::new(
+            let bundled = std::sync::Arc::new(antre_skills::bundled::BundledSkillStore::new());
+            let composite = antre_skills::discover::CompositeSkillDiscoverer::new(
                 Box::new(fs_discoverer),
                 bundled,
             );
@@ -644,8 +644,8 @@ pub async fn api_skills_handler(State(state): State<AppState>) -> impl IntoRespo
 
         if let Ok(discovered) = discovered {
             for s in discovered {
-                let protected = moltis_gateway::services::is_protected_discovered_skill(&s.name);
-                let is_bundled = s.source == Some(moltis_skills::types::SkillSource::Bundled);
+                let protected = antre_gateway::services::is_protected_discovered_skill(&s.name);
+                let is_bundled = s.source == Some(antre_skills::types::SkillSource::Bundled);
                 let enabled = if is_bundled {
                     config
                         .skills
@@ -732,8 +732,8 @@ pub async fn api_skills_search_handler(
 // ── Images ───────────────────────────────────────────────────────────────────
 
 pub async fn api_cached_images_handler() -> impl IntoResponse {
-    let config = moltis_config::discover_and_load();
-    let builder = moltis_tools::image_cache::DockerImageBuilder::for_backend(
+    let config = antre_config::discover_and_load();
+    let builder = antre_tools::image_cache::DockerImageBuilder::for_backend(
         &config.tools.exec.sandbox.backend,
     );
     let extra_repositories = browser_image_repository(&config)
@@ -741,7 +741,7 @@ pub async fn api_cached_images_handler() -> impl IntoResponse {
         .collect::<Vec<_>>();
     let (cached, sandbox) = tokio::join!(
         builder.list_cached(),
-        moltis_tools::sandbox::list_moltis_images(&extra_repositories),
+        antre_tools::sandbox::list_antre_images(&extra_repositories),
     );
 
     let mut images: Vec<serde_json::Value> = Vec::new();
@@ -791,16 +791,16 @@ pub async fn api_cached_images_handler() -> impl IntoResponse {
 
 pub async fn api_delete_cached_image_handler(Path(tag): Path<String>) -> impl IntoResponse {
     let result = if tag.contains("-sandbox:") {
-        moltis_tools::sandbox::remove_sandbox_image(&tag).await
+        antre_tools::sandbox::remove_sandbox_image(&tag).await
     } else {
-        let cfg = moltis_config::discover_and_load();
-        let builder = moltis_tools::image_cache::DockerImageBuilder::for_backend(
+        let cfg = antre_config::discover_and_load();
+        let builder = antre_tools::image_cache::DockerImageBuilder::for_backend(
             &cfg.tools.exec.sandbox.backend,
         );
-        let full_tag = if tag.starts_with("moltis-cache/") {
+        let full_tag = if tag.starts_with("antre-cache/") {
             tag
         } else {
-            format!("moltis-cache/{tag}")
+            format!("antre-cache/{tag}")
         };
         builder.remove_cached(&full_tag).await
     };
@@ -815,13 +815,13 @@ pub async fn api_delete_cached_image_handler(Path(tag): Path<String>) -> impl In
 }
 
 pub async fn api_prune_cached_images_handler() -> impl IntoResponse {
-    let config = moltis_config::discover_and_load();
-    let builder = moltis_tools::image_cache::DockerImageBuilder::for_backend(
+    let config = antre_config::discover_and_load();
+    let builder = antre_tools::image_cache::DockerImageBuilder::for_backend(
         &config.tools.exec.sandbox.backend,
     );
     let (tool_result, sandbox_result) = tokio::join!(
         builder.prune_all(),
-        moltis_tools::sandbox::clean_sandbox_images(),
+        antre_tools::sandbox::clean_sandbox_images(),
     );
     let mut count = 0;
     if let Ok(n) = tool_result {
@@ -866,8 +866,8 @@ pub async fn api_check_packages_handler(
         return Json(serde_json::json!({ "found": {} })).into_response();
     }
 
-    let config = moltis_config::discover_and_load();
-    let cli = moltis_tools::image_cache::DockerImageBuilder::for_backend(
+    let config = antre_config::discover_and_load();
+    let cli = antre_tools::image_cache::DockerImageBuilder::for_backend(
         &config.tools.exec.sandbox.backend,
     )
     .cli_name();
@@ -904,7 +904,7 @@ pub async fn api_get_default_image_handler(State(state): State<AppState>) -> imp
     let image = if let Some(ref router) = state.gateway.sandbox_router {
         router.resolve_default_image_nowait().await
     } else {
-        moltis_tools::sandbox::DEFAULT_SANDBOX_IMAGE.to_string()
+        antre_tools::sandbox::DEFAULT_SANDBOX_IMAGE.to_string()
     };
     Json(serde_json::json!({ "image": image }))
 }
@@ -930,7 +930,7 @@ pub async fn api_set_default_image_handler(
 }
 
 pub async fn api_get_shared_home_handler() -> impl IntoResponse {
-    let config = moltis_config::discover_and_load();
+    let config = antre_config::discover_and_load();
     Json(shared_home_config_payload(&config))
 }
 
@@ -944,23 +944,23 @@ pub async fn api_set_shared_home_handler(
         .filter(|p| !p.is_empty())
         .map(ToOwned::to_owned);
 
-    let update_result = moltis_config::update_config(|cfg| {
+    let update_result = antre_config::update_config(|cfg| {
         cfg.tools.exec.sandbox.shared_home_dir = path.clone();
         if body.enabled {
             cfg.tools.exec.sandbox.home_persistence =
-                moltis_config::schema::HomePersistenceConfig::Shared;
+                antre_config::schema::HomePersistenceConfig::Shared;
         } else if matches!(
             cfg.tools.exec.sandbox.home_persistence,
-            moltis_config::schema::HomePersistenceConfig::Shared
+            antre_config::schema::HomePersistenceConfig::Shared
         ) {
             cfg.tools.exec.sandbox.home_persistence =
-                moltis_config::schema::HomePersistenceConfig::Off;
+                antre_config::schema::HomePersistenceConfig::Off;
         }
     });
 
     match update_result {
         Ok(saved_path) => {
-            let config = moltis_config::discover_and_load();
+            let config = antre_config::discover_and_load();
             Json(serde_json::json!({
                 "ok": true,
                 "restart_required": true,
@@ -982,13 +982,13 @@ pub async fn api_set_shared_home_handler(
 /// Returns which sandbox backends are available/configured on this instance.
 /// Used by the UI to populate backend selectors.
 pub async fn api_available_backends_handler() -> impl IntoResponse {
-    let config = moltis_config::discover_and_load();
+    let config = antre_config::discover_and_load();
     let sb = &config.tools.exec.sandbox;
 
     let mut backends: Vec<serde_json::Value> = Vec::new();
 
     // Local container backends.
-    if moltis_tools::sandbox::is_cli_available("docker") {
+    if antre_tools::sandbox::is_cli_available("docker") {
         backends.push(serde_json::json!({
             "id": "docker",
             "label": "Docker",
@@ -996,7 +996,7 @@ pub async fn api_available_backends_handler() -> impl IntoResponse {
             "available": true,
         }));
     }
-    if moltis_tools::sandbox::is_cli_available("podman") {
+    if antre_tools::sandbox::is_cli_available("podman") {
         backends.push(serde_json::json!({
             "id": "podman",
             "label": "Podman",
@@ -1006,7 +1006,7 @@ pub async fn api_available_backends_handler() -> impl IntoResponse {
     }
     #[cfg(target_os = "macos")]
     {
-        if moltis_tools::sandbox::is_cli_available("container") {
+        if antre_tools::sandbox::is_cli_available("container") {
             backends.push(serde_json::json!({
                 "id": "apple-container",
                 "label": "Apple Container (VM)",
@@ -1025,7 +1025,7 @@ pub async fn api_available_backends_handler() -> impl IntoResponse {
         }
     }
     #[cfg(target_os = "linux")]
-    if moltis_tools::sandbox::firecracker_bin_available(
+    if antre_tools::sandbox::firecracker_bin_available(
         sb.firecracker_bin.as_deref().map(FsPath::new),
     ) {
         backends.push(serde_json::json!({
@@ -1058,7 +1058,7 @@ pub async fn api_available_backends_handler() -> impl IntoResponse {
     }
 
     backends.extend(crate::sandbox_backends::os_sandbox_backend_entry(
-        moltis_tools::sandbox::os_sandbox_backend_name(),
+        antre_tools::sandbox::os_sandbox_backend_name(),
     ));
 
     // Always include restricted-host as fallback.
@@ -1077,7 +1077,7 @@ pub async fn api_available_backends_handler() -> impl IntoResponse {
 
 // ── Remote sandbox backend configuration ──────────────────────────────────────
 
-fn remote_backends_payload(config: &moltis_config::MoltisConfig) -> serde_json::Value {
+fn remote_backends_payload(config: &antre_config::AntreConfig) -> serde_json::Value {
     let sb = &config.tools.exec.sandbox;
     let vercel_configured = configured_secret(&sb.vercel_token);
     let vercel_from_env =
@@ -1105,14 +1105,14 @@ fn remote_backends_payload(config: &moltis_config::MoltisConfig) -> serde_json::
 }
 
 pub async fn api_get_remote_backends_handler() -> impl IntoResponse {
-    let config = moltis_config::discover_and_load();
+    let config = antre_config::discover_and_load();
     Json(remote_backends_payload(&config))
 }
 
 pub async fn api_set_remote_backend_handler(
     Json(body): Json<RemoteBackendUpdateRequest>,
 ) -> impl IntoResponse {
-    let update_result = moltis_config::update_config(|cfg| {
+    let update_result = antre_config::update_config(|cfg| {
         let sb = &mut cfg.tools.exec.sandbox;
         // Allow changing the default backend (auto/docker/podman/apple-container/vercel/daytona).
         if let Some(v) = body.config.backend.as_deref() {
@@ -1156,7 +1156,7 @@ pub async fn api_set_remote_backend_handler(
 
     match update_result {
         Ok(saved_path) => {
-            let config = moltis_config::discover_and_load();
+            let config = antre_config::discover_and_load();
             Json(serde_json::json!({
                 "ok": true,
                 "restart_required": true,
@@ -1224,7 +1224,7 @@ WORKDIR /home/sandbox\n",
         request.base()
     );
 
-    let tmp_dir = std::env::temp_dir().join(format!("moltis-build-{}", uuid::Uuid::new_v4()));
+    let tmp_dir = std::env::temp_dir().join(format!("antre-build-{}", uuid::Uuid::new_v4()));
     if let Err(e) = std::fs::create_dir_all(&tmp_dir) {
         return api_error_response(
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -1243,8 +1243,8 @@ WORKDIR /home/sandbox\n",
         );
     }
 
-    let config = moltis_config::discover_and_load();
-    let builder = moltis_tools::image_cache::DockerImageBuilder::for_backend(
+    let config = antre_config::discover_and_load();
+    let builder = antre_tools::image_cache::DockerImageBuilder::for_backend(
         &config.tools.exec.sandbox.backend,
     );
     tracing::debug!(
@@ -1292,7 +1292,7 @@ pub async fn api_list_containers_handler(State(state): State<AppState>) -> impl 
         &state.gateway.config,
         state.gateway.sandbox_router.as_deref(),
     );
-    match moltis_tools::sandbox::list_running_containers_for_prefixes(&prefixes).await {
+    match antre_tools::sandbox::list_running_containers_for_prefixes(&prefixes).await {
         Ok(containers) => Json(serde_json::json!({ "containers": containers })).into_response(),
         Err(e) => api_error_response(
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -1317,7 +1317,7 @@ pub async fn api_stop_container_handler(
             "container name does not match expected prefix",
         );
     }
-    match moltis_tools::sandbox::stop_container(&name).await {
+    match antre_tools::sandbox::stop_container(&name).await {
         Ok(()) => Json(serde_json::json!({ "ok": true })).into_response(),
         Err(e) => api_error_response(
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -1342,7 +1342,7 @@ pub async fn api_remove_container_handler(
             "container name does not match expected prefix",
         );
     }
-    match moltis_tools::sandbox::remove_container(&name).await {
+    match antre_tools::sandbox::remove_container(&name).await {
         Ok(()) => Json(serde_json::json!({ "ok": true })).into_response(),
         Err(e) => api_error_response(
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -1358,7 +1358,7 @@ pub async fn api_clean_all_containers_handler(State(state): State<AppState>) -> 
         &state.gateway.config,
         state.gateway.sandbox_router.as_deref(),
     ) {
-        match moltis_tools::sandbox::clean_all_containers(&prefix).await {
+        match antre_tools::sandbox::clean_all_containers(&prefix).await {
             Ok(count) => removed += count,
             Err(e) => {
                 return api_error_response(
@@ -1373,7 +1373,7 @@ pub async fn api_clean_all_containers_handler(State(state): State<AppState>) -> 
 }
 
 pub async fn api_disk_usage_handler() -> impl IntoResponse {
-    match moltis_tools::sandbox::container_disk_usage().await {
+    match antre_tools::sandbox::container_disk_usage().await {
         Ok(usage) => Json(serde_json::json!({ "usage": usage })).into_response(),
         Err(e) => api_error_response(
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -1384,7 +1384,7 @@ pub async fn api_disk_usage_handler() -> impl IntoResponse {
 }
 
 pub async fn api_restart_daemon_handler() -> impl IntoResponse {
-    match moltis_tools::sandbox::restart_container_daemon().await {
+    match antre_tools::sandbox::restart_container_daemon().await {
         Ok(()) => Json(serde_json::json!({ "ok": true })).into_response(),
         Err(e) => api_error_response(
             StatusCode::INTERNAL_SERVER_ERROR,

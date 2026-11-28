@@ -1,4 +1,4 @@
-//! Real Moltis turns behind the ACP backend seam.
+//! Real Antre turns behind the ACP backend seam.
 //!
 //! This is the same path the Web UI takes. A prompt becomes `ChatService::send_sync`,
 //! which runs the agent loop — providers, tools, memory, session history — and
@@ -17,7 +17,7 @@
 //! # No server required
 //!
 //! `prepare_gateway_core` is the transport-agnostic half of startup and binds no
-//! socket, so `moltis acp` boots the stack in-process. It does open the databases
+//! socket, so `antre acp` boots the stack in-process. It does open the databases
 //! under `data_dir()`, so it shares session state with a running gateway rather
 //! than talking to it.
 
@@ -34,15 +34,15 @@ use std::{
 
 use {
     agent_client_protocol as acp,
-    async_trait::async_trait,
-    moltis_acp::{
+    antre_acp::{
         AcpBackend, BackendCapabilities, SessionKey, SessionNotFound, SessionSetup, TurnUpdates,
         backend::{MAX_HISTORY_BYTES, MAX_HISTORY_UPDATES},
     },
-    moltis_chat::LiveChatService,
-    moltis_gateway::state::GatewayState,
-    moltis_protocol::{ClientInfo, ConnectParams, PROTOCOL_VERSION},
-    moltis_service_traits::ChatService,
+    antre_chat::LiveChatService,
+    antre_gateway::state::GatewayState,
+    antre_protocol::{ClientInfo, ConnectParams, PROTOCOL_VERSION},
+    antre_service_traits::ChatService,
+    async_trait::async_trait,
     serde_json::{Value, json},
     tokio::sync::{Notify, RwLock, mpsc},
     tracing::{debug, warn},
@@ -60,9 +60,9 @@ use {
 /// buffer costs tokens rather than backpressure.
 const FRAME_BUFFER: usize = 1024;
 
-/// Serves ACP prompts by running real Moltis turns.
-pub struct MoltisBackend {
-    core: moltis_gateway::server::PreparedGatewayCore,
+/// Serves ACP prompts by running real Antre turns.
+pub struct AntreBackend {
+    core: antre_gateway::server::PreparedGatewayCore,
     state: Arc<GatewayState>,
     chat: Arc<LiveChatService>,
     sessions: RwLock<HashMap<SessionKey, SessionRuntime>>,
@@ -128,9 +128,9 @@ impl Drop for OperationGuard {
     }
 }
 
-impl MoltisBackend {
+impl AntreBackend {
     #[must_use]
-    pub fn new(core: moltis_gateway::server::PreparedGatewayCore) -> Self {
+    pub fn new(core: antre_gateway::server::PreparedGatewayCore) -> Self {
         let state = Arc::clone(&core.state);
         let chat = Arc::clone(&core.live_chat);
         Self {
@@ -156,14 +156,14 @@ impl MoltisBackend {
 
     async fn bind_project(&self, key: &SessionKey, cwd: &Path) -> anyhow::Result<()> {
         let listed = self.state.services.project.list().await?;
-        let projects = serde_json::from_value::<Vec<moltis_projects::Project>>(listed)?;
+        let projects = serde_json::from_value::<Vec<antre_projects::Project>>(listed)?;
         let existing = projects.iter().find(|project| {
             std::fs::canonicalize(&project.directory).is_ok_and(|directory| directory == cwd)
         });
         let project_id = if let Some(project) = existing {
             project.id.clone()
         } else {
-            let mut project = moltis_projects::detect::detect_project(cwd)
+            let mut project = antre_projects::detect::detect_project(cwd)
                 .ok_or_else(|| anyhow::anyhow!("failed to detect project for {}", cwd.display()))?;
             if projects.iter().any(|existing| existing.id == project.id) {
                 project.id = format!("{}-{}", project.id, uuid::Uuid::new_v4().simple());
@@ -234,7 +234,7 @@ impl MoltisBackend {
         let conn_id = format!("acp-{seq}");
         let (tx, rx) = mpsc::channel::<String>(FRAME_BUFFER);
         let delivery_failures = Arc::new(AtomicU64::new(0));
-        let client = moltis_gateway::state::ConnectedClient {
+        let client = antre_gateway::state::ConnectedClient {
             conn_id: conn_id.clone(),
             connect_params: acp_connect_params(),
             sender: tx,
@@ -298,9 +298,9 @@ fn acp_connect_params() -> ConnectParams {
         min_protocol: PROTOCOL_VERSION,
         max_protocol: PROTOCOL_VERSION,
         client: ClientInfo {
-            id: "moltis-acp".to_string(),
+            id: "antre-acp".to_string(),
             display_name: Some("ACP client".to_string()),
-            version: moltis_config::VERSION.to_string(),
+            version: antre_config::VERSION.to_string(),
             platform: std::env::consts::OS.to_string(),
             device_family: None,
             model_identifier: None,
@@ -353,10 +353,10 @@ impl TurnClient {
 }
 
 #[async_trait]
-impl AcpBackend for MoltisBackend {
+impl AcpBackend for AntreBackend {
     async fn create_session(&self, setup: &SessionSetup) -> anyhow::Result<SessionKey> {
         let _operation = self.lifecycle.begin()?;
-        // Moltis materializes a session on first write, so there is nothing to
+        // Antre materializes a session on first write, so there is nothing to
         // create here beyond choosing the key. The `acp:` namespace is what
         // keeps these from colliding with Web UI and channel sessions, and the
         // protocol layer rejects anything outside it.
@@ -381,7 +381,7 @@ impl AcpBackend for MoltisBackend {
             .await
             .map_err(|error| anyhow::anyhow!("failed to read session history: {error}"))?;
         let updates = history_to_updates(&history);
-        moltis_acp::validate_history(&updates)?;
+        antre_acp::validate_history(&updates)?;
         self.install_session(key, setup).await?;
         Ok(updates)
     }

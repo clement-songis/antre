@@ -9,7 +9,7 @@ projections are written under `<data_dir>/connectors/exports/`.
 
 ## Email
 
-Moltis can synchronize bounded, read-only email datasets directly from Gmail or
+Antre can synchronize bounded, read-only email datasets directly from Gmail or
 through an existing Himalaya v2 account. Credentials stay with the existing
 Google Workspace or Himalaya configuration; they are not copied into the
 connector database. Email uses provider-owned schemas and the trusted-only
@@ -21,7 +21,7 @@ v2 commands, storage, and security details.
 
 ## Channel message history
 
-Moltis can reuse existing **Slack**, **Discord**, **Matrix**, and **Microsoft
+Antre can reuse existing **Slack**, **Discord**, **Matrix**, and **Microsoft
 Teams** channel accounts to synchronize message history. No channel tokens,
 passwords, or account configuration are copied into the connector database. A
 channel connector stores only the channel type and existing account ID, then
@@ -59,8 +59,8 @@ Provider pagination, edited/deleted-message reconciliation, and conversation
 discovery are not yet part of the shared channel API.
 
 Telegram, WhatsApp, Signal, Nostr, and telephony are not offered as remote
-history connectors. Their current Moltis integrations expose live events or
-sending APIs, not a reusable historical-read API. Moltis does not duplicate
+history connectors. Their current Antre integrations expose live events or
+sending APIs, not a reusable historical-read API. Antre does not duplicate
 their protocol clients or silently substitute the incomplete local forensic
 message log.
 

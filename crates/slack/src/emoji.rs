@@ -43,7 +43,7 @@ pub fn normalize_reaction_name(name: &str) -> Cow<'_, str> {
 
 /// Map a raw Unicode emoji glyph to its Slack shortcode, if known.
 ///
-/// Covers the glyphs Moltis emits for acknowledgment and phase reactions plus a
+/// Covers the glyphs Antre emits for acknowledgment and phase reactions plus a
 /// handful of frequently-used ones. Unknown glyphs fall through to the caller.
 fn glyph_to_shortcode(glyph: &str) -> Option<&'static str> {
     let shortcode = match glyph {
@@ -114,7 +114,7 @@ mod tests {
         // Slack's Web API silently drops raw glyphs, so every one of them must
         // normalize to a shortcode here. This is the cross-crate contract —
         // adding a new canonical emoji without a mapping fails this test.
-        for glyph in moltis_channels::activity::ack_emoji::ALL {
+        for glyph in antre_channels::activity::ack_emoji::ALL {
             let normalized = normalize_reaction_name(glyph);
             assert_ne!(
                 &normalized, glyph,

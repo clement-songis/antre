@@ -10,8 +10,8 @@ export let subscribed = false;
 export let reconnectDelay = 1000;
 export const pending: Record<string, (value: RpcResponse) => void> = {};
 export let models: unknown[] = [];
-export let activeSessionKey: string = localStorage.getItem("moltis-session") || "main";
-export let activeProjectId: string = localStorage.getItem("moltis-project") || "";
+export let activeSessionKey: string = localStorage.getItem("antre-session") || "main";
+export let activeProjectId: string = localStorage.getItem("antre-project") || "";
 export let sessions: unknown[] = [];
 export let projects: unknown[] = [];
 
@@ -20,7 +20,7 @@ export let streamEl: HTMLElement | null = null;
 export let streamText = "";
 export let lastToolOutput = "";
 export let voicePending = false;
-export let chatHistory: string[] = JSON.parse(localStorage.getItem("moltis-chat-history") || "[]");
+export let chatHistory: string[] = JSON.parse(localStorage.getItem("antre-chat-history") || "[]");
 export let chatHistoryIdx = -1;
 export let chatHistoryDraft = "";
 // Client-side sequence counter for message ordering diagnostics.
@@ -41,7 +41,7 @@ export let modelComboLabel: HTMLElement | null = null;
 export let modelDropdown: HTMLElement | null = null;
 export let modelSearchInput: HTMLElement | null = null;
 export let modelDropdownList: HTMLElement | null = null;
-export let selectedModelId: string = localStorage.getItem("moltis-model") || "";
+export let selectedModelId: string = localStorage.getItem("antre-model") || "";
 export let modelIdx = -1;
 
 // Node selector elements — created dynamically inside the chat page
@@ -73,7 +73,7 @@ export let chatMsgBox: HTMLElement | null = null;
 export let chatInput: HTMLElement | null = null;
 export let chatSendBtn: HTMLElement | null = null;
 export let chatBatchLoading = false;
-export let autoScrollMode: string = localStorage.getItem("moltis-auto-scroll") || "smart";
+export let autoScrollMode: string = localStorage.getItem("antre-auto-scroll") || "smart";
 export let sessionSwitchInProgress = false;
 // Highest message index loaded from session history; used to deduplicate
 // real-time events that duplicate already-rendered history entries.
@@ -111,7 +111,7 @@ export let unseenErrors = 0;
 export let unseenWarns = 0;
 
 // Project filter
-export let projectFilterId: string = localStorage.getItem("moltis-project-filter") || "";
+export let projectFilterId: string = localStorage.getItem("antre-project-filter") || "";
 
 // DOM shorthand
 export function $<T extends HTMLElement = HTMLElement>(id: string): T | null {
@@ -280,7 +280,7 @@ export function setChatBatchLoading(v: boolean): void {
 }
 export function setAutoScrollMode(v: string): void {
 	autoScrollMode = v;
-	localStorage.setItem("moltis-auto-scroll", v);
+	localStorage.setItem("antre-auto-scroll", v);
 }
 export function setSessionSwitchInProgress(v: boolean): void {
 	sessionSwitchInProgress = v;

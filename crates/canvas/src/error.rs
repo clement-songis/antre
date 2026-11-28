@@ -80,8 +80,8 @@ impl Error {
     }
 }
 
-impl From<moltis_tools::Error> for Error {
-    fn from(error: moltis_tools::Error) -> Self {
+impl From<antre_tools::Error> for Error {
+    fn from(error: antre_tools::Error) -> Self {
         Self::Checkpoint(error.to_string())
     }
 }

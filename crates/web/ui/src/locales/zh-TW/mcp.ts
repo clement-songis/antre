@@ -7,11 +7,11 @@ export default {
 	introTitle: "MCP (Model Context Protocol)",
 	introDescription: "工具透過外部功能擴充 AI 助理 — 檔案存取、網頁擷取、資料庫查詢、程式碼搜尋等。",
 	flowAgent: "AI 助理",
-	flowMoltis: "Moltis",
+	flowAntre: "Antre",
 	flowLocalProcess: "本機 MCP 處理程序",
 	flowExternalApi: "外部 API",
 	introDetail:
-		"每個工具都會以<strong>本機處理程序</strong>的形式在您的裝置上執行（透過 npm/uvx 啟動）。Moltis 透過 stdio 連線，該處理程序會使用您的權杖代為發出對外 API 請求。不會將任何資料傳送到第三方 MCP 主機。",
+		"每個工具都會以<strong>本機處理程序</strong>的形式在您的裝置上執行（透過 npm/uvx 啟動）。Antre 透過 stdio 連線，該處理程序會使用您的權杖代為發出對外 API 請求。不會將任何資料傳送到第三方 MCP 主機。",
 
 	// ── Security warning ────────────────────────────────────
 	securityTitle: "\u26a0\ufe0f MCP 伺服器會以本機處理程序執行 — 請在啟用前仔細檢查",
@@ -20,7 +20,7 @@ export default {
 	securityReview:
 		"<strong>請務必仔細檢查</strong>任何 MCP 伺服器的原始碼。只安裝您信任的作者所開發的伺服器，並保持更新。",
 	securityTokens:
-		"啟用伺服器後，Moltis 會把工具定義加入每個對話工作階段的上下文，並消耗 token。請只啟用確實需要的伺服器。",
+		"啟用伺服器後，Antre 會把工具定義加入每個對話工作階段的上下文，並消耗 token。請只啟用確實需要的伺服器。",
 
 	// ── Featured servers section ─────────────────────────────
 	popularTitle: "熱門 MCP 伺服器",

@@ -8,8 +8,8 @@ use std::{
 };
 
 use {
+    antre_channels::{ChannelEventSink, message_log::MessageLog, otp::OtpState},
     matrix_sdk::encryption::recovery::IdentityResetHandle,
-    moltis_channels::{ChannelEventSink, message_log::MessageLog, otp::OtpState},
     tokio_util::sync::CancellationToken,
 };
 

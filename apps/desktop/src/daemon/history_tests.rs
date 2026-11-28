@@ -3,7 +3,7 @@
 use {
     super::*,
     crate::transcript::{ItemKind, RunState},
-    moltis_protocol::chat_event::ChatFinal,
+    antre_protocol::chat_event::ChatFinal,
     serde_json::{Value, json},
 };
 

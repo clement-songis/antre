@@ -1,4 +1,4 @@
-//! Demo mod for the moltis mod SDK (`wit/mod/moltis-mod.wit`).
+//! Demo mod for the antre mod SDK (`wit/mod/antre-mod.wit`).
 //!
 //! Build and package it with `just mod-demo`, then install the folder printed
 //! by the recipe with `mods.install` or `POST /api/mods/install`.
@@ -47,9 +47,9 @@ fn bump(current: Option<String>) -> u64 {
 struct WordStats;
 
 #[cfg(target_arch = "wasm32")]
-impl exports::moltis::mods::tools::Guest for WordStats {
+impl exports::antre::mods::tools::Guest for WordStats {
     fn call(name: String, params_json: String) -> Result<String, String> {
-        use moltis::mods::{host, types::LogLevel};
+        use antre::mods::{host, types::LogLevel};
 
         if name != "word_stats" {
             return Err(format!("unknown tool `{name}`"));
@@ -71,9 +71,9 @@ impl exports::moltis::mods::tools::Guest for WordStats {
 }
 
 #[cfg(target_arch = "wasm32")]
-impl exports::moltis::mods::hooks::Guest for WordStats {
+impl exports::antre::mods::hooks::Guest for WordStats {
     fn handle(event: String, _payload_json: String) -> Result<Option<String>, String> {
-        use moltis::mods::host;
+        use antre::mods::host;
 
         if event == "SessionStart"
             && let Ok(current) = host::kv_get(SESSIONS_KEY)

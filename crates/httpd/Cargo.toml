@@ -1,75 +1,75 @@
 [package]
 edition.workspace    = true
-name                 = "moltis-httpd"
+name                 = "antre-httpd"
 repository.workspace = true
 version.workspace    = true
 
 [dependencies]
-anyhow                = { workspace = true }
-async-graphql         = { optional = true, workspace = true }
-async-graphql-axum    = { optional = true, workspace = true }
-async-trait           = { workspace = true }
-axum                  = { workspace = true }
-axum-extra            = { features = ["cookie"], workspace = true }
-base64                = { workspace = true }
-bytes                 = { workspace = true }
-chrono                = { features = ["serde"], optional = true, workspace = true }
-chrono-tz             = { workspace = true }
-dashmap               = { workspace = true }
-futures               = { workspace = true }
-hostname              = { workspace = true }
-ipnet                 = { workspace = true }
-moltis-agents         = { workspace = true }
-moltis-auth           = { workspace = true }
-moltis-browser        = { workspace = true }
-moltis-canvas         = { optional = true, workspace = true }
-moltis-channels       = { workspace = true }
-moltis-common         = { workspace = true }
-moltis-config         = { workspace = true }
-moltis-cron           = { workspace = true }
-moltis-gateway        = { workspace = true }
-moltis-graphql        = { optional = true, workspace = true }
-moltis-matrix         = { optional = true, workspace = true }
-moltis-metrics        = { optional = true, workspace = true }
-moltis-msteams        = { optional = true, workspace = true }
-moltis-portable       = { workspace = true }
-moltis-protocol       = { workspace = true }
-moltis-service-traits = { workspace = true }
-moltis-sessions       = { workspace = true }
-moltis-skills         = { workspace = true }
-moltis-slack          = { optional = true, workspace = true }
-moltis-telephony      = { optional = true, workspace = true }
-moltis-tls            = { optional = true, workspace = true }
-moltis-tools          = { workspace = true }
-moltis-vault          = { optional = true, workspace = true }
-moltis-webhooks       = { workspace = true }
-ngrok                 = { optional = true, workspace = true }
-rand                  = { workspace = true }
-reqwest               = { workspace = true }
-rustls                = { optional = true, workspace = true }
-secrecy               = { workspace = true }
-serde                 = { workspace = true }
-serde_json            = { workspace = true }
-sysinfo               = { workspace = true }
-tempfile              = { workspace = true }
-thiserror             = { workspace = true }
-time                  = { workspace = true }
-tokio                 = { workspace = true }
-tokio-tungstenite     = { workspace = true }
-tokio-util            = { workspace = true }
-toml                  = { workspace = true }
-tower-http            = { features = ["catch-panic", "compression-gzip", "compression-zstd", "cors", "limit", "request-id", "sensitive-headers", "set-header", "trace"], workspace = true }
-tracing               = { workspace = true }
-url                   = { workspace = true }
-urlencoding           = { workspace = true }
-uuid                  = { workspace = true }
-webauthn-rs           = { features = ["danger-allow-state-serialisation"], workspace = true }
-webbrowser            = { workspace = true }
+antre-agents         = { workspace = true }
+antre-auth           = { workspace = true }
+antre-browser        = { workspace = true }
+antre-canvas         = { optional = true, workspace = true }
+antre-channels       = { workspace = true }
+antre-common         = { workspace = true }
+antre-config         = { workspace = true }
+antre-cron           = { workspace = true }
+antre-gateway        = { workspace = true }
+antre-graphql        = { optional = true, workspace = true }
+antre-matrix         = { optional = true, workspace = true }
+antre-metrics        = { optional = true, workspace = true }
+antre-msteams        = { optional = true, workspace = true }
+antre-portable       = { workspace = true }
+antre-protocol       = { workspace = true }
+antre-service-traits = { workspace = true }
+antre-sessions       = { workspace = true }
+antre-skills         = { workspace = true }
+antre-slack          = { optional = true, workspace = true }
+antre-telephony      = { optional = true, workspace = true }
+antre-tls            = { optional = true, workspace = true }
+antre-tools          = { workspace = true }
+antre-vault          = { optional = true, workspace = true }
+antre-webhooks       = { workspace = true }
+anyhow               = { workspace = true }
+async-graphql        = { optional = true, workspace = true }
+async-graphql-axum   = { optional = true, workspace = true }
+async-trait          = { workspace = true }
+axum                 = { workspace = true }
+axum-extra           = { features = ["cookie"], workspace = true }
+base64               = { workspace = true }
+bytes                = { workspace = true }
+chrono               = { features = ["serde"], optional = true, workspace = true }
+chrono-tz            = { workspace = true }
+dashmap              = { workspace = true }
+futures              = { workspace = true }
+hostname             = { workspace = true }
+ipnet                = { workspace = true }
+ngrok                = { optional = true, workspace = true }
+rand                 = { workspace = true }
+reqwest              = { workspace = true }
+rustls               = { optional = true, workspace = true }
+secrecy              = { workspace = true }
+serde                = { workspace = true }
+serde_json           = { workspace = true }
+sysinfo              = { workspace = true }
+tempfile             = { workspace = true }
+thiserror            = { workspace = true }
+time                 = { workspace = true }
+tokio                = { workspace = true }
+tokio-tungstenite    = { workspace = true }
+tokio-util           = { workspace = true }
+toml                 = { workspace = true }
+tower-http           = { features = ["catch-panic", "compression-gzip", "compression-zstd", "cors", "limit", "request-id", "sensitive-headers", "set-header", "trace"], workspace = true }
+tracing              = { workspace = true }
+url                  = { workspace = true }
+urlencoding          = { workspace = true }
+uuid                 = { workspace = true }
+webauthn-rs          = { features = ["danger-allow-state-serialisation"], workspace = true }
+webbrowser           = { workspace = true }
 
 [features]
-canvas = ["dep:moltis-canvas", "moltis-gateway/canvas"]
+canvas = ["antre-gateway/canvas", "dep:antre-canvas"]
 cloudflare-tunnel = []
-connectors = ["moltis-gateway/connectors"]
+connectors = ["antre-gateway/connectors"]
 default = [
   "canvas",
   "cloudflare-tunnel",
@@ -94,40 +94,40 @@ default = [
   "voice",
   "web-ui",
 ]
-discord = ["moltis-gateway/discord"]
+discord = ["antre-gateway/discord"]
 graphql = [
+  "antre-gateway/graphql",
+  "dep:antre-graphql",
   "dep:async-graphql",
   "dep:async-graphql-axum",
-  "dep:moltis-graphql",
-  "moltis-gateway/graphql",
 ]
-matrix = ["dep:moltis-matrix", "moltis-gateway/matrix"]
-mdns = ["moltis-gateway/mdns"]
-metrics = ["dep:moltis-metrics", "moltis-gateway/metrics"]
-msteams = ["dep:moltis-msteams", "moltis-gateway/msteams"]
-netbird = ["moltis-gateway/netbird"]
+matrix = ["antre-gateway/matrix", "dep:antre-matrix"]
+mdns = ["antre-gateway/mdns"]
+metrics = ["antre-gateway/metrics", "dep:antre-metrics"]
+msteams = ["antre-gateway/msteams", "dep:antre-msteams"]
+netbird = ["antre-gateway/netbird"]
 ngrok = ["dep:ngrok"]
-nostr = ["moltis-gateway/nostr"]
-prometheus = ["metrics", "moltis-gateway/prometheus"]
-push-notifications = ["dep:chrono", "moltis-gateway/push-notifications"]
-signal = ["moltis-gateway/signal"]
-slack = ["dep:moltis-slack", "moltis-gateway/slack"]
-tailscale = ["moltis-gateway/tailscale"]
-telephony = ["dep:moltis-telephony", "moltis-gateway/telephony"]
-tls = ["dep:moltis-tls", "dep:rustls", "moltis-gateway/tls"]
-trusted-network = ["moltis-gateway/trusted-network"]
-vault = ["dep:moltis-vault", "moltis-gateway/vault"]
-voice = ["moltis-gateway/voice"]
-web-ui = ["moltis-gateway/web-ui"]
+nostr = ["antre-gateway/nostr"]
+prometheus = ["antre-gateway/prometheus", "metrics"]
+push-notifications = ["antre-gateway/push-notifications", "dep:chrono"]
+signal = ["antre-gateway/signal"]
+slack = ["antre-gateway/slack", "dep:antre-slack"]
+tailscale = ["antre-gateway/tailscale"]
+telephony = ["antre-gateway/telephony", "dep:antre-telephony"]
+tls = ["antre-gateway/tls", "dep:antre-tls", "dep:rustls"]
+trusted-network = ["antre-gateway/trusted-network"]
+vault = ["antre-gateway/vault", "dep:antre-vault"]
+voice = ["antre-gateway/voice"]
+web-ui = ["antre-gateway/web-ui"]
 
 [dev-dependencies]
-moltis-client               = { workspace = true }
-moltis-code-index.workspace = true
-moltis-providers            = { workspace = true }
-moltis-web                  = { workspace = true }
-serial_test                 = { workspace = true }
-sqlx                        = { workspace = true }
-tower                       = { workspace = true }
+antre-client               = { workspace = true }
+antre-code-index.workspace = true
+antre-providers            = { workspace = true }
+antre-web                  = { workspace = true }
+serial_test                = { workspace = true }
+sqlx                       = { workspace = true }
+tower                      = { workspace = true }
 
 [lints]
 workspace = true

@@ -5,16 +5,16 @@ use std::sync::Arc;
 use {serde_json::Value, tracing::warn};
 
 use {
-    moltis_agents::{
+    antre_agents::{
         prompt::{
             PromptBuildLimits, PromptHostRuntimeContext, PromptModeRuntimeContext, PromptNodeInfo,
             PromptNodesRuntimeContext, PromptRuntimeContext, PromptSandboxRuntimeContext,
         },
         tool_registry::ToolSource,
     },
-    moltis_config::{AgentMemoryWriteMode, LoadedWorkspaceMarkdown, MemoryStyle, PromptMemoryMode},
-    moltis_sessions::{metadata::SessionEntry, state_store::SessionStateStore},
-    moltis_tools::policy::{PolicyContext, resolve_effective_policy},
+    antre_config::{AgentMemoryWriteMode, LoadedWorkspaceMarkdown, MemoryStyle, PromptMemoryMode},
+    antre_sessions::{metadata::SessionEntry, state_store::SessionStateStore},
+    antre_tools::policy::{PolicyContext, resolve_effective_policy},
 };
 
 use crate::{
@@ -83,7 +83,7 @@ pub(crate) fn prompt_memory_status(
 /// Prefer the marker written by `agents.set_default` / startup sync. Hardcoded
 /// `"main"` is only the last resort when no default has been persisted yet.
 pub(crate) fn runtime_default_agent_id() -> String {
-    let path = moltis_config::data_dir().join("default_agent_id");
+    let path = antre_config::data_dir().join("default_agent_id");
     if let Ok(raw) = std::fs::read_to_string(&path) {
         let id = raw.trim();
         if !id.is_empty() {
@@ -106,7 +106,7 @@ pub(crate) fn resolve_prompt_agent_id(session_entry: Option<&SessionEntry>) -> S
     else {
         return fallback;
     };
-    if moltis_config::agent_workspace_dir(agent_id).exists() {
+    if antre_config::agent_workspace_dir(agent_id).exists() {
         return agent_id.to_string();
     }
     warn!(
@@ -119,7 +119,7 @@ pub(crate) fn resolve_prompt_agent_id(session_entry: Option<&SessionEntry>) -> S
 }
 
 pub(crate) fn resolve_prompt_mode_context(
-    config: &moltis_config::MoltisConfig,
+    config: &antre_config::AntreConfig,
     session_entry: Option<&SessionEntry>,
 ) -> Option<PromptModeRuntimeContext> {
     let mode_id = session_entry?
@@ -141,22 +141,22 @@ pub(crate) fn resolve_prompt_mode_context(
 
 /// Load identity, user profile, soul, and workspace text for one agent.
 pub(crate) fn load_prompt_persona_base_for_agent(agent_id: &str) -> PromptPersona {
-    let config = moltis_config::discover_and_load();
+    let config = antre_config::discover_and_load();
     let prompt_memory_mode = config.chat.prompt_memory_mode;
     let agent_write_mode = config.memory.agent_write_mode;
     let memory_style = config.memory.style;
     let identity =
-        moltis_config::load_identity_for_agent(agent_id).unwrap_or_else(|| config.identity.clone());
-    let user = moltis_config::resolve_user_profile_from_config(&config);
+        antre_config::load_identity_for_agent(agent_id).unwrap_or_else(|| config.identity.clone());
+    let user = antre_config::resolve_user_profile_from_config(&config);
     PromptPersona {
         config,
         identity,
         user,
-        soul_text: moltis_config::load_soul_for_agent(agent_id),
-        boot_text: moltis_config::load_boot_md_for_agent(agent_id),
-        agents_text: moltis_config::load_agents_md_for_agent(agent_id),
-        tools_text: moltis_config::load_tools_md_for_agent(agent_id),
-        guidelines_text: moltis_config::load_guidelines_md_for_agent(agent_id),
+        soul_text: antre_config::load_soul_for_agent(agent_id),
+        boot_text: antre_config::load_boot_md_for_agent(agent_id),
+        agents_text: antre_config::load_agents_md_for_agent(agent_id),
+        tools_text: antre_config::load_tools_md_for_agent(agent_id),
+        guidelines_text: antre_config::load_guidelines_md_for_agent(agent_id),
         memory_text: None,
         memory_status: prompt_memory_status(
             memory_style,
@@ -174,7 +174,7 @@ pub(crate) fn load_prompt_persona_for_agent(agent_id: &str) -> PromptPersona {
     let mode = persona.config.chat.prompt_memory_mode;
     let write_mode = persona.config.memory.agent_write_mode;
     let memory = if memory_style_allows_prompt(style) {
-        moltis_config::load_memory_md_for_agent_with_source(agent_id)
+        antre_config::load_memory_md_for_agent_with_source(agent_id)
     } else {
         None
     };
@@ -189,7 +189,7 @@ pub(crate) async fn load_prompt_memory_for_session(
     mode: PromptMemoryMode,
     state_store: Option<&SessionStateStore>,
 ) -> (Option<LoadedWorkspaceMarkdown>, bool) {
-    let live_memory = || moltis_config::load_memory_md_for_agent_with_source(agent_id);
+    let live_memory = || antre_config::load_memory_md_for_agent_with_source(agent_id);
 
     if !matches!(mode, PromptMemoryMode::FrozenAtSessionStart) {
         return (live_memory(), false);
@@ -270,7 +270,7 @@ pub(crate) async fn load_prompt_persona_for_session(
 }
 
 pub(crate) fn prompt_build_limits_from_config(
-    config: &moltis_config::MoltisConfig,
+    config: &antre_config::AntreConfig,
 ) -> PromptBuildLimits {
     PromptBuildLimits {
         workspace_file_max_chars: config.chat.workspace_file_max_chars,
@@ -284,28 +284,26 @@ pub(crate) fn prompt_build_limits_from_config(
 /// unconditionally feed the result into prompt building / tool filtering without
 /// injecting skills into the LLM context when the operator has disabled them.
 pub(crate) async fn discover_skills_if_enabled(
-    config: &moltis_config::MoltisConfig,
-) -> Vec<moltis_skills::types::SkillMetadata> {
+    config: &antre_config::AntreConfig,
+) -> Vec<antre_skills::types::SkillMetadata> {
     if !config.skills.enabled {
         return Vec::new();
     }
-    let fs_discoverer = moltis_skills::discover::FsSkillDiscoverer::new(
-        moltis_skills::discover::FsSkillDiscoverer::default_paths(),
+    let fs_discoverer = antre_skills::discover::FsSkillDiscoverer::new(
+        antre_skills::discover::FsSkillDiscoverer::default_paths(),
     );
 
     #[cfg(feature = "bundled-skills")]
     let skills = {
-        use moltis_skills::discover::SkillDiscoverer;
-        let bundled = Arc::new(moltis_skills::bundled::BundledSkillStore::new());
-        let composite = moltis_skills::discover::CompositeSkillDiscoverer::new(
-            Box::new(fs_discoverer),
-            bundled,
-        );
+        use antre_skills::discover::SkillDiscoverer;
+        let bundled = Arc::new(antre_skills::bundled::BundledSkillStore::new());
+        let composite =
+            antre_skills::discover::CompositeSkillDiscoverer::new(Box::new(fs_discoverer), bundled);
         composite.discover().await
     };
     #[cfg(not(feature = "bundled-skills"))]
     let skills = {
-        use moltis_skills::discover::SkillDiscoverer;
+        use antre_skills::discover::SkillDiscoverer;
         fs_discoverer.discover().await
     };
 
@@ -318,7 +316,7 @@ pub(crate) async fn discover_skills_if_enabled(
             .into_iter()
             .filter(|s| {
                 // Only filter bundled skills; non-bundled skills pass through.
-                if s.source != Some(moltis_skills::types::SkillSource::Bundled) {
+                if s.source != Some(antre_skills::types::SkillSource::Bundled) {
                     return true;
                 }
                 config
@@ -338,9 +336,9 @@ pub(crate) async fn discover_skills_if_enabled(
 /// When the agent preset has a `skills.allow` list, only skills matching
 /// by name or category are kept. Skills in `skills.deny` are then removed.
 pub(crate) fn filter_skills_for_agent(
-    skills: Vec<moltis_skills::types::SkillMetadata>,
-    policy: &moltis_config::schema::PresetSkillPolicy,
-) -> Vec<moltis_skills::types::SkillMetadata> {
+    skills: Vec<antre_skills::types::SkillMetadata>,
+    policy: &antre_config::schema::PresetSkillPolicy,
+) -> Vec<antre_skills::types::SkillMetadata> {
     if policy.is_empty() {
         return skills;
     }
@@ -372,8 +370,8 @@ pub(crate) fn filter_skills_for_agent(
 pub(crate) fn resolve_channel_runtime_context(
     session_key: &str,
     session_entry: Option<&SessionEntry>,
-) -> moltis_common::hooks::ChannelBinding {
-    match moltis_channels::resolve_session_channel_binding(
+) -> antre_common::hooks::ChannelBinding {
+    match antre_channels::resolve_session_channel_binding(
         session_key,
         session_entry.and_then(|entry| entry.channel_binding.as_deref()),
     ) {
@@ -384,16 +382,16 @@ pub(crate) fn resolve_channel_runtime_context(
                 session = %session_key,
                 "failed to parse channel_binding JSON; falling back to web"
             );
-            moltis_channels::web_session_channel_binding()
+            antre_channels::web_session_channel_binding()
         },
     }
 }
 
 pub(crate) fn channel_binding_from_runtime_context(
     runtime_context: Option<&PromptRuntimeContext>,
-) -> Option<moltis_common::hooks::ChannelBinding> {
+) -> Option<antre_common::hooks::ChannelBinding> {
     let host = &runtime_context?.host;
-    let binding = moltis_common::hooks::ChannelBinding {
+    let binding = antre_common::hooks::ChannelBinding {
         surface: host.surface.clone(),
         session_kind: host.session_kind.clone(),
         channel_type: host.channel_type.clone(),
@@ -435,15 +433,15 @@ pub(crate) fn build_tool_context(
 
 pub(crate) async fn build_prompt_runtime_context(
     state: &Arc<dyn ChatRuntime>,
-    config: &moltis_config::MoltisConfig,
-    provider: &Arc<dyn moltis_agents::model::LlmProvider>,
+    config: &antre_config::AntreConfig,
+    provider: &Arc<dyn antre_agents::model::LlmProvider>,
     session_key: &str,
     session_entry: Option<&SessionEntry>,
 ) -> PromptRuntimeContext {
-    let data_dir = moltis_config::data_dir();
+    let data_dir = antre_config::data_dir();
     let data_dir_display = data_dir.display().to_string();
     let docs_reference =
-        moltis_agents::docs::cached_moltis_docs_reference(&data_dir, config.server.port);
+        antre_agents::docs::cached_antre_docs_reference(&data_dir, config.server.port);
 
     let sudo_fut = detect_host_sudo_access();
     let sandbox_fut = async {
@@ -472,10 +470,10 @@ pub(crate) async fn build_prompt_runtime_context(
             let workspace_mount = config.workspace_mount.to_string();
             let workspace_path = (workspace_mount != "none").then(|| data_dir_display.clone());
             let exposes_managed_files = matches!(
-                moltis_tools::sandbox::SandboxBackendId::from_name(backend_name),
-                moltis_tools::sandbox::SandboxBackendId::Docker
-                    | moltis_tools::sandbox::SandboxBackendId::Podman
-                    | moltis_tools::sandbox::SandboxBackendId::AppleContainer
+                antre_tools::sandbox::SandboxBackendId::from_name(backend_name),
+                antre_tools::sandbox::SandboxBackendId::Docker
+                    | antre_tools::sandbox::SandboxBackendId::Podman
+                    | antre_tools::sandbox::SandboxBackendId::AppleContainer
             );
             Some(PromptSandboxRuntimeContext {
                 exec_sandboxed: true,
@@ -487,7 +485,7 @@ pub(crate) async fn build_prompt_runtime_context(
                 workspace_mount: Some(workspace_mount),
                 workspace_path,
                 files_path: exposes_managed_files
-                    .then(|| moltis_tools::sandbox::SANDBOX_FILES_DIR.to_string()),
+                    .then(|| antre_tools::sandbox::SANDBOX_FILES_DIR.to_string()),
                 files_mount: exposes_managed_files.then(|| config.managed_files_mount.to_string()),
                 no_network: prompt_sandbox_no_network_state(backend_name, config.no_network),
                 session_override: session_entry.and_then(|entry| entry.sandbox_enabled),
@@ -530,7 +528,7 @@ pub(crate) async fn build_prompt_runtime_context(
         channel_outbound_to: channel_context.outbound_to,
         channel_chat_type: channel_context.chat_type,
         data_dir: Some(data_dir_display),
-        files_dir: Some(moltis_config::managed_files_dir().display().to_string()),
+        files_dir: Some(antre_config::managed_files_dir().display().to_string()),
         docs_path: docs_reference
             .as_ref()
             .map(|reference| reference.docs_dir.display().to_string()),
@@ -613,7 +611,7 @@ pub(crate) fn apply_request_runtime_context(host: &mut PromptHostRuntimeContext,
 /// apply outside of `spawn_agent`.
 pub(crate) fn append_preset_system_prompt_suffix(
     system_prompt: String,
-    config: &moltis_config::MoltisConfig,
+    config: &antre_config::AntreConfig,
     agent_id: &str,
 ) -> String {
     let Some(extra) = config
@@ -647,19 +645,19 @@ pub(crate) fn resolve_preset_model_for_session(
     session_entry: Option<&SessionEntry>,
 ) -> Option<String> {
     let agent_id = resolve_prompt_agent_id(session_entry);
-    moltis_config::discover_and_load()
+    antre_config::discover_and_load()
         .agents
         .get_preset(&agent_id)
         .and_then(|p| p.model.clone())
 }
 
 pub(crate) fn apply_runtime_tool_filters(
-    base: &moltis_agents::tool_registry::ToolRegistry,
-    config: &moltis_config::MoltisConfig,
-    _skills: &[moltis_skills::types::SkillMetadata],
+    base: &antre_agents::tool_registry::ToolRegistry,
+    config: &antre_config::AntreConfig,
+    _skills: &[antre_skills::types::SkillMetadata],
     mcp_disabled: bool,
     policy_context: &PolicyContext,
-) -> moltis_agents::tool_registry::ToolRegistry {
+) -> antre_agents::tool_registry::ToolRegistry {
     let base_registry = if mcp_disabled {
         base.clone_without_mcp()
     } else {
@@ -672,11 +670,11 @@ pub(crate) fn apply_runtime_tool_filters(
     // tools from listed servers pass through. This is handled here (not
     // in the policy deny layer) because ToolPolicy's deny-wins-over-allow
     // semantics can't express "deny all MCP except these servers".
-    let mcp_allow: Option<&[moltis_config::schema::McpServerId]> = config
+    let mcp_allow: Option<&[antre_config::schema::McpServerId]> = config
         .agents
         .get_preset(&policy_context.agent_id)
         .and_then(|p| match &p.mcp {
-            moltis_config::schema::PresetMcpPolicy::Allow(servers) => Some(servers.as_slice()),
+            antre_config::schema::PresetMcpPolicy::Allow(servers) => Some(servers.as_slice()),
             _ => None,
         });
 
@@ -699,7 +697,7 @@ pub(crate) fn apply_runtime_tool_filters(
         return filtered;
     }
 
-    let allowed: std::collections::HashSet<&str> = moltis_tools::spawn_agent::DELEGATE_ONLY_TOOLS
+    let allowed: std::collections::HashSet<&str> = antre_tools::spawn_agent::DELEGATE_ONLY_TOOLS
         .iter()
         .copied()
         .collect();
@@ -743,7 +741,7 @@ mod tests {
     struct DummyTool(&'static str);
 
     #[async_trait::async_trait]
-    impl moltis_agents::tool_registry::AgentTool for DummyTool {
+    impl antre_agents::tool_registry::AgentTool for DummyTool {
         fn name(&self) -> &str {
             self.0
         }
@@ -761,8 +759,8 @@ mod tests {
         }
     }
 
-    fn registry_with_mcp_tools() -> moltis_agents::tool_registry::ToolRegistry {
-        let mut registry = moltis_agents::tool_registry::ToolRegistry::new();
+    fn registry_with_mcp_tools() -> antre_agents::tool_registry::ToolRegistry {
+        let mut registry = antre_agents::tool_registry::ToolRegistry::new();
         registry.register(Box::new(DummyTool("exec")));
         registry.register(Box::new(DummyTool("mcp__github__builtin_named_like_mcp")));
         registry.register_mcp(Box::new(DummyTool("mcp__github__search")), "github".into());
@@ -779,13 +777,13 @@ mod tests {
 
     #[test]
     fn mcp_allow_empty_denies_all_mcp_tools_only() {
-        let mut config = moltis_config::MoltisConfig::default();
+        let mut config = antre_config::AntreConfig::default();
         config.tools.policy.allow = vec!["*".into()];
         config
             .agents
             .presets
-            .insert("locked".into(), moltis_config::schema::AgentPreset {
-                mcp: moltis_config::schema::PresetMcpPolicy::Allow(vec![]),
+            .insert("locked".into(), antre_config::schema::AgentPreset {
+                mcp: antre_config::schema::PresetMcpPolicy::Allow(vec![]),
                 ..Default::default()
             });
 
@@ -809,13 +807,13 @@ mod tests {
 
     #[test]
     fn mcp_allow_keeps_only_listed_mcp_server() {
-        let mut config = moltis_config::MoltisConfig::default();
+        let mut config = antre_config::AntreConfig::default();
         config.tools.policy.allow = vec!["*".into()];
         config
             .agents
             .presets
-            .insert("github-only".into(), moltis_config::schema::AgentPreset {
-                mcp: moltis_config::schema::PresetMcpPolicy::Allow(vec!["github".into()]),
+            .insert("github-only".into(), antre_config::schema::AgentPreset {
+                mcp: antre_config::schema::PresetMcpPolicy::Allow(vec!["github".into()]),
                 ..Default::default()
             });
 
@@ -834,17 +832,17 @@ mod tests {
 
     #[test]
     fn delegate_only_keeps_shared_delegate_toolset() {
-        let mut config = moltis_config::MoltisConfig::default();
+        let mut config = antre_config::AntreConfig::default();
         config.tools.policy.allow = vec!["*".into()];
         config
             .agents
             .presets
-            .insert("coordinator".into(), moltis_config::schema::AgentPreset {
+            .insert("coordinator".into(), antre_config::schema::AgentPreset {
                 delegate_only: true,
                 ..Default::default()
             });
 
-        let mut registry = moltis_agents::tool_registry::ToolRegistry::new();
+        let mut registry = antre_agents::tool_registry::ToolRegistry::new();
         registry.register(Box::new(DummyTool("exec")));
         registry.register(Box::new(DummyTool("spawn_agent")));
         registry.register(Box::new(DummyTool("task_list")));
@@ -866,11 +864,11 @@ mod tests {
 
     #[test]
     fn append_preset_system_prompt_suffix_adds_trimmed_content() {
-        let mut config = moltis_config::MoltisConfig::default();
+        let mut config = antre_config::AntreConfig::default();
         config
             .agents
             .presets
-            .insert("support".into(), moltis_config::schema::AgentPreset {
+            .insert("support".into(), antre_config::schema::AgentPreset {
                 system_prompt_suffix: Some("  ROLE_MARKER_PARITY_7F3A  ".into()),
                 ..Default::default()
             });
@@ -881,11 +879,11 @@ mod tests {
 
     #[test]
     fn append_preset_system_prompt_suffix_skips_empty() {
-        let mut config = moltis_config::MoltisConfig::default();
+        let mut config = antre_config::AntreConfig::default();
         config
             .agents
             .presets
-            .insert("support".into(), moltis_config::schema::AgentPreset {
+            .insert("support".into(), antre_config::schema::AgentPreset {
                 system_prompt_suffix: Some("   \n".into()),
                 ..Default::default()
             });
@@ -914,23 +912,23 @@ mod tests {
     #[test]
     fn skill_policy_allows_then_denies_by_name_or_category() {
         let skills = vec![
-            moltis_skills::types::SkillMetadata {
+            antre_skills::types::SkillMetadata {
                 name: "web-search".into(),
                 category: Some("research".into()),
                 ..Default::default()
             },
-            moltis_skills::types::SkillMetadata {
+            antre_skills::types::SkillMetadata {
                 name: "games".into(),
                 category: Some("gaming".into()),
                 ..Default::default()
             },
-            moltis_skills::types::SkillMetadata {
+            antre_skills::types::SkillMetadata {
                 name: "writer".into(),
                 category: Some("creative".into()),
                 ..Default::default()
             },
         ];
-        let policy = moltis_config::schema::PresetSkillPolicy {
+        let policy = antre_config::schema::PresetSkillPolicy {
             allow: Some(vec!["research".into(), "writer".into()]),
             deny: Some(vec!["writer".into()]),
         };
@@ -974,7 +972,7 @@ mod tests {
     async fn resolve_prompt_agent_id_falls_back_to_runtime_default_not_hardcoded_main() {
         let _lock = crate::test_support::DATA_DIR_LOCK.acquire().await.unwrap();
         let tmp = tempfile::tempdir().unwrap();
-        let _restore = moltis_config::TestDataDirRestore::set(tmp.path().to_path_buf());
+        let _restore = antre_config::TestDataDirRestore::set(tmp.path().to_path_buf());
         std::fs::write(tmp.path().join("default_agent_id"), "content-writer").unwrap();
 
         assert_eq!(runtime_default_agent_id(), "content-writer");

@@ -1,6 +1,6 @@
 [package]
 edition.workspace    = true
-name                 = "moltis-netbird"
+name                 = "antre-netbird"
 repository.workspace = true
 version.workspace    = true
 

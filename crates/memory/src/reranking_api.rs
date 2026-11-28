@@ -17,7 +17,7 @@ use crate::{
     search::SearchResult,
 };
 
-pub type RerankApi = moltis_config::MemoryReranker;
+pub type RerankApi = antre_config::MemoryReranker;
 
 /// Documents longer than this are cut before sending; rerankers chunk or
 /// truncate long inputs anyway and billing counts characters.

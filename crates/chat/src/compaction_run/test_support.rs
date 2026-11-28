@@ -11,12 +11,12 @@
 #![allow(dead_code)] // Some helpers are only exercised in llm-compaction builds.
 
 use {
+    antre_agents::model::{
+        ChatMessage, CompletionResponse, ContentPart, LlmProvider, StreamEvent, Usage, UserContent,
+    },
     anyhow::Result,
     async_trait::async_trait,
     futures::Stream,
-    moltis_agents::model::{
-        ChatMessage, CompletionResponse, ContentPart, LlmProvider, StreamEvent, Usage, UserContent,
-    },
     serde_json::Value,
     std::{
         pin::Pin,

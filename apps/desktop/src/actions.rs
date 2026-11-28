@@ -2,7 +2,7 @@
 
 use gpui::{App, KeyBinding, actions};
 
-actions!(moltis, [
+actions!(antre, [
     Quit,
     Hide,
     NewSession,

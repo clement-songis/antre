@@ -1,5 +1,5 @@
 use {
-    moltis_protocol::{ErrorShape, error_codes},
+    antre_protocol::{ErrorShape, error_codes},
     serde::{Deserialize, de::DeserializeOwned},
     serde_json::{Value, json},
 };
@@ -294,10 +294,10 @@ fn map_error(error: ConnectorManagerError) -> ErrorShape {
         ConnectorManagerError::Channel(error) => {
             tracing::warn!(error = ?error, "channel history RPC operation failed");
             match error {
-                moltis_channels::Error::InvalidInput { message } => {
+                antre_channels::Error::InvalidInput { message } => {
                     ErrorShape::new(error_codes::INVALID_REQUEST, message)
                 },
-                moltis_channels::Error::UnknownAccount { .. } => {
+                antre_channels::Error::UnknownAccount { .. } => {
                     ErrorShape::new(error_codes::NOT_FOUND, "channel account is not active")
                 },
                 _ => ErrorShape::new(
@@ -313,8 +313,8 @@ fn map_error(error: ConnectorManagerError) -> ErrorShape {
     }
 }
 
-fn map_gmail_error(error: moltis_connector_gmail::GmailConnectorError) -> ErrorShape {
-    use moltis_connector_gmail::GmailConnectorError;
+fn map_gmail_error(error: antre_connector_gmail::GmailConnectorError) -> ErrorShape {
+    use antre_connector_gmail::GmailConnectorError;
 
     match error {
         GmailConnectorError::AccountConfig(message)
@@ -352,8 +352,8 @@ fn map_gmail_error(error: moltis_connector_gmail::GmailConnectorError) -> ErrorS
     }
 }
 
-fn map_himalaya_error(error: moltis_connector_himalaya::HimalayaConnectorError) -> ErrorShape {
-    use moltis_connector_himalaya::HimalayaConnectorError;
+fn map_himalaya_error(error: antre_connector_himalaya::HimalayaConnectorError) -> ErrorShape {
+    use antre_connector_himalaya::HimalayaConnectorError;
 
     match error {
         HimalayaConnectorError::AccountConfig(message)
@@ -381,8 +381,8 @@ fn map_himalaya_error(error: moltis_connector_himalaya::HimalayaConnectorError) 
     }
 }
 
-fn map_provider_error(error: moltis_connector_caldav::CalDavConnectorError) -> ErrorShape {
-    use moltis_connector_caldav::CalDavConnectorError;
+fn map_provider_error(error: antre_connector_caldav::CalDavConnectorError) -> ErrorShape {
+    use antre_connector_caldav::CalDavConnectorError;
 
     match error {
         CalDavConnectorError::AccountConfig(message)
@@ -393,14 +393,14 @@ fn map_provider_error(error: moltis_connector_caldav::CalDavConnectorError) -> E
             error_codes::INVALID_REQUEST,
             "CalDAV server address was blocked by network safety policy",
         ),
-        CalDavConnectorError::Client(moltis_caldav::Error::Timeout(_)) => {
+        CalDavConnectorError::Client(antre_caldav::Error::Timeout(_)) => {
             ErrorShape::new(error_codes::TIMEOUT, "CalDAV server timed out")
         },
-        CalDavConnectorError::Client(moltis_caldav::Error::InvalidUrl(message))
-        | CalDavConnectorError::Client(moltis_caldav::Error::Validation(message)) => {
+        CalDavConnectorError::Client(antre_caldav::Error::InvalidUrl(message))
+        | CalDavConnectorError::Client(antre_caldav::Error::Validation(message)) => {
             ErrorShape::new(error_codes::INVALID_REQUEST, message)
         },
-        CalDavConnectorError::Client(moltis_caldav::Error::Protocol(message))
+        CalDavConnectorError::Client(antre_caldav::Error::Protocol(message))
             if message.contains("401") || message.contains("Unauthorized") =>
         {
             ErrorShape::new(
@@ -408,7 +408,7 @@ fn map_provider_error(error: moltis_connector_caldav::CalDavConnectorError) -> E
                 "CalDAV authentication failed; check the username and app password",
             )
         },
-        CalDavConnectorError::Client(moltis_caldav::Error::Protocol(message))
+        CalDavConnectorError::Client(antre_caldav::Error::Protocol(message))
             if message.contains("403") || message.contains("Forbidden") =>
         {
             ErrorShape::new(

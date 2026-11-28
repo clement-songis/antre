@@ -10,9 +10,7 @@ use std::{
     sync::{Arc, Mutex, MutexGuard, Weak},
 };
 
-use {
-    moltis_agents::tool_registry::AgentTool, moltis_common::hooks::HookHandler, serde::Serialize,
-};
+use {antre_agents::tool_registry::AgentTool, antre_common::hooks::HookHandler, serde::Serialize};
 
 use crate::{
     error::{Error, Result},
@@ -227,8 +225,8 @@ impl std::fmt::Debug for Registration {
 mod tests {
     use {
         super::*,
+        antre_common::hooks::{HookAction, HookEvent, HookPayload},
         async_trait::async_trait,
-        moltis_common::hooks::{HookAction, HookEvent, HookPayload},
     };
 
     struct NamedHook(&'static str);
@@ -247,7 +245,7 @@ mod tests {
             &self,
             _event: HookEvent,
             _payload: &HookPayload,
-        ) -> moltis_common::Result<HookAction> {
+        ) -> antre_common::Result<HookAction> {
             Ok(HookAction::Continue)
         }
     }

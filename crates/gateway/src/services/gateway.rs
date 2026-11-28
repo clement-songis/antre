@@ -32,17 +32,17 @@ pub struct GatewayServices {
     /// Capability-scoped storage for user-managed files.
     pub files: Option<Arc<crate::files::LocalFilesService>>,
     /// Optional channel registry for direct plugin access (thread context, etc.).
-    pub channel_registry: Option<Arc<moltis_channels::ChannelRegistry>>,
+    pub channel_registry: Option<Arc<antre_channels::ChannelRegistry>>,
     /// Optional persisted channel store for safe config mutations.
-    pub channel_store: Option<Arc<dyn moltis_channels::store::ChannelStore>>,
+    pub channel_store: Option<Arc<dyn antre_channels::store::ChannelStore>>,
     /// Optional channel outbound for sending replies back to channels.
-    channel_outbound: Option<Arc<dyn moltis_channels::ChannelOutbound>>,
+    channel_outbound: Option<Arc<dyn antre_channels::ChannelOutbound>>,
     /// Optional channel stream outbound for edit-in-place channel streaming.
-    channel_stream_outbound: Option<Arc<dyn moltis_channels::ChannelStreamOutbound>>,
+    channel_stream_outbound: Option<Arc<dyn antre_channels::ChannelStreamOutbound>>,
     /// Optional session metadata for cross-service access (e.g. channel binding).
-    pub session_metadata: Option<Arc<moltis_sessions::metadata::SqliteSessionMetadata>>,
+    pub session_metadata: Option<Arc<antre_sessions::metadata::SqliteSessionMetadata>>,
     /// Optional session store for message-index lookups (e.g. deduplication).
-    pub session_store: Option<Arc<moltis_sessions::store::SessionStore>>,
+    pub session_store: Option<Arc<antre_sessions::store::SessionStore>>,
     /// Optional session share store for immutable snapshot links.
     pub session_share_store: Option<Arc<crate::share_store::ShareStore>>,
     /// Optional agent persona store for multi-agent support.
@@ -51,13 +51,13 @@ pub struct GatewayServices {
     #[cfg(feature = "voice")]
     pub voice_persona_store: Option<Arc<crate::voice_persona::VoicePersonaStore>>,
     /// Shared agents config (presets) for spawn_agent and RPC sync.
-    pub agents_config: Option<Arc<tokio::sync::RwLock<moltis_config::AgentsConfig>>>,
+    pub agents_config: Option<Arc<tokio::sync::RwLock<antre_config::AgentsConfig>>>,
     /// Typed telephony plugin for RPC call initiation/hangup.
     #[cfg(feature = "telephony")]
-    pub telephony_plugin: Option<Arc<tokio::sync::RwLock<moltis_telephony::TelephonyPlugin>>>,
+    pub telephony_plugin: Option<Arc<tokio::sync::RwLock<antre_telephony::TelephonyPlugin>>>,
     /// Design canvas (designs, versions, render origin).
     #[cfg(feature = "canvas")]
-    pub canvas: Option<Arc<moltis_canvas::CanvasService>>,
+    pub canvas: Option<Arc<antre_canvas::CanvasService>>,
 }
 
 impl GatewayServices {
@@ -91,17 +91,14 @@ impl GatewayServices {
         self
     }
 
-    pub fn with_channel_registry(
-        mut self,
-        registry: Arc<moltis_channels::ChannelRegistry>,
-    ) -> Self {
+    pub fn with_channel_registry(mut self, registry: Arc<antre_channels::ChannelRegistry>) -> Self {
         self.channel_registry = Some(registry);
         self
     }
 
     pub fn with_channel_store(
         mut self,
-        store: Arc<dyn moltis_channels::store::ChannelStore>,
+        store: Arc<dyn antre_channels::store::ChannelStore>,
     ) -> Self {
         self.channel_store = Some(store);
         self
@@ -109,7 +106,7 @@ impl GatewayServices {
 
     pub fn with_channel_outbound(
         mut self,
-        outbound: Arc<dyn moltis_channels::ChannelOutbound>,
+        outbound: Arc<dyn antre_channels::ChannelOutbound>,
     ) -> Self {
         self.channel_outbound = Some(outbound);
         self
@@ -117,7 +114,7 @@ impl GatewayServices {
 
     pub fn with_channel_stream_outbound(
         mut self,
-        outbound: Arc<dyn moltis_channels::ChannelStreamOutbound>,
+        outbound: Arc<dyn antre_channels::ChannelStreamOutbound>,
     ) -> Self {
         self.channel_stream_outbound = Some(outbound);
         self
@@ -126,19 +123,19 @@ impl GatewayServices {
     #[cfg(feature = "telephony")]
     pub fn with_telephony_plugin(
         mut self,
-        plugin: Arc<tokio::sync::RwLock<moltis_telephony::TelephonyPlugin>>,
+        plugin: Arc<tokio::sync::RwLock<antre_telephony::TelephonyPlugin>>,
     ) -> Self {
         self.telephony_plugin = Some(plugin);
         self
     }
 
-    pub fn channel_outbound_arc(&self) -> Option<Arc<dyn moltis_channels::ChannelOutbound>> {
+    pub fn channel_outbound_arc(&self) -> Option<Arc<dyn antre_channels::ChannelOutbound>> {
         self.channel_outbound.clone()
     }
 
     pub fn channel_stream_outbound_arc(
         &self,
-    ) -> Option<Arc<dyn moltis_channels::ChannelStreamOutbound>> {
+    ) -> Option<Arc<dyn antre_channels::ChannelStreamOutbound>> {
         self.channel_stream_outbound.clone()
     }
 
@@ -224,13 +221,13 @@ impl GatewayServices {
 
     pub fn with_session_metadata(
         mut self,
-        meta: Arc<moltis_sessions::metadata::SqliteSessionMetadata>,
+        meta: Arc<antre_sessions::metadata::SqliteSessionMetadata>,
     ) -> Self {
         self.session_metadata = Some(meta);
         self
     }
 
-    pub fn with_session_store(mut self, store: Arc<moltis_sessions::store::SessionStore>) -> Self {
+    pub fn with_session_store(mut self, store: Arc<antre_sessions::store::SessionStore>) -> Self {
         self.session_store = Some(store);
         self
     }
@@ -259,7 +256,7 @@ impl GatewayServices {
 
     pub fn with_agents_config(
         mut self,
-        agents_config: Arc<tokio::sync::RwLock<moltis_config::AgentsConfig>>,
+        agents_config: Arc<tokio::sync::RwLock<antre_config::AgentsConfig>>,
     ) -> Self {
         self.agents_config = Some(agents_config);
         self

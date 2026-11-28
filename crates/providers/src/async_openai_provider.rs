@@ -16,7 +16,7 @@ use {
     tokio_stream::Stream,
 };
 
-use moltis_agents::model::{
+use antre_agents::model::{
     ChatMessage, CompletionResponse, LlmProvider, StreamEvent, Usage, UserContent,
 };
 
@@ -100,12 +100,12 @@ fn build_messages(messages: &[ChatMessage]) -> anyhow::Result<Vec<ChatCompletion
                 let content_parts: Vec<ChatCompletionRequestUserMessageContentPart> = parts
                     .iter()
                     .map(|p| match p {
-                        moltis_agents::model::ContentPart::Text(t) => {
+                        antre_agents::model::ContentPart::Text(t) => {
                             ChatCompletionRequestUserMessageContentPart::Text(
                                 ChatCompletionRequestMessageContentPartText { text: t.clone() },
                             )
                         },
-                        moltis_agents::model::ContentPart::Image { media_type, data } => {
+                        antre_agents::model::ContentPart::Image { media_type, data } => {
                             let data_uri = format!("data:{media_type};base64,{data}");
                             ChatCompletionRequestUserMessageContentPart::ImageUrl(
                                 ChatCompletionRequestMessageContentPartImage {
@@ -174,7 +174,7 @@ impl LlmProvider for AsyncOpenAiProvider {
             .as_ref()
             .map(|u| {
                 Usage::from_input_tokens(
-                    moltis_agents::model::InputTokenAccounting::Inclusive,
+                    antre_agents::model::InputTokenAccounting::Inclusive,
                     u.prompt_tokens,
                     u.completion_tokens,
                     0,
@@ -237,7 +237,7 @@ impl LlmProvider for AsyncOpenAiProvider {
                         }
                         if let Some(ref u) = response.usage {
                             yield StreamEvent::Done(Usage::from_input_tokens(
-                                moltis_agents::model::InputTokenAccounting::Inclusive,
+                                antre_agents::model::InputTokenAccounting::Inclusive,
                                 u.prompt_tokens,
                                 u.completion_tokens,
                                 0,
@@ -262,11 +262,11 @@ impl LlmProvider for AsyncOpenAiProvider {
 mod tests {
     use {
         crate::async_openai_provider::build_messages,
+        antre_agents::model::{ChatMessage, ContentPart, UserContent},
         async_openai::types::chat::{
             ChatCompletionRequestMessage, ChatCompletionRequestUserMessageContent,
             ChatCompletionRequestUserMessageContentPart,
         },
-        moltis_agents::model::{ChatMessage, ContentPart, UserContent},
     };
 
     #[test]

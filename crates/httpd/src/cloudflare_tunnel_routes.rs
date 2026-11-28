@@ -12,7 +12,7 @@ use {
     serde::Deserialize,
 };
 
-use {crate::server::AppState, moltis_config::schema::CloudflareTunnelConfig};
+use {crate::server::AppState, antre_config::schema::CloudflareTunnelConfig};
 
 fn tunnel_error(code: &str, error: impl Into<String>) -> serde_json::Value {
     serde_json::json!({ "code": code, "error": error.into() })
@@ -56,7 +56,7 @@ fn cloudflare_token_will_exist(
 }
 
 fn status_payload(
-    config: &moltis_config::MoltisConfig,
+    config: &antre_config::AntreConfig,
     runtime: Option<crate::server::CloudflareTunnelRuntimeStatus>,
 ) -> serde_json::Value {
     serde_json::json!({
@@ -87,7 +87,7 @@ pub fn cloudflare_tunnel_router() -> Router<AppState> {
 }
 
 async fn status_handler(State(state): State<AppState>) -> impl IntoResponse {
-    let config = moltis_config::discover_and_load();
+    let config = antre_config::discover_and_load();
     let runtime = state.cloudflare_tunnel_runtime.read().await.clone();
     Json(status_payload(&config, runtime)).into_response()
 }
@@ -96,7 +96,7 @@ async fn save_config_handler(
     State(state): State<AppState>,
     Json(body): Json<SaveCloudflareTunnelConfigRequest>,
 ) -> impl IntoResponse {
-    let existing = moltis_config::discover_and_load();
+    let existing = antre_config::discover_and_load();
     let hostname = normalize_optional(body.hostname.as_deref());
     let new_token = normalize_optional(body.token.as_deref());
     let token_will_exist = cloudflare_token_will_exist(
@@ -127,7 +127,7 @@ async fn save_config_handler(
         updated.cloudflare_tunnel.token = Some(Secret::new(token));
     }
 
-    if let Err(error) = moltis_config::update_config(|config| {
+    if let Err(error) = antre_config::update_config(|config| {
         config.cloudflare_tunnel = updated.cloudflare_tunnel.clone();
     }) {
         return (
@@ -175,10 +175,10 @@ mod tests {
     use std::sync::Weak;
 
     use {
-        axum::body::to_bytes,
-        moltis_gateway::{
+        antre_gateway::{
             auth, methods::MethodRegistry, services::GatewayServices, state::GatewayState,
         },
+        axum::body::to_bytes,
         secrecy::Secret,
     };
 
@@ -202,23 +202,23 @@ mod tests {
 
     #[test]
     fn status_payload_reports_config_token_and_runtime() {
-        let mut config = moltis_config::MoltisConfig::default();
+        let mut config = antre_config::AntreConfig::default();
         config.cloudflare_tunnel.enabled = true;
-        config.cloudflare_tunnel.hostname = Some("moltis.example.com".to_string());
+        config.cloudflare_tunnel.hostname = Some("antre.example.com".to_string());
         config.cloudflare_tunnel.token = Some(Secret::new("token".to_string()));
         let runtime = CloudflareTunnelRuntimeStatus {
-            public_url: Some("https://moltis.example.com".to_string()),
-            hostname: Some("moltis.example.com".to_string()),
+            public_url: Some("https://antre.example.com".to_string()),
+            hostname: Some("antre.example.com".to_string()),
             passkey_warning: Some("register passkey origin".to_string()),
         };
 
         let payload = status_payload(&config, Some(runtime));
 
         assert_eq!(payload["enabled"], true);
-        assert_eq!(payload["hostname"], "moltis.example.com");
+        assert_eq!(payload["hostname"], "antre.example.com");
         assert_eq!(payload["token_present"], true);
         assert_eq!(payload["token_source"], "config");
-        assert_eq!(payload["public_url"], "https://moltis.example.com");
+        assert_eq!(payload["public_url"], "https://antre.example.com");
         assert_eq!(payload["passkey_warning"], "register passkey origin");
     }
 
@@ -277,7 +277,7 @@ mod tests {
             #[cfg(feature = "netbird")]
             netbird_runtime,
             #[cfg(feature = "tailscale")]
-            tailscale_manager: moltis_gateway::tailscale::CachedTailscaleManager::new_with_prefetch(
+            tailscale_manager: antre_gateway::tailscale::CachedTailscaleManager::new_with_prefetch(
             ),
             #[cfg(feature = "push-notifications")]
             push_service: None,
@@ -293,8 +293,8 @@ mod tests {
     #[serial_test::serial(config_dir)]
     async fn save_config_rejects_enabled_without_token() -> Result<(), Box<dyn std::error::Error>> {
         let tempdir = tempfile::tempdir()?;
-        moltis_config::set_config_dir(tempdir.path().to_path_buf());
-        moltis_config::set_data_dir(tempdir.path().to_path_buf());
+        antre_config::set_config_dir(tempdir.path().to_path_buf());
+        antre_config::set_data_dir(tempdir.path().to_path_buf());
 
         let response = save_config_handler(
             State(test_state()),
@@ -319,8 +319,8 @@ mod tests {
     #[serial_test::serial(config_dir)]
     async fn save_config_can_disable_without_token() -> Result<(), Box<dyn std::error::Error>> {
         let tempdir = tempfile::tempdir()?;
-        moltis_config::set_config_dir(tempdir.path().to_path_buf());
-        moltis_config::set_data_dir(tempdir.path().to_path_buf());
+        antre_config::set_config_dir(tempdir.path().to_path_buf());
+        antre_config::set_data_dir(tempdir.path().to_path_buf());
 
         let response = save_config_handler(
             State(test_state()),
@@ -328,7 +328,7 @@ mod tests {
                 enabled: false,
                 token: None,
                 clear_token: true,
-                hostname: Some("  moltis.example.com  ".to_string()),
+                hostname: Some("  antre.example.com  ".to_string()),
             }),
         )
         .await
@@ -338,7 +338,7 @@ mod tests {
         let body = to_bytes(response.into_body(), usize::MAX).await?;
         let payload: serde_json::Value = serde_json::from_slice(&body)?;
         assert_eq!(payload["ok"], true);
-        assert_eq!(payload["status"]["hostname"], "moltis.example.com");
+        assert_eq!(payload["status"]["hostname"], "antre.example.com");
         assert_eq!(payload["status"]["token_present"], false);
         Ok(())
     }

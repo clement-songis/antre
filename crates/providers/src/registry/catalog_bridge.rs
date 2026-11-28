@@ -3,7 +3,7 @@
 
 use std::{collections::HashMap, path::PathBuf, sync::OnceLock};
 
-use moltis_model_catalog::{
+use antre_model_catalog::{
     ModelKind, ModelSpec, ResolvedModel, Source,
     catalog::ANY_PROVIDER,
     global,
@@ -61,7 +61,7 @@ pub(crate) fn record_context_overrides(
 /// rows) into the override layer, replacing the provider's previous rows.
 /// Call before [`record_context_overrides`] so explicit context-window
 /// overrides win.
-pub(crate) fn record_static_models(config: &moltis_config::schema::ProvidersConfig) {
+pub(crate) fn record_static_models(config: &antre_config::schema::ProvidersConfig) {
     global::write(|catalog| {
         for (provider, entry) in &config.providers {
             let rows: Vec<ModelSpec> = crate::config_helpers::static_model_specs(entry)
@@ -91,7 +91,7 @@ fn mismatches() -> &'static std::sync::Mutex<HashMap<String, CatalogMismatch>> {
 
 pub(crate) fn record_catalog_mismatch(
     provider: &str,
-    merged: &moltis_model_catalog::static_models::MergedModels,
+    merged: &antre_model_catalog::static_models::MergedModels,
 ) {
     let mismatch = CatalogMismatch {
         missing: merged.missing.clone(),
@@ -118,7 +118,7 @@ pub fn catalog_mismatch(provider: &str) -> Option<CatalogMismatch> {
 /// Let `custom-*` providers inherit metadata from the models.dev provider
 /// that publishes exactly their base URL (GreenPT, CompactifAI and the like
 /// list ids only on `/models`).
-pub(crate) fn record_custom_aliases(config: &moltis_config::schema::ProvidersConfig) {
+pub(crate) fn record_custom_aliases(config: &antre_config::schema::ProvidersConfig) {
     global::write(|catalog| {
         for (name, entry) in &config.providers {
             if !name.starts_with("custom-") {
@@ -158,7 +158,7 @@ pub(crate) fn record_live_models(provider: &str, models: &[DiscoveredModel]) {
 /// layer and persist them next to the live cache. Earlier results are
 /// loaded first, so a restart does not wait for the probe.
 pub async fn run_context_probes(
-    config: moltis_config::schema::ProvidersConfig,
+    config: antre_config::schema::ProvidersConfig,
     models: Vec<(String, String)>,
 ) {
     for (provider, entry) in &config.providers {
@@ -266,7 +266,7 @@ pub fn model_catalog_details(info: &ModelInfo) -> ModelCatalogDetails {
     let resolved = resolve(&info.provider, &wire_id, None);
     let date_format = time::macros::format_description!("[year]-[month]-[day]");
     ModelCatalogDetails {
-        version_label: moltis_model_catalog::prettify_id(&wire_id).version,
+        version_label: antre_model_catalog::prettify_id(&wire_id).version,
         context_window: resolved.known_context_window(),
         max_output: resolved.spec.max_output,
         deprecated: resolved.status().is_deprecated(),
@@ -405,19 +405,19 @@ mod tests {
 
     #[test]
     fn static_models_feed_overrides_and_context_overrides_win() {
-        let mut config = moltis_config::schema::ProvidersConfig::default();
+        let mut config = antre_config::schema::ProvidersConfig::default();
         config.providers.insert(
             "custom-static-test".into(),
-            moltis_config::schema::ProviderEntry {
+            antre_config::schema::ProviderEntry {
                 models: vec![
                     "bare-id".into(),
-                    moltis_model_catalog::ModelEntry::Spec(Box::new(ModelSpec {
+                    antre_model_catalog::ModelEntry::Spec(Box::new(ModelSpec {
                         display_name: Some("Qwen Box".into()),
                         context_window: Some(131_072),
                         kind: Some(ModelKind::Chat),
                         ..ModelSpec::new("qwen-box")
                     })),
-                    moltis_model_catalog::ModelEntry::Spec(Box::new(ModelSpec {
+                    antre_model_catalog::ModelEntry::Spec(Box::new(ModelSpec {
                         kind: Some(ModelKind::Embedding),
                         ..ModelSpec::new("embed-box")
                     })),
@@ -448,7 +448,7 @@ mod tests {
     #[test]
     fn catalog_mismatches_are_recorded_and_cleared() {
         let merged =
-            moltis_model_catalog::static_models::merge_live_and_static(&["a".to_string()], &[
+            antre_model_catalog::static_models::merge_live_and_static(&["a".to_string()], &[
                 "b".to_string()
             ]);
         record_catalog_mismatch("custom-mismatch-test", &merged);
@@ -456,7 +456,7 @@ mod tests {
         assert_eq!(mismatch.missing, ["a"]);
         assert_eq!(mismatch.unknown, ["b"]);
         let clean =
-            moltis_model_catalog::static_models::merge_live_and_static(&["a".to_string()], &[
+            antre_model_catalog::static_models::merge_live_and_static(&["a".to_string()], &[
                 "a".to_string()
             ]);
         record_catalog_mismatch("custom-mismatch-test", &clean);

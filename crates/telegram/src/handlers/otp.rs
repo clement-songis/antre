@@ -1,12 +1,12 @@
 use teloxide::{prelude::*, types::ParseMode};
 
-use moltis_channels::{
+use antre_channels::{
     ChannelEventSink, ChannelType,
     otp::{approve_sender_via_otp, emit_otp_challenge, emit_otp_resolution},
 };
 
 #[cfg(feature = "metrics")]
-use moltis_metrics::{counter, telegram as tg_metrics};
+use antre_metrics::{counter, telegram as tg_metrics};
 
 use crate::{
     otp::{OtpInitResult, OtpVerifyResult},

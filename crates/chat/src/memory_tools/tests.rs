@@ -4,8 +4,8 @@ use std::{pin::Pin, sync::Arc};
 
 use {
     super::*,
-    moltis_agents::model::{CompletionResponse, StreamEvent, Usage, UserContent},
-    moltis_memory::{
+    antre_agents::model::{CompletionResponse, StreamEvent, Usage, UserContent},
+    antre_memory::{
         config::MemoryConfig, embeddings::EmbeddingProvider, manager::MemoryManager,
         schema::run_migrations, store_sqlite::SqliteMemoryStore,
     },
@@ -20,7 +20,7 @@ struct MockEmbedder;
 
 #[async_trait]
 impl EmbeddingProvider for MockEmbedder {
-    async fn embed(&self, text: &str) -> moltis_memory::Result<Vec<f32>> {
+    async fn embed(&self, text: &str) -> antre_memory::Result<Vec<f32>> {
         let lower = text.to_lowercase();
         Ok(KEYWORDS
             .iter()
@@ -147,15 +147,15 @@ async fn setup_agent_memory(
     content: &str,
     chunk_size: usize,
 ) -> (
-    moltis_memory::runtime::DynMemoryRuntime,
+    antre_memory::runtime::DynMemoryRuntime,
     TempDir,
     std::path::PathBuf,
-    moltis_config::TestDataDirRestore,
+    antre_config::TestDataDirRestore,
 ) {
     let tmp = TempDir::new().unwrap();
-    let restore = moltis_config::TestDataDirRestore::set(tmp.path().to_path_buf());
+    let restore = antre_config::TestDataDirRestore::set(tmp.path().to_path_buf());
 
-    let workspace = moltis_config::agent_workspace_dir(agent_id);
+    let workspace = antre_config::agent_workspace_dir(agent_id);
     std::fs::create_dir_all(workspace.join("memory")).unwrap();
     let memory_path = workspace.join("MEMORY.md");
     std::fs::write(&memory_path, content).unwrap();

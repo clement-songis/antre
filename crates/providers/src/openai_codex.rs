@@ -1,17 +1,17 @@
 use std::pin::Pin;
 
 use {
+    antre_config::schema::ProviderStreamTransport,
+    antre_oauth::{OAuthFlow, TokenStore, load_oauth_config},
     async_trait::async_trait,
     base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD},
     futures::StreamExt,
-    moltis_config::schema::ProviderStreamTransport,
-    moltis_oauth::{OAuthFlow, TokenStore, load_oauth_config},
     secrecy::ExposeSecret,
     tokio_stream::Stream,
     tracing::{debug, info, trace},
 };
 
-use moltis_agents::model::{
+use antre_agents::model::{
     AgentToolControls, ChatMessage, CompletionResponse, InputTokenAccounting, LlmProvider,
     ReasoningEffort, StreamEvent, ToolCall, Usage, UserContent,
     decode_tool_call_arguments_from_str,
@@ -138,14 +138,14 @@ impl OpenAiCodexProvider {
         }
     }
 
-    pub(crate) async fn get_valid_tokens(&self) -> anyhow::Result<moltis_oauth::OAuthTokens> {
+    pub(crate) async fn get_valid_tokens(&self) -> anyhow::Result<antre_oauth::OAuthTokens> {
         let tokens = self
             .token_store
             .load("openai-codex")
             .or_else(load_codex_cli_tokens)
             .ok_or_else(|| {
                 anyhow::anyhow!(
-                    "not logged in to openai-codex — run `moltis auth login --provider openai-codex`"
+                    "not logged in to openai-codex — run `antre auth login --provider openai-codex`"
                 )
             })?;
 
@@ -253,7 +253,7 @@ impl OpenAiCodexProvider {
             .and_then(|v| v.as_u64().or_else(|| v.as_f64().map(|f| f as u64)))
     }
 
-    pub(crate) fn resolve_account_id(tokens: &moltis_oauth::OAuthTokens) -> anyhow::Result<String> {
+    pub(crate) fn resolve_account_id(tokens: &antre_oauth::OAuthTokens) -> anyhow::Result<String> {
         if let Some(account_id) = tokens
             .account_id
             .as_ref()
@@ -294,10 +294,10 @@ impl OpenAiCodexProvider {
                                 parts
                                     .iter()
                                     .map(|p| match p {
-                                        moltis_agents::model::ContentPart::Text(t) => {
+                                        antre_agents::model::ContentPart::Text(t) => {
                                             serde_json::json!({"type": "input_text", "text": t})
                                         },
-                                        moltis_agents::model::ContentPart::Image {
+                                        antre_agents::model::ContentPart::Image {
                                             media_type,
                                             data,
                                         } => {
@@ -896,7 +896,7 @@ impl LlmProvider for OpenAiCodexProvider {
 mod tests {
     use std::sync::Arc;
 
-    use moltis_agents::model::UserContent;
+    use antre_agents::model::UserContent;
 
     use super::*;
 
@@ -1357,7 +1357,7 @@ mod tests {
 
     #[test]
     fn convert_messages_user_multimodal_with_image() {
-        use moltis_agents::model::ContentPart;
+        use antre_agents::model::ContentPart;
 
         let messages = vec![ChatMessage::User {
             content: UserContent::Multimodal(vec![

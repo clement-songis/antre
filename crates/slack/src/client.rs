@@ -1,6 +1,6 @@
 use slack_morphism::prelude::*;
 
-use moltis_channels::{
+use antre_channels::{
     Error as ChannelError, Result as ChannelResult, normalize_slack_api_base_url,
     validate_slack_api_base_url,
 };

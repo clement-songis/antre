@@ -15,7 +15,7 @@ pub enum Mode {
     /// Attach to the daemon configured on this machine when it answers,
     /// otherwise start one as a supervised child process.
     Auto,
-    /// Always start a supervised `moltis` child process.
+    /// Always start a supervised `antre` child process.
     Sidecar(SidecarOptions),
     /// Run the gateway inside this process (`embedded` feature).
     Embedded { port: Option<u16> },
@@ -33,14 +33,14 @@ pub enum Mode {
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct SidecarOptions {
-    /// The `moltis` binary; found next to the shell, then on `PATH`.
+    /// The `antre` binary; found next to the shell, then on `PATH`.
     pub binary: Option<PathBuf>,
-    /// Use a throw-away config and data directory instead of `~/.moltis`, so
+    /// Use a throw-away config and data directory instead of `~/.antre`, so
     /// the sidecar never fights a running user service over its database.
     pub isolated: bool,
 }
 
-const USAGE: &str = "usage: antre-shell [--sidecar [--moltis PATH] [--isolated]] [--embedded \
+const USAGE: &str = "usage: antre-shell [--sidecar [--antre PATH] [--isolated]] [--embedded \
                      [--port N]] [--remote URL] [--bench stream|transcript|canvas [--out FILE]]";
 
 /// Parse the arguments after the program name. `env` reads environment
@@ -61,7 +61,7 @@ pub fn parse(
         };
         match arg.as_str() {
             "--sidecar" => mode = Mode::Sidecar(SidecarOptions::default()),
-            "--moltis" => sidecar.binary = Some(PathBuf::from(value("--moltis")?)),
+            "--antre" => sidecar.binary = Some(PathBuf::from(value("--antre")?)),
             "--isolated" => sidecar.isolated = true,
             "--embedded" => mode = Mode::Embedded { port: None },
             "--port" => {
@@ -140,7 +140,7 @@ mod tests {
     #[test]
     fn sidecar_options_apply_in_any_order() {
         let mode = parse(
-            args(&["--isolated", "--sidecar", "--moltis", "/opt/moltis"]),
+            args(&["--isolated", "--sidecar", "--antre", "/opt/antre"]),
             no_env,
         )
         .unwrap();
@@ -148,7 +148,7 @@ mod tests {
             panic!("expected sidecar, got {mode:?}");
         };
         assert!(options.isolated);
-        assert_eq!(options.binary, Some(PathBuf::from("/opt/moltis")));
+        assert_eq!(options.binary, Some(PathBuf::from("/opt/antre")));
     }
 
     #[test]

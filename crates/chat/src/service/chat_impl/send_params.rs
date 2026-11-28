@@ -1,10 +1,10 @@
 use {serde_json::Value, tracing::debug};
 
 use {
-    moltis_config::schema::AgentToolControls,
-    moltis_service_traits::ServiceError,
-    moltis_sessions::{ContentBlock, MessageContent},
-    moltis_tools::policy::ToolPolicy,
+    antre_config::schema::AgentToolControls,
+    antre_service_traits::ServiceError,
+    antre_sessions::{ContentBlock, MessageContent},
+    antre_tools::policy::ToolPolicy,
 };
 
 use crate::{
@@ -108,7 +108,7 @@ fn parse_message_content(params: &Value) -> Result<(String, MessageContent), Ser
                 .filter_map(|block| match block.get("type")?.as_str()? {
                     "text" => Some(ContentBlock::text(block.get("text")?.as_str()?.to_string())),
                     "image_url" => Some(ContentBlock::ImageUrl {
-                        image_url: moltis_sessions::message::ImageUrl {
+                        image_url: antre_sessions::message::ImageUrl {
                             url: block.get("image_url")?.get("url")?.as_str()?.to_string(),
                         },
                     }),

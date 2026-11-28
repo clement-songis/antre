@@ -8,11 +8,11 @@ use {
 };
 
 #[cfg(feature = "metrics")]
-use moltis_metrics::{counter, histogram, labels, llm as llm_metrics};
+use antre_metrics::{counter, histogram, labels, llm as llm_metrics};
 
 use futures::StreamExt;
 
-use moltis_common::hooks::{HookAction, HookPayload, HookRegistry};
+use antre_common::hooks::{HookAction, HookPayload, HookRegistry};
 
 use crate::{
     model::{
@@ -97,7 +97,7 @@ pub async fn run_agent_loop_streaming_with_limits(
     limits: AgentLoopLimits,
 ) -> Result<AgentRunResult, AgentRunError> {
     let native_tools = provider.supports_tools();
-    let config = moltis_config::discover_and_load();
+    let config = antre_config::discover_and_load();
     let max_tool_result_bytes = config.tools.max_tool_result_bytes;
     let max_auto_continues = config.tools.agent_max_auto_continues;
     let auto_continue_min_tool_calls = config.tools.agent_auto_continue_min_tool_calls;
@@ -111,7 +111,7 @@ pub async fn run_agent_loop_streaming_with_limits(
     // Lazy mode needs extra iterations for tool_search discovery round-trips.
     let max_iterations = if matches!(
         config.tools.registry_mode,
-        moltis_config::ToolRegistryMode::Lazy | moltis_config::ToolRegistryMode::Auto
+        antre_config::ToolRegistryMode::Lazy | antre_config::ToolRegistryMode::Auto
     ) {
         base_max_iterations * 3
     } else {

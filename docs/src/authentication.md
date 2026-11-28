@@ -1,6 +1,6 @@
 # Authentication
 
-Moltis uses a unified authentication gate that protects all routes with a
+Antre uses a unified authentication gate that protects all routes with a
 single source of truth. This page explains how authentication works, the
 decision logic, and the different credential types.
 
@@ -71,13 +71,13 @@ The decision matrix above implements a three-tier authentication model:
 | Local browser on `localhost:18789` | Full access (Tier 2) | Login required (Tier 1) |
 | Local CLI/wscat on `localhost:18789` | Full access (Tier 2) | Login required (Tier 1) |
 | Internet via reverse proxy | Onboarding only (Tier 3) | Login required (Tier 1) |
-| `MOLTIS_BEHIND_PROXY=true`, any source | Onboarding only (Tier 3) | Login required (Tier 1) |
+| `ANTRE_BEHIND_PROXY=true`, any source | Onboarding only (Tier 3) | Login required (Tier 1) |
 
 ### How "local" is determined
 
 A connection is classified as **local** only when **all four** checks pass:
 
-1. `MOLTIS_BEHIND_PROXY` env var is **not** set
+1. `ANTRE_BEHIND_PROXY` env var is **not** set
 2. No proxy headers present (`X-Forwarded-For`, `X-Real-IP`,
    `CF-Connecting-IP`, `Forwarded`)
 3. The `Host` header resolves to a loopback address (or is absent)
@@ -95,8 +95,8 @@ never pass in that mode, so Tier 2 (local dev convenience, including
 `--network host` avoids this by sharing the host's network namespace
 directly. If you've confirmed your own deployment publishes the port
 loopback-only and want checks 1–3 to be sufficient on their own, set
-`MOLTIS_TRUST_DOCKER_LOOPBACK=true`. This does **not** relax checks 1–3 — a
-proxy header, a non-loopback `Host`, or `MOLTIS_BEHIND_PROXY=true` still
+`ANTRE_TRUST_DOCKER_LOOPBACK=true`. This does **not** relax checks 1–3 — a
+proxy header, a non-loopback `Host`, or `ANTRE_BEHIND_PROXY=true` still
 force the connection to be treated as remote.
 
 ## Credential Types
@@ -121,12 +121,12 @@ force the connection to be treated as remote.
 
 ### Session cookie
 
-- HTTP-only `moltis_session` cookie, `SameSite=Strict`
+- HTTP-only `antre_session` cookie, `SameSite=Strict`
 - Created on successful login (password or passkey)
 - 30-day expiry
 - Validated against `auth_sessions` table
 - When the request arrives on a `.localhost` subdomain (e.g.
-  `moltis.localhost`), the cookie includes `Domain=localhost` so it is
+  `antre.localhost`), the cookie includes `Domain=localhost` so it is
   shared across all loopback hostnames
 
 ### API key
@@ -189,7 +189,7 @@ are configured:
 
 ## Request Throttling
 
-Moltis applies built-in endpoint throttling per client IP only when auth is
+Antre applies built-in endpoint throttling per client IP only when auth is
 required for the current request.
 
 Requests bypass IP throttling when:
@@ -215,7 +215,7 @@ When a limit is exceeded:
 - JSON API responses also include `retry_after_seconds`
 
 ```admonish note
-When `MOLTIS_BEHIND_PROXY=true`, throttling is keyed by forwarded client IP
+When `ANTRE_BEHIND_PROXY=true`, throttling is keyed by forwarded client IP
 headers (`X-Forwarded-For`, `X-Real-IP`, `CF-Connecting-IP`) instead of the
 direct socket address.
 ```
@@ -224,7 +224,7 @@ direct socket address.
 
 On first run (no credentials configured):
 
-1. A random 8-character **setup code** is printed to the terminal. When Moltis
+1. A random 8-character **setup code** is printed to the terminal. When Antre
    opens the browser for you, the code is passed in the URL fragment
    (`#setup=…`) and pre-filled on the onboarding page
 2. Local connections get full access (Tier 2) — no setup code needed
@@ -288,7 +288,7 @@ local-connection detection:
 - **Most proxies** add `X-Forwarded-For` or similar headers, which
   automatically classify connections as remote
 - **Bare proxies** (no forwarding headers) can appear local — set
-  `MOLTIS_BEHIND_PROXY=true` to force all connections to be treated as
+  `ANTRE_BEHIND_PROXY=true` to force all connections to be treated as
   remote
 - The proxy must preserve the browser origin host for WebSocket CSWSH
   protection (forward `Host`, or `X-Forwarded-Host` when rewriting `Host`)

@@ -1,6 +1,6 @@
 # iOS App Guidelines
 
-The Moltis iOS app connects to a running Moltis gateway over the network. It does **not** embed any Rust code — it's a pure Swift/SwiftUI app that communicates via WebSocket RPC and GraphQL.
+The Antre iOS app connects to a running Antre gateway over the network. It does **not** embed any Rust code — it's a pure Swift/SwiftUI app that communicates via WebSocket RPC and GraphQL.
 
 ## Architecture
 
@@ -22,9 +22,9 @@ just ios-open       # Open in Xcode
 - No external dependencies — use `URLSession` for all networking
 - Store API keys in Keychain via `KeychainHelper`
 - Use `@EnvironmentObject` for store injection (ConnectionStore, ChatStore, etc.)
-- Live Activities via ActivityKit — shared `MoltisActivityAttributes` between app and widget
-- App Group `group.org.moltis.ios` for shared data between app and widget extension
-- Match visual theme from `MoltisTheme` (same colors as macOS app / web UI)
+- Live Activities via ActivityKit — shared `AntreActivityAttributes` between app and widget
+- App Group `group.ai.antre.ios` for shared data between app and widget extension
+- Match visual theme from `AntreTheme` (same colors as macOS app / web UI)
 
 ## Changelog
 

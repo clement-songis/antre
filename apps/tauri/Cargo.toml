@@ -16,7 +16,7 @@ expect_used = "deny"
 unwrap_used = "deny"
 
 [package]
-description = "Tauri 2 shell spike for the Moltis/Antre web UI"
+description = "Tauri 2 shell spike for the Antre/Antre web UI"
 edition     = "2024"
 license     = "MIT"
 name        = "antre-shell"
@@ -30,42 +30,42 @@ path = "src/main.rs"
 # Versions live in this workspace's own table (it is separate from the main
 # workspace); the package inherits them.
 [workspace.dependencies]
-anyhow             = "1"
-moltis-client      = { default-features = false, features = ["local"], path = "../../crates/client" }
-moltis-config      = { path = "../../crates/config" }
-moltis-httpd       = { path = "../../crates/httpd" }
-moltis-web         = { path = "../../crates/web" }
-reqwest            = { default-features = false, features = ["rustls"], version = "0.13" }
-secrecy            = "0.8"
-serde              = { features = ["derive"], version = "1" }
-serde_json         = "1"
-tauri              = { features = ["tray-icon"], version = "2.12" }
-tauri-build        = { features = [], version = "2.7" }
-tauri-plugin-notification = "2.8"
+antre-client                 = { default-features = false, features = ["local"], path = "../../crates/client" }
+antre-config                 = { path = "../../crates/config" }
+antre-httpd                  = { path = "../../crates/httpd" }
+antre-web                    = { path = "../../crates/web" }
+anyhow                       = "1"
+reqwest                      = { default-features = false, features = ["rustls"], version = "0.13" }
+secrecy                      = "0.8"
+serde                        = { features = ["derive"], version = "1" }
+serde_json                   = "1"
+tauri                        = { features = ["tray-icon"], version = "2.12" }
+tauri-build                  = { features = [], version = "2.7" }
+tauri-plugin-notification    = "2.8"
 tauri-plugin-single-instance = "2.5"
-tempfile           = "3"
-tokio              = { features = ["macros", "net", "process", "rt-multi-thread", "signal", "sync", "time"], version = "1" }
-tracing            = "0.1"
-tracing-subscriber = { features = ["env-filter", "fmt"], version = "0.3" }
-url                = "2"
+tempfile                     = "3"
+tokio                        = { features = ["macros", "net", "process", "rt-multi-thread", "signal", "sync", "time"], version = "1" }
+tracing                      = "0.1"
+tracing-subscriber           = { features = ["env-filter", "fmt"], version = "0.3" }
+url                          = "2"
 
 [dependencies]
-anyhow             = { workspace = true }
-moltis-client      = { workspace = true }
-moltis-config      = { optional = true, workspace = true }
-moltis-httpd       = { optional = true, workspace = true }
-moltis-web         = { optional = true, workspace = true }
-reqwest            = { workspace = true }
-secrecy            = { workspace = true }
-serde              = { workspace = true }
-serde_json         = { workspace = true }
-tauri              = { workspace = true }
-tauri-plugin-notification = { workspace = true }
+antre-client                 = { workspace = true }
+antre-config                 = { optional = true, workspace = true }
+antre-httpd                  = { optional = true, workspace = true }
+antre-web                    = { optional = true, workspace = true }
+anyhow                       = { workspace = true }
+reqwest                      = { workspace = true }
+secrecy                      = { workspace = true }
+serde                        = { workspace = true }
+serde_json                   = { workspace = true }
+tauri                        = { workspace = true }
+tauri-plugin-notification    = { workspace = true }
 tauri-plugin-single-instance = { workspace = true }
-tokio              = { workspace = true }
-tracing            = { workspace = true }
-tracing-subscriber = { workspace = true }
-url                = { workspace = true }
+tokio                        = { workspace = true }
+tracing                      = { workspace = true }
+tracing-subscriber           = { workspace = true }
+url                          = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }
@@ -76,9 +76,9 @@ tauri-build = { workspace = true }
 [features]
 default = []
 # Run the gateway inside the shell process instead of supervising the
-# `moltis` binary. Compiles the whole gateway into this workspace (slow), so
+# `antre` binary. Compiles the whole gateway into this workspace (slow), so
 # it is opt-in for the spike.
-embedded = ["dep:moltis-config", "dep:moltis-httpd", "dep:moltis-web"]
+embedded = ["dep:antre-config", "dep:antre-httpd", "dep:antre-web"]
 
 [lints]
 workspace = true
@@ -91,5 +91,5 @@ lto           = "thin"
 # feature's gateway dependencies; keep in sync with the root Cargo.toml).
 [patch.crates-io]
 agent-client-protocol = { path = "../../vendor/agent-client-protocol" }
-sqlx-core   = { git = "https://github.com/moltis-org/sqlx", rev = "33747ad2e2d0c7962c6450faf31591c4e0782c23" }
-sqlx-sqlite = { git = "https://github.com/moltis-org/sqlx", rev = "33747ad2e2d0c7962c6450faf31591c4e0782c23" }
+sqlx-core             = { git = "https://github.com/moltis-org/sqlx", rev = "33747ad2e2d0c7962c6450faf31591c4e0782c23" }
+sqlx-sqlite           = { git = "https://github.com/moltis-org/sqlx", rev = "33747ad2e2d0c7962c6450faf31591c4e0782c23" }

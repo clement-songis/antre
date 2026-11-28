@@ -31,11 +31,11 @@ let streamingAvailable = false;
 let livePending: Promise<LiveTranscription | null> | null = null;
 
 // ── PTT state ────────────────────────────────────────────────
-let pttKey = localStorage.getItem("moltis_ptt_key") || "F13";
+let pttKey = localStorage.getItem("antre_ptt_key") || "F13";
 let pttActive = false;
 
 // ── Tab coordination (prevent dual-tab recording) ────────────
-const voiceLockChannel = typeof BroadcastChannel === "undefined" ? null : new BroadcastChannel("moltis_voice_lock");
+const voiceLockChannel = typeof BroadcastChannel === "undefined" ? null : new BroadcastChannel("antre_voice_lock");
 let voiceLockedByOtherTab = false;
 if (voiceLockChannel) {
 	voiceLockChannel.onmessage = (e: MessageEvent): void => {
@@ -66,7 +66,7 @@ let vadRafId: number | null = null;
 let vadSpeechDetected = false;
 let vadSilenceStart = 0;
 let vadMutedForTts = false;
-let vadSensitivity = parseInt(localStorage.getItem("moltis_vad_sensitivity") || "50", 10);
+let vadSensitivity = parseInt(localStorage.getItem("antre_vad_sensitivity") || "50", 10);
 let vadSpeechThreshold = sensitivityToThreshold(vadSensitivity);
 
 interface VoiceProviderStatus {
@@ -1060,7 +1060,7 @@ export function refreshVoiceStatus(): void {
 /** Update PTT key at runtime. */
 export function setPttKey(key: string): void {
 	pttKey = key;
-	localStorage.setItem("moltis_ptt_key", key);
+	localStorage.setItem("antre_ptt_key", key);
 	console.debug("[voice] PTT key set to:", key);
 }
 
@@ -1078,7 +1078,7 @@ export function isVadModeActive(): boolean {
 export function setVadSensitivity(pct: number): void {
 	vadSensitivity = Math.max(0, Math.min(100, pct));
 	vadSpeechThreshold = sensitivityToThreshold(vadSensitivity);
-	localStorage.setItem("moltis_vad_sensitivity", String(vadSensitivity));
+	localStorage.setItem("antre_vad_sensitivity", String(vadSensitivity));
 	console.debug("[voice] VAD sensitivity set to:", vadSensitivity, "threshold:", vadSpeechThreshold.toFixed(4));
 }
 

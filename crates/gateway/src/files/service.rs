@@ -320,7 +320,7 @@ fn move_entry_between_dirs(
             .map_err(map_io);
     }
 
-    let backup_name = format!(".moltis-upload-backup-{}.tmp", Uuid::new_v4().simple());
+    let backup_name = format!(".antre-upload-backup-{}.tmp", Uuid::new_v4().simple());
     destination_parent
         .rename(destination_name, destination_parent, &backup_name)
         .map_err(map_io)?;

@@ -10,7 +10,7 @@ use crate::{
 };
 
 /// Start the gateway on a loopback port in this process and wait until it
-/// answers. It runs on the shell's own directories, never `~/.moltis`, so it
+/// answers. It runs on the shell's own directories, never `~/.antre`, so it
 /// cannot fight a running user service over the same database.
 pub async fn start(port: Option<u16>, dirs: IsolatedDirs) -> anyhow::Result<Url> {
     let port = match port {
@@ -19,9 +19,9 @@ pub async fn start(port: Option<u16>, dirs: IsolatedDirs) -> anyhow::Result<Url>
     };
     std::fs::create_dir_all(&dirs.config)?;
     std::fs::create_dir_all(&dirs.data)?;
-    moltis_config::set_config_dir(dirs.config.clone());
-    moltis_config::set_data_dir(dirs.data.clone());
-    moltis_config::initialize_config();
+    antre_config::set_config_dir(dirs.config.clone());
+    antre_config::set_data_dir(dirs.data.clone());
+    antre_config::initialize_config();
     let url = Url::parse(&format!("http://127.0.0.1:{port}/"))?;
     // `start_gateway`'s future is not `Send`, so it cannot go on the shell's
     // runtime with `tokio::spawn`; it gets a thread and a runtime of its own.
@@ -38,11 +38,11 @@ pub async fn start(port: Option<u16>, dirs: IsolatedDirs) -> anyhow::Result<Url>
                     return;
                 },
             };
-            let launch = moltis_httpd::server::LaunchOptions {
-                open_browser: Some(moltis_config::OpenBrowser::Never),
+            let launch = antre_httpd::server::LaunchOptions {
+                open_browser: Some(antre_config::OpenBrowser::Never),
                 status: None,
             };
-            let result = runtime.block_on(moltis_httpd::server::start_gateway(
+            let result = runtime.block_on(antre_httpd::server::start_gateway(
                 "127.0.0.1",
                 port,
                 true,
@@ -50,7 +50,7 @@ pub async fn start(port: Option<u16>, dirs: IsolatedDirs) -> anyhow::Result<Url>
                 Some(dirs.config),
                 Some(dirs.data),
                 None,
-                Some(moltis_web::web_routes),
+                Some(antre_web::web_routes),
                 launch,
             ));
             if let Err(error) = result {

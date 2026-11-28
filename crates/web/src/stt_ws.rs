@@ -1,11 +1,16 @@
 //! Live transcription WebSocket (`/api/stt/ws`).
 //!
-//! Bridges the browser socket to [`moltis_gateway::voice::stt_stream`], which
+//! Bridges the browser socket to [`antre_gateway::voice::stt_stream`], which
 //! relays audio to the configured streaming STT provider.
 
 use std::{net::SocketAddr, sync::LazyLock};
 
 use {
+    antre_gateway::voice::stt_stream::{
+        MAX_STREAMS_PER_IP, SttStreamFrame, SttStreamLimits, SttStreamSlot, SttStreamSlots,
+        configured_limits, resolve_live_streaming_provider, run_stt_stream,
+    },
+    antre_httpd::AppState,
     axum::{
         Json,
         extract::{
@@ -16,11 +21,6 @@ use {
         response::{IntoResponse, Response},
     },
     futures::{SinkExt, StreamExt},
-    moltis_gateway::voice::stt_stream::{
-        MAX_STREAMS_PER_IP, SttStreamFrame, SttStreamLimits, SttStreamSlot, SttStreamSlots,
-        configured_limits, resolve_live_streaming_provider, run_stt_stream,
-    },
-    moltis_httpd::AppState,
     std::sync::Arc,
     tokio::sync::mpsc,
     tracing::warn,

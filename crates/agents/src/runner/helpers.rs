@@ -4,7 +4,7 @@ use std::borrow::Cow;
 
 use tracing::{info, warn};
 
-use moltis_common::hooks::{ChannelBinding, HookAction, HookPayload, HookRegistry};
+use antre_common::hooks::{ChannelBinding, HookAction, HookPayload, HookRegistry};
 
 use crate::{
     model::{

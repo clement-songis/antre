@@ -36,5 +36,5 @@ await build({
 	bundle: true,
 	format: "esm",
 	outfile: "../src/assets/sw.js",
-	define: { __MOLTIS_SW_VERSION__: JSON.stringify(version) },
+	define: { __ANTRE_SW_VERSION__: JSON.stringify(version) },
 });

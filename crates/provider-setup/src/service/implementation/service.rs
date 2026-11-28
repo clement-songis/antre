@@ -19,9 +19,9 @@ use {
 };
 
 use {
-    moltis_config::schema::ProvidersConfig,
-    moltis_providers::ProviderRegistry,
-    moltis_service_traits::{ProviderSetupService, ServiceResult},
+    antre_config::schema::ProvidersConfig,
+    antre_providers::ProviderRegistry,
+    antre_service_traits::{ProviderSetupService, ServiceResult},
 };
 
 pub use super::support::ErrorParser;
@@ -39,7 +39,7 @@ use {
     },
 };
 
-use moltis_oauth::TokenStore;
+use antre_oauth::TokenStore;
 
 // ── LiveProviderSetupService ───────────────────────────────────────────────
 
@@ -275,7 +275,7 @@ impl LiveProviderSetupService {
             return true;
         }
         if provider.auth_type == AuthType::ApiKey
-            && moltis_config::generic_provider_api_key_from_env(provider.name, &self.env_overrides)
+            && antre_config::generic_provider_api_key_from_env(provider.name, &self.env_overrides)
                 .is_some()
         {
             return true;
@@ -323,7 +323,7 @@ impl LiveProviderSetupService {
             // Match provider-registry behavior: openai-codex may read Codex
             // CLI auth at ~/.codex/auth.json, only with the user's consent.
             if provider.name == "openai-codex"
-                && moltis_providers::openai_codex::codex_cli_tokens_allowed()
+                && antre_providers::openai_codex::codex_cli_tokens_allowed()
                 && crate::oauth::codex_cli_auth_path()
                     .as_deref()
                     .is_some_and(crate::oauth::codex_cli_auth_has_access_token)
@@ -336,7 +336,7 @@ impl LiveProviderSetupService {
         #[cfg(feature = "local-llm")]
         if provider.auth_type == AuthType::Local && provider.name == "local-llm" {
             // Check if local-llm model config file exists
-            if let Some(config_dir) = moltis_config::config_dir() {
+            if let Some(config_dir) = antre_config::config_dir() {
                 let config_path = config_dir.join("local-llm.json");
                 return config_path.exists();
             }

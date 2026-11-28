@@ -166,7 +166,7 @@ mod tests {
     #[test]
     fn strict_mode_keeps_patch_fields_usable() {
         let mut schema = parameters();
-        moltis_providers::openai_compat::patch_schema_for_strict_mode(&mut schema);
+        antre_providers::openai_compat::patch_schema_for_strict_mode(&mut schema);
         let patch = &schema["properties"]["patch"];
 
         assert_eq!(patch["additionalProperties"], false);

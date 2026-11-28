@@ -48,7 +48,7 @@ impl LocalLlmConfig {
     /// Load config from the config directory.
     /// Handles migration from legacy single-model format.
     pub fn load() -> Option<Self> {
-        let config_dir = moltis_config::config_dir()?;
+        let config_dir = antre_config::config_dir()?;
         let config_path = config_dir.join("local-llm.json");
         let content = std::fs::read_to_string(&config_path).ok()?;
 
@@ -81,7 +81,7 @@ impl LocalLlmConfig {
     /// Save config to the config directory.
     pub fn save(&self) -> anyhow::Result<()> {
         let config_dir =
-            moltis_config::config_dir().ok_or_else(|| anyhow::anyhow!("no config directory"))?;
+            antre_config::config_dir().ok_or_else(|| anyhow::anyhow!("no config directory"))?;
         std::fs::create_dir_all(&config_dir)?;
         let config_path = config_dir.join("local-llm.json");
         let content = serde_json::to_string_pretty(self)?;
@@ -219,10 +219,7 @@ pub(super) fn status_from_saved_config(config: Option<&LocalLlmConfig>) -> Local
 pub(super) fn build_local_provider_entry(
     entry: &LocalModelEntry,
     default_model_path: Option<&Path>,
-) -> anyhow::Result<(
-    moltis_providers::ModelInfo,
-    Arc<local_llm::LocalLlmProvider>,
-)> {
+) -> anyhow::Result<(antre_providers::ModelInfo, Arc<local_llm::LocalLlmProvider>)> {
     let cache_dir = local_gguf::models::default_models_dir();
     let llm_config = local_llm::LocalLlmConfig {
         model_id: entry.model_id.clone(),
@@ -234,19 +231,19 @@ pub(super) fn build_local_provider_entry(
         cache_dir,
     };
     let provider = Arc::new(local_llm::LocalLlmProvider::new(llm_config));
-    let info = moltis_providers::ModelInfo {
+    let info = antre_providers::ModelInfo {
         id: entry.model_id.clone(),
         provider: LOCAL_LLM_PROVIDER_NAME.into(),
         display_name: entry.display_name(),
         created_at: None,
         recommended: false,
-        capabilities: moltis_providers::ModelCapabilities::infer(&entry.model_id),
+        capabilities: antre_providers::ModelCapabilities::infer(&entry.model_id),
     };
     Ok((info, provider))
 }
 
 pub(super) fn configured_local_model_path_override(
-    providers_config: &moltis_config::schema::ProvidersConfig,
+    providers_config: &antre_config::schema::ProvidersConfig,
 ) -> Option<PathBuf> {
     providers_config
         .get("local")
@@ -290,7 +287,7 @@ pub(super) fn register_local_model_entry(
     unregister_local_model_from_registry(registry, &entry.model_id);
     registry.register(
         info,
-        Arc::clone(&provider) as Arc<dyn moltis_agents::model::LlmProvider>,
+        Arc::clone(&provider) as Arc<dyn antre_agents::model::LlmProvider>,
     );
     Ok(provider)
 }
@@ -308,7 +305,7 @@ pub(super) fn register_local_model_entry_with_default_model_path(
 
 pub fn register_saved_local_models(
     registry: &mut ProviderRegistry,
-    providers_config: &moltis_config::schema::ProvidersConfig,
+    providers_config: &antre_config::schema::ProvidersConfig,
 ) {
     let Some(config) = LocalLlmConfig::load() else {
         return;

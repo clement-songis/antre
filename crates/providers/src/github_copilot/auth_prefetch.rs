@@ -1,4 +1,4 @@
-use {moltis_oauth::TokenStore, tracing::warn};
+use {antre_oauth::TokenStore, tracing::warn};
 
 use super::provider::fetch_copilot_auth;
 

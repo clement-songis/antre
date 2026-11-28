@@ -15,7 +15,7 @@ requires:
 
 # Codex CLI
 
-Delegate coding tasks to [Codex](https://github.com/openai/codex) via the Moltis terminal. Codex is OpenAI's autonomous coding agent CLI.
+Delegate coding tasks to [Codex](https://github.com/openai/codex) via the Antre terminal. Codex is OpenAI's autonomous coding agent CLI.
 
 ## Prerequisites
 

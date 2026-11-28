@@ -1,18 +1,18 @@
 [package]
 edition.workspace = true
-name              = "moltis-slack"
+name              = "antre-slack"
 version.workspace = true
 
 [dependencies]
+antre-channels  = { workspace = true }
+antre-common    = { workspace = true }
+antre-metrics   = { optional = true, workspace = true }
 async-trait     = { workspace = true }
 base64          = { workspace = true }
 bytes           = { workspace = true }
 form_urlencoded = { workspace = true }
 hmac            = { workspace = true }
 http            = { workspace = true }
-moltis-channels = { workspace = true }
-moltis-common   = { workspace = true }
-moltis-metrics  = { optional = true, workspace = true }
 reqwest         = { workspace = true }
 secrecy         = { workspace = true }
 serde           = { workspace = true }
@@ -24,7 +24,7 @@ tokio-util      = { workspace = true }
 tracing         = { workspace = true }
 
 [features]
-metrics = ["dep:moltis-metrics"]
+metrics = ["dep:antre-metrics"]
 
 [lints]
 workspace = true

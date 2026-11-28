@@ -1,12 +1,12 @@
 //! Import memory/workspace files from Hermes.
 //!
 //! Copies personality files (SOUL.md, AGENTS.md, MEMORY.md, USER.md)
-//! into the Moltis data directory.
+//! into the Antre data directory.
 
 use std::path::Path;
 
 use {
-    moltis_import_core::report::{CategoryReport, ImportCategory, ImportStatus},
+    antre_import_core::report::{CategoryReport, ImportCategory, ImportStatus},
     tracing::debug,
 };
 
@@ -20,7 +20,7 @@ const WORKSPACE_FILES: &[(&str, fn(&HermesDetection) -> Option<&Path>)] = &[
     ("USER.md", |d| d.user_path.as_deref()),
 ];
 
-/// Import memory and workspace files from Hermes into Moltis.
+/// Import memory and workspace files from Hermes into Antre.
 pub fn import_memory(detection: &HermesDetection, dest_dir: &Path) -> CategoryReport {
     let mut imported = 0;
     let mut skipped = 0;

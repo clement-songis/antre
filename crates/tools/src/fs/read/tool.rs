@@ -1,8 +1,8 @@
 //! `ReadTool` implementation and `AgentTool` trait impl.
 
 use {
+    antre_agents::tool_registry::AgentTool,
     async_trait::async_trait,
-    moltis_agents::tool_registry::AgentTool,
     serde_json::{Map, Value, json},
     std::{path::Path, sync::Arc},
     tokio::fs,
@@ -10,7 +10,7 @@ use {
 };
 
 #[cfg(feature = "metrics")]
-use moltis_metrics::{counter, labels, tools as tools_metrics};
+use antre_metrics::{counter, labels, tools as tools_metrics};
 
 use crate::{
     Result,

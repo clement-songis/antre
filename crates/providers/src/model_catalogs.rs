@@ -173,7 +173,7 @@ pub(crate) struct OpenAiCompatDef {
     /// Explicit provider behavior policies. Never inferred from provider name or URL.
     pub(crate) capabilities: OpenAiProviderCapabilities,
     /// Name shown on the onboarding card. Empty for providers whose card is
-    /// declared by hand in `moltis-provider-setup`.
+    /// declared by hand in `antre-provider-setup`.
     pub(crate) display_name: &'static str,
     /// Placeholders in `default_base_url` filled from the environment
     /// (Cloudflare account id, AWS region, Azure resource name).
@@ -226,7 +226,7 @@ impl OpenAiCompatDef {
     /// filled. `None` when a placeholder has no (valid) value.
     pub(crate) fn resolve_base_url(
         &self,
-        config: &moltis_config::schema::ProvidersConfig,
+        config: &antre_config::schema::ProvidersConfig,
         env_overrides: &std::collections::HashMap<String, String>,
     ) -> Option<String> {
         if let Some(url) = config
@@ -271,7 +271,7 @@ pub(crate) fn catalog_chat_models(
     provider: &str,
     limit: usize,
 ) -> Vec<crate::discovered_model::DiscoveredModel> {
-    use moltis_model_catalog::{ModelKind, global};
+    use antre_model_catalog::{ModelKind, global};
 
     let curated: Vec<String> = global::roles()
         .recommended(provider, ModelKind::Chat)
@@ -834,7 +834,7 @@ mod tests {
     /// catalog for that provider and must not be deprecated there.
     #[test]
     fn fallback_ids_exist_in_catalog_and_are_active() {
-        let catalog = moltis_model_catalog::ModelCatalog::bundled().expect("bundled catalog");
+        let catalog = antre_model_catalog::ModelCatalog::bundled().expect("bundled catalog");
         let mut lists: Vec<(&str, Vec<String>)> = OPENAI_COMPAT_PROVIDERS
             .iter()
             .map(|def| {
@@ -877,7 +877,7 @@ mod tests {
 
         let mut problems = Vec::new();
         for (provider, ids) in lists {
-            if moltis_model_catalog::providers::models_dev_ids(provider).is_empty() {
+            if antre_model_catalog::providers::models_dev_ids(provider).is_empty() {
                 continue;
             }
             let known = catalog.known_ids(provider);
@@ -996,7 +996,7 @@ mod tests {
 
     #[test]
     fn base_url_placeholders_are_filled_from_env() {
-        let config = moltis_config::schema::ProvidersConfig::default();
+        let config = antre_config::schema::ProvidersConfig::default();
         let env = std::collections::HashMap::from([
             ("AWS_REGION".to_string(), "eu-west-3".to_string()),
             ("CLOUDFLARE_ACCOUNT_ID".to_string(), "abc_123".to_string()),
@@ -1015,7 +1015,7 @@ mod tests {
 
     #[test]
     fn base_url_placeholder_defaults_and_missing_values() {
-        let config = moltis_config::schema::ProvidersConfig::default();
+        let config = antre_config::schema::ProvidersConfig::default();
         let env = std::collections::HashMap::new();
         if std::env::var_os("AWS_REGION").is_none() {
             assert_eq!(
@@ -1030,7 +1030,7 @@ mod tests {
 
     #[test]
     fn base_url_placeholder_rejects_values_that_change_the_host() {
-        let config = moltis_config::schema::ProvidersConfig::default();
+        let config = antre_config::schema::ProvidersConfig::default();
         for bad in ["evil.com/x", "a.b", "x?y", "", "a b"] {
             let env =
                 std::collections::HashMap::from([("AZURE_RESOURCE_NAME".to_string(), bad.into())]);
@@ -1044,10 +1044,10 @@ mod tests {
 
     #[test]
     fn configured_base_url_wins_over_the_template() {
-        let mut config = moltis_config::schema::ProvidersConfig::default();
+        let mut config = antre_config::schema::ProvidersConfig::default();
         config
             .providers
-            .insert("azure".into(), moltis_config::schema::ProviderEntry {
+            .insert("azure".into(), antre_config::schema::ProviderEntry {
                 base_url: Some("https://contoso.openai.azure.com/openai/v1".into()),
                 ..Default::default()
             });
@@ -1064,10 +1064,10 @@ mod tests {
         let models = hosted("together").catalog_models();
         assert!(!models.is_empty());
         assert!(models.len() <= CATALOG_FALLBACK_LIMIT);
-        moltis_model_catalog::global::read(|catalog| {
+        antre_model_catalog::global::read(|catalog| {
             for model in &models {
                 let resolved = catalog.resolve("together", &model.id, None);
-                assert_eq!(resolved.kind(), moltis_model_catalog::ModelKind::Chat);
+                assert_eq!(resolved.kind(), antre_model_catalog::ModelKind::Chat);
                 assert!(!resolved.status().is_deprecated(), "{}", model.id);
             }
         });
@@ -1083,7 +1083,7 @@ mod tests {
             .filter(|def| !def.display_name.is_empty())
         {
             assert!(
-                !moltis_model_catalog::providers::models_dev_ids(def.config_name).is_empty(),
+                !antre_model_catalog::providers::models_dev_ids(def.config_name).is_empty(),
                 "{} has no models.dev mapping",
                 def.config_name
             );
@@ -1100,14 +1100,14 @@ mod tests {
 
     #[test]
     fn catalog_fallback_providers_have_catalog_models() {
-        let catalog = moltis_model_catalog::ModelCatalog::bundled().expect("bundled catalog");
+        let catalog = antre_model_catalog::ModelCatalog::bundled().expect("bundled catalog");
         for def in OPENAI_COMPAT_PROVIDERS
             .iter()
             .filter(|def| def.catalog_fallback)
         {
             assert!(
                 !catalog
-                    .models_of_kind(def.config_name, moltis_model_catalog::ModelKind::Chat)
+                    .models_of_kind(def.config_name, antre_model_catalog::ModelKind::Chat)
                     .is_empty(),
                 "{} has no chat models in the bundled catalog",
                 def.config_name
@@ -1290,13 +1290,13 @@ mod tests {
     }
 
     /// Cross-validate that every provider registered in this crate appears in
-    /// the canonical `KNOWN_PROVIDER_NAMES` list in `moltis-config`.
+    /// the canonical `KNOWN_PROVIDER_NAMES` list in `antre-config`.
     ///
-    /// If this test fails, you added a provider to `moltis-providers` without
+    /// If this test fails, you added a provider to `antre-providers` without
     /// updating `crates/config/src/schema/providers.rs::KNOWN_PROVIDER_NAMES`.
     #[test]
     fn all_registered_providers_in_canonical_known_list() {
-        use moltis_config::schema::KNOWN_PROVIDER_NAMES;
+        use antre_config::schema::KNOWN_PROVIDER_NAMES;
 
         // Built-in providers
         let mut provider_names: Vec<&str> = vec!["anthropic", "openai"];
@@ -1324,7 +1324,7 @@ mod tests {
         for name in &provider_names {
             assert!(
                 KNOWN_PROVIDER_NAMES.contains(name),
-                "provider \"{name}\" is registered in moltis-providers but missing from \
+                "provider \"{name}\" is registered in antre-providers but missing from \
                  KNOWN_PROVIDER_NAMES in crates/config/src/schema/providers.rs — add it there"
             );
         }
@@ -1333,7 +1333,7 @@ mod tests {
     /// Ensure `KNOWN_PROVIDER_NAMES` has no duplicates.
     #[test]
     fn canonical_known_list_has_no_duplicates() {
-        use moltis_config::schema::KNOWN_PROVIDER_NAMES;
+        use antre_config::schema::KNOWN_PROVIDER_NAMES;
 
         let mut sorted: Vec<&str> = KNOWN_PROVIDER_NAMES.to_vec();
         sorted.sort();

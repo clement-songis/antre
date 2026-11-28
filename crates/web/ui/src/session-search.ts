@@ -101,7 +101,7 @@ function renderSearchResults(query: string): void {
 			if (currentPrefix === "/chats") {
 				switchSession(hit.sessionKey, ctx);
 			} else {
-				sessionStorage.setItem("moltis-search-ctx", JSON.stringify(ctx));
+				sessionStorage.setItem("antre-search-ctx", JSON.stringify(ctx));
 				navigate(sessionPath(hit.sessionKey));
 			}
 			searchInput.value = "";
@@ -145,7 +145,7 @@ searchInput.addEventListener("keydown", (e: KeyboardEvent) => {
 			if (currentPrefix === "/chats") {
 				switchSession(h.sessionKey, ctx);
 			} else {
-				sessionStorage.setItem("moltis-search-ctx", JSON.stringify(ctx));
+				sessionStorage.setItem("antre-search-ctx", JSON.stringify(ctx));
 				navigate(sessionPath(h.sessionKey));
 			}
 			searchInput.value = "";

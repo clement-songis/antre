@@ -11,8 +11,8 @@ use {async_trait::async_trait, tracing::debug, url::Url};
 use crate::error::Error;
 
 use {
-    crate::ssrf::ssrf_check, moltis_agents::tool_registry::AgentTool,
-    moltis_config::schema::WebFetchConfig,
+    crate::ssrf::ssrf_check, antre_agents::tool_registry::AgentTool,
+    antre_config::schema::WebFetchConfig,
 };
 
 /// Cached fetch result with expiry.
@@ -98,7 +98,7 @@ impl WebFetchTool {
     /// relative to the HTML body).
     #[cfg(feature = "firecrawl")]
     #[must_use]
-    pub fn with_firecrawl(mut self, config: &moltis_config::schema::FirecrawlConfig) -> Self {
+    pub fn with_firecrawl(mut self, config: &antre_config::schema::FirecrawlConfig) -> Self {
         if config.enabled && config.web_fetch_fallback {
             self.firecrawl_api_key = crate::firecrawl::resolve_api_key(config);
             self.firecrawl_base_url = if config.base_url.trim().is_empty() {
@@ -162,10 +162,10 @@ impl WebFetchTool {
         let mut client_builder = reqwest::Client::builder()
             .timeout(self.timeout)
             .redirect(reqwest::redirect::Policy::none()) // Manual redirect handling.
-            .default_headers(moltis_common::http_client::build_default_headers());
+            .default_headers(antre_common::http_client::build_default_headers());
         // Prefer the sandbox proxy when set, otherwise fall through to the
         // upstream proxy (if configured).
-        let upstream = moltis_common::http_client::upstream_proxy_url();
+        let upstream = antre_common::http_client::upstream_proxy_url();
         let effective_proxy = self.proxy_url.as_deref().or(upstream);
         if let Some(url) = effective_proxy
             && let Ok(proxy) = reqwest::Proxy::all(url)
@@ -799,7 +799,7 @@ mod tests {
     #[tokio::test]
     async fn test_web_fetch_sends_default_user_agent() {
         let mut server = mockito::Server::new_async().await;
-        let expected_ua = moltis_common::http_client::default_user_agent();
+        let expected_ua = antre_common::http_client::default_user_agent();
         let mock = server
             .mock("GET", "/test-ua")
             .match_header("user-agent", expected_ua.as_str())

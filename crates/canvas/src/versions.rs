@@ -1,13 +1,13 @@
 //! Design versions backed by directory checkpoints.
 //!
-//! Versions reuse [`moltis_tools::checkpoints::CheckpointManager`] with a
+//! Versions reuse [`antre_tools::checkpoints::CheckpointManager`] with a
 //! dedicated base directory, so they are never pruned by the general
 //! checkpoint cleanup.
 
 use std::path::{Path, PathBuf};
 
 use {
-    moltis_tools::checkpoints::CheckpointManager,
+    antre_tools::checkpoints::CheckpointManager,
     sha2::{Digest, Sha256},
 };
 

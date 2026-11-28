@@ -1,5 +1,5 @@
 //! Full-window states while not chatting: connecting, login, certificate
-//! trust, choosing where moltis runs, failures.
+//! trust, choosing where antre runs, failures.
 
 use gpui::{
     Context, Div, Entity, FontWeight, IntoElement, ParentElement, Render, Stateful, Styled,
@@ -7,7 +7,7 @@ use gpui::{
 };
 
 use {
-    moltis_client::{SecretString, tls::display_fingerprint},
+    antre_client::{SecretString, tls::display_fingerprint},
     std::time::Duration,
 };
 
@@ -100,7 +100,7 @@ impl StatusView {
         let mut panel = card(cx)
             .child(div().text_lg().font_weight(FontWeight::SEMIBOLD).child(format!("Sign in to {name}")))
             .child(muted(
-                "Moltis Desktop signs in once with the daemon password and keeps a scoped API key in your keychain.",
+                "Antre Desktop signs in once with the daemon password and keeps a scoped API key in your keychain.",
                 cx,
             ));
         if can_password != Some(false) {
@@ -175,7 +175,7 @@ impl StatusView {
     /// another computer instead (nothing gets installed then).
     fn render_not_running(
         &self,
-        moltis: Option<&std::path::Path>,
+        antre: Option<&std::path::Path>,
         starting: bool,
         error: Option<&str>,
         cx: &mut Context<Self>,
@@ -187,7 +187,7 @@ impl StatusView {
                     div()
                         .text_lg()
                         .font_weight(FontWeight::SEMIBOLD)
-                        .child("Starting Moltis on this computer…"),
+                        .child("Starting Antre on this computer…"),
                 )
                 .child(muted(
                     "Installing the daemon as a background service. This window connects as soon as it is up.",
@@ -195,18 +195,18 @@ impl StatusView {
                 ))
                 .into_any_element();
         }
-        let found = moltis.is_some();
+        let found = antre.is_some();
         let bundled =
-            moltis.and_then(std::path::Path::parent) == local_daemon::bundled_dir().as_deref();
+            antre.and_then(std::path::Path::parent) == local_daemon::bundled_dir().as_deref();
         let local_detail = match (found, bundled) {
             (true, true) => {
                 "Run the daemon included with this app as a background service. It keeps running when the app quits and starts at login."
             },
             (true, false) => {
-                "Run your installed moltis as a background service. It keeps running when the app quits and starts at login."
+                "Run your installed antre as a background service. It keeps running when the app quits and starts at login."
             },
             (false, _) => {
-                "The moltis command was not found. Install moltis, or use an app download that includes it."
+                "The antre command was not found. Install antre, or use an app download that includes it."
             },
         };
         card(cx)
@@ -214,10 +214,10 @@ impl StatusView {
                 div()
                     .text_lg()
                     .font_weight(FontWeight::SEMIBOLD)
-                    .child("Where should Moltis run?"),
+                    .child("Where should Antre run?"),
             )
             .child(muted(
-                "Moltis Desktop is a window onto a moltis daemon, which answers your channels and runs your agents.",
+                "Antre Desktop is a window onto a antre daemon, which answers your channels and runs your agents.",
                 cx,
             ))
             .child(
@@ -232,7 +232,7 @@ impl StatusView {
                     "connect-remote",
                     Icon::Globe,
                     "On another computer",
-                    "Connect to a moltis daemon over HTTPS, or through an SSH tunnel. Nothing is installed here.",
+                    "Connect to a antre daemon over HTTPS, or through an SSH tunnel. Nothing is installed here.",
                     true,
                     &theme,
                 )
@@ -241,7 +241,7 @@ impl StatusView {
                 }),
             )
             .child(muted(
-                "Starting moltis yourself? This window connects as soon as it is up.",
+                "Starting antre yourself? This window connects as soon as it is up.",
                 cx,
             ))
             .when_some(error, |this, error| {
@@ -319,7 +319,7 @@ impl Render for StatusView {
                 error,
             } => div().child(self.render_login(
                 &reason,
-                status.as_ref().map(moltis_client::auth::AuthStatus::can_login_with_password),
+                status.as_ref().map(antre_client::auth::AuthStatus::can_login_with_password),
                 busy,
                 error.as_deref(),
                 cx,
@@ -337,7 +337,7 @@ impl Render for StatusView {
                     if changed {
                         "The certificate no longer matches the one you trusted. This happens when the daemon regenerated its certificate, or when someone intercepts the connection. Only continue if you expected it."
                     } else {
-                        "Moltis uses its own certificate authority. Compare this fingerprint with the one printed by the daemon (or shown in its web UI) before trusting it."
+                        "Antre uses its own certificate authority. Compare this fingerprint with the one printed by the daemon (or shown in its web UI) before trusting it."
                     },
                     cx,
                 ))
@@ -369,10 +369,10 @@ impl Render for StatusView {
                         ),
                 ),
             Phase::NotRunning {
-                moltis,
+                antre,
                 starting,
                 error,
-            } => div().child(self.render_not_running(moltis.as_deref(), starting, error.as_deref(), cx)),
+            } => div().child(self.render_not_running(antre.as_deref(), starting, error.as_deref(), cx)),
             Phase::Failed { reason } => card(cx)
                 .child(div().text_lg().font_weight(FontWeight::SEMIBOLD).child(format!("Could not connect to {}", profile.name)))
                 .child(div().text_sm().text_color(theme.danger).child(reason))

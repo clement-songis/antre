@@ -39,7 +39,7 @@ export function ErrorPanel({ message }: { message: string }): VNode {
 // ── Utility helpers ─────────────────────────────────────────
 
 export function preferredChatPath(): string {
-	const key = localStorage.getItem("moltis-session") || "main";
+	const key = localStorage.getItem("antre-session") || "main";
 	return `/chats/${key.replace(/:/g, "/")}`;
 }
 

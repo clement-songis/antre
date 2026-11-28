@@ -668,7 +668,7 @@ extension SettingsSectionContent {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
                 .foregroundStyle(.secondary)
-            MoltisEditorField(text: text, minHeight: minHeight)
+            AntreEditorField(text: text, minHeight: minHeight)
         }
     }
 

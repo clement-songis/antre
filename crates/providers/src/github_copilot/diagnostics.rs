@@ -1,5 +1,5 @@
 use {
-    moltis_agents::model::{CompletionResponse, StreamEvent},
+    antre_agents::model::{CompletionResponse, StreamEvent},
     secrecy::Secret,
     tracing::{debug, info, warn},
 };

@@ -12,7 +12,7 @@ use crate::error::Error;
 pub(super) const BASE_URL: &str = "https://api.keenable.ai";
 
 /// App label Keenable requires on keyless requests.
-const APP_TITLE: &str = "Moltis";
+const APP_TITLE: &str = "Antre";
 
 /// Keenable snippets are raw page text, often several KB. Keep each result
 /// close to the size of the descriptions other providers return.
@@ -179,8 +179,8 @@ mod tests {
     use {
         super::*,
         crate::web_search::{ConfigSearchProvider, SearchProvider, WebSearchConfig, WebSearchTool},
+        antre_agents::tool_registry::AgentTool,
         mockito::Matcher,
-        moltis_agents::tool_registry::AgentTool,
         secrecy::Secret,
     };
 
@@ -210,7 +210,7 @@ mod tests {
         let mut server = mockito::Server::new_async().await;
         let mock = server
             .mock("POST", "/v1/search/public")
-            .match_header("x-keenable-title", "Moltis")
+            .match_header("x-keenable-title", "Antre")
             .match_header("x-api-key", Matcher::Missing)
             .match_body(Matcher::Json(serde_json::json!({
                 "query": "rust async",
@@ -252,7 +252,7 @@ mod tests {
         let mut server = mockito::Server::new_async().await;
         let mock = server
             .mock("POST", "/v1/search")
-            .match_header("x-keenable-title", "Moltis")
+            .match_header("x-keenable-title", "Antre")
             .match_header("x-api-key", "test-key")
             .with_status(200)
             .with_header("content-type", "application/json")
@@ -349,7 +349,7 @@ mod tests {
         let mut server = mockito::Server::new_async().await;
         let request = server
             .mock("POST", "/v1/search/public")
-            .match_header("x-keenable-title", "Moltis")
+            .match_header("x-keenable-title", "Antre")
             .with_status(200)
             .with_header("content-type", "application/json")
             .with_body(response_body())

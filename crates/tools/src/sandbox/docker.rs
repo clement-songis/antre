@@ -13,7 +13,7 @@ use {
     tracing::{debug, info, warn},
 };
 
-const MANAGED_FILES_POLICY_LABEL: &str = "org.moltis.managed-files-mount";
+const MANAGED_FILES_POLICY_LABEL: &str = "ai.antre.managed-files-mount";
 
 use {
     super::{
@@ -46,8 +46,8 @@ use {
     },
 };
 
-const SANDBOX_HOST_PODMAN_SOCKET: &str = "/tmp/moltis-host-podman.sock";
-const PODMAN_MODE_LABEL: &str = "org.moltis.podman-mode";
+const SANDBOX_HOST_PODMAN_SOCKET: &str = "/tmp/antre-host-podman.sock";
+const PODMAN_MODE_LABEL: &str = "ai.antre.podman-mode";
 const PODMAN_SOCKET_PROBE_TIMEOUT: Duration = Duration::from_secs(2);
 
 /// Distinguishes Docker from Podman for behaviour that differs between the two
@@ -135,7 +135,7 @@ impl DockerSandbox {
         self.config
             .container_prefix
             .as_deref()
-            .unwrap_or("moltis-sandbox")
+            .unwrap_or("antre-sandbox")
     }
 
     pub(crate) fn container_name(&self, id: &SandboxId) -> String {
@@ -535,34 +535,34 @@ impl DockerSandbox {
         Ok(socket_path)
     }
 
-    /// Mount the host `moltis-ctl` binary into the sandbox at `/usr/local/bin/moltis-ctl`.
+    /// Mount the host `antre-ctl` binary into the sandbox at `/usr/local/bin/antre-ctl`.
     ///
-    /// Locates the binary next to the current executable (same directory as `moltis`),
-    /// and if found, bind-mounts it read-only. This allows skills to call `moltis-ctl`
+    /// Locates the binary next to the current executable (same directory as `antre`),
+    /// and if found, bind-mounts it read-only. This allows skills to call `antre-ctl`
     /// inside sandboxes to communicate with the gateway.
-    fn moltis_ctl_mount_args() -> Vec<String> {
+    fn antre_ctl_mount_args() -> Vec<String> {
         let Ok(current_exe) = std::env::current_exe() else {
             return Vec::new();
         };
         let Some(exe_dir) = current_exe.parent() else {
             return Vec::new();
         };
-        let ctl_binary = exe_dir.join("moltis-ctl");
+        let ctl_binary = exe_dir.join("antre-ctl");
         if !ctl_binary.is_file() {
             tracing::debug!(
                 path = %ctl_binary.display(),
-                "moltis-ctl binary not found next to server, skipping sandbox mount"
+                "antre-ctl binary not found next to server, skipping sandbox mount"
             );
             return Vec::new();
         }
         vec![
             "-v".to_string(),
-            format!("{}:/usr/local/bin/moltis-ctl:ro", ctl_binary.display()),
+            format!("{}:/usr/local/bin/antre-ctl:ro", ctl_binary.display()),
         ]
     }
 
     pub(crate) fn workspace_args(&self) -> Vec<String> {
-        let guest_workspace_dir = moltis_config::data_dir();
+        let guest_workspace_dir = antre_config::data_dir();
         let host_workspace_dir = host_visible_data_dir(&self.config, Some(self.cli));
         let guest_workspace_dir_str = guest_workspace_dir.display().to_string();
         let host_workspace_dir_str = host_workspace_dir.display().to_string();
@@ -590,7 +590,7 @@ impl DockerSandbox {
     }
 
     pub(crate) fn managed_files_args(&self) -> Result<Vec<String>> {
-        let legacy_guest_dir = moltis_config::managed_files_dir();
+        let legacy_guest_dir = antre_config::managed_files_dir();
         if self.config.managed_files_mount == ManagedFilesMount::None {
             let _host_dir = ensure_managed_files_host_dir(&self.config, Some(self.cli))?;
             let mut args = vec![
@@ -676,10 +676,8 @@ impl DockerSandbox {
         dockerfile_path: &Path,
         context_dir: &Path,
     ) -> Result<()> {
-        let tar_path = std::env::temp_dir().join(format!(
-            "moltis-sandbox-export-{}.tar",
-            uuid::Uuid::new_v4()
-        ));
+        let tar_path =
+            std::env::temp_dir().join(format!("antre-sandbox-export-{}.tar", uuid::Uuid::new_v4()));
 
         // Re-build with docker-archive output.  The `-t` flag embeds the
         // correct tag in the archive so `podman load` names it correctly.
@@ -804,7 +802,7 @@ impl DockerSandbox {
         if let Some(socket_path) = podman_socket_path.as_deref() {
             args.extend(Self::podman_socket_run_args_for_path(Some(socket_path))?);
         }
-        args.extend(Self::moltis_ctl_mount_args());
+        args.extend(Self::antre_ctl_mount_args());
 
         args.push(image);
         args.extend(["sleep".to_string(), "infinity".to_string()]);
@@ -943,7 +941,7 @@ impl Sandbox for DockerSandbox {
 
         // Generate Dockerfile in a temp dir.
         let tmp_dir =
-            std::env::temp_dir().join(format!("moltis-sandbox-build-{}", uuid::Uuid::new_v4()));
+            std::env::temp_dir().join(format!("antre-sandbox-build-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&tmp_dir)?;
 
         let pkg_list = canonical_sandbox_packages(packages).join(" ");
@@ -1234,7 +1232,7 @@ pub(crate) fn format_container_run_stderr(kind: BackendKind, stderr: &str) -> St
     }
 
     format!(
-        "{trimmed}\n\nRootless Podman cannot start from a process restricted by systemd NoNewPrivileges=true or equivalent namespace/privilege hardening. If Moltis uses the bundled system service, install deploy/moltis-podman.conf as a systemd drop-in; custom units must also provide writable Podman home and runtime directories. Running podman inside an already sandboxed Moltis container requires an explicit escape hatch: allow_host_podman=true for host socket passthrough or allow_nested_podman=true for a privileged nested-Podman sandbox."
+        "{trimmed}\n\nRootless Podman cannot start from a process restricted by systemd NoNewPrivileges=true or equivalent namespace/privilege hardening. If Antre uses the bundled system service, install deploy/antre-podman.conf as a systemd drop-in; custom units must also provide writable Podman home and runtime directories. Running podman inside an already sandboxed Antre container requires an explicit escape hatch: allow_host_podman=true for host socket passthrough or allow_nested_podman=true for a privileged nested-Podman sandbox."
     )
 }
 
@@ -1341,7 +1339,7 @@ pub(crate) fn parse_docker_daemon_arch(output: &str) -> DaemonArch {
 /// returns `Unknown` on any failure (docker missing, daemon unresponsive past
 /// the probe deadline, non-UTF8 output, etc.).
 pub(crate) fn docker_daemon_arch() -> DaemonArch {
-    use moltis_config::process_probe::{RUNTIME_COMMAND_TIMEOUT, output_within};
+    use antre_config::process_probe::{RUNTIME_COMMAND_TIMEOUT, output_within};
 
     let Some(output) = output_within(
         "docker",

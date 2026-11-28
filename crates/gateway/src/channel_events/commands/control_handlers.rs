@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
 use {
-    moltis_channels::{ChannelReplyTarget, Error as ChannelError, Result as ChannelResult},
-    moltis_config::ModePreset,
-    moltis_external_agents::AgentTransportKind,
-    moltis_sessions::metadata::SqliteSessionMetadata,
-    moltis_tools::image_cache::ImageBuilder,
+    antre_channels::{ChannelReplyTarget, Error as ChannelError, Result as ChannelResult},
+    antre_config::ModePreset,
+    antre_external_agents::AgentTransportKind,
+    antre_sessions::metadata::SqliteSessionMetadata,
+    antre_tools::image_cache::ImageBuilder,
 };
 
 use crate::{
@@ -28,7 +28,7 @@ const EXTERNAL_AGENT_PROVIDER: &str = "external-agent";
 
 // ── Control command handlers ─────────────────────────────────────
 
-fn sorted_mode_presets(config: &moltis_config::MoltisConfig) -> Vec<(String, ModePreset)> {
+fn sorted_mode_presets(config: &antre_config::AntreConfig) -> Vec<(String, ModePreset)> {
     let mut modes: Vec<(String, ModePreset)> = config
         .modes
         .presets
@@ -239,7 +239,7 @@ pub(in crate::channel_events) async fn handle_mode(
     session_key: &str,
     args: &str,
 ) -> ChannelResult<String> {
-    let config = moltis_config::discover_and_load();
+    let config = antre_config::discover_and_load();
     let modes = sorted_mode_presets(&config);
     if modes.is_empty() {
         return Ok("No modes are configured.".to_string());
@@ -686,7 +686,7 @@ pub(in crate::channel_events) async fn handle_sandbox(
                     if let Some(ref router) = state.sandbox_router {
                         router.resolve_default_image_nowait().await
                     } else {
-                        moltis_tools::sandbox::DEFAULT_SANDBOX_IMAGE.to_string()
+                        antre_tools::sandbox::DEFAULT_SANDBOX_IMAGE.to_string()
                     }
                 },
             }
@@ -699,13 +699,13 @@ pub(in crate::channel_events) async fn handle_sandbox(
         };
 
         // List available images.
-        let cfg = moltis_config::discover_and_load();
-        let builder = moltis_tools::image_cache::DockerImageBuilder::for_backend(
+        let cfg = antre_config::discover_and_load();
+        let builder = antre_tools::image_cache::DockerImageBuilder::for_backend(
             &cfg.tools.exec.sandbox.backend,
         );
         let cached = builder.list_cached().await.unwrap_or_default();
 
-        let default_img = moltis_tools::sandbox::DEFAULT_SANDBOX_IMAGE.to_string();
+        let default_img = antre_tools::sandbox::DEFAULT_SANDBOX_IMAGE.to_string();
         let mut images: Vec<(String, Option<String>)> = vec![(default_img.clone(), None)];
         for img in &cached {
             images.push((
@@ -769,9 +769,9 @@ pub(in crate::channel_events) async fn handle_sandbox(
             .parse()
             .map_err(|_| ChannelError::invalid_input("usage: /sandbox image [number]"))?;
 
-        let default_img = moltis_tools::sandbox::DEFAULT_SANDBOX_IMAGE.to_string();
-        let cfg = moltis_config::discover_and_load();
-        let builder = moltis_tools::image_cache::DockerImageBuilder::for_backend(
+        let default_img = antre_tools::sandbox::DEFAULT_SANDBOX_IMAGE.to_string();
+        let cfg = antre_config::discover_and_load();
+        let builder = antre_tools::image_cache::DockerImageBuilder::for_backend(
             &cfg.tools.exec.sandbox.backend,
         );
         let cached = builder.list_cached().await.unwrap_or_default();
@@ -933,7 +933,7 @@ pub(in crate::channel_events) async fn handle_update(
     );
 
     let client = reqwest::Client::builder()
-        .user_agent(format!("moltis-gateway/{}", state.version))
+        .user_agent(format!("antre-gateway/{}", state.version))
         .build()
         .map_err(|e| ChannelError::external("build HTTP client", e))?;
 

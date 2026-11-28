@@ -5,8 +5,8 @@
 use serenity::all::{Context, Reaction, ReactionType};
 
 use {
-    moltis_channels::{ChannelEvent, ChannelType},
-    moltis_common::types::ChatType,
+    antre_channels::{ChannelEvent, ChannelType},
+    antre_common::types::ChatType,
 };
 
 use {super::implementation::Handler, crate::access};

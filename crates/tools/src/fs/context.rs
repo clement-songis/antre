@@ -5,7 +5,7 @@ use {
         approval::ApprovalManager, checkpoints::CheckpointManager, exec::ApprovalBroadcaster,
         sandbox::SandboxRouter,
     },
-    moltis_agents::tool_registry::ToolRegistry,
+    antre_agents::tool_registry::ToolRegistry,
     std::{path::PathBuf, sync::Arc},
 };
 

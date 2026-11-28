@@ -15,9 +15,9 @@ use crate::{
 
 /// Returns authentication status for the HTTP server.
 #[unsafe(no_mangle)]
-pub extern "C" fn moltis_auth_status() -> *mut c_char {
-    record_call("moltis_auth_status");
-    trace_call("moltis_auth_status");
+pub extern "C" fn antre_auth_status() -> *mut c_char {
+    record_call("antre_auth_status");
+    trace_call("antre_auth_status");
 
     with_ffi_boundary(|| {
         let has_password = match BRIDGE
@@ -26,7 +26,7 @@ pub extern "C" fn moltis_auth_status() -> *mut c_char {
         {
             Ok(value) => value,
             Err(error) => {
-                record_error("moltis_auth_status", "AUTH_STATUS_FAILED");
+                record_error("antre_auth_status", "AUTH_STATUS_FAILED");
                 return encode_error("AUTH_STATUS_FAILED", &error.to_string());
             },
         };
@@ -37,7 +37,7 @@ pub extern "C" fn moltis_auth_status() -> *mut c_char {
         {
             Ok(value) => value,
             Err(error) => {
-                record_error("moltis_auth_status", "AUTH_STATUS_FAILED");
+                record_error("antre_auth_status", "AUTH_STATUS_FAILED");
                 return encode_error("AUTH_STATUS_FAILED", &error.to_string());
             },
         };
@@ -57,13 +57,13 @@ pub extern "C" fn moltis_auth_status() -> *mut c_char {
 /// - `{"new_password":"..."}` to set the first password.
 /// - `{"current_password":"...","new_password":"..."}` to rotate.
 #[unsafe(no_mangle)]
-pub extern "C" fn moltis_auth_password_change(request_json: *const c_char) -> *mut c_char {
-    record_call("moltis_auth_password_change");
-    trace_call("moltis_auth_password_change");
+pub extern "C" fn antre_auth_password_change(request_json: *const c_char) -> *mut c_char {
+    record_call("antre_auth_password_change");
+    trace_call("antre_auth_password_change");
 
     with_ffi_boundary(|| {
         let request = match parse_ffi_request::<AuthPasswordChangeRequest>(
-            "moltis_auth_password_change",
+            "antre_auth_password_change",
             request_json,
         ) {
             Ok(r) => r,
@@ -71,7 +71,7 @@ pub extern "C" fn moltis_auth_password_change(request_json: *const c_char) -> *m
         };
 
         if request.new_password.expose_secret().len() < 12 {
-            record_error("moltis_auth_password_change", "AUTH_PASSWORD_TOO_SHORT");
+            record_error("antre_auth_password_change", "AUTH_PASSWORD_TOO_SHORT");
             return encode_error(
                 "AUTH_PASSWORD_TOO_SHORT",
                 "new password must be at least 12 characters",
@@ -84,7 +84,7 @@ pub extern "C" fn moltis_auth_password_change(request_json: *const c_char) -> *m
         {
             Ok(value) => value,
             Err(error) => {
-                record_error("moltis_auth_password_change", "AUTH_STATUS_FAILED");
+                record_error("antre_auth_password_change", "AUTH_STATUS_FAILED");
                 return encode_error("AUTH_STATUS_FAILED", &error.to_string());
             },
         };
@@ -107,12 +107,12 @@ pub extern "C" fn moltis_auth_password_change(request_json: *const c_char) -> *m
                 let message = error.to_string();
                 if message.contains("incorrect") {
                     record_error(
-                        "moltis_auth_password_change",
+                        "antre_auth_password_change",
                         "AUTH_INVALID_CURRENT_PASSWORD",
                     );
                     return encode_error("AUTH_INVALID_CURRENT_PASSWORD", &message);
                 }
-                record_error("moltis_auth_password_change", "AUTH_PASSWORD_CHANGE_FAILED");
+                record_error("antre_auth_password_change", "AUTH_PASSWORD_CHANGE_FAILED");
                 return encode_error("AUTH_PASSWORD_CHANGE_FAILED", &message);
             }
 
@@ -131,14 +131,14 @@ pub extern "C" fn moltis_auth_password_change(request_json: *const c_char) -> *m
             .runtime
             .block_on(BRIDGE.credential_store.add_password(new_password))
         {
-            record_error("moltis_auth_password_change", "AUTH_PASSWORD_SET_FAILED");
+            record_error("antre_auth_password_change", "AUTH_PASSWORD_SET_FAILED");
             return encode_error("AUTH_PASSWORD_SET_FAILED", &error.to_string());
         } else if let Some(vault) = BRIDGE.credential_store.vault() {
             match BRIDGE.runtime.block_on(vault.initialize(new_password)) {
                 Ok(key) => {
                     recovery_key = Some(key.phrase().to_owned());
                 },
-                Err(moltis_gateway::auth::moltis_vault::VaultError::AlreadyInitialized) => {
+                Err(antre_gateway::auth::antre_vault::VaultError::AlreadyInitialized) => {
                     if let Err(error) = BRIDGE.runtime.block_on(vault.unseal(new_password)) {
                         crate::callbacks::emit_log(
                             "WARN",
@@ -166,15 +166,15 @@ pub extern "C" fn moltis_auth_password_change(request_json: *const c_char) -> *m
 
 /// Removes all authentication credentials (passwords, passkeys, sessions, API keys).
 #[unsafe(no_mangle)]
-pub extern "C" fn moltis_auth_reset() -> *mut c_char {
-    record_call("moltis_auth_reset");
-    trace_call("moltis_auth_reset");
+pub extern "C" fn antre_auth_reset() -> *mut c_char {
+    record_call("antre_auth_reset");
+    trace_call("antre_auth_reset");
 
     with_ffi_boundary(
         || match BRIDGE.runtime.block_on(BRIDGE.credential_store.reset_all()) {
             Ok(()) => encode_json(&OkResponse { ok: true }),
             Err(error) => {
-                record_error("moltis_auth_reset", "AUTH_RESET_FAILED");
+                record_error("antre_auth_reset", "AUTH_RESET_FAILED");
                 encode_error("AUTH_RESET_FAILED", &error.to_string())
             },
         },
@@ -183,9 +183,9 @@ pub extern "C" fn moltis_auth_reset() -> *mut c_char {
 
 /// Lists all registered passkeys.
 #[unsafe(no_mangle)]
-pub extern "C" fn moltis_auth_list_passkeys() -> *mut c_char {
-    record_call("moltis_auth_list_passkeys");
-    trace_call("moltis_auth_list_passkeys");
+pub extern "C" fn antre_auth_list_passkeys() -> *mut c_char {
+    record_call("antre_auth_list_passkeys");
+    trace_call("antre_auth_list_passkeys");
 
     with_ffi_boundary(|| {
         let passkeys = match BRIDGE
@@ -194,7 +194,7 @@ pub extern "C" fn moltis_auth_list_passkeys() -> *mut c_char {
         {
             Ok(entries) => entries,
             Err(error) => {
-                record_error("moltis_auth_list_passkeys", "AUTH_PASSKEY_LIST_FAILED");
+                record_error("antre_auth_list_passkeys", "AUTH_PASSKEY_LIST_FAILED");
                 return encode_error("AUTH_PASSKEY_LIST_FAILED", &error.to_string());
             },
         };
@@ -205,13 +205,13 @@ pub extern "C" fn moltis_auth_list_passkeys() -> *mut c_char {
 
 /// Removes a passkey by database ID.
 #[unsafe(no_mangle)]
-pub extern "C" fn moltis_auth_remove_passkey(request_json: *const c_char) -> *mut c_char {
-    record_call("moltis_auth_remove_passkey");
-    trace_call("moltis_auth_remove_passkey");
+pub extern "C" fn antre_auth_remove_passkey(request_json: *const c_char) -> *mut c_char {
+    record_call("antre_auth_remove_passkey");
+    trace_call("antre_auth_remove_passkey");
 
     with_ffi_boundary(|| {
         let request = match parse_ffi_request::<AuthPasskeyIdRequest>(
-            "moltis_auth_remove_passkey",
+            "antre_auth_remove_passkey",
             request_json,
         ) {
             Ok(r) => r,
@@ -224,7 +224,7 @@ pub extern "C" fn moltis_auth_remove_passkey(request_json: *const c_char) -> *mu
         {
             Ok(()) => encode_json(&OkResponse { ok: true }),
             Err(error) => {
-                record_error("moltis_auth_remove_passkey", "AUTH_PASSKEY_REMOVE_FAILED");
+                record_error("antre_auth_remove_passkey", "AUTH_PASSKEY_REMOVE_FAILED");
                 encode_error("AUTH_PASSKEY_REMOVE_FAILED", &error.to_string())
             },
         }
@@ -233,13 +233,13 @@ pub extern "C" fn moltis_auth_remove_passkey(request_json: *const c_char) -> *mu
 
 /// Renames a passkey.
 #[unsafe(no_mangle)]
-pub extern "C" fn moltis_auth_rename_passkey(request_json: *const c_char) -> *mut c_char {
-    record_call("moltis_auth_rename_passkey");
-    trace_call("moltis_auth_rename_passkey");
+pub extern "C" fn antre_auth_rename_passkey(request_json: *const c_char) -> *mut c_char {
+    record_call("antre_auth_rename_passkey");
+    trace_call("antre_auth_rename_passkey");
 
     with_ffi_boundary(|| {
         let request = match parse_ffi_request::<AuthPasskeyRenameRequest>(
-            "moltis_auth_rename_passkey",
+            "antre_auth_rename_passkey",
             request_json,
         ) {
             Ok(r) => r,
@@ -248,7 +248,7 @@ pub extern "C" fn moltis_auth_rename_passkey(request_json: *const c_char) -> *mu
 
         let name = request.name.trim();
         if name.is_empty() {
-            record_error("moltis_auth_rename_passkey", "AUTH_PASSKEY_NAME_REQUIRED");
+            record_error("antre_auth_rename_passkey", "AUTH_PASSKEY_NAME_REQUIRED");
             return encode_error("AUTH_PASSKEY_NAME_REQUIRED", "name cannot be empty");
         }
 
@@ -258,7 +258,7 @@ pub extern "C" fn moltis_auth_rename_passkey(request_json: *const c_char) -> *mu
         {
             Ok(()) => encode_json(&OkResponse { ok: true }),
             Err(error) => {
-                record_error("moltis_auth_rename_passkey", "AUTH_PASSKEY_RENAME_FAILED");
+                record_error("antre_auth_rename_passkey", "AUTH_PASSKEY_RENAME_FAILED");
                 encode_error("AUTH_PASSKEY_RENAME_FAILED", &error.to_string())
             },
         }
@@ -295,7 +295,7 @@ mod tests {
 
     #[test]
     fn auth_status_returns_expected_fields() {
-        let payload = json_from_ptr(moltis_auth_status());
+        let payload = json_from_ptr(antre_auth_status());
 
         assert!(
             payload
@@ -329,7 +329,7 @@ mod tests {
 
     #[test]
     fn auth_list_passkeys_returns_array() {
-        let payload = json_from_ptr(moltis_auth_list_passkeys());
+        let payload = json_from_ptr(antre_auth_list_passkeys());
         assert!(
             payload.get("passkeys").and_then(Value::as_array).is_some(),
             "auth_list_passkeys should return passkeys"
@@ -340,7 +340,7 @@ mod tests {
     fn auth_password_change_rejects_short_password() {
         let request = r#"{"new_password":"short"}"#;
         let c_request = CString::new(request).unwrap_or_else(|e| panic!("{e}"));
-        let payload = json_from_ptr(moltis_auth_password_change(c_request.as_ptr()));
+        let payload = json_from_ptr(antre_auth_password_change(c_request.as_ptr()));
 
         let code = payload
             .get("error")
@@ -352,7 +352,7 @@ mod tests {
 
     #[test]
     fn auth_remove_passkey_returns_error_for_null() {
-        let payload = json_from_ptr(moltis_auth_remove_passkey(std::ptr::null()));
+        let payload = json_from_ptr(antre_auth_remove_passkey(std::ptr::null()));
 
         let code = payload
             .get("error")

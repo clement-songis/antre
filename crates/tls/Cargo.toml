@@ -1,16 +1,16 @@
 [package]
 edition.workspace    = true
-name                 = "moltis-tls"
+name                 = "antre-tls"
 repository.workspace = true
 version.workspace    = true
 
 [dependencies]
+antre-common   = { workspace = true }
+antre-config   = { workspace = true }
 axum           = { workspace = true }
 hex            = { workspace = true }
 hostname       = { workspace = true }
 hyper-util     = { workspace = true }
-moltis-common  = { workspace = true }
-moltis-config  = { workspace = true }
 rcgen          = { workspace = true }
 rustls         = { workspace = true }
 rustls-pemfile = { workspace = true }

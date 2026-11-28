@@ -3,14 +3,14 @@
 use std::path::PathBuf;
 
 use {
+    antre_agents::tool_registry::AgentTool,
+    antre_skills::usage::SkillUsageStore,
     async_trait::async_trait,
-    moltis_agents::tool_registry::AgentTool,
-    moltis_skills::usage::SkillUsageStore,
     serde_json::{Value, json},
 };
 
 #[cfg(feature = "metrics")]
-use moltis_metrics::{counter, labels, skills as skills_metrics};
+use antre_metrics::{counter, labels, skills as skills_metrics};
 
 use {
     super::{
@@ -96,7 +96,7 @@ impl AgentTool for WriteSkillFilesTool {
             .and_then(|v| v.as_str())
             .ok_or_else(|| Error::message("missing 'name'"))?;
 
-        if !moltis_skills::parse::validate_name(name) {
+        if !antre_skills::parse::validate_name(name) {
             return Err(Error::message(format!(
                 "invalid skill name '{name}': must be 1-64 lowercase alphanumeric/hyphen chars"
             ))
@@ -231,7 +231,7 @@ impl AgentTool for PatchSkillTool {
             .ok_or_else(|| Error::message("missing 'patches'"))?;
         let new_description = params.get("description").and_then(|v| v.as_str());
 
-        if !moltis_skills::parse::validate_name(name) {
+        if !antre_skills::parse::validate_name(name) {
             return Err(Error::message(format!(
                 "invalid skill name '{name}': must be 1-64 lowercase alphanumeric/hyphen chars"
             ))
@@ -344,7 +344,7 @@ impl AgentTool for PatchSkillTool {
 
         tokio::fs::write(&skill_md_path, &final_content).await?;
 
-        let hits = moltis_skills::safety::scan_skill_body(name, &patched_body);
+        let hits = antre_skills::safety::scan_skill_body(name, &patched_body);
         let warning = if !hits.is_empty() {
             tracing::warn!(
                 skill = %name,

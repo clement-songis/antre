@@ -86,12 +86,12 @@ export default {
 		title: "安全性",
 		authentication: "身分驗證",
 		authDisabled: "身分驗證已停用",
-		authDisabledWarning: "任何能連到 Moltis 的人，都能控制 Moltis 和這台電腦。請設定密碼以保護伺服器。",
+		authDisabledWarning: "任何能連到 Antre 的人，都能控制 Antre 和這台電腦。請設定密碼以保護伺服器。",
 		setupAuth: "設定身分驗證",
 		localhostBypassWarning:
-			"僅限 localhost 存取是安全的，但目前已啟用 localhost 免登入。在新增密碼或通行金鑰之前，此瀏覽器擁有完整存取權限，登出也不會生效。請在下方新增憑證，以便在 localhost 上要求登入，並在將 Moltis 開放到網路前啟用身分驗證。",
+			"僅限 localhost 存取是安全的，但目前已啟用 localhost 免登入。在新增密碼或通行金鑰之前，此瀏覽器擁有完整存取權限，登出也不會生效。請在下方新增憑證，以便在 localhost 上要求登入，並在將 Antre 開放到網路前啟用身分驗證。",
 		localhostBypassNote:
-			"目前已啟用 localhost 免登入。在新增密碼或通行金鑰之前，此瀏覽器擁有完整存取權限，登出也不會生效。請新增憑證，以便在 localhost 上要求登入，並在將 Moltis 開放到網路前啟用身分驗證。",
+			"目前已啟用 localhost 免登入。在新增密碼或通行金鑰之前，此瀏覽器擁有完整存取權限，登出也不會生效。請新增憑證，以便在 localhost 上要求登入，並在將 Antre 開放到網路前啟用身分驗證。",
 		note: "注意：",
 		changePassword: "變更密碼",
 		setPasswordTitle: "設定密碼",
@@ -129,9 +129,9 @@ export default {
 		// API keys
 		apiKeys: "API 金鑰",
 		apiKeysDescription:
-			"API 金鑰用於驗證透過 WebSocket 協定連線至 Moltis 的外部工具和腳本。請在連線交握的 auth 物件中，將金鑰作為 api_key 欄位傳入。",
+			"API 金鑰用於驗證透過 WebSocket 協定連線至 Antre 的外部工具和腳本。請在連線交握的 auth 物件中，將金鑰作為 api_key 欄位傳入。",
 		apiKeysProtocolDescription:
-			"API 金鑰用於驗證透過 WebSocket 協定連線至 Moltis 的外部工具和腳本。請在 connect 交握的 auth 物件中，將金鑰作為 api_key 欄位傳入。",
+			"API 金鑰用於驗證透過 WebSocket 協定連線至 Antre 的外部工具和腳本。請在 connect 交握的 auth 物件中，將金鑰作為 api_key 欄位傳入。",
 		apiKeyCopyWarning: "請立即複製此金鑰，之後將不再顯示。",
 		fullAccess: "完整存取",
 		revoke: "撤銷",
@@ -152,7 +152,7 @@ export default {
 		dangerZone: "危險區域",
 		removeAllAuth: "移除所有身分驗證",
 		removeAllAuthWarning:
-			"若您清楚自己在做什麼，可以完全停用身分驗證。任何能連到 Moltis 的人，都能存取 Moltis 和這台電腦。此操作將移除您的密碼、所有通行金鑰、所有 API 金鑰及所有工作階段。",
+			"若您清楚自己在做什麼，可以完全停用身分驗證。任何能連到 Antre 的人，都能存取 Antre 和這台電腦。此操作將移除您的密碼、所有通行金鑰、所有 API 金鑰及所有工作階段。",
 		removeAllAuthConfirm: "確定要繼續嗎？此操作無法復原。",
 		removing: "移除中\u2026",
 		yesRemoveAllAuth: "是，移除所有身分驗證",
@@ -162,7 +162,7 @@ export default {
 	config: {
 		title: "組態設定",
 		description:
-			"編輯完整的 Moltis 組態。包含伺服器、工具、LLM 供應商、身分驗證及所有其他設定。請先測試變更再儲存。變更需重新啟動才會生效。",
+			"編輯完整的 Antre 組態。包含伺服器、工具、LLM 供應商、身分驗證及所有其他設定。請先測試變更再儲存。變更需重新啟動才會生效。",
 		viewDocs: "檢視文件 \u2197",
 		fileLabel: "檔案：",
 		warnings: "警告：",
@@ -178,13 +178,13 @@ export default {
 		configValid: "組態有效。",
 		configInvalid: "組態無效",
 		configSaved: "組態已儲存。變更需重新啟動才會生效。",
-		restartingMoltis: "正在重新啟動 Moltis…",
-		serverNotBack: "伺服器未恢復運作。請確認 Moltis 是否正在執行。",
+		restartingAntre: "正在重新啟動 Antre…",
+		serverNotBack: "伺服器未恢復運作。請確認 Antre 是否正在執行。",
 		autoReloadHint: "伺服器重新上線後，頁面會自動重新載入。",
 		resetConfirm:
 			"要以預設範本取代目前的組態嗎？\n\n這會顯示所有支援的選項及說明文件。除非您先複製，否則目前的值將會遺失。",
 		templateLoaded: "已載入含所有選項的預設範本。請檢閱後再儲存。",
-		failedToConnect: "無法連線至伺服器。請確認 Moltis 是否正在執行。",
+		failedToConnect: "無法連線至伺服器。請確認 Antre 是否正在執行。",
 		invalidJsonResponse: "伺服器回傳的 JSON 回應無效",
 		failedToLoadTemplate: "載入範本失敗",
 		tipLabel: "提示：",
@@ -298,7 +298,7 @@ export default {
 		builtInRecommended: "內建（推薦）",
 		zvecLabel: "Zvec（實驗性）",
 		redbLsmTree: "redb（LSM 樹）",
-		qmdNotEnabled: "QMD 功能未啟用。請使用 --features qmd 重新建置 Moltis",
+		qmdNotEnabled: "QMD 功能未啟用。請使用 --features qmd 重新建置 Antre",
 		qmdStatus: "QMD 狀態",
 		qmdInstalled: "\u2713 QMD 已安裝",
 		qmdNotInstalled: "\u2717 QMD 未安裝或不在 PATH 中",
@@ -332,7 +332,7 @@ export default {
 		toggling: "\u2026",
 		installRequired: "需要安裝",
 		installRequiredSafari:
-			"在 Safari 上，推播通知僅適用於已安裝的應用程式。請透過「檔案 \u2192 加入 Dock」（或在 iOS 上「分享 \u2192 加入 Dock」）將 Moltis 加入 Dock，然後從 Dock 開啟。",
+			"在 Safari 上，推播通知僅適用於已安裝的應用程式。請透過「檔案 \u2192 加入 Dock」（或在 iOS 上「分享 \u2192 加入 Dock」）將 Antre 加入 Dock，然後從 Dock 開啟。",
 		notificationsBlocked: "通知已被封鎖",
 		blockedExplanation: "您先前已封鎖此網站的通知。若要啟用，請更新瀏覽器的網站設定，並允許此來源的通知。",
 		subscribedDevices: "已訂閱的裝置（{{count}}）",

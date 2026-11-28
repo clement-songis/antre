@@ -1,21 +1,21 @@
-use moltis_tools::sandbox::SandboxRouter;
+use antre_tools::sandbox::SandboxRouter;
 
-fn configured_sandbox_prefix(config: &moltis_config::MoltisConfig) -> String {
+fn configured_sandbox_prefix(config: &antre_config::AntreConfig) -> String {
     config
         .tools
         .exec
         .sandbox
         .container_prefix
         .clone()
-        .unwrap_or_else(|| "moltis-sandbox".to_string())
+        .unwrap_or_else(|| "antre-sandbox".to_string())
 }
 
-fn browser_prefix(_config: &moltis_config::MoltisConfig) -> String {
-    "moltis-browser".to_string()
+fn browser_prefix(_config: &antre_config::AntreConfig) -> String {
+    "antre-browser".to_string()
 }
 
 pub(crate) fn managed_container_prefixes(
-    config: &moltis_config::MoltisConfig,
+    config: &antre_config::AntreConfig,
     router: Option<&SandboxRouter>,
 ) -> Vec<String> {
     let sandbox_prefix = router
@@ -30,7 +30,7 @@ pub(crate) fn managed_container_prefixes(
 }
 
 pub(crate) fn managed_container_name(
-    config: &moltis_config::MoltisConfig,
+    config: &antre_config::AntreConfig,
     router: Option<&SandboxRouter>,
     name: &str,
 ) -> bool {
@@ -38,7 +38,7 @@ pub(crate) fn managed_container_name(
         .iter()
         .any(|prefix| {
             name.starts_with(prefix)
-                || moltis_tools::sandbox::has_apple_container_prefix(name, prefix)
+                || antre_tools::sandbox::has_apple_container_prefix(name, prefix)
         })
 }
 
@@ -48,36 +48,36 @@ mod tests {
 
     #[test]
     fn uses_runtime_sandbox_prefix_for_management() {
-        let config = moltis_config::MoltisConfig::default();
-        let router = SandboxRouter::new(moltis_tools::sandbox::SandboxConfig {
-            container_prefix: Some("moltis-identity-scoped-sandbox".to_string()),
+        let config = antre_config::AntreConfig::default();
+        let router = SandboxRouter::new(antre_tools::sandbox::SandboxConfig {
+            container_prefix: Some("antre-identity-scoped-sandbox".to_string()),
             ..Default::default()
         });
-        let apple_name = moltis_tools::sandbox::apple_container_name(
-            "moltis-identity-scoped-sandbox",
+        let apple_name = antre_tools::sandbox::apple_container_name(
+            "antre-identity-scoped-sandbox",
             "session-4fc5159e-0cb6-49f2-8eba-553ba3ec897b",
             0,
         );
 
         assert_eq!(
             managed_container_prefixes(&config, Some(&router))[0],
-            "moltis-identity-scoped-sandbox"
+            "antre-identity-scoped-sandbox"
         );
         assert!(managed_container_name(&config, Some(&router), &apple_name));
         assert!(!managed_container_name(
             &config,
             Some(&router),
-            "moltis-sandbox-unrelated"
+            "antre-sandbox-unrelated"
         ));
     }
 
     #[test]
     fn falls_back_to_configured_prefix_and_deduplicates() {
-        let mut config = moltis_config::MoltisConfig::default();
-        config.tools.exec.sandbox.container_prefix = Some("moltis-browser".to_string());
+        let mut config = antre_config::AntreConfig::default();
+        config.tools.exec.sandbox.container_prefix = Some("antre-browser".to_string());
 
         assert_eq!(managed_container_prefixes(&config, None), vec![
-            "moltis-browser"
+            "antre-browser"
         ]);
     }
 }

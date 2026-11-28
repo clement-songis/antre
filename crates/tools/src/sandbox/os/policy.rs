@@ -2,7 +2,7 @@
 //! backends (Seatbelt on macOS, bubblewrap on Linux).
 //!
 //! The policy is deny-by-default: a sandboxed command may only read the
-//! system roots needed to run programs, the Moltis workspace and its own
+//! system roots needed to run programs, the Antre workspace and its own
 //! home/temp directories, and may only write to its home, its temp directory
 //! and (when configured `rw`) the workspace and managed Files.
 
@@ -13,7 +13,7 @@ use crate::{
     sandbox::types::{ManagedFilesMount, NetworkPolicy, WorkspaceMount},
 };
 
-/// Files directly under the Moltis data directory that hold secrets or
+/// Files directly under the Antre data directory that hold secrets or
 /// private state. They stay unreadable even when the workspace is mounted.
 pub(crate) const DENIED_DATA_DIR_ENTRIES: &[&str] = &[
     "credentials.json",
@@ -22,15 +22,15 @@ pub(crate) const DENIED_DATA_DIR_ENTRIES: &[&str] = &[
     "oauth_providers.json",
     "mcp_oauth_registrations.json",
     "mcp-servers.json",
-    "moltis.toml",
+    "antre.toml",
     ".env",
     "logs",
-    "moltis.log",
+    "antre.log",
     "kimi_device_id",
     "browser",
 ];
 
-/// Entries under the data directory that Moltis loads or executes on the
+/// Entries under the data directory that Antre loads or executes on the
 /// host (hooks, plugins, service scripts). Readable, but never writable from
 /// the sandbox even with `workspace_mount = "rw"`: writing them would run
 /// code outside the sandbox.
@@ -42,10 +42,10 @@ pub(crate) const READ_ONLY_DATA_DIR_ENTRIES: &[&str] = &[
     "installed-skills",
     "bundled-skills",
     "skills-manifest.json",
-    "moltis-service-supervisor.sh",
-    "moltis.pid",
-    "moltis-service.pid",
-    "moltis-service.stop",
+    "antre-service-supervisor.sh",
+    "antre.pid",
+    "antre-service.pid",
+    "antre-service.stop",
 ];
 
 /// SQLite databases anywhere under the data directory (sessions, auth,
@@ -74,8 +74,8 @@ pub(crate) const DENIED_HOME_ENTRIES: &[&str] = &[
     ".git-credentials",
     ".config/gcloud",
     ".config/gh",
-    ".config/moltis",
-    ".moltis",
+    ".config/antre",
+    ".antre",
     "Library/Keychains",
     "Library/Cookies",
 ];
@@ -204,7 +204,7 @@ impl OsSandboxPolicy {
             );
         }
         // A deny on an ancestor of the workspace or of the sandbox's own
-        // directories (config dir == data dir, data dir == `~/.moltis`) would
+        // directories (config dir == data dir, data dir == `~/.antre`) would
         // hide them entirely; the per-entry data dir denies cover that case.
         let protected = [&data_dir, &home, &tmp];
         denied.retain(|path| !protected.iter().any(|kept| kept.starts_with(path)));
@@ -311,7 +311,7 @@ impl OsSandboxPolicy {
             ("HOME".to_string(), self.home.display().to_string()),
             ("TMPDIR".to_string(), self.tmp.display().to_string()),
             ("LANG".to_string(), "C.UTF-8".to_string()),
-            ("MOLTIS_SANDBOX".to_string(), "os".to_string()),
+            ("ANTRE_SANDBOX".to_string(), "os".to_string()),
         ];
         if let Some(proxy) = self.network.proxy_url() {
             for key in ["HTTP_PROXY", "http_proxy", "HTTPS_PROXY", "https_proxy"] {
@@ -417,7 +417,7 @@ mod tests {
     fn inputs() -> OsPolicyInputs {
         OsPolicyInputs {
             data_dir: PathBuf::from("/data"),
-            config_dir: Some(PathBuf::from("/home/u/.config/moltis")),
+            config_dir: Some(PathBuf::from("/home/u/.config/antre")),
             user_home: Some(PathBuf::from("/home/u")),
             home: PathBuf::from("/data/sandbox/home/shared"),
             tmp: PathBuf::from("/data/sandbox/os/s1/tmp"),
@@ -478,8 +478,8 @@ mod tests {
         .unwrap();
         for path in [
             "/data/credentials.json",
-            "/data/moltis.db",
-            "/data/moltis.db-wal",
+            "/data/antre.db",
+            "/data/antre.db-wal",
             "/data/agents/main/memory.db",
             "/data/oauth_tokens.json",
             "/data/logs/commands.log",
@@ -500,7 +500,7 @@ mod tests {
             "/data/hooks/pre.sh",
             "/data/plugins/x/plugin.toml",
             "/data/plugins-manifest.json",
-            "/data/moltis-service-supervisor.sh",
+            "/data/antre-service-supervisor.sh",
         ] {
             assert!(policy.allows_read(Path::new(path)), "{path} unreadable");
             assert!(!policy.allows_write(Path::new(path)), "{path} writable");
@@ -528,7 +528,7 @@ mod tests {
         .unwrap();
         assert!(policy.allows_read(Path::new("/home/u/Documents/a.txt")));
         assert!(!policy.allows_read(Path::new("/home/u/.ssh/id_ed25519")));
-        assert!(!policy.allows_read(Path::new("/home/u/.config/moltis/credentials.json")));
+        assert!(!policy.allows_read(Path::new("/home/u/.config/antre/credentials.json")));
         assert!(!policy.allows_read(Path::new("/home/u/.aws/credentials")));
     }
 
@@ -582,17 +582,17 @@ mod tests {
 
     #[test]
     fn default_data_dir_under_home_stays_readable() {
-        // `data_dir()` defaults to `~/.moltis`, which is also a home deny entry.
+        // `data_dir()` defaults to `~/.antre`, which is also a home deny entry.
         let policy = OsSandboxPolicy::build(&OsPolicyInputs {
-            data_dir: PathBuf::from("/home/u/.moltis"),
-            managed_files_dir: PathBuf::from("/home/u/.moltis/files"),
-            home: PathBuf::from("/home/u/.moltis/sandbox/home/shared"),
-            tmp: PathBuf::from("/home/u/.moltis/sandbox/os/s1/tmp"),
+            data_dir: PathBuf::from("/home/u/.antre"),
+            managed_files_dir: PathBuf::from("/home/u/.antre/files"),
+            home: PathBuf::from("/home/u/.antre/sandbox/home/shared"),
+            tmp: PathBuf::from("/home/u/.antre/sandbox/os/s1/tmp"),
             ..inputs()
         })
         .unwrap();
-        assert!(policy.allows_read(Path::new("/home/u/.moltis/MEMORY.md")));
-        assert!(!policy.allows_read(Path::new("/home/u/.moltis/moltis.db")));
+        assert!(policy.allows_read(Path::new("/home/u/.antre/MEMORY.md")));
+        assert!(!policy.allows_read(Path::new("/home/u/.antre/antre.db")));
         assert!(!policy.allows_read(Path::new("/home/u/.ssh/id_ed25519")));
     }
 

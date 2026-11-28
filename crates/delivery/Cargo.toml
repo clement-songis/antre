@@ -1,25 +1,25 @@
 [package]
 edition.workspace = true
-name              = "moltis-delivery"
+name              = "antre-delivery"
 version.workspace = true
 
 [dependencies]
-async-trait     = { workspace = true }
-moltis-channels = { workspace = true }
-moltis-config   = { workspace = true }
-moltis-metrics  = { optional = true, workspace = true }
-rand            = { workspace = true }
-serde           = { workspace = true }
-serde_json      = { workspace = true }
-sqlx            = { workspace = true }
-thiserror       = { workspace = true }
-time            = { workspace = true }
-tokio           = { workspace = true }
-tracing         = { workspace = true }
+antre-channels = { workspace = true }
+antre-config   = { workspace = true }
+antre-metrics  = { optional = true, workspace = true }
+async-trait    = { workspace = true }
+rand           = { workspace = true }
+serde          = { workspace = true }
+serde_json     = { workspace = true }
+sqlx           = { workspace = true }
+thiserror      = { workspace = true }
+time           = { workspace = true }
+tokio          = { workspace = true }
+tracing        = { workspace = true }
 
 [features]
 default = []
-metrics = ["dep:moltis-metrics"]
+metrics = ["dep:antre-metrics"]
 
 [dev-dependencies]
 tempfile = { workspace = true }

@@ -39,7 +39,7 @@ fn fixture() -> Fixture {
     }
     std::fs::write(data.join("notes.md"), "workspace note").unwrap();
     std::fs::write(data.join("credentials.json"), "{\"secret\":1}").unwrap();
-    std::fs::write(data.join("moltis.db"), "SQLITE-SECRET").unwrap();
+    std::fs::write(data.join("antre.db"), "SQLITE-SECRET").unwrap();
     std::fs::write(user_home.join(".ssh/id_ed25519"), "PRIVATE-KEY").unwrap();
     std::fs::write(user_home.join("diary.txt"), "personal").unwrap();
     std::fs::write(outside.join("existing.txt"), "untouched").unwrap();
@@ -64,7 +64,7 @@ fn detect() -> Option<OsSandboxKind> {
 fn sandbox(fx: &Fixture, kind: OsSandboxKind, config: SandboxConfig) -> OsSandbox {
     OsSandbox::with_dirs(config, kind, OsSandboxDirs {
         data_dir: fx.data.clone(),
-        config_dir: Some(fx.user_home.join(".config/moltis")),
+        config_dir: Some(fx.user_home.join(".config/antre")),
         user_home: Some(fx.user_home.clone()),
     })
 }
@@ -169,7 +169,7 @@ async fn writable_workspace_still_protects_secrets() {
             "echo new > {notes}; cat {creds}; cat {db}; echo x > {creds}",
             notes = q(&fx.data.join("notes.md")),
             creds = q(&fx.data.join("credentials.json")),
-            db = q(&fx.data.join("moltis.db")),
+            db = q(&fx.data.join("antre.db")),
         ),
     )
     .await;
@@ -224,7 +224,7 @@ async fn cannot_read_user_home_or_ssh_keys() {
     assert!(!result.stdout.contains("diary.txt"));
 
     // The real user's home is never in the policy either.
-    if let Some(real_home) = moltis_config::home_dir() {
+    if let Some(real_home) = antre_config::home_dir() {
         let result = run(&sb, &format!("ls -a {}", q(&real_home.join(".ssh")))).await;
         assert!(
             result.stdout.trim().is_empty(),
@@ -268,7 +268,7 @@ async fn host_environment_is_not_inherited() {
     assert_eq!(result.exit_code, 0, "stderr: {}", result.stderr);
     // `cargo test` exports CARGO_* to the test process.
     assert!(!result.stdout.contains("CARGO_"));
-    assert!(result.stdout.contains("MOLTIS_SANDBOX=os"));
+    assert!(result.stdout.contains("ANTRE_SANDBOX=os"));
 }
 
 /// Prints CONNECTED when a TCP connection to `port` succeeds.

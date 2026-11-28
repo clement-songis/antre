@@ -21,7 +21,7 @@ fn backend_ids_parse_os_backends() {
 
 #[test]
 fn schema_config_carries_os_paths() {
-    let schema = moltis_config::schema::SandboxConfig {
+    let schema = antre_config::schema::SandboxConfig {
         os_read_paths: vec!["/opt/docs".into()],
         os_write_paths: vec!["projects".into()],
         ..Default::default()

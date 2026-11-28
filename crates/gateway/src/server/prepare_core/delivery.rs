@@ -11,11 +11,11 @@ use crate::state::GatewayState;
 /// The worker first requeues sends a previous process left half-done, so
 /// replies interrupted by a restart are not lost.
 pub(super) fn install_delivery(state: &Arc<GatewayState>, db_pool: &SqlitePool) {
-    let outbox = moltis_delivery::Outbox::new(
-        moltis_delivery::DeliveryStore::new(db_pool.clone()),
-        moltis_delivery::RetryPolicy::from(&state.config.chat.delivery),
+    let outbox = antre_delivery::Outbox::new(
+        antre_delivery::DeliveryStore::new(db_pool.clone()),
+        antre_delivery::RetryPolicy::from(&state.config.chat.delivery),
     );
-    moltis_chat::channel_delivery::install(
+    antre_chat::channel_delivery::install(
         &outbox,
         &crate::chat::GatewayChatRuntime::from_state(Arc::clone(state)),
     );

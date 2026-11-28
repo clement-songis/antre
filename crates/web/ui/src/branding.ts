@@ -6,7 +6,7 @@ function trimString(value: unknown): string {
 
 export function identityName(identity: Partial<ResolvedIdentity> | null | undefined): string {
 	const name = trimString(identity?.name);
-	return name || "moltis";
+	return name || "antre";
 }
 
 export function identityEmoji(identity: Partial<ResolvedIdentity> | null | undefined): string {

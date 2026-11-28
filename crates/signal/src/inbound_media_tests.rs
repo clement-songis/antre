@@ -3,12 +3,12 @@
 use std::sync::{Arc, Mutex, RwLock};
 
 use {
-    async_trait::async_trait,
-    base64::{Engine as _, engine::general_purpose::STANDARD as BASE64},
-    moltis_channels::{
+    antre_channels::{
         ChannelAttachment, ChannelEvent, ChannelEventSink, ChannelMessageKind, ChannelMessageMeta,
         ChannelReplyTarget, Result, SavedChannelFile, gating::DmPolicy, otp::OtpState,
     },
+    async_trait::async_trait,
+    base64::{Engine as _, engine::general_purpose::STANDARD as BASE64},
     serde_json::{Value, json},
     tokio::{
         io::{AsyncReadExt, AsyncWriteExt},
@@ -188,7 +188,7 @@ impl ChannelEventSink for RecordingSink {
             .push((audio_data.to_vec(), format.to_string()));
         self.transcript
             .map(ToString::to_string)
-            .ok_or_else(|| moltis_channels::Error::unavailable("stt down"))
+            .ok_or_else(|| antre_channels::Error::unavailable("stt down"))
     }
 
     async fn voice_stt_available(&self) -> bool {
@@ -261,7 +261,7 @@ fn voice_attachment() -> Value {
 async fn voice_note_is_downloaded_transcribed_and_dispatched() {
     let sink = Arc::new(RecordingSink {
         stt_available: true,
-        transcript: Some("bonjour moltis"),
+        transcript: Some("bonjour antre"),
         ..Default::default()
     });
     let calls = run(Arc::clone(&sink), voice_attachment()).await;
@@ -285,7 +285,7 @@ async fn voice_note_is_downloaded_transcribed_and_dispatched() {
     )]);
     let dispatched = sink.dispatched.lock().unwrap_or_else(|e| e.into_inner());
     assert_eq!(dispatched.len(), 1);
-    assert_eq!(dispatched[0].0, "bonjour moltis");
+    assert_eq!(dispatched[0].0, "bonjour antre");
     assert!(matches!(
         dispatched[0].1.message_kind,
         Some(ChannelMessageKind::Voice)

@@ -1,27 +1,27 @@
 [package]
 edition.workspace = true
-name              = "moltis-nostr"
+name              = "antre-nostr"
 version.workspace = true
 
 [dependencies]
-async-trait     = { workspace = true }
-moltis-channels = { workspace = true }
-moltis-common   = { workspace = true }
-moltis-config   = { workspace = true }
-moltis-metrics  = { optional = true, workspace = true }
-nostr-sdk       = { workspace = true }
-secrecy         = { workspace = true }
-serde           = { workspace = true }
-serde_json      = { workspace = true }
-thiserror       = { workspace = true }
-time            = { workspace = true }
-tokio           = { workspace = true }
-tokio-util      = { workspace = true }
-tracing         = { workspace = true }
+antre-channels = { workspace = true }
+antre-common   = { workspace = true }
+antre-config   = { workspace = true }
+antre-metrics  = { optional = true, workspace = true }
+async-trait    = { workspace = true }
+nostr-sdk      = { workspace = true }
+secrecy        = { workspace = true }
+serde          = { workspace = true }
+serde_json     = { workspace = true }
+thiserror      = { workspace = true }
+time           = { workspace = true }
+tokio          = { workspace = true }
+tokio-util     = { workspace = true }
+tracing        = { workspace = true }
 
 [features]
 default = []
-metrics = ["dep:moltis-metrics"]
+metrics = ["dep:antre-metrics"]
 
 [dev-dependencies]
 nostr-relay-builder = { workspace = true }

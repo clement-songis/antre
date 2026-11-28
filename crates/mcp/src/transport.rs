@@ -46,7 +46,7 @@ use {
         traits::McpTransport,
         types::{JsonRpcNotification, JsonRpcRequest, JsonRpcResponse},
     },
-    moltis_common::process_tree::OwnedProcessTree,
+    antre_common::process_tree::OwnedProcessTree,
 };
 
 const MAX_MCP_STDOUT_LINE_BYTES: usize = 4 * 1024 * 1024;

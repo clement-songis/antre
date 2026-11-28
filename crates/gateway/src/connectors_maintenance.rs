@@ -80,7 +80,7 @@ impl ConnectorManager {
 
     async fn write_dataset_projection_locked(&self, dataset: &Dataset) -> Result<()> {
         let items = self.all_active_items(&dataset.id).await?;
-        moltis_connectors::write_projection(&self.export_root, &dataset.name, dataset, &items)
+        antre_connectors::write_projection(&self.export_root, &dataset.name, dataset, &items)
             .await
             .map_err(ConnectorManagerError::from)?;
         let current = self.dataset_required(&dataset.id).await?;
@@ -181,7 +181,7 @@ impl ConnectorManager {
         if !(dataset.projections.jsonl || dataset.projections.markdown) {
             return Ok(None);
         }
-        moltis_connectors::projection_directory(&self.export_root, &dataset.name, &dataset.id)
+        antre_connectors::projection_directory(&self.export_root, &dataset.name, &dataset.id)
             .map(Some)
             .map_err(ConnectorManagerError::from)
     }
@@ -206,7 +206,7 @@ impl ConnectorManager {
 
     pub(super) async fn reconcile_projection_directories(&self) -> Result<()> {
         let mut maintenance = self.projection_maintenance.lock().await;
-        moltis_connectors::cleanup_projection_artifacts(&self.export_root)
+        antre_connectors::cleanup_projection_artifacts(&self.export_root)
             .await
             .map_err(ConnectorManagerError::from)?;
         let accounts = self

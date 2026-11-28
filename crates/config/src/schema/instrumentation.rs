@@ -3,7 +3,7 @@
 //! One `[instrumentation]` section configures every backend, because they are
 //! fed from a single instrumentation pass in the agent runtime. Each backend
 //! has its own sub-table and its own content policy — see the `profile` module
-//! in `moltis-observability` for why an LLM observability product and an
+//! in `antre-observability` for why an LLM observability product and an
 //! infrastructure APM must not receive the same payload.
 
 use {
@@ -43,8 +43,8 @@ fn default_langfuse_host() -> String {
 
 /// How much conversation content a backend receives.
 ///
-/// Mirrors `moltis_observability::profile::ContentCapture`; kept as a separate
-/// type so `moltis-config` does not depend on the observability crate, and
+/// Mirrors `antre_observability::profile::ContentCapture`; kept as a separate
+/// type so `antre-config` does not depend on the observability crate, and
 /// converted at the boundary.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -119,7 +119,7 @@ pub struct InstrumentationConfig {
     /// Deployment environment reported to every backend.
     #[serde(default = "default_environment")]
     pub environment: String,
-    /// Build release identifier. Defaults to the running Moltis version.
+    /// Build release identifier. Defaults to the running Antre version.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub release: Option<String>,
     /// Fraction of turns to trace, in `0.0..=1.0`.
@@ -337,7 +337,7 @@ fn default_datadog_endpoint() -> String {
 }
 
 fn default_datadog_service() -> String {
-    "moltis".to_string()
+    "antre".to_string()
 }
 
 impl Default for DatadogSettings {
@@ -362,7 +362,7 @@ mod tests {
 
     #[test]
     fn instrumentation_is_off_by_default() {
-        // Unlike every other Moltis feature flag: enabling this ships
+        // Unlike every other Antre feature flag: enabling this ships
         // conversation content to a third party.
         let config = InstrumentationConfig::default();
         assert!(!config.enabled);
@@ -459,7 +459,7 @@ mod tests {
     #[test]
     fn datadog_defaults_to_the_local_agent_endpoint() {
         // The overwhelmingly common deployment: Agent on localhost, no API key
-        // needed in Moltis at all.
+        // needed in Antre at all.
         let settings = DatadogSettings::default();
         assert_eq!(settings.endpoint, "http://localhost:4318/v1/traces");
         assert!(settings.api_key.is_none());

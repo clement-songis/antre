@@ -1,9 +1,9 @@
 //! Build test providers through the same static registration path as the daemon.
 
 use {
-    moltis_agents::model::LlmProvider,
-    moltis_config::schema::{ProviderEntry, ProvidersConfig},
-    moltis_providers::ProviderRegistry,
+    antre_agents::model::LlmProvider,
+    antre_config::schema::{ProviderEntry, ProvidersConfig},
+    antre_providers::ProviderRegistry,
     secrecy::Secret,
     std::{collections::HashMap, sync::Arc},
 };

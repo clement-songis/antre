@@ -19,7 +19,7 @@ use crate::{
 };
 
 const BASE_URL: &str = "https://clawhub.ai";
-const USER_AGENT: &str = "moltis-skills";
+const USER_AGENT: &str = "antre-skills";
 const REQUEST_TIMEOUT_SECS: u64 = 15;
 
 // ── API response types ──────────────────────────────────────────────────────

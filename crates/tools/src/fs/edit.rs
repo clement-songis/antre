@@ -6,15 +6,15 @@
 //! can fix its input.
 
 use {
+    antre_agents::tool_registry::AgentTool,
     async_trait::async_trait,
-    moltis_agents::tool_registry::AgentTool,
     serde_json::{Value, json},
     std::{io::Write as _, path::Path, sync::Arc},
     tracing::instrument,
 };
 
 #[cfg(feature = "metrics")]
-use moltis_metrics::{counter, labels, tools as tools_metrics};
+use antre_metrics::{counter, labels, tools as tools_metrics};
 
 use crate::{
     Result,

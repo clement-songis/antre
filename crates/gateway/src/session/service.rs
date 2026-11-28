@@ -1,17 +1,17 @@
 use super::*;
 
-fn default_channel_session_key(target: &moltis_channels::ChannelReplyTarget) -> String {
+fn default_channel_session_key(target: &antre_channels::ChannelReplyTarget) -> String {
     target.default_session_key()
 }
 
 async fn is_current_channel_session(
     metadata: &SqliteSessionMetadata,
-    entry: &moltis_sessions::metadata::SessionEntry,
+    entry: &antre_sessions::metadata::SessionEntry,
 ) -> bool {
     let Some(binding_json) = entry.channel_binding.as_deref() else {
         return false;
     };
-    let Ok(target) = serde_json::from_str::<moltis_channels::ChannelReplyTarget>(binding_json)
+    let Ok(target) = serde_json::from_str::<antre_channels::ChannelReplyTarget>(binding_json)
     else {
         return false;
     };
@@ -30,7 +30,7 @@ async fn is_current_channel_session(
 
 async fn is_archivable_entry(
     metadata: &SqliteSessionMetadata,
-    entry: &moltis_sessions::metadata::SessionEntry,
+    entry: &antre_sessions::metadata::SessionEntry,
 ) -> bool {
     !is_current_channel_session(metadata, entry).await
 }
@@ -46,11 +46,9 @@ async fn is_archivable_entry(
 /// A session that was merely *attached* to a channel (via `/attach`) has its own
 /// key, so unbinding returns the chat to its default session and restores the
 /// session to normal use. That is the case this exists to allow.
-fn channel_binding_clear_refusal(
-    entry: &moltis_sessions::metadata::SessionEntry,
-) -> Option<String> {
+fn channel_binding_clear_refusal(entry: &antre_sessions::metadata::SessionEntry) -> Option<String> {
     let binding_json = entry.channel_binding.as_deref()?;
-    let target = serde_json::from_str::<moltis_channels::ChannelReplyTarget>(binding_json).ok()?;
+    let target = serde_json::from_str::<antre_channels::ChannelReplyTarget>(binding_json).ok()?;
     (default_channel_session_key(&target) == entry.key).then(|| {
         format!(
             "session '{}' is a channel's own conversation and cannot be unbound. \
@@ -203,7 +201,7 @@ impl LiveSessionService {
 
     pub(super) async fn resolve_agent_id_for_entry(
         &self,
-        entry: &moltis_sessions::metadata::SessionEntry,
+        entry: &antre_sessions::metadata::SessionEntry,
         patch_if_invalid: bool,
     ) -> String {
         let fallback = self.default_agent_id().await;
@@ -256,7 +254,7 @@ impl LiveSessionService {
         &self,
         key: &str,
         inherit_from_key: Option<&str>,
-    ) -> Option<moltis_sessions::metadata::SessionEntry> {
+    ) -> Option<antre_sessions::metadata::SessionEntry> {
         let entry = self.metadata.get(key).await?;
         if entry
             .agent_id
@@ -469,7 +467,7 @@ impl SessionService for LiveSessionService {
                 && let Some(ref hooks) = self.hook_registry
             {
                 let channel = resolve_hook_channel_binding(key, Some(&entry));
-                let payload = moltis_common::hooks::HookPayload::SessionStart {
+                let payload = antre_common::hooks::HookPayload::SessionStart {
                     session_key: key.to_string(),
                     channel,
                 };
@@ -525,7 +523,7 @@ impl SessionService for LiveSessionService {
             && let Some(ref hooks) = self.hook_registry
         {
             let channel = resolve_hook_channel_binding(key, Some(&entry));
-            let payload = moltis_common::hooks::HookPayload::SessionStart {
+            let payload = antre_common::hooks::HookPayload::SessionStart {
                 session_key: key.to_string(),
                 channel,
             };

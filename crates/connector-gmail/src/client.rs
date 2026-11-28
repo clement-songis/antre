@@ -1,7 +1,7 @@
 use {
+    antre_oauth::{OAuthConfig, OAuthFlow},
     async_trait::async_trait,
     futures::TryStreamExt,
-    moltis_oauth::{OAuthConfig, OAuthFlow},
     secrecy::{ExposeSecret, Secret},
     serde::de::DeserializeOwned,
     std::{path::Path, sync::Arc, time::Duration},
@@ -86,7 +86,7 @@ impl NativeGmailClient {
             GmailConnectorError::ServerResponse(format!("invalid fixed Gmail API URL: {error}"))
         })?;
         Ok(Self {
-            client: moltis_common::http_client::build_default_http_client(),
+            client: antre_common::http_client::build_default_http_client(),
             base_url,
             tokens: Arc::new(OAuthAccessTokenProvider { credential }),
             access_token: tokio::sync::OnceCell::new(),

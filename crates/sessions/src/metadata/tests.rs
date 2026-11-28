@@ -344,22 +344,22 @@ fn test_worktree_branch() {
     meta.upsert("main", None);
     assert!(meta.get("main").unwrap().worktree_branch.is_none());
 
-    meta.set_worktree_branch("main", Some("moltis/abc".to_string()));
+    meta.set_worktree_branch("main", Some("antre/abc".to_string()));
     assert_eq!(
         meta.get("main").unwrap().worktree_branch.as_deref(),
-        Some("moltis/abc")
+        Some("antre/abc")
     );
 
     meta.set_worktree_branch("main", None);
     assert!(meta.get("main").unwrap().worktree_branch.is_none());
 
     // Round-trip through save/load.
-    meta.set_worktree_branch("main", Some("moltis/xyz".to_string()));
+    meta.set_worktree_branch("main", Some("antre/xyz".to_string()));
     meta.save().unwrap();
     let reloaded = SessionMetadata::load(path).unwrap();
     assert_eq!(
         reloaded.get("main").unwrap().worktree_branch.as_deref(),
-        Some("moltis/xyz")
+        Some("antre/xyz")
     );
 }
 
@@ -371,11 +371,11 @@ async fn test_sqlite_worktree_branch() {
     meta.upsert("main", None).await.unwrap();
     assert!(meta.get("main").await.unwrap().worktree_branch.is_none());
 
-    meta.set_worktree_branch("main", Some("moltis/abc".to_string()))
+    meta.set_worktree_branch("main", Some("antre/abc".to_string()))
         .await;
     assert_eq!(
         meta.get("main").await.unwrap().worktree_branch.as_deref(),
-        Some("moltis/abc")
+        Some("antre/abc")
     );
 
     meta.set_worktree_branch("main", None).await;

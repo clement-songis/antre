@@ -1,6 +1,6 @@
 # Mods
 
-Mods extend Moltis with tools and hooks that run as sandboxed WebAssembly
+Mods extend Antre with tools and hooks that run as sandboxed WebAssembly
 components. A mod asks for capabilities in its manifest; nothing runs until a
 person approves exactly that set of capabilities, and an update that asks for
 more waits for a new approval while the old version keeps running.
@@ -13,8 +13,8 @@ This page covers the server side (phase 1 of the mod SDK). UI contributions
 
 | Contribution | Declared in | Runs as |
 |---|---|---|
-| Tool offered to the agent | `[[contributes.tools]]` | `moltis:mods/tools.call` |
-| Hook handler (observe or intercept) | `[[contributes.hooks]]` | `moltis:mods/hooks.handle` |
+| Tool offered to the agent | `[[contributes.tools]]` | `antre:mods/tools.call` |
+| Hook handler (observe or intercept) | `[[contributes.hooks]]` | `antre:mods/hooks.handle` |
 
 Mod tools are available to trusted (owner) turns only, never to channel or
 webhook turns. A mod tool cannot replace a built-in tool or another mod's tool
@@ -24,11 +24,11 @@ with the same name: the first registration wins.
 
 ```text
 word-stats/
-  moltis-mod.toml           # manifest (required)
-  server/word_stats.wasm    # component for the moltis:mods/plugin world
+  antre-mod.toml           # manifest (required)
+  server/word_stats.wasm    # component for the antre:mods/plugin world
 ```
 
-The WIT contract is `wit/mod/moltis-mod.wit` (package `moltis:mods@0.1.0`).
+The WIT contract is `wit/mod/antre-mod.wit` (package `antre:mods@0.1.0`).
 Build a Rust mod with `wit-bindgen` for the `plugin` world and the
 `wasm32-wasip2` target. The demo in `examples/mods/word-stats` is a complete
 example; `just mod-demo` builds it into `target/mods/word-stats`.
@@ -58,12 +58,12 @@ parameters  = { type = "object", properties = { text = { type = "string" } }, re
 
 [[contributes.hooks]]
 id       = "count-sessions"
-events   = ["SessionStart"]        # Moltis or Claude Code event names
+events   = ["SessionStart"]        # Antre or Claude Code event names
 mode     = "observe"               # or "intercept" (block / modify)
 priority = 0
 ```
 
-Unknown keys are errors. The publishers `core`, `local`, `moltis` and
+Unknown keys are errors. The publishers `core`, `local`, `antre` and
 `antre` are reserved. Packages cannot ask for `exec` (native processes).
 
 ## Capabilities and consent
@@ -104,8 +104,8 @@ Each call into a mod gets a fresh instance with:
   sockets.
 
 At install, the host reads the component's imports and rejects it if it
-imports anything outside `moltis:mods/*` and WASI, imports `wasi:sockets` or
-`wasi:http`, or imports `moltis:mods/http` without declaring `net` hosts.
+imports anything outside `antre:mods/*` and WASI, imports `wasi:sockets` or
+`wasi:http`, or imports `antre:mods/http` without declaring `net` hosts.
 At run time every host call checks the grant again: storage calls fail with
 `capability denied: storage` without a storage grant, HTTP calls fail with
 `denied` for hosts not granted (exact names only; `*.example.org` for

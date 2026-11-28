@@ -1,6 +1,6 @@
 use secrecy::{ExposeSecret, Secret};
 
-use crate::{AgentIdentity, UserProfile, schema::MoltisConfig};
+use crate::{AgentIdentity, UserProfile, schema::AntreConfig};
 
 use super::*;
 
@@ -57,8 +57,8 @@ fn set_nested_overwrites_existing() {
 
 #[test]
 fn apply_env_overrides_auth_disabled() {
-    let vars = vec![("MOLTIS_AUTH__DISABLED".into(), "true".into())];
-    let config = MoltisConfig::default();
+    let vars = vec![("ANTRE_AUTH__DISABLED".into(), "true".into())];
+    let config = AntreConfig::default();
     assert!(!config.auth.disabled);
     assert!(config.auth.vault_enabled);
     let config = apply_env_overrides_with(config, vars.into_iter());
@@ -67,49 +67,49 @@ fn apply_env_overrides_auth_disabled() {
 
 #[test]
 fn apply_env_overrides_tools_agent_timeout() {
-    let vars = vec![("MOLTIS_TOOLS__AGENT_TIMEOUT_SECS".into(), "120".into())];
-    let config = apply_env_overrides_with(MoltisConfig::default(), vars.into_iter());
+    let vars = vec![("ANTRE_TOOLS__AGENT_TIMEOUT_SECS".into(), "120".into())];
+    let config = apply_env_overrides_with(AntreConfig::default(), vars.into_iter());
     assert_eq!(config.tools.agent_timeout_secs, 120);
 }
 
 #[test]
 fn apply_env_overrides_tools_agent_max_iterations() {
-    let vars = vec![("MOLTIS_TOOLS__AGENT_MAX_ITERATIONS".into(), "64".into())];
-    let config = apply_env_overrides_with(MoltisConfig::default(), vars.into_iter());
+    let vars = vec![("ANTRE_TOOLS__AGENT_MAX_ITERATIONS".into(), "64".into())];
+    let config = apply_env_overrides_with(AntreConfig::default(), vars.into_iter());
     assert_eq!(config.tools.agent_max_iterations, 64);
 }
 
 #[test]
 fn apply_env_overrides_ignores_excluded() {
-    // MOLTIS_CONFIG_DIR should not be treated as a config field override.
-    let vars = vec![("MOLTIS_CONFIG_DIR".into(), "/tmp/test".into())];
-    let config = apply_env_overrides_with(MoltisConfig::default(), vars.into_iter());
+    // ANTRE_CONFIG_DIR should not be treated as a config field override.
+    let vars = vec![("ANTRE_CONFIG_DIR".into(), "/tmp/test".into())];
+    let config = apply_env_overrides_with(AntreConfig::default(), vars.into_iter());
     assert!(!config.auth.disabled);
 }
 
 #[test]
 fn apply_env_overrides_ignores_external_url() {
-    // MOLTIS_EXTERNAL_URL is handled by effective_external_url(), not by
+    // ANTRE_EXTERNAL_URL is handled by effective_external_url(), not by
     // the generic env override mechanism.
     let vars = vec![(
-        "MOLTIS_EXTERNAL_URL".into(),
+        "ANTRE_EXTERNAL_URL".into(),
         "https://test.example.com".into(),
     )];
-    let config = apply_env_overrides_with(MoltisConfig::default(), vars.into_iter());
+    let config = apply_env_overrides_with(AntreConfig::default(), vars.into_iter());
     assert!(
         config.server.external_url.is_none(),
-        "MOLTIS_EXTERNAL_URL should be excluded from generic env overrides"
+        "ANTRE_EXTERNAL_URL should be excluded from generic env overrides"
     );
 }
 
 #[test]
 fn apply_env_overrides_multiple() {
     let vars = vec![
-        ("MOLTIS_AUTH__DISABLED".into(), "true".into()),
-        ("MOLTIS_TOOLS__AGENT_TIMEOUT_SECS".into(), "300".into()),
-        ("MOLTIS_TAILSCALE__MODE".into(), "funnel".into()),
+        ("ANTRE_AUTH__DISABLED".into(), "true".into()),
+        ("ANTRE_TOOLS__AGENT_TIMEOUT_SECS".into(), "300".into()),
+        ("ANTRE_TAILSCALE__MODE".into(), "funnel".into()),
     ];
-    let config = apply_env_overrides_with(MoltisConfig::default(), vars.into_iter());
+    let config = apply_env_overrides_with(AntreConfig::default(), vars.into_iter());
     assert!(config.auth.disabled);
     assert_eq!(config.tools.agent_timeout_secs, 300);
     assert_eq!(config.tailscale.mode, "funnel");
@@ -118,34 +118,34 @@ fn apply_env_overrides_multiple() {
 #[test]
 fn apply_env_overrides_deep_nesting() {
     let vars = vec![(
-        "MOLTIS_TOOLS__EXEC__DEFAULT_TIMEOUT_SECS".into(),
+        "ANTRE_TOOLS__EXEC__DEFAULT_TIMEOUT_SECS".into(),
         "60".into(),
     )];
-    let config = apply_env_overrides_with(MoltisConfig::default(), vars.into_iter());
+    let config = apply_env_overrides_with(AntreConfig::default(), vars.into_iter());
     assert_eq!(config.tools.exec.default_timeout_secs, 60);
 }
 
 #[test]
 fn apply_env_overrides_mcp_request_timeout() {
-    let vars = vec![("MOLTIS_MCP__REQUEST_TIMEOUT_SECS".into(), "90".into())];
-    let config = apply_env_overrides_with(MoltisConfig::default(), vars.into_iter());
+    let vars = vec![("ANTRE_MCP__REQUEST_TIMEOUT_SECS".into(), "90".into())];
+    let config = apply_env_overrides_with(AntreConfig::default(), vars.into_iter());
     assert_eq!(config.mcp.request_timeout_secs, 90);
 }
 
 #[test]
 fn apply_env_overrides_providers_offered_array() {
     let vars = vec![(
-        "MOLTIS_PROVIDERS__OFFERED".into(),
+        "ANTRE_PROVIDERS__OFFERED".into(),
         "[\"openai\",\"github-copilot\"]".into(),
     )];
-    let config = apply_env_overrides_with(MoltisConfig::default(), vars.into_iter());
+    let config = apply_env_overrides_with(AntreConfig::default(), vars.into_iter());
     assert_eq!(config.providers.offered, vec!["openai", "github-copilot"]);
 }
 
 #[test]
 fn apply_env_overrides_providers_offered_empty_array() {
-    let vars = vec![("MOLTIS_PROVIDERS__OFFERED".into(), "[]".into())];
-    let mut base = MoltisConfig::default();
+    let vars = vec![("ANTRE_PROVIDERS__OFFERED".into(), "[]".into())];
+    let mut base = AntreConfig::default();
     base.providers.offered = vec!["openai".into()];
     let config = apply_env_overrides_with(base, vars.into_iter());
     assert!(
@@ -184,8 +184,8 @@ fn generate_random_port_returns_different_ports() {
 #[test]
 fn write_default_config_writes_template_to_requested_path() {
     let dir = tempfile::tempdir().expect("tempdir");
-    let path = dir.path().join("nested").join("moltis.toml");
-    let mut config = MoltisConfig::default();
+    let path = dir.path().join("nested").join("antre.toml");
+    let mut config = AntreConfig::default();
     config.server.port = 23456;
 
     write_default_config(&path, &config).expect("write default config");
@@ -206,7 +206,7 @@ fn write_default_config_writes_template_to_requested_path() {
         "generated template should explain it is override-only"
     );
     assert!(
-        raw.contains("# push_name = \"Moltis\""),
+        raw.contains("# push_name = \"Antre\""),
         "generated template should document the WhatsApp push name override"
     );
     assert!(
@@ -216,7 +216,7 @@ fn write_default_config_writes_template_to_requested_path() {
         "generated template should document every reasoning effort value"
     );
 
-    let parsed: MoltisConfig = parse_config(&raw, &path).expect("parse generated config");
+    let parsed: AntreConfig = parse_config(&raw, &path).expect("parse generated config");
     assert_eq!(
         parsed.server.port, 23456,
         "parsed config should have the correct port"
@@ -226,10 +226,10 @@ fn write_default_config_writes_template_to_requested_path() {
 #[test]
 fn write_default_config_does_not_overwrite_existing_file() {
     let dir = tempfile::tempdir().expect("tempdir");
-    let path = dir.path().join("moltis.toml");
+    let path = dir.path().join("antre.toml");
     std::fs::write(&path, "existing = true\n").expect("seed config");
 
-    let mut config = MoltisConfig::default();
+    let mut config = AntreConfig::default();
     config.server.port = 34567;
     write_default_config(&path, &config).expect("write default config");
 
@@ -240,7 +240,7 @@ fn write_default_config_does_not_overwrite_existing_file() {
 #[test]
 fn save_config_to_path_preserves_comment_blocks() {
     let dir = tempfile::tempdir().expect("tempdir");
-    let path = dir.path().join("moltis.toml");
+    let path = dir.path().join("antre.toml");
     std::fs::write(&path, crate::template::default_config_template(18789)).expect("write template");
 
     let mut config = load_config(&path).expect("load template config");
@@ -251,7 +251,7 @@ fn save_config_to_path_preserves_comment_blocks() {
 
     let saved = std::fs::read_to_string(&path).expect("read saved config");
     // Header comments from the template must survive the merge.
-    assert!(saved.contains("# Moltis User Configuration"));
+    assert!(saved.contains("# Antre User Configuration"));
     assert!(saved.contains("disabled = true"));
     assert!(saved.contains("http_request_logs = true"));
 }
@@ -259,7 +259,7 @@ fn save_config_to_path_preserves_comment_blocks() {
 #[test]
 fn save_config_to_path_removes_stale_keys_when_values_are_cleared() {
     let dir = tempfile::tempdir().expect("tempdir");
-    let path = dir.path().join("moltis.toml");
+    let path = dir.path().join("antre.toml");
     std::fs::write(
         &path,
         r#"[server]
@@ -273,15 +273,15 @@ name = "Rex"
     .expect("write seed config");
 
     // Use parse_config directly to avoid env-override pollution
-    // (e.g. MOLTIS_IDENTITY__NAME in the process environment).
+    // (e.g. ANTRE_IDENTITY__NAME in the process environment).
     let raw = std::fs::read_to_string(&path).expect("read seed");
-    let mut config: MoltisConfig = parse_config(&raw, &path).expect("parse seed config");
+    let mut config: AntreConfig = parse_config(&raw, &path).expect("parse seed config");
     config.identity.name = None;
 
     save_config_to_path(&path, &config).expect("save config");
 
     let saved = std::fs::read_to_string(&path).expect("read saved file");
-    let reloaded: MoltisConfig = parse_config(&saved, &path).expect("reload config");
+    let reloaded: AntreConfig = parse_config(&saved, &path).expect("reload config");
     assert!(
         reloaded.identity.name.is_none(),
         "identity.name should be removed when cleared"
@@ -442,7 +442,7 @@ fn resolve_user_profile_prefers_user_md_over_config() {
     let dir = tempfile::tempdir().expect("tempdir");
     set_data_dir(dir.path().to_path_buf());
 
-    let config = MoltisConfig {
+    let config = AntreConfig {
         user: UserProfile {
             name: Some("Config User".to_string()),
             timezone: Some(crate::schema::Timezone::from(chrono_tz::Europe::Paris)),
@@ -893,7 +893,7 @@ fn share_dir_override_takes_precedence() {
 fn share_dir_returns_none_when_no_source() {
     clear_share_dir();
     // Without an override, env var, or existing directories, share_dir
-    // should return None (unless /usr/share/moltis or ~/.moltis/share
+    // should return None (unless /usr/share/antre or ~/.antre/share
     // happens to exist on the test machine).
     let _ = share_dir();
 }
@@ -935,7 +935,7 @@ fn normalize_workspace_markdown_content_returns_none_for_comment_only_content() 
 #[test]
 fn gh684_template_section_order_preserved_after_save() {
     let dir = tempfile::tempdir().expect("tempdir");
-    let path = dir.path().join("moltis.toml");
+    let path = dir.path().join("antre.toml");
     let template = crate::template::default_config_template(18789);
     std::fs::write(&path, &template).expect("write template");
 
@@ -947,7 +947,7 @@ fn gh684_template_section_order_preserved_after_save() {
 
     // Load, modify, save — simulating a web UI setting change
     let raw = std::fs::read_to_string(&path).expect("read");
-    let mut config: MoltisConfig = parse_config(&raw, &path).expect("parse");
+    let mut config: AntreConfig = parse_config(&raw, &path).expect("parse");
     config.auth.disabled = true;
     config.server.http_request_logs = true;
 
@@ -1060,7 +1060,7 @@ fn load_guidelines_md_for_agent_falls_back_to_root() {
     let dir = tempfile::tempdir().expect("tempdir");
     set_data_dir(dir.path().to_path_buf());
 
-    let docs_dir = dir.path().join("docs/moltis");
+    let docs_dir = dir.path().join("docs/antre");
     std::fs::create_dir_all(&docs_dir).unwrap();
     std::fs::write(docs_dir.join("GUIDELINES.md"), "Root guidelines").unwrap();
     assert_eq!(
@@ -1082,7 +1082,7 @@ fn load_guidelines_md_for_agent_falls_back_to_root() {
 #[test]
 fn apply_env_overrides_vercel_token_alias() {
     let vars = vec![("VERCEL_TOKEN".into(), "ver_test_123".into())];
-    let config = apply_env_overrides_with(MoltisConfig::default(), vars.into_iter());
+    let config = apply_env_overrides_with(AntreConfig::default(), vars.into_iter());
     assert_eq!(
         config
             .tools
@@ -1100,7 +1100,7 @@ fn apply_env_overrides_vercel_token_alias() {
 #[test]
 fn apply_env_overrides_daytona_api_key_alias() {
     let vars = vec![("DAYTONA_API_KEY".into(), "dyt_test_456".into())];
-    let config = apply_env_overrides_with(MoltisConfig::default(), vars.into_iter());
+    let config = apply_env_overrides_with(AntreConfig::default(), vars.into_iter());
     assert_eq!(
         config
             .tools
@@ -1118,7 +1118,7 @@ fn apply_env_overrides_daytona_api_key_alias() {
 #[test]
 fn apply_env_overrides_alias_does_not_overwrite_explicit() {
     let vars = vec![("VERCEL_TOKEN".into(), "from_env".into())];
-    let mut config = MoltisConfig::default();
+    let mut config = AntreConfig::default();
     config.tools.exec.sandbox.vercel_token = Some(Secret::new("from_config".into()));
     let config = apply_env_overrides_with(config, vars.into_iter());
     assert_eq!(
@@ -1140,9 +1140,9 @@ fn apply_env_overrides_without_aliases_keeps_third_party_env_out() {
     let vars = vec![
         ("VERCEL_TOKEN".into(), "ver_secret".into()),
         ("DAYTONA_API_KEY".into(), "dyt_secret".into()),
-        ("MOLTIS_AUTH__DISABLED".into(), "true".into()),
+        ("ANTRE_AUTH__DISABLED".into(), "true".into()),
     ];
-    let config = apply_env_overrides_without_aliases(MoltisConfig::default(), vars.into_iter());
+    let config = apply_env_overrides_without_aliases(AntreConfig::default(), vars.into_iter());
     assert!(config.auth.disabled);
     assert!(config.tools.exec.sandbox.vercel_token.is_none());
     assert!(config.tools.exec.sandbox.daytona_api_key.is_none());

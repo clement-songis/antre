@@ -5,7 +5,7 @@ use std::{
 };
 
 use {
-    moltis_connectors::{ConnectorItemInput, SourceDisposition, SourceObservation, SourceStateMap},
+    antre_connectors::{ConnectorItemInput, SourceDisposition, SourceObservation, SourceStateMap},
     serde::{Deserialize, de::DeserializeOwned},
     sha2::{Digest, Sha256},
 };
@@ -611,9 +611,9 @@ fn message_search_text(body: &HimalayaMessageBody) -> String {
 fn record_operation(operation: &'static str, started: Instant, item_count: usize) {
     #[cfg(feature = "metrics")]
     {
-        metrics::counter!("moltis_connector_himalaya_operations_total", "operation" => operation)
+        metrics::counter!("antre_connector_himalaya_operations_total", "operation" => operation)
             .increment(1);
-        metrics::histogram!("moltis_connector_himalaya_operation_duration_seconds", "operation" => operation)
+        metrics::histogram!("antre_connector_himalaya_operation_duration_seconds", "operation" => operation)
             .record(started.elapsed().as_secs_f64());
     }
     #[cfg(feature = "tracing")]
@@ -773,7 +773,7 @@ mod tests {
         }))?;
         let version = envelope_version(&envelope)?;
         let remote_id = remote_id(HimalayaBackend::Jmap, "INBOX", None, &envelope)?;
-        let state = moltis_connectors::SourceState {
+        let state = antre_connectors::SourceState {
             dataset_id: "d".to_owned(),
             remote_id: remote_id.clone(),
             remote_version: Some(version),

@@ -1,11 +1,11 @@
 use std::{collections::HashMap, sync::Mutex};
 
 use {
-    async_trait::async_trait,
-    moltis_channels::{
+    antre_channels::{
         ChannelEvent, ChannelEventSink, ChannelMessageMeta, ChannelReplyTarget, ChannelType, Error,
         InboundMediaDownloader, InboundMediaSource, Result, SavedChannelFile,
     },
+    async_trait::async_trait,
     serde_json::json,
 };
 

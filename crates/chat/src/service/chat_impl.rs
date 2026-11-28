@@ -19,7 +19,7 @@ use {
 };
 
 use {
-    moltis_agents::{
+    antre_agents::{
         ChatMessage,
         model::values_to_chat_messages_with_tool_result_limit,
         prompt::{
@@ -27,10 +27,10 @@ use {
             build_system_prompt_with_session_runtime_details,
         },
     },
-    moltis_config::ToolMode,
-    moltis_service_traits::{ChatService, ServiceError, ServiceResult},
-    moltis_sessions::{MessageContent, PersistedMessage},
-    moltis_tools::policy::PolicyContext,
+    antre_config::ToolMode,
+    antre_service_traits::{ChatService, ServiceError, ServiceResult},
+    antre_sessions::{MessageContent, PersistedMessage},
+    antre_tools::policy::PolicyContext,
 };
 
 use crate::{
@@ -184,7 +184,7 @@ impl ChatService for LiveChatService {
         self.state
             .finalize_active_channel_acks(
                 &resolved_run_id,
-                moltis_channels::ChannelAckOutcome::Cancelled,
+                antre_channels::ChannelAckOutcome::Cancelled,
             )
             .await;
         let partial = self
@@ -260,10 +260,7 @@ impl ChatService for LiveChatService {
             crate::channel_acks::merged_ack_keys(removed.iter().map(|m| &m.params));
         if !cancelled_acks.is_empty() {
             self.state
-                .finalize_channel_acks(
-                    cancelled_acks,
-                    moltis_channels::ChannelAckOutcome::Cancelled,
-                )
+                .finalize_channel_acks(cancelled_acks, antre_channels::ChannelAckOutcome::Cancelled)
                 .await;
         }
 
@@ -414,7 +411,7 @@ impl ChatService for LiveChatService {
 
         // Dispatch BeforeCompaction hook.
         if let Some(ref hooks) = self.hook_registry {
-            let payload = moltis_common::hooks::HookPayload::BeforeCompaction {
+            let payload = antre_common::hooks::HookPayload::BeforeCompaction {
                 session_key: session_key.clone(),
                 message_count: history.len(),
             };
@@ -429,7 +426,7 @@ impl ChatService for LiveChatService {
         if let Some(mm) = self.state.memory_manager()
             && let Ok(provider) = self.resolve_provider(&session_key, &history).await
         {
-            let config = moltis_config::discover_and_load();
+            let config = antre_config::discover_and_load();
             let write_mode = config.memory.agent_write_mode;
             if !memory_write_mode_allows_save(write_mode) {
                 debug!(
@@ -440,13 +437,13 @@ impl ChatService for LiveChatService {
                     &history,
                     config.tools.max_tool_result_bytes,
                 );
-                let writer: Arc<dyn moltis_agents::memory_writer::MemoryWriter> =
+                let writer: Arc<dyn antre_agents::memory_writer::MemoryWriter> =
                     Arc::new(AgentScopedMemoryWriter::new(
                         Arc::clone(mm),
                         session_agent_id.clone(),
                         write_mode,
                     ));
-                match moltis_agents::silent_turn::run_silent_memory_turn(
+                match antre_agents::silent_turn::run_silent_memory_turn(
                     provider,
                     &chat_history_for_memory,
                     writer,
@@ -581,7 +578,7 @@ impl ChatService for LiveChatService {
 
         // Save compaction summary to memory file and trigger sync.
         if let Some(mm) = self.state.memory_manager() {
-            let memory_dir = moltis_config::agent_workspace_dir(&session_agent_id).join("memory");
+            let memory_dir = antre_config::agent_workspace_dir(&session_agent_id).join("memory");
             if let Err(e) = tokio::fs::create_dir_all(&memory_dir).await {
                 warn!(error = %e, "compact: failed to create memory dir");
             } else {
@@ -609,7 +606,7 @@ impl ChatService for LiveChatService {
 
         // Dispatch AfterCompaction hook.
         if let Some(ref hooks) = self.hook_registry {
-            let payload = moltis_common::hooks::HookPayload::AfterCompaction {
+            let payload = antre_common::hooks::HookPayload::AfterCompaction {
                 session_key: session_key.clone(),
                 summary_len: summary_for_memory.len(),
             };
@@ -683,7 +680,7 @@ impl ChatService for LiveChatService {
                 Ok(val) => {
                     let dir = val.get("directory").and_then(|v| v.as_str());
                     let context_files = if let Some(d) = dir {
-                        match moltis_projects::context::load_context_files(Path::new(d)) {
+                        match antre_projects::context::load_context_files(Path::new(d)) {
                             Ok(files) => files
                                 .iter()
                                 .map(|f| {
@@ -717,7 +714,7 @@ impl ChatService for LiveChatService {
             .as_ref()
             .and_then(|e| e.mcp_disabled)
             .unwrap_or(false);
-        let config = moltis_config::discover_and_load();
+        let config = antre_config::discover_and_load();
         let tools: Vec<Value> = if supports_tools {
             let registry_guard = self.tool_registry.read().await;
             let list_agent_id = resolve_prompt_agent_id(session_entry.as_ref());
@@ -767,7 +764,7 @@ impl ChatService for LiveChatService {
                 Some(id) => reg.get(id),
                 None => reg.first(),
             };
-            provider.map_or((moltis_agents::model::UNKNOWN_CONTEXT_WINDOW, false), |p| {
+            provider.map_or((antre_agents::model::UNKNOWN_CONTEXT_WINDOW, false), |p| {
                 (p.context_window(), p.context_limits().window.is_some())
             })
         };
@@ -790,7 +787,7 @@ impl ChatService for LiveChatService {
                     config
                         .container_prefix
                         .as_deref()
-                        .unwrap_or("moltis-sandbox"),
+                        .unwrap_or("antre-sandbox"),
                     id.key
                 );
                 runtime_info.runtime_name.unwrap_or(fallback)

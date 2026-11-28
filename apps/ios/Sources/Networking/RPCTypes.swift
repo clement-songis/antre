@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - Protocol constants
 
-enum MoltisProtocol {
+enum AntreProtocol {
     static let version = 4
     static let maxPayloadBytes = 524_288
     static let tickIntervalMs = 30_000

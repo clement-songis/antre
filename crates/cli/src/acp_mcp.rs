@@ -2,13 +2,13 @@ use std::{collections::HashMap, sync::Arc};
 
 use {
     agent_client_protocol as acp,
-    moltis_agents::tool_registry::ToolRegistry,
-    moltis_mcp::{McpManager, McpRegistry, McpServerConfig, StdioLaunchOptions, TransportType},
+    antre_agents::tool_registry::ToolRegistry,
+    antre_mcp::{McpManager, McpRegistry, McpServerConfig, StdioLaunchOptions, TransportType},
     secrecy::Secret,
     tokio::sync::RwLock,
 };
 
-use moltis_acp::{SessionKey, SessionSetup};
+use antre_acp::{SessionKey, SessionSetup};
 
 const MAX_PROVIDER_TOOL_NAME_BYTES: usize = 64;
 
@@ -79,7 +79,7 @@ impl SessionMcpRuntime {
         }
 
         let tools = Arc::new(RwLock::new(ToolRegistry::new()));
-        moltis_mcp_agent_bridge::sync_mcp_tools(&manager, &tools).await;
+        antre_mcp_agent_bridge::sync_mcp_tools(&manager, &tools).await;
         let oversized_tool = {
             let registry = tools.read().await;
             registry.list_schemas().into_iter().find_map(|schema| {

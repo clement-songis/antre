@@ -1,6 +1,6 @@
-//! `MOLTIS_DESKTOP_CAPTURE=path.png`: save a PNG of the window once it has
+//! `ANTRE_DESKTOP_CAPTURE=path.png`: save a PNG of the window once it has
 //! settled, straight from the renderer, then quit when
-//! `MOLTIS_DESKTOP_CAPTURE_QUIT=1`. For visual QA and E2E screenshots.
+//! `ANTRE_DESKTOP_CAPTURE_QUIT=1`. For visual QA and E2E screenshots.
 
 use std::{path::PathBuf, time::Duration};
 
@@ -10,14 +10,14 @@ use gpui::{AnyWindowHandle, App, Task};
 const DEFAULT_SETTLE: Duration = Duration::from_millis(2500);
 
 pub fn install(window: AnyWindowHandle, cx: &mut App) {
-    let Some(path) = std::env::var_os("MOLTIS_DESKTOP_CAPTURE").map(PathBuf::from) else {
+    let Some(path) = std::env::var_os("ANTRE_DESKTOP_CAPTURE").map(PathBuf::from) else {
         return;
     };
-    let settle = std::env::var("MOLTIS_DESKTOP_CAPTURE_DELAY_MS")
+    let settle = std::env::var("ANTRE_DESKTOP_CAPTURE_DELAY_MS")
         .ok()
         .and_then(|ms| ms.parse().ok())
         .map_or(DEFAULT_SETTLE, Duration::from_millis);
-    let quit = std::env::var("MOLTIS_DESKTOP_CAPTURE_QUIT").is_ok_and(|v| v == "1");
+    let quit = std::env::var("ANTRE_DESKTOP_CAPTURE_QUIT").is_ok_and(|v| v == "1");
     let saved = save_after(window, path.clone(), settle, cx);
     cx.spawn(async move |cx| {
         match saved.await {

@@ -72,11 +72,11 @@ pub async fn connect(
     }
 }
 
-/// The daemon configured in `~/.moltis/moltis.toml`, when it answers over
+/// The daemon configured in `~/.antre/antre.toml`, when it answers over
 /// plain HTTP. A TLS daemon is skipped: its self-signed certificate is not
 /// trusted by the system WebView unless the local CA was installed.
 async fn running_local_daemon() -> Option<Url> {
-    let local = moltis_client::local::local_daemon()?;
+    let local = antre_client::local::local_daemon()?;
     if local.endpoint.is_tls() {
         tracing::info!("local daemon uses TLS; starting a sidecar instead");
         return None;
@@ -93,13 +93,13 @@ async fn spawn_sidecar(
     let beside_exe = std::env::current_exe()
         .ok()
         .and_then(|exe| exe.parent().map(std::path::Path::to_path_buf));
-    let binary = sidecar::find_moltis(
+    let binary = sidecar::find_antre(
         options.binary.as_deref(),
         beside_exe.as_deref(),
-        std::env::var_os("MOLTIS_BIN"),
+        std::env::var_os("ANTRE_BIN"),
         std::env::var_os("PATH"),
     )
-    .context("no `moltis` binary found (pass --moltis PATH or set MOLTIS_BIN)")?;
+    .context("no `antre` binary found (pass --antre PATH or set ANTRE_BIN)")?;
     let dirs = options.isolated.then(|| isolated_dirs(app_data));
     let sidecar = sidecar::start(binary, dirs, on_event).await?;
     Ok(Connection {

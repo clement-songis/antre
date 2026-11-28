@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use moltis_config::VoiceSttProvider;
+use antre_config::VoiceSttProvider;
 
 /// Check if Python 3.10+ is available.
 pub(super) async fn check_python_version() -> serde_json::Value {
@@ -360,14 +360,14 @@ pub(super) struct VoiceProvidersResponse {
     stt: Vec<VoiceProviderInfo>,
 }
 
-fn openai_provider_base_url(config: &moltis_config::MoltisConfig) -> Option<&str> {
+fn openai_provider_base_url(config: &antre_config::AntreConfig) -> Option<&str> {
     config
         .providers
         .get("openai")
         .and_then(|provider| provider.base_url.as_deref())
 }
 
-fn openai_tts_base_url(config: &moltis_config::MoltisConfig) -> Option<&str> {
+fn openai_tts_base_url(config: &antre_config::AntreConfig) -> Option<&str> {
     config
         .voice
         .tts
@@ -377,7 +377,7 @@ fn openai_tts_base_url(config: &moltis_config::MoltisConfig) -> Option<&str> {
         .or_else(|| openai_provider_base_url(config))
 }
 
-fn whisper_base_url(config: &moltis_config::MoltisConfig) -> Option<&str> {
+fn whisper_base_url(config: &antre_config::AntreConfig) -> Option<&str> {
     config
         .voice
         .stt
@@ -389,7 +389,7 @@ fn whisper_base_url(config: &moltis_config::MoltisConfig) -> Option<&str> {
 
 /// Detect all available voice providers with their availability status.
 pub(super) async fn detect_voice_providers(
-    config: &moltis_config::MoltisConfig,
+    config: &antre_config::AntreConfig,
 ) -> serde_json::Value {
     use secrecy::ExposeSecret;
 
@@ -446,7 +446,7 @@ pub(super) async fn detect_voice_providers(
             config.voice.tts.elevenlabs.enabled
                 && config.voice.tts.enabled
                 && (config.voice.tts.elevenlabs.api_key.is_some() || env_elevenlabs_key.is_some()),
-            tts_pref == Some(moltis_config::VoiceTtsProvider::ElevenLabs),
+            tts_pref == Some(antre_config::VoiceTtsProvider::ElevenLabs),
             key_source(
                 config.voice.tts.elevenlabs.api_key.is_some(),
                 env_elevenlabs_key.is_some(),
@@ -472,7 +472,7 @@ pub(super) async fn detect_voice_providers(
                     || env_openai_key.is_some()
                     || llm_openai_key.is_some()
                     || llm_openai_base_url.is_some()),
-            tts_pref == Some(moltis_config::VoiceTtsProvider::OpenAi),
+            tts_pref == Some(antre_config::VoiceTtsProvider::OpenAi),
             key_source(
                 config.voice.tts.openai.api_key.is_some()
                     || config.voice.tts.openai.base_url.is_some(),
@@ -491,7 +491,7 @@ pub(super) async fn detect_voice_providers(
             config.voice.tts.google.enabled
                 && config.voice.tts.enabled
                 && (config.voice.tts.google.api_key.is_some() || env_google_key.is_some()),
-            tts_pref == Some(moltis_config::VoiceTtsProvider::Google),
+            tts_pref == Some(antre_config::VoiceTtsProvider::Google),
             key_source(
                 config.voice.tts.google.api_key.is_some(),
                 env_google_key.is_some(),
@@ -510,7 +510,7 @@ pub(super) async fn detect_voice_providers(
                 && config.voice.tts.enabled
                 && piper_available.is_some()
                 && config.voice.tts.piper.model_path.is_some(),
-            tts_pref == Some(moltis_config::VoiceTtsProvider::Piper),
+            tts_pref == Some(antre_config::VoiceTtsProvider::Piper),
             None,
             piper_available.clone(),
             if piper_available.is_none() {
@@ -532,7 +532,7 @@ pub(super) async fn detect_voice_providers(
             "local",
             coqui_server_running,
             config.voice.tts.coqui.enabled && config.voice.tts.enabled && coqui_server_running,
-            tts_pref == Some(moltis_config::VoiceTtsProvider::Coqui),
+            tts_pref == Some(antre_config::VoiceTtsProvider::Coqui),
             None,
             tts_server_binary,
             if !coqui_server_running {
@@ -796,7 +796,7 @@ fn filter_listed_voice_providers(
 
 fn enrich_voice_provider(
     mut provider: VoiceProviderInfo,
-    config: &moltis_config::MoltisConfig,
+    config: &antre_config::AntreConfig,
 ) -> VoiceProviderInfo {
     let (capabilities, settings, summary) = match provider.id {
         VoiceProviderId::OpenaiTts => (
@@ -952,7 +952,7 @@ struct ElevenLabsModel {
 }
 
 pub(super) async fn fetch_elevenlabs_catalog(
-    config: &moltis_config::MoltisConfig,
+    config: &antre_config::AntreConfig,
 ) -> serde_json::Value {
     use secrecy::ExposeSecret;
 
@@ -1086,7 +1086,7 @@ fn key_source(in_config: bool, in_env: bool, in_llm_provider: bool) -> Option<&'
 }
 
 pub(super) fn apply_voice_provider_settings(
-    cfg: &mut moltis_config::MoltisConfig,
+    cfg: &mut antre_config::AntreConfig,
     provider: &str,
     params: &serde_json::Value,
 ) {
@@ -1250,7 +1250,7 @@ pub(super) fn toggle_voice_provider(
     enabled: bool,
     provider_type: &str,
 ) -> Result<(), anyhow::Error> {
-    moltis_config::update_config(|cfg| match provider_type {
+    antre_config::update_config(|cfg| match provider_type {
         "tts" => {
             let config_provider = match provider {
                 "openai-tts" => "openai",
@@ -1266,7 +1266,7 @@ pub(super) fn toggle_voice_provider(
                 _ => {},
             }
             if !enabled
-                && cfg.voice.tts.provider == moltis_config::VoiceTtsProvider::parse(config_provider)
+                && cfg.voice.tts.provider == antre_config::VoiceTtsProvider::parse(config_provider)
             {
                 cfg.voice.tts.provider = None;
             }

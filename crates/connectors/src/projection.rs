@@ -296,8 +296,8 @@ fn path_to_manifest_string(path: &Path) -> String {
 
 #[cfg(feature = "metrics")]
 fn record_projection(item_count: usize) {
-    metrics::counter!("moltis_connector_projection_writes_total").increment(1);
-    metrics::histogram!("moltis_connector_projection_items").record(item_count as f64);
+    metrics::counter!("antre_connector_projection_writes_total").increment(1);
+    metrics::histogram!("antre_connector_projection_items").record(item_count as f64);
 }
 
 #[cfg(not(feature = "metrics"))]

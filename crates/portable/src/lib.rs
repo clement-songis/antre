@@ -1,4 +1,4 @@
-//! Portable import/export of Moltis configuration, databases, and session data.
+//! Portable import/export of Antre configuration, databases, and session data.
 //!
 //! Archives are `.tar.gz` files containing a manifest, config files, workspace
 //! markdown, SQLite databases, and optionally session media and managed Files.
@@ -29,14 +29,14 @@ mod integration_tests {
 
     impl DataDirOverrideGuard {
         fn set(path: &std::path::Path) -> Self {
-            moltis_config::set_data_dir(path.to_path_buf());
+            antre_config::set_data_dir(path.to_path_buf());
             Self
         }
     }
 
     impl Drop for DataDirOverrideGuard {
         fn drop(&mut self) {
-            moltis_config::clear_data_dir();
+            antre_config::clear_data_dir();
         }
     }
 
@@ -47,7 +47,7 @@ mod integration_tests {
 
         // Create some config files.
         std::fs::write(
-            src_config.path().join("moltis.toml"),
+            src_config.path().join("antre.toml"),
             "[server]\nport = 8080\n",
         )
         .unwrap();
@@ -59,7 +59,7 @@ mod integration_tests {
 
         // Create workspace files.
         std::fs::write(src_data.path().join("SOUL.md"), "# Soul\nBe helpful.").unwrap();
-        std::fs::write(src_data.path().join("IDENTITY.md"), "name: Moltis").unwrap();
+        std::fs::write(src_data.path().join("IDENTITY.md"), "name: Antre").unwrap();
 
         // Create a session JSONL file.
         let sessions_dir = src_data.path().join("sessions");
@@ -86,7 +86,7 @@ mod integration_tests {
             manifest
                 .inventory
                 .config_files
-                .contains(&"moltis.toml".to_owned())
+                .contains(&"antre.toml".to_owned())
         );
         assert!(
             manifest
@@ -125,14 +125,14 @@ mod integration_tests {
         .unwrap();
 
         // Verify files were created.
-        assert!(dst_config.path().join("moltis.toml").exists());
+        assert!(dst_config.path().join("antre.toml").exists());
         assert!(dst_config.path().join("provider_keys.json").exists());
         assert!(dst_data.path().join("SOUL.md").exists());
         assert!(dst_data.path().join("IDENTITY.md").exists());
         assert!(dst_data.path().join("sessions/main.jsonl").exists());
 
         // Verify content.
-        let toml = std::fs::read_to_string(dst_config.path().join("moltis.toml")).unwrap();
+        let toml = std::fs::read_to_string(dst_config.path().join("antre.toml")).unwrap();
         assert!(toml.contains("port = 8080"));
 
         let soul = std::fs::read_to_string(dst_data.path().join("SOUL.md")).unwrap();
@@ -147,7 +147,7 @@ mod integration_tests {
         let src_config = tempfile::tempdir().unwrap();
         let src_data = tempfile::tempdir().unwrap();
 
-        std::fs::write(src_config.path().join("moltis.toml"), "original").unwrap();
+        std::fs::write(src_config.path().join("antre.toml"), "original").unwrap();
         std::fs::write(src_data.path().join("SOUL.md"), "original soul").unwrap();
 
         // Export.
@@ -164,7 +164,7 @@ mod integration_tests {
         // Create destination with pre-existing files.
         let dst_config = tempfile::tempdir().unwrap();
         let dst_data = tempfile::tempdir().unwrap();
-        std::fs::write(dst_config.path().join("moltis.toml"), "modified").unwrap();
+        std::fs::write(dst_config.path().join("antre.toml"), "modified").unwrap();
         std::fs::write(dst_data.path().join("SOUL.md"), "modified soul").unwrap();
 
         // Import with Skip strategy.
@@ -181,7 +181,7 @@ mod integration_tests {
         .unwrap();
 
         // Existing files should NOT be overwritten.
-        let toml = std::fs::read_to_string(dst_config.path().join("moltis.toml")).unwrap();
+        let toml = std::fs::read_to_string(dst_config.path().join("antre.toml")).unwrap();
         assert_eq!(toml, "modified");
         assert!(!result.skipped.is_empty());
     }
@@ -191,7 +191,7 @@ mod integration_tests {
         let src_config = tempfile::tempdir().unwrap();
         let src_data = tempfile::tempdir().unwrap();
 
-        std::fs::write(src_config.path().join("moltis.toml"), "from-export").unwrap();
+        std::fs::write(src_config.path().join("antre.toml"), "from-export").unwrap();
 
         let mut buf = Vec::new();
         export_archive(
@@ -205,7 +205,7 @@ mod integration_tests {
 
         let dst_config = tempfile::tempdir().unwrap();
         let dst_data = tempfile::tempdir().unwrap();
-        std::fs::write(dst_config.path().join("moltis.toml"), "local-version").unwrap();
+        std::fs::write(dst_config.path().join("antre.toml"), "local-version").unwrap();
 
         let result = import_archive(
             dst_config.path(),
@@ -220,7 +220,7 @@ mod integration_tests {
         .unwrap();
 
         // File should be overwritten.
-        let toml = std::fs::read_to_string(dst_config.path().join("moltis.toml")).unwrap();
+        let toml = std::fs::read_to_string(dst_config.path().join("antre.toml")).unwrap();
         assert_eq!(toml, "from-export");
         assert!(result.imported.iter().any(|i| i.action == "overwritten"));
     }
@@ -230,7 +230,7 @@ mod integration_tests {
         let src_config = tempfile::tempdir().unwrap();
         let src_data = tempfile::tempdir().unwrap();
 
-        std::fs::write(src_config.path().join("moltis.toml"), "content").unwrap();
+        std::fs::write(src_config.path().join("antre.toml"), "content").unwrap();
 
         let mut buf = Vec::new();
         export_archive(
@@ -258,7 +258,7 @@ mod integration_tests {
         .unwrap();
 
         // Nothing should be written.
-        assert!(!dst_config.path().join("moltis.toml").exists());
+        assert!(!dst_config.path().join("antre.toml").exists());
         assert!(result.imported.is_empty());
         assert!(!result.skipped.is_empty());
     }
@@ -507,7 +507,7 @@ mod integration_tests {
     #[tokio::test]
     async fn managed_files_import_rejects_traversal() {
         let archive = archive_with_raw_entry(
-            "moltis-backup-test/files/../escape.txt",
+            "antre-backup-test/files/../escape.txt",
             EntryType::Regular,
             b"escape",
         );
@@ -535,7 +535,7 @@ mod integration_tests {
     #[tokio::test]
     async fn managed_files_import_rejects_special_entry() {
         let archive =
-            archive_with_raw_entry("moltis-backup-test/files/link.txt", EntryType::Symlink, b"");
+            archive_with_raw_entry("antre-backup-test/files/link.txt", EntryType::Symlink, b"");
         let dst_config = tempfile::tempdir().unwrap();
         let dst_data = tempfile::tempdir().unwrap();
 
@@ -588,14 +588,14 @@ mod integration_tests {
         let mut builder = Builder::new(encoder);
         append_entry(
             &mut builder,
-            "moltis-backup-test/files/parent",
+            "antre-backup-test/files/parent",
             EntryType::Regular,
             b"parent file",
             false,
         );
         append_entry(
             &mut builder,
-            "moltis-backup-test/files/parent/child.txt",
+            "antre-backup-test/files/parent/child.txt",
             EntryType::Regular,
             b"child",
             false,
@@ -613,7 +613,7 @@ mod integration_tests {
         };
         append_entry(
             &mut builder,
-            "moltis-backup-test/manifest.json",
+            "antre-backup-test/manifest.json",
             EntryType::Regular,
             &serde_json::to_vec(&manifest).unwrap(),
             false,
@@ -731,14 +731,14 @@ mod integration_tests {
         let mut builder = Builder::new(encoder);
         let manifest = serde_json::to_vec(&ExportManifest {
             format_version: 1,
-            moltis_version: "test".into(),
+            antre_version: "test".into(),
             created_at: "2026-05-01T00:00:00Z".into(),
             inventory: ArchiveInventory::default(),
         })
         .unwrap();
         append_entry(
             &mut builder,
-            "moltis-backup-test/manifest.json",
+            "antre-backup-test/manifest.json",
             EntryType::Regular,
             &manifest,
             false,
@@ -752,26 +752,26 @@ mod integration_tests {
         let mut builder = Builder::new(encoder);
         for (path, data) in [
             (
-                "moltis-backup-test/config/moltis.toml",
+                "antre-backup-test/config/antre.toml",
                 b"changed config".as_slice(),
             ),
             (
-                "moltis-backup-test/config/new.json",
+                "antre-backup-test/config/new.json",
                 b"new config".as_slice(),
             ),
             (
-                "moltis-backup-test/workspace/SOUL.md",
+                "antre-backup-test/workspace/SOUL.md",
                 b"changed workspace".as_slice(),
             ),
             (
-                "moltis-backup-test/workspace/NEW.md",
+                "antre-backup-test/workspace/NEW.md",
                 b"new workspace".as_slice(),
             ),
             (
-                "moltis-backup-test/files/existing.txt",
+                "antre-backup-test/files/existing.txt",
                 b"changed file".as_slice(),
             ),
-            ("moltis-backup-test/files/new.txt", b"new file".as_slice()),
+            ("antre-backup-test/files/new.txt", b"new file".as_slice()),
         ] {
             append_entry(&mut builder, path, EntryType::Regular, data, false);
         }
@@ -779,7 +779,7 @@ mod integration_tests {
             let data = serde_json::to_vec(&manifest).unwrap();
             append_entry(
                 &mut builder,
-                "moltis-backup-test/manifest.json",
+                "antre-backup-test/manifest.json",
                 EntryType::Regular,
                 &data,
                 false,
@@ -791,7 +791,7 @@ mod integration_tests {
     fn test_manifest(format_version: u32) -> ExportManifest {
         ExportManifest {
             format_version,
-            moltis_version: "test".into(),
+            antre_version: "test".into(),
             created_at: "2026-05-01T00:00:00Z".into(),
             inventory: ArchiveInventory::default(),
         }
@@ -802,7 +802,7 @@ mod integration_tests {
         let data_dir = tempfile::tempdir().unwrap();
         let files_dir = data_dir.path().join("files");
         std::fs::create_dir_all(&files_dir).unwrap();
-        std::fs::write(config_dir.path().join("moltis.toml"), "original config").unwrap();
+        std::fs::write(config_dir.path().join("antre.toml"), "original config").unwrap();
         std::fs::write(data_dir.path().join("SOUL.md"), "original workspace").unwrap();
         std::fs::write(files_dir.join("existing.txt"), "original file").unwrap();
 
@@ -822,7 +822,7 @@ mod integration_tests {
             assert!(error.to_string().contains(expected_error), "{error:#}");
         }
         assert_eq!(
-            std::fs::read_to_string(config_dir.path().join("moltis.toml")).unwrap(),
+            std::fs::read_to_string(config_dir.path().join("antre.toml")).unwrap(),
             "original config"
         );
         assert_eq!(
@@ -841,7 +841,7 @@ mod integration_tests {
                 .unwrap()
                 .file_name()
                 .to_string_lossy()
-                .starts_with(".moltis-upload-")
+                .starts_with(".antre-upload-")
         }));
     }
 

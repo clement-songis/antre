@@ -53,7 +53,7 @@ pub fn check_hook_eligibility(metadata: &HookMetadata) -> EligibilityResult {
         }
     }
 
-    // Config check is skipped for now (requires MoltisConfig access).
+    // Config check is skipped for now (requires AntreConfig access).
     // We leave missing_config empty; gateway wiring can add this later.
 
     result
@@ -126,10 +126,10 @@ mod tests {
     #[test]
     fn missing_env_is_ineligible() {
         let mut meta = minimal_metadata();
-        meta.requires.env = vec!["MOLTIS_TEST_NONEXISTENT_VAR_XYZ".into()];
+        meta.requires.env = vec!["ANTRE_TEST_NONEXISTENT_VAR_XYZ".into()];
         let result = check_hook_eligibility(&meta);
         assert!(!result.eligible);
-        assert_eq!(result.missing_env, vec!["MOLTIS_TEST_NONEXISTENT_VAR_XYZ"]);
+        assert_eq!(result.missing_env, vec!["ANTRE_TEST_NONEXISTENT_VAR_XYZ"]);
     }
 
     #[test]

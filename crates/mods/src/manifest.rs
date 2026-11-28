@@ -1,9 +1,9 @@
-//! `moltis-mod.toml`: parsing and validation into concrete types.
+//! `antre-mod.toml`: parsing and validation into concrete types.
 
 use std::path::{Component, Path, PathBuf};
 
 use {
-    moltis_common::hooks::HookEvent,
+    antre_common::hooks::HookEvent,
     serde::{Deserialize, Serialize},
 };
 
@@ -14,7 +14,7 @@ use crate::{
 };
 
 /// File name of the manifest at the root of a mod package.
-pub const MANIFEST_FILE: &str = "moltis-mod.toml";
+pub const MANIFEST_FILE: &str = "antre-mod.toml";
 
 /// SDK major/minor this host implements. Mods built for another `0.x` minor
 /// are refused because `0.x` minors may break.

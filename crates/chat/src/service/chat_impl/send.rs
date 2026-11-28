@@ -8,10 +8,10 @@ use {
     tracing::{debug, info, warn},
 };
 
-use moltis_service_traits::ServiceResult;
+use antre_service_traits::ServiceResult;
 
 #[cfg(feature = "local-llm")]
-use moltis_providers::model_id::raw_model_id;
+use antre_providers::model_id::raw_model_id;
 
 use crate::{
     agent_loop::run_explicit_shell_command,
@@ -45,7 +45,7 @@ use super::{
 
 use {
     crate::memory_tools::AgentScopedMemoryWriter,
-    moltis_agents::model::values_to_chat_messages_with_tool_result_limit,
+    antre_agents::model::values_to_chat_messages_with_tool_result_limit,
 };
 
 impl LiveChatService {
@@ -76,7 +76,7 @@ impl LiveChatService {
         // Use exactly the gateway/runner predicate so authorized `/sh` forms
         // cannot fall through into a less restricted agent turn.
         let explicit_shell_command = match &message_content {
-            MessageContent::Text(raw) => moltis_agents::runner::explicit_shell_command(raw),
+            MessageContent::Text(raw) => antre_agents::runner::explicit_shell_command(raw),
             MessageContent::Multimodal(_) => None,
         };
         let channel_bound_web = self
@@ -310,7 +310,7 @@ impl LiveChatService {
                 .get(crate::params::CHANNEL_REPLY_TARGET)
                 .cloned()
                 .and_then(|value| {
-                    match serde_json::from_value::<moltis_channels::ChannelReplyTarget>(value) {
+                    match serde_json::from_value::<antre_channels::ChannelReplyTarget>(value) {
                         Ok(target) => Some(target),
                         Err(e) => {
                             warn!(
@@ -596,7 +596,7 @@ impl LiveChatService {
             .get(crate::params::CHANNEL_REPLY_TARGET)
             .cloned()
             .and_then(|value| {
-                match serde_json::from_value::<moltis_channels::ChannelReplyTarget>(value) {
+                match serde_json::from_value::<antre_channels::ChannelReplyTarget>(value) {
                     Ok(target) => Some(target),
                     Err(e) => {
                         warn!(
@@ -636,15 +636,15 @@ impl LiveChatService {
                 session_entry.as_ref(),
             ))
             .filter(|binding| !binding.is_empty());
-            let payload = moltis_common::hooks::HookPayload::MessageReceived {
+            let payload = antre_common::hooks::HookPayload::MessageReceived {
                 session_key: session_key.clone(),
                 content: text.clone(),
                 channel,
                 channel_binding,
             };
             match hooks.dispatch(&payload).await {
-                Ok(moltis_common::hooks::HookAction::Continue) => {},
-                Ok(moltis_common::hooks::HookAction::ModifyPayload(new_payload)) => {
+                Ok(antre_common::hooks::HookAction::Continue) => {},
+                Ok(antre_common::hooks::HookAction::ModifyPayload(new_payload)) => {
                     match new_payload.get("content").and_then(|v| v.as_str()) {
                         Some(new_text) => {
                             info!(
@@ -666,7 +666,7 @@ impl LiveChatService {
                         },
                     }
                 },
-                Ok(moltis_common::hooks::HookAction::Block(reason)) => {
+                Ok(antre_common::hooks::HookAction::Block(reason)) => {
                     info!(
                         session = %session_key,
                         reason = %reason,
@@ -1368,33 +1368,33 @@ impl LiveChatService {
                             let mm = Arc::clone(mm);
                             let prov = Arc::clone(&provider_for_extraction);
                             tokio::spawn(async move {
-                                let writer: Arc<dyn moltis_agents::memory_writer::MemoryWriter> =
+                                let writer: Arc<dyn antre_agents::memory_writer::MemoryWriter> =
                                     Arc::new(AgentScopedMemoryWriter::new(
                                         mm, agent_id, write_mode,
                                     ));
-                                match moltis_agents::silent_turn::run_silent_memory_turn_with_prompt(
-                                        prov,
-                                        &chat_msgs,
-                                        writer,
-                                        moltis_agents::silent_turn::SilentTurnPrompt::PeriodicExtract,
-                                    )
-                                    .await
-                                    {
-                                        Ok(paths) if !paths.is_empty() => {
-                                            tracing::info!(
-                                                files = paths.len(),
-                                                turn = turn_number,
-                                                "periodic memory extraction: wrote files"
-                                            );
-                                        },
-                                        Ok(_) => {},
-                                        Err(e) => {
-                                            tracing::warn!(
-                                                error = %e,
-                                                "periodic memory extraction failed"
-                                            );
-                                        },
-                                    }
+                                match antre_agents::silent_turn::run_silent_memory_turn_with_prompt(
+                                    prov,
+                                    &chat_msgs,
+                                    writer,
+                                    antre_agents::silent_turn::SilentTurnPrompt::PeriodicExtract,
+                                )
+                                .await
+                                {
+                                    Ok(paths) if !paths.is_empty() => {
+                                        tracing::info!(
+                                            files = paths.len(),
+                                            turn = turn_number,
+                                            "periodic memory extraction: wrote files"
+                                        );
+                                    },
+                                    Ok(_) => {},
+                                    Err(e) => {
+                                        tracing::warn!(
+                                            error = %e,
+                                            "periodic memory extraction failed"
+                                        );
+                                    },
+                                }
                             });
                         }
                     }

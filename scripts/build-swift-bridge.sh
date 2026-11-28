@@ -8,19 +8,19 @@ MACOS_APP_DIR="${REPO_ROOT}/apps/macos"
 OUTPUT_DIR="${MACOS_APP_DIR}/Generated"
 UNIVERSAL_DIR="${REPO_ROOT}/target/universal-macos/release"
 MACOS_DEPLOYMENT_TARGET="${MACOS_DEPLOYMENT_TARGET:-14.0}"
-SWIFT_BRIDGE_TARGETS_CSV="${MOLTIS_SWIFT_BRIDGE_TARGETS:-x86_64-apple-darwin,aarch64-apple-darwin}"
-SWIFT_BRIDGE_PROFILE="${MOLTIS_SWIFT_BRIDGE_PROFILE:-release}"
+SWIFT_BRIDGE_TARGETS_CSV="${ANTRE_SWIFT_BRIDGE_TARGETS:-x86_64-apple-darwin,aarch64-apple-darwin}"
+SWIFT_BRIDGE_PROFILE="${ANTRE_SWIFT_BRIDGE_PROFILE:-release}"
 SWIFT_BRIDGE_TARGET_DIR="release"
 if [ "${SWIFT_BRIDGE_PROFILE}" != "release" ]; then
   SWIFT_BRIDGE_TARGET_DIR="${SWIFT_BRIDGE_PROFILE}"
 fi
-SKIP_WASM_PRECOMPILE="${MOLTIS_SWIFT_BRIDGE_SKIP_WASM_PRECOMPILE:-0}"
-SKIP_WASM_BUILD="${MOLTIS_SWIFT_BRIDGE_SKIP_WASM_BUILD:-0}"
+SKIP_WASM_PRECOMPILE="${ANTRE_SWIFT_BRIDGE_SKIP_WASM_PRECOMPILE:-0}"
+SKIP_WASM_BUILD="${ANTRE_SWIFT_BRIDGE_SKIP_WASM_BUILD:-0}"
 OPENSSL_CFLAGS=""
 OPENSSL_LDFLAGS=""
 
 if [ "${SKIP_WASM_BUILD}" = "1" ] && [ "${SWIFT_BRIDGE_PROFILE}" = "release" ]; then
-  echo "error: MOLTIS_SWIFT_BRIDGE_SKIP_WASM_BUILD=1 requires a non-release bridge profile" >&2
+  echo "error: ANTRE_SWIFT_BRIDGE_SKIP_WASM_BUILD=1 requires a non-release bridge profile" >&2
   exit 1
 fi
 
@@ -81,14 +81,14 @@ for raw_target in "${RAW_TARGETS[@]}"; do
       TARGETS+=("${target}")
       ;;
     *)
-      echo "error: unsupported target '${target}' in MOLTIS_SWIFT_BRIDGE_TARGETS" >&2
+      echo "error: unsupported target '${target}' in ANTRE_SWIFT_BRIDGE_TARGETS" >&2
       exit 1
       ;;
   esac
 done
 
 if [ "${#TARGETS[@]}" -eq 0 ]; then
-  echo "error: no valid bridge targets configured in MOLTIS_SWIFT_BRIDGE_TARGETS" >&2
+  echo "error: no valid bridge targets configured in ANTRE_SWIFT_BRIDGE_TARGETS" >&2
   exit 1
 fi
 
@@ -99,15 +99,15 @@ else
 fi
 
 if [ "${SKIP_WASM_BUILD}" = "1" ]; then
-  echo "Skipping wasm guest build (MOLTIS_SWIFT_BRIDGE_SKIP_WASM_BUILD=1)"
+  echo "Skipping wasm guest build (ANTRE_SWIFT_BRIDGE_SKIP_WASM_BUILD=1)"
 else
   # Build and pre-compile embedded WASM guest components before release host builds.
-  # moltis-tools includes these bytes at compile time in release-like profiles.
-  cargo_cmd build --target wasm32-wasip2 -p moltis-wasm-calc -p moltis-wasm-web-fetch -p moltis-wasm-web-search --release
+  # antre-tools includes these bytes at compile time in release-like profiles.
+  cargo_cmd build --target wasm32-wasip2 -p antre-wasm-calc -p antre-wasm-web-fetch -p antre-wasm-web-search --release
   if [ "${SKIP_WASM_PRECOMPILE}" = "1" ]; then
-    echo "Skipping wasm precompile (MOLTIS_SWIFT_BRIDGE_SKIP_WASM_PRECOMPILE=1)"
+    echo "Skipping wasm precompile (ANTRE_SWIFT_BRIDGE_SKIP_WASM_PRECOMPILE=1)"
   else
-    cargo_cmd run -p moltis-wasm-precompile --release
+    cargo_cmd run -p antre-wasm-precompile --release
   fi
 fi
 
@@ -147,7 +147,7 @@ for target in "${TARGETS[@]}"; do
   esac
 done
 
-BUILD_ARGS=(build -p moltis-swift-bridge --profile "${SWIFT_BRIDGE_PROFILE}")
+BUILD_ARGS=(build -p antre-swift-bridge --profile "${SWIFT_BRIDGE_PROFILE}")
 for target in "${TARGETS[@]}"; do
   BUILD_ARGS+=(--target "${target}")
 done
@@ -157,21 +157,21 @@ mkdir -p "${UNIVERSAL_DIR}" "${OUTPUT_DIR}"
 
 if [ "${#TARGETS[@]}" -eq 1 ]; then
   cp \
-    "${REPO_ROOT}/target/${TARGETS[0]}/${SWIFT_BRIDGE_TARGET_DIR}/libmoltis_swift_bridge.a" \
-    "${UNIVERSAL_DIR}/libmoltis_bridge.a"
+    "${REPO_ROOT}/target/${TARGETS[0]}/${SWIFT_BRIDGE_TARGET_DIR}/libantre_swift_bridge.a" \
+    "${UNIVERSAL_DIR}/libantre_bridge.a"
 else
   LIPO_INPUTS=()
   for target in "${TARGETS[@]}"; do
-    LIPO_INPUTS+=("${REPO_ROOT}/target/${target}/${SWIFT_BRIDGE_TARGET_DIR}/libmoltis_swift_bridge.a")
+    LIPO_INPUTS+=("${REPO_ROOT}/target/${target}/${SWIFT_BRIDGE_TARGET_DIR}/libantre_swift_bridge.a")
   done
-  lipo -create "${LIPO_INPUTS[@]}" -output "${UNIVERSAL_DIR}/libmoltis_bridge.a"
+  lipo -create "${LIPO_INPUTS[@]}" -output "${UNIVERSAL_DIR}/libantre_bridge.a"
 fi
 
 cbindgen "${BRIDGE_CRATE_DIR}" \
   --config "${BRIDGE_CRATE_DIR}/cbindgen.toml" \
-  --crate moltis-swift-bridge \
-  --output "${OUTPUT_DIR}/moltis_bridge.h"
+  --crate antre-swift-bridge \
+  --output "${OUTPUT_DIR}/antre_bridge.h"
 
-cp "${UNIVERSAL_DIR}/libmoltis_bridge.a" "${OUTPUT_DIR}/libmoltis_bridge.a"
+cp "${UNIVERSAL_DIR}/libantre_bridge.a" "${OUTPUT_DIR}/libantre_bridge.a"
 
 echo "Built Rust bridge artifacts in ${OUTPUT_DIR}"

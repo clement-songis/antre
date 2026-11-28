@@ -25,10 +25,10 @@ use {
 };
 
 use {
-    moltis_agents::tool_registry::ToolRegistry,
-    moltis_providers::ProviderRegistry,
-    moltis_service_traits::ServiceError,
-    moltis_sessions::{
+    antre_agents::tool_registry::ToolRegistry,
+    antre_providers::ProviderRegistry,
+    antre_service_traits::ServiceError,
+    antre_sessions::{
         PersistedMessage,
         message::{PersistedFunction, PersistedToolCall},
         metadata::SqliteSessionMetadata,
@@ -350,7 +350,7 @@ pub struct LiveChatService {
     pub(in crate::service) session_store: Arc<SessionStore>,
     pub(in crate::service) session_metadata: Arc<SqliteSessionMetadata>,
     pub(in crate::service) session_state_store: Option<Arc<SessionStateStore>>,
-    pub(in crate::service) hook_registry: Option<Arc<moltis_common::hooks::HookRegistry>>,
+    pub(in crate::service) hook_registry: Option<Arc<antre_common::hooks::HookRegistry>>,
     /// Per-session semaphore ensuring only one agent run executes per session at a time.
     pub(in crate::service) session_locks: Arc<RwLock<HashMap<String, Arc<Semaphore>>>>,
     /// Per-session message queue for messages arriving during an active run.
@@ -371,9 +371,9 @@ pub struct LiveChatService {
     /// `voicePending` state after a page reload.
     pub(in crate::service) active_reply_medium: Arc<RwLock<HashMap<String, ReplyMedium>>>,
     /// Startup configuration snapshot for chat hot-path decisions.
-    pub(in crate::service) config: moltis_config::MoltisConfig,
+    pub(in crate::service) config: antre_config::AntreConfig,
     /// Failover configuration for automatic model/provider failover.
-    pub(in crate::service) failover_config: moltis_config::schema::FailoverConfig,
+    pub(in crate::service) failover_config: antre_config::schema::FailoverConfig,
 }
 
 impl LiveChatService {
@@ -440,17 +440,17 @@ impl LiveChatService {
             active_tool_calls: Arc::new(RwLock::new(HashMap::new())),
             active_partial_assistant: Arc::new(RwLock::new(HashMap::new())),
             active_reply_medium: Arc::new(RwLock::new(HashMap::new())),
-            config: moltis_config::discover_and_load(),
-            failover_config: moltis_config::schema::FailoverConfig::default(),
+            config: antre_config::discover_and_load(),
+            failover_config: antre_config::schema::FailoverConfig::default(),
         }
     }
 
-    pub fn with_config(mut self, config: moltis_config::MoltisConfig) -> Self {
+    pub fn with_config(mut self, config: antre_config::AntreConfig) -> Self {
         self.config = config;
         self
     }
 
-    pub fn with_failover(mut self, config: moltis_config::schema::FailoverConfig) -> Self {
+    pub fn with_failover(mut self, config: antre_config::schema::FailoverConfig) -> Self {
         self.failover_config = config;
         self
     }
@@ -491,12 +491,12 @@ impl LiveChatService {
         self
     }
 
-    pub fn with_hooks(mut self, registry: moltis_common::hooks::HookRegistry) -> Self {
+    pub fn with_hooks(mut self, registry: antre_common::hooks::HookRegistry) -> Self {
         self.hook_registry = Some(Arc::new(registry));
         self
     }
 
-    pub fn with_hooks_arc(mut self, registry: Arc<moltis_common::hooks::HookRegistry>) -> Self {
+    pub fn with_hooks_arc(mut self, registry: Arc<antre_common::hooks::HookRegistry>) -> Self {
         self.hook_registry = Some(registry);
         self
     }
@@ -747,7 +747,7 @@ impl LiveChatService {
         &self,
         session_key: &str,
         history: &[Value],
-    ) -> error::Result<Arc<dyn moltis_agents::model::LlmProvider>> {
+    ) -> error::Result<Arc<dyn antre_agents::model::LlmProvider>> {
         let reg = self.providers.read().await;
         let session_entry = self.session_metadata.get(session_key).await;
         let session_model = session_entry.as_ref().and_then(|e| e.model.clone());
@@ -850,14 +850,14 @@ impl LiveChatService {
         let Some(dir) = val.get("directory").and_then(|v| v.as_str()) else {
             return (None, None);
         };
-        let files = match moltis_projects::context::load_context_files(Path::new(dir)) {
+        let files = match antre_projects::context::load_context_files(Path::new(dir)) {
             Ok(f) => f,
             Err(e) => {
                 warn!("failed to load project context: {e}");
                 return (None, None);
             },
         };
-        let Ok(project) = serde_json::from_value::<moltis_projects::Project>(val.clone()) else {
+        let Ok(project) = serde_json::from_value::<antre_projects::Project>(val.clone()) else {
             return (None, None);
         };
         let worktree_dir = self
@@ -866,7 +866,7 @@ impl LiveChatService {
             .await
             .and_then(|e| e.worktree_branch)
             .and_then(|_| {
-                let wt_path = Path::new(dir).join(".moltis-worktrees").join(session_key);
+                let wt_path = Path::new(dir).join(".antre-worktrees").join(session_key);
                 if wt_path.exists() {
                     Some(wt_path)
                 } else {
@@ -876,7 +876,7 @@ impl LiveChatService {
         // The command runs in the session worktree when present, else the
         // project root — matching where the operator's scripts expect to be.
         let working_dir = worktree_dir.clone().unwrap_or_else(|| PathBuf::from(dir));
-        let ctx = moltis_projects::ProjectContext {
+        let ctx = antre_projects::ProjectContext {
             project,
             context_files: files,
             worktree_dir,
@@ -892,7 +892,7 @@ impl LiveChatService {
     ) -> (Option<String>, Option<PathBuf>) {
         let (project_context, working_dir) =
             self.resolve_project_context(session_key, conn_id).await;
-        let command_context = moltis_common::context_command::run_context_command(
+        let command_context = antre_common::context_command::run_context_command(
             self.config.chat.context_command.as_deref(),
             working_dir.as_deref(),
         )
@@ -926,7 +926,7 @@ mod tests {
             commit_successful_turn, merge_context_sections,
         },
         crate::types::AssistantTurnOutput,
-        moltis_sessions::PersistedMessage,
+        antre_sessions::PersistedMessage,
         std::{
             collections::{HashMap, HashSet},
             future::Future,

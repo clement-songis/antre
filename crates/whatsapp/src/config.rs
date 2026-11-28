@@ -1,5 +1,5 @@
 use {
-    moltis_channels::{
+    antre_channels::{
         config_view::{ChannelConfigView, UntrustedAudience, UntrustedTools},
         gating::{DmPolicy, GroupPolicy, MentionMode},
     },
@@ -76,7 +76,7 @@ pub struct WhatsAppAccountConfig {
 
     /// Name this client asserts for itself on WhatsApp.
     ///
-    /// Overrides `[identity] name`. Unset on both falls back to `Moltis`.
+    /// Overrides `[identity] name`. Unset on both falls back to `Antre`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub push_name: Option<String>,
 

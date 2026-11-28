@@ -3,9 +3,9 @@ use std::{pin::Pin, sync::mpsc, time::Duration};
 use super::catalog::default_model_catalog;
 
 use {
+    antre_oauth::{OAuthTokens, TokenStore},
     async_trait::async_trait,
     futures::StreamExt,
-    moltis_oauth::{OAuthTokens, TokenStore},
     secrecy::{ExposeSecret, Secret},
     tokio_stream::Stream,
     tracing::{debug, info, trace, warn},
@@ -26,7 +26,7 @@ use {
         discovery::parse_models_payload,
         endpoints::{CopilotEndpoint, endpoint_from_cached_metadata, endpoint_from_metadata},
     },
-    moltis_agents::model::{
+    antre_agents::model::{
         ChatMessage, CompletionResponse, LlmProvider, StreamEvent, ToolCall, Usage,
         decode_tool_call_arguments_from_str,
     },
@@ -178,7 +178,7 @@ impl GitHubCopilotProvider {
 }
 
 fn home_token_store_if_different() -> Option<TokenStore> {
-    let home = moltis_config::user_global_config_dir_if_different()?;
+    let home = antre_config::user_global_config_dir_if_different()?;
     Some(TokenStore::with_path(home.join("oauth_tokens.json")))
 }
 
@@ -307,7 +307,7 @@ pub(super) async fn fetch_copilot_auth(
         .header("Accept", "application/json")
         .header(
             "User-Agent",
-            "moltis/0.1.0 (GitHub Copilot compatible client)",
+            "antre/0.1.0 (GitHub Copilot compatible client)",
         )
         .send()
         .await?;

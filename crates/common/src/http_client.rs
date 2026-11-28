@@ -10,18 +10,18 @@
 
 use reqwest::header::{HeaderMap, HeaderValue, USER_AGENT};
 
-const FALLBACK_USER_AGENT: &str = "Moltis/unknown";
+const FALLBACK_USER_AGENT: &str = "Antre/unknown";
 
 static UPSTREAM_PROXY: std::sync::OnceLock<String> = std::sync::OnceLock::new();
 
 /// Default User-Agent header value for outgoing HTTP requests.
 ///
-/// Returns `"Moltis/<version>"` where `<version>` is sourced from
-/// `MOLTIS_VERSION` (when injected at compile time by CI) and otherwise
+/// Returns `"Antre/<version>"` where `<version>` is sourced from
+/// `ANTRE_VERSION` (when injected at compile time by CI) and otherwise
 /// falls back to `CARGO_PKG_VERSION` for local development builds.
 pub fn default_user_agent() -> String {
-    let version = option_env!("MOLTIS_VERSION").unwrap_or(env!("CARGO_PKG_VERSION"));
-    format!("Moltis/{version}")
+    let version = option_env!("ANTRE_VERSION").unwrap_or(env!("CARGO_PKG_VERSION"));
+    format!("Antre/{version}")
 }
 
 /// Build the default header map applied to all requests.
@@ -235,11 +235,11 @@ mod tests {
     fn default_user_agent_format() {
         let ua = default_user_agent();
         assert!(
-            ua.starts_with("Moltis/"),
-            "User-Agent should start with 'Moltis/', got: {ua}"
+            ua.starts_with("Antre/"),
+            "User-Agent should start with 'Antre/', got: {ua}"
         );
         assert!(
-            ua.len() > "Moltis/".len(),
+            ua.len() > "Antre/".len(),
             "User-Agent should include a version number, got: {ua}"
         );
     }

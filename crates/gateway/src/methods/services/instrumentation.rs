@@ -1,6 +1,6 @@
 //! `instrumentation.*` RPC methods backing the Instrumentation settings page.
 
-use moltis_protocol::{ErrorShape, error_codes};
+use antre_protocol::{ErrorShape, error_codes};
 
 use super::MethodRegistry;
 
@@ -121,7 +121,7 @@ mod tests {
             services::GatewayServices,
             state::GatewayState,
         },
-        moltis_config::{InstrumentationConfig, LangfuseSettings},
+        antre_config::{InstrumentationConfig, LangfuseSettings},
     };
 
     async fn dispatch(
@@ -187,7 +187,7 @@ mod tests {
                 .as_str()
                 .is_some_and(|reason| reason.contains("public_key"))
         );
-        moltis_observability::clear_global_sink();
+        antre_observability::clear_global_sink();
     }
 
     #[tokio::test]
@@ -229,6 +229,6 @@ mod tests {
         assert_eq!(payload["delivery"][0]["dropped_failed"], 0);
         assert_eq!(payload["delivery"][0]["retries"], 0);
         assert_eq!(payload["delivery"][1]["name"], "langfuse-scores");
-        moltis_observability::clear_global_sink();
+        antre_observability::clear_global_sink();
     }
 }

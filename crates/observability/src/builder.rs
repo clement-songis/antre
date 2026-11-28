@@ -3,7 +3,7 @@
 use std::sync::Arc;
 
 use {
-    moltis_config::{ContentCaptureMode, InstrumentationConfig},
+    antre_config::{ContentCaptureMode, InstrumentationConfig},
     tracing::{info, warn},
 };
 
@@ -20,7 +20,7 @@ use crate::{
 #[cfg(feature = "langfuse")]
 use {
     crate::exporters::langfuse::{LangfuseClient, LangfuseConfig, ScoreSink},
-    moltis_config::LangfuseSettings,
+    antre_config::LangfuseSettings,
 };
 #[cfg(any(feature = "langfuse", feature = "otlp"))]
 use {
@@ -34,7 +34,7 @@ use {
         exporters::otlp::{OtlpConfig, OtlpTransport},
         profile::ExportProfile,
     },
-    moltis_config::{DatadogSettings, OtlpSettings},
+    antre_config::{DatadogSettings, OtlpSettings},
 };
 
 /// Convert the config-level content mode to the profile-level one.
@@ -211,7 +211,7 @@ fn build_otlp(
         endpoint: settings.endpoint.clone(),
         headers: settings.headers.clone(),
         timeout: Duration::from_secs(settings.timeout_secs),
-        service_name: "moltis".to_string(),
+        service_name: "antre".to_string(),
         service_version: release.to_string(),
         environment: Some(config.environment.clone()),
         profile,
@@ -749,7 +749,7 @@ mod tests {
 /// Coverage for builds that left an exporter out.
 #[cfg(all(test, not(feature = "langfuse")))]
 mod reduced_build_tests {
-    use {moltis_config::LangfuseSettings, secrecy::Secret};
+    use {antre_config::LangfuseSettings, secrecy::Secret};
 
     use super::*;
 

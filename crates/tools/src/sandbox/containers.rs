@@ -232,7 +232,7 @@ pub(crate) fn is_sandbox_image_tag(tag: &str) -> bool {
 /// requested image points to a local pre-built sandbox repository.
 ///
 /// This allows recover-on-demand behavior when users delete local pre-built
-/// images from the UI while Moltis is still running.
+/// images from the UI while Antre is still running.
 pub(crate) fn rebuildable_sandbox_image_tag(
     requested_image: &str,
     image_repo: &str,
@@ -277,7 +277,7 @@ pub async fn list_sandbox_images() -> Result<Vec<SandboxImage>> {
     list_images_matching(is_sandbox_image_tag).await
 }
 
-pub async fn list_moltis_images(extra_repositories: &[String]) -> Result<Vec<SandboxImage>> {
+pub async fn list_antre_images(extra_repositories: &[String]) -> Result<Vec<SandboxImage>> {
     list_images_matching(|tag| {
         is_sandbox_image_tag(tag) || extra_repositories.iter().any(|repo| tag.starts_with(repo))
     })
@@ -511,7 +511,7 @@ pub enum ContainerBackend {
     Podman,
 }
 
-/// A container managed by moltis (running, stopped, or exited).
+/// A container managed by antre (running, stopped, or exited).
 #[derive(Debug, Clone, Serialize)]
 pub struct RunningContainer {
     pub name: String,
@@ -1055,7 +1055,7 @@ pub(crate) fn should_use_docker_backend(
 /// treats it as unavailable. A hung Docker Desktop otherwise blocks `docker
 /// info` (and gateway startup) for minutes.
 pub(crate) const RUNTIME_PROBE_TIMEOUT: std::time::Duration =
-    moltis_config::process_probe::RUNTIME_COMMAND_TIMEOUT;
+    antre_config::process_probe::RUNTIME_COMMAND_TIMEOUT;
 
 pub(crate) fn is_docker_daemon_available() -> bool {
     command_succeeds_within(
@@ -1077,7 +1077,7 @@ pub(crate) fn command_succeeds_within(
     args: &[&str],
     timeout: std::time::Duration,
 ) -> bool {
-    moltis_config::process_probe::output_within(program, args, timeout)
+    antre_config::process_probe::output_within(program, args, timeout)
         .is_some_and(|output| output.status.success())
 }
 

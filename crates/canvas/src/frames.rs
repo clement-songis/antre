@@ -49,7 +49,7 @@ impl FrameNetwork {
             origins
                 .into_iter()
                 .map(|origin| origin.trim_end_matches('/').to_string())
-                .filter(|origin| moltis_config::schema::is_https_origin(origin))
+                .filter(|origin| antre_config::schema::is_https_origin(origin))
                 .take(MAX_DECLARED_ORIGINS)
                 .collect()
         };

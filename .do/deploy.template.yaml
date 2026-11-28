@@ -3,26 +3,26 @@
 # and will be lost on each redeploy. For persistent storage, use a
 # Droplet with Docker instead.
 spec:
-  name: moltis
+  name: antre
   services:
-    - name: moltis
+    - name: antre
       image:
         registry_type: GHCR
         registry: ghcr.io
-        repository: moltis-org/moltis
+        repository: antre-ai/antre
         tag: "20261023.01"
       instance_count: 1
       instance_size_slug: basic-xxs
       http_port: 8080
-      run_command: moltis --bind 0.0.0.0 --port 8080 --no-tls
+      run_command: antre --bind 0.0.0.0 --port 8080 --no-tls
       health_check:
         http_path: /health
       envs:
-        - key: MOLTIS_DATA_DIR
+        - key: ANTRE_DATA_DIR
           value: /data
-        - key: MOLTIS_DEPLOY_PLATFORM
+        - key: ANTRE_DEPLOY_PLATFORM
           value: digitalocean
-        - key: MOLTIS_WEBAUTHN_RP_ID
+        - key: ANTRE_WEBAUTHN_RP_ID
           value: ${APP_DOMAIN}
-        - key: MOLTIS_WEBAUTHN_ORIGIN
+        - key: ANTRE_WEBAUTHN_ORIGIN
           value: ${APP_URL}

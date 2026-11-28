@@ -60,7 +60,7 @@ pub(crate) async fn generate_tts_audio(
     }
 
     // Layer 2: strip markdown/URLs the LLM may have included despite the prompt.
-    let text = moltis_voice::tts::sanitize_text_for_tts(text);
+    let text = antre_voice::tts::sanitize_text_for_tts(text);
     let text = text.trim();
     if text.is_empty() {
         return Err(error::Error::message("response has no speakable text"));
@@ -101,10 +101,10 @@ pub(crate) async fn generate_tts_audio(
 pub(crate) async fn build_tts_payload(
     state: &Arc<dyn ChatRuntime>,
     session_key: &str,
-    target: &moltis_channels::ChannelReplyTarget,
+    target: &antre_channels::ChannelReplyTarget,
     text: &str,
-) -> Option<moltis_common::types::ReplyPayload> {
-    use moltis_common::types::{MediaAttachment, ReplyPayload};
+) -> Option<antre_common::types::ReplyPayload> {
+    use antre_common::types::{MediaAttachment, ReplyPayload};
 
     let tts_status = state.tts_service().status().await.ok()?;
     let status: TtsStatusResponse = serde_json::from_value(tts_status).ok()?;
@@ -114,7 +114,7 @@ pub(crate) async fn build_tts_payload(
 
     // Strip markdown/URLs the LLM may have included — use sanitized text
     // only for TTS conversion, but keep the original for the caption.
-    let sanitized = moltis_voice::tts::sanitize_text_for_tts(text);
+    let sanitized = antre_voice::tts::sanitize_text_for_tts(text);
 
     let channel_key = format!("{}:{}", target.channel_type.as_str(), target.account_id);
     let (channel_override, session_override) = state.tts_overrides(session_key, &channel_key).await;

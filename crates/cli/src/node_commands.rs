@@ -1,11 +1,11 @@
 use {anyhow::Result, clap::Subcommand, std::time::Duration};
 
-/// `moltis node` subcommands — manage remote nodes.
+/// `antre node` subcommands — manage remote nodes.
 #[derive(Subcommand)]
 pub enum NodeAction {
     /// Generate a device token so a remote machine can connect as a node.
     ///
-    /// Prints the token and the `moltis node add` command to run on the
+    /// Prints the token and the `antre node add` command to run on the
     /// remote machine. This is the CLI equivalent of clicking "Generate Token"
     /// on the web UI Nodes page.
     GenerateToken {
@@ -16,7 +16,7 @@ pub enum NodeAction {
         #[arg(long, default_value = "http://localhost:9090")]
         host: String,
         /// API key or password for authentication.
-        #[arg(long, env = "MOLTIS_API_KEY")]
+        #[arg(long, env = "ANTRE_API_KEY")]
         api_key: Option<String>,
     },
 
@@ -26,7 +26,7 @@ pub enum NodeAction {
         #[arg(long, default_value = "http://localhost:9090")]
         host: String,
         /// API key or password for authentication.
-        #[arg(long, env = "MOLTIS_API_KEY")]
+        #[arg(long, env = "ANTRE_API_KEY")]
         api_key: Option<String>,
     },
 
@@ -41,10 +41,10 @@ pub enum NodeAction {
     /// a keypair and the operator approves the fingerprint on the gateway.
     Add {
         /// Gateway WebSocket URL (e.g. ws://your-server:9090/ws).
-        #[arg(long, env = "MOLTIS_GATEWAY_URL")]
+        #[arg(long, env = "ANTRE_GATEWAY_URL")]
         host: String,
-        /// Device token from `moltis node generate-token` (deprecated, use key-based auth instead).
-        #[arg(long, env = "MOLTIS_DEVICE_TOKEN")]
+        /// Device token from `antre node generate-token` (deprecated, use key-based auth instead).
+        #[arg(long, env = "ANTRE_DEVICE_TOKEN")]
         token: Option<String>,
         /// Display name for this node.
         #[arg(long)]
@@ -69,8 +69,8 @@ pub enum NodeAction {
     /// Run the node agent using saved config from `node.json`.
     ///
     /// This is the command invoked by the OS service (launchd / systemd).
-    /// It reads connection parameters from `~/.moltis/node.json`, which
-    /// is written by `moltis node add`.
+    /// It reads connection parameters from `~/.antre/node.json`, which
+    /// is written by `antre node add`.
     Run {
         /// Override the maximum command timeout in seconds.
         #[arg(long)]
@@ -101,7 +101,7 @@ pub enum NodeAction {
         #[arg(long, default_value = "http://localhost:9090")]
         host: String,
         /// API key or password for authentication.
-        #[arg(long, env = "MOLTIS_API_KEY")]
+        #[arg(long, env = "ANTRE_API_KEY")]
         api_key: Option<String>,
     },
 
@@ -113,7 +113,7 @@ pub enum NodeAction {
         #[arg(long, default_value = "http://localhost:9090")]
         host: String,
         /// API key or password for authentication.
-        #[arg(long, env = "MOLTIS_API_KEY")]
+        #[arg(long, env = "ANTRE_API_KEY")]
         api_key: Option<String>,
     },
 
@@ -132,7 +132,7 @@ pub enum NodeAction {
         #[arg(long, default_value = "http://localhost:9090")]
         host: String,
         /// API key or password for authentication.
-        #[arg(long, env = "MOLTIS_API_KEY")]
+        #[arg(long, env = "ANTRE_API_KEY")]
         api_key: Option<String>,
     },
 }
@@ -145,7 +145,7 @@ pub enum NodePairingAction {
         #[arg(long, default_value = "http://localhost:9090")]
         host: String,
         /// API key or password for authentication.
-        #[arg(long, env = "MOLTIS_API_KEY")]
+        #[arg(long, env = "ANTRE_API_KEY")]
         api_key: Option<String>,
     },
 
@@ -155,7 +155,7 @@ pub enum NodePairingAction {
         #[arg(long, default_value = "http://localhost:9090")]
         host: String,
         /// API key or password for authentication.
-        #[arg(long, env = "MOLTIS_API_KEY")]
+        #[arg(long, env = "ANTRE_API_KEY")]
         api_key: Option<String>,
     },
 
@@ -165,7 +165,7 @@ pub enum NodePairingAction {
         #[arg(long, default_value = "http://localhost:9090")]
         host: String,
         /// API key or password for authentication.
-        #[arg(long, env = "MOLTIS_API_KEY")]
+        #[arg(long, env = "ANTRE_API_KEY")]
         api_key: Option<String>,
     },
 }
@@ -193,8 +193,8 @@ pub async fn handle_node(action: NodeAction) -> Result<()> {
             let resolved_node_id = node_id.unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
 
             // Load or generate Ed25519 identity for key-based auth.
-            let key_dir = moltis_config::data_dir();
-            let identity = match moltis_node_host::identity::load_or_create(&key_dir) {
+            let key_dir = antre_config::data_dir();
+            let identity = match antre_node_host::identity::load_or_create(&key_dir) {
                 Ok(id) => {
                     println!("Node fingerprint: {}", id.fingerprint());
                     if token.is_none() {
@@ -216,7 +216,7 @@ pub async fn handle_node(action: NodeAction) -> Result<()> {
             }
 
             if foreground {
-                let config = moltis_node_host::NodeConfig {
+                let config = antre_node_host::NodeConfig {
                     gateway_url: host,
                     device_token,
                     identity,
@@ -224,12 +224,12 @@ pub async fn handle_node(action: NodeAction) -> Result<()> {
                     display_name: name,
                     platform: std::env::consts::OS.into(),
                     caps: vec![
-                        moltis_node_host::SYSTEM_EXEC_COMMAND.into(),
+                        antre_node_host::SYSTEM_EXEC_COMMAND.into(),
                         "system.which".into(),
                         "system.providers".into(),
                     ],
                     commands: vec![
-                        moltis_node_host::SYSTEM_EXEC_COMMAND.into(),
+                        antre_node_host::SYSTEM_EXEC_COMMAND.into(),
                         "system.which".into(),
                         "system.providers".into(),
                     ],
@@ -238,12 +238,12 @@ pub async fn handle_node(action: NodeAction) -> Result<()> {
                     allowed_programs,
                 };
 
-                let node = moltis_node_host::NodeHost::new(config);
+                let node = antre_node_host::NodeHost::new(config);
                 node.run().await?;
                 Ok(())
             } else {
-                let data_dir = moltis_config::data_dir();
-                let svc_config = moltis_node_host::ServiceConfig {
+                let data_dir = antre_config::data_dir();
+                let svc_config = antre_node_host::ServiceConfig {
                     gateway_url: host,
                     device_token,
                     node_id: Some(resolved_node_id),
@@ -253,29 +253,29 @@ pub async fn handle_node(action: NodeAction) -> Result<()> {
                     allowed_programs,
                 };
 
-                moltis_node_host::service::install(&data_dir, &svc_config)?;
+                antre_node_host::service::install(&data_dir, &svc_config)?;
                 println!("Node registered and service started.");
                 println!(
                     "Logs: {}",
-                    moltis_node_host::service::log_path(&data_dir).display()
+                    antre_node_host::service::log_path(&data_dir).display()
                 );
                 Ok(())
             }
         },
 
         NodeAction::Run { timeout } => {
-            let data_dir = moltis_config::data_dir();
-            let config = moltis_node_host::ServiceConfig::load(&data_dir)
+            let data_dir = antre_config::data_dir();
+            let config = antre_node_host::ServiceConfig::load(&data_dir)
                 .map_err(|e| anyhow::anyhow!(
-                    "cannot load node config: {e}\nRun `moltis node add` first to register this machine."
+                    "cannot load node config: {e}\nRun `antre node add` first to register this machine."
                 ))?;
 
             let exec_timeout = Duration::from_secs(timeout.unwrap_or(config.timeout));
 
-            let key_dir = moltis_config::data_dir();
-            let identity = moltis_node_host::identity::load_or_create(&key_dir).ok();
+            let key_dir = antre_config::data_dir();
+            let identity = antre_node_host::identity::load_or_create(&key_dir).ok();
 
-            let node_config = moltis_node_host::NodeConfig {
+            let node_config = antre_node_host::NodeConfig {
                 gateway_url: config.gateway_url,
                 device_token: config.device_token,
                 identity,
@@ -285,12 +285,12 @@ pub async fn handle_node(action: NodeAction) -> Result<()> {
                 display_name: config.display_name,
                 platform: std::env::consts::OS.into(),
                 caps: vec![
-                    moltis_node_host::SYSTEM_EXEC_COMMAND.into(),
+                    antre_node_host::SYSTEM_EXEC_COMMAND.into(),
                     "system.which".into(),
                     "system.providers".into(),
                 ],
                 commands: vec![
-                    moltis_node_host::SYSTEM_EXEC_COMMAND.into(),
+                    antre_node_host::SYSTEM_EXEC_COMMAND.into(),
                     "system.which".into(),
                     "system.providers".into(),
                 ],
@@ -299,20 +299,20 @@ pub async fn handle_node(action: NodeAction) -> Result<()> {
                 allowed_programs: config.allowed_programs,
             };
 
-            let node = moltis_node_host::NodeHost::new(node_config);
+            let node = antre_node_host::NodeHost::new(node_config);
             node.run().await?;
             Ok(())
         },
 
         NodeAction::Remove => {
-            let data_dir = moltis_config::data_dir();
-            moltis_node_host::service::uninstall(&data_dir)?;
+            let data_dir = antre_config::data_dir();
+            antre_node_host::service::uninstall(&data_dir)?;
             println!("Node removed.");
             Ok(())
         },
 
         NodeAction::Status => {
-            let data_dir = moltis_config::data_dir();
+            let data_dir = antre_config::data_dir();
             let config_path = data_dir.join("node.json");
 
             if !config_path.exists() {
@@ -320,8 +320,8 @@ pub async fn handle_node(action: NodeAction) -> Result<()> {
                 return Ok(());
             }
 
-            let config = moltis_node_host::ServiceConfig::load(&data_dir)?;
-            let status = moltis_node_host::service::status()?;
+            let config = antre_node_host::ServiceConfig::load(&data_dir)?;
+            let status = antre_node_host::service::status()?;
 
             println!("Gateway: {}", config.gateway_url);
             if let Some(ref name) = config.display_name {
@@ -332,10 +332,10 @@ pub async fn handle_node(action: NodeAction) -> Result<()> {
         },
 
         NodeAction::Logs => {
-            let data_dir = moltis_config::data_dir();
+            let data_dir = antre_config::data_dir();
             println!(
                 "{}",
-                moltis_node_host::service::log_path(&data_dir).display()
+                antre_node_host::service::log_path(&data_dir).display()
             );
             Ok(())
         },
@@ -353,9 +353,9 @@ pub async fn handle_node(action: NodeAction) -> Result<()> {
         },
 
         NodeAction::UpgradeAuth => {
-            let data_dir = moltis_config::data_dir();
-            let config = moltis_node_host::ServiceConfig::load(&data_dir).map_err(|e| {
-                anyhow::anyhow!("cannot load node config: {e}\nRun `moltis node add` first.")
+            let data_dir = antre_config::data_dir();
+            let config = antre_node_host::ServiceConfig::load(&data_dir).map_err(|e| {
+                anyhow::anyhow!("cannot load node config: {e}\nRun `antre node add` first.")
             })?;
 
             if config.device_token.is_empty() {
@@ -363,12 +363,12 @@ pub async fn handle_node(action: NodeAction) -> Result<()> {
                 return Ok(());
             }
 
-            let identity = moltis_node_host::identity::load_or_create(&data_dir)?;
+            let identity = antre_node_host::identity::load_or_create(&data_dir)?;
             println!("Node fingerprint: {}", identity.fingerprint());
             println!("Connecting to gateway to pin public key...");
 
             // Connect with both token and key — the gateway will pin the key.
-            let node_config = moltis_node_host::NodeConfig {
+            let node_config = antre_node_host::NodeConfig {
                 gateway_url: config.gateway_url.clone(),
                 device_token: config.device_token.clone(),
                 identity: Some(identity),
@@ -378,8 +378,8 @@ pub async fn handle_node(action: NodeAction) -> Result<()> {
                     .unwrap_or_else(|| uuid::Uuid::new_v4().to_string()),
                 display_name: config.display_name.clone(),
                 platform: std::env::consts::OS.into(),
-                caps: vec![moltis_node_host::SYSTEM_EXEC_COMMAND.into()],
-                commands: vec![moltis_node_host::SYSTEM_EXEC_COMMAND.into()],
+                caps: vec![antre_node_host::SYSTEM_EXEC_COMMAND.into()],
+                commands: vec![antre_node_host::SYSTEM_EXEC_COMMAND.into()],
                 exec_timeout: Duration::from_secs(10),
                 working_dir: None,
                 allowed_programs: Vec::new(),
@@ -388,7 +388,7 @@ pub async fn handle_node(action: NodeAction) -> Result<()> {
             // Connect with both token and key. The gateway pins the key
             // during the handshake. We only clear the token if the handshake
             // succeeds — otherwise the node would be locked out.
-            let node = moltis_node_host::NodeHost::new(node_config);
+            let node = antre_node_host::NodeHost::new(node_config);
             let handshake_ok = match tokio::time::timeout(Duration::from_secs(15), node.run()).await
             {
                 // Clean shutdown (e.g. server closed after idle) — handshake succeeded.
@@ -401,9 +401,9 @@ pub async fn handle_node(action: NodeAction) -> Result<()> {
                     // pinning did NOT happen. Post-handshake errors (I/O,
                     // command) indicate the connection was established.
                     match e {
-                        moltis_node_host::Error::Protocol(_)
-                        | moltis_node_host::Error::WebSocket(_)
-                        | moltis_node_host::Error::Url(_) => {
+                        antre_node_host::Error::Protocol(_)
+                        | antre_node_host::Error::WebSocket(_)
+                        | antre_node_host::Error::Url(_) => {
                             eprintln!("Error: upgrade-auth failed — {e}");
                             eprintln!("Device token was NOT removed. Fix the issue and retry.");
                             return Err(anyhow::anyhow!("{e}"));
@@ -425,8 +425,8 @@ pub async fn handle_node(action: NodeAction) -> Result<()> {
         },
 
         NodeAction::Fingerprint => {
-            let key_dir = moltis_config::data_dir();
-            let identity = moltis_node_host::identity::load_or_create(&key_dir)?;
+            let key_dir = antre_config::data_dir();
+            let identity = antre_node_host::identity::load_or_create(&key_dir)?;
             println!("{}", identity.fingerprint());
             Ok(())
         },
@@ -469,7 +469,7 @@ async fn cmd_generate_token(host: &str, api_key: Option<&str>, name: Option<&str
     println!("Device token: {token}");
     println!();
     println!("Run this on the remote machine:");
-    println!("  moltis node add --host {ws_url} --token {token} --node-id {device_id}");
+    println!("  antre node add --host {ws_url} --token {token} --node-id {device_id}");
     println!();
     println!("The token is shown once and cannot be retrieved later.");
 

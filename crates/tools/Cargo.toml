@@ -1,16 +1,24 @@
 [package]
 edition.workspace = true
-name              = "moltis-tools"
+name              = "antre-tools"
 version.workspace = true
 
 [features]
-bundled-skills        = ["moltis-skills/bundled-skills"]
-default               = ["firecrawl", "fs-tools", "metrics", "os-sandbox", "provider-openai-codex", "vercel-sandbox", "wasm"]
-embedded-wasm         = []
-firecrawl             = []
+bundled-skills = ["antre-skills/bundled-skills"]
+default = [
+  "firecrawl",
+  "fs-tools",
+  "metrics",
+  "os-sandbox",
+  "provider-openai-codex",
+  "vercel-sandbox",
+  "wasm",
+]
+embedded-wasm = []
+firecrawl = []
 # OS-level sandbox backends: Seatbelt (macOS) and bubblewrap (Linux).
 os-sandbox            = []
-provider-openai-codex = ["moltis-providers/provider-openai-codex"]
+provider-openai-codex = ["antre-providers/provider-openai-codex"]
 vercel-sandbox        = []
 # Native filesystem tools (Read, Write, Edit, MultiEdit, Glob, Grep).
 # See moltis-org/moltis#657. Default-on; build with
@@ -23,56 +31,56 @@ fs-tools = [
   "dep:ignore",
   "dep:pdf-extract",
 ]
-metrics = ["dep:moltis-metrics"]
+metrics = ["dep:antre-metrics"]
 wasm = ["dep:wasmtime", "dep:wasmtime-wasi", "wasmtime/component-model"]
 
 [dependencies]
-anyhow                = { workspace = true }
-async-trait           = { workspace = true }
-base64                = { workspace = true }
-bytes                 = { workspace = true }
-flate2                = { workspace = true }
-futures               = { workspace = true }
-globset               = { optional = true, workspace = true }
-grep-matcher          = { optional = true, workspace = true }
-grep-regex            = { optional = true, workspace = true }
-grep-searcher         = { optional = true, workspace = true }
-html2text             = { workspace = true }
-ignore                = { optional = true, workspace = true }
-image                 = { workspace = true }
-ipnet                 = { workspace = true }
-moltis-agents         = { workspace = true }
-moltis-browser        = { workspace = true }
-moltis-common         = { features = ["process"], workspace = true }
-moltis-config         = { workspace = true }
-moltis-cron           = { workspace = true }
-moltis-media          = { workspace = true }
-moltis-metrics        = { optional = true, workspace = true }
-moltis-network-filter = { workspace = true }
-moltis-providers      = { workspace = true }
-moltis-service-traits = { workspace = true }
-moltis-sessions       = { workspace = true }
-moltis-skills         = { workspace = true }
-pdf-extract           = { optional = true, workspace = true }
-regex                 = { workspace = true }
-reqwest               = { features = ["blocking"], workspace = true }
-secrecy               = { workspace = true }
-serde                 = { workspace = true }
-serde_json            = { workspace = true }
-sha2                  = { workspace = true }
-shell-words           = { workspace = true }
-sqlx                  = { workspace = true }
-tar                   = { workspace = true }
-tempfile              = { workspace = true }
-thiserror             = { workspace = true }
-time                  = { workspace = true }
-tokio                 = { workspace = true }
-tracing               = { workspace = true }
-url                   = { workspace = true }
-uuid                  = { workspace = true }
-wasmtime              = { optional = true, workspace = true }
-wasmtime-wasi         = { optional = true, workspace = true }
-which                 = { workspace = true }
+antre-agents         = { workspace = true }
+antre-browser        = { workspace = true }
+antre-common         = { features = ["process"], workspace = true }
+antre-config         = { workspace = true }
+antre-cron           = { workspace = true }
+antre-media          = { workspace = true }
+antre-metrics        = { optional = true, workspace = true }
+antre-network-filter = { workspace = true }
+antre-providers      = { workspace = true }
+antre-service-traits = { workspace = true }
+antre-sessions       = { workspace = true }
+antre-skills         = { workspace = true }
+anyhow               = { workspace = true }
+async-trait          = { workspace = true }
+base64               = { workspace = true }
+bytes                = { workspace = true }
+flate2               = { workspace = true }
+futures              = { workspace = true }
+globset              = { optional = true, workspace = true }
+grep-matcher         = { optional = true, workspace = true }
+grep-regex           = { optional = true, workspace = true }
+grep-searcher        = { optional = true, workspace = true }
+html2text            = { workspace = true }
+ignore               = { optional = true, workspace = true }
+image                = { workspace = true }
+ipnet                = { workspace = true }
+pdf-extract          = { optional = true, workspace = true }
+regex                = { workspace = true }
+reqwest              = { features = ["blocking"], workspace = true }
+secrecy              = { workspace = true }
+serde                = { workspace = true }
+serde_json           = { workspace = true }
+sha2                 = { workspace = true }
+shell-words          = { workspace = true }
+sqlx                 = { workspace = true }
+tar                  = { workspace = true }
+tempfile             = { workspace = true }
+thiserror            = { workspace = true }
+time                 = { workspace = true }
+tokio                = { workspace = true }
+tracing              = { workspace = true }
+url                  = { workspace = true }
+uuid                 = { workspace = true }
+wasmtime             = { optional = true, workspace = true }
+wasmtime-wasi        = { optional = true, workspace = true }
+which                = { workspace = true }
 
 [dev-dependencies]
 mockito      = { workspace = true }

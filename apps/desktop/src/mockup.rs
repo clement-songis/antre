@@ -2,7 +2,7 @@
 //!
 //! An agent writes several variants of a component as real gpui code in one
 //! file outside the repository, and `just desktop-mockup FILE` compiles it in
-//! through `MOLTIS_MOCKUP_FILE` (see `build.rs`). `--mockup` then shows the
+//! through `ANTRE_MOCKUP_FILE` (see `build.rs`). `--mockup` then shows the
 //! variants side by side in the app's own theme and fonts, so the design the
 //! user picks is the code that ships. The user picks variants, writes notes,
 //! and sends them back to the agent as a Markdown file.
@@ -10,16 +10,16 @@
 //! The mode never connects to a daemon: variants draw canned content.
 
 // Unused while an agent's file replaces it, but always compiled and tested.
-#[cfg_attr(moltis_mockup_scratch, allow(dead_code))]
+#[cfg_attr(antre_mockup_scratch, allow(dead_code))]
 mod demo;
 mod feedback;
 mod window;
 
 // The agent's file replaces the demo when one was given at build time. It is
 // a child of this module, so it reaches the API below as `super::`.
-#[cfg(moltis_mockup_scratch)]
+#[cfg(antre_mockup_scratch)]
 mod scratch {
-    include!(env!("MOLTIS_MOCKUP_SCRATCH"));
+    include!(env!("ANTRE_MOCKUP_SCRATCH"));
 }
 
 use std::{path::PathBuf, time::Duration};
@@ -62,9 +62,9 @@ pub struct Mockup {
 
 /// The mockup this build was compiled with.
 fn current() -> Mockup {
-    #[cfg(moltis_mockup_scratch)]
+    #[cfg(antre_mockup_scratch)]
     return scratch::mockup();
-    #[cfg(not(moltis_mockup_scratch))]
+    #[cfg(not(antre_mockup_scratch))]
     demo::mockup()
 }
 

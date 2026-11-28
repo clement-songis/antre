@@ -24,7 +24,7 @@ it; closing it keeps it closed for that design until you reopen it).
   and text, and the design id and version, so the agent knows what "this"
   is. Hold Alt to pick the exact element instead of its `data-mid` block.
 - **Comment**: click an element and type a note. Comments are pinned on that
-  version (numbered badges in the preview) and kept in `moltis.db`.
+  version (numbered badges in the preview) and kept in `antre.db`.
   *Send to agent* turns all open comments into one message and marks them
   resolved.
 - **Errors**: uncaught errors in the preview are listed under it; *Send to
@@ -56,20 +56,20 @@ signed link, never served by the app.
 A design is a directory:
 
 ```
-~/.moltis/designs/<id>/
+~/.antre/designs/<id>/
 ├── index.html      # entry document
 ├── tokens.css      # copied from the design system, if one was picked
 └── ...             # any CSS, JS, images or fonts the agent adds
 ```
 
 `<id>` is 32 lowercase hex characters. Metadata (title, session, project,
-design system, current version) lives in `moltis.db`
+design system, current version) lives in `antre.db`
 (`canvas_designs`), and every version in `canvas_design_versions`.
 
 Versions are **append-only**: a database trigger refuses updates, and a
 revert restores an old snapshot and records it as a *new* version
 (`revert to v2`). Each version is a checkpoint of the whole directory in
-`~/.moltis/design-versions/` (the same mechanism as
+`~/.antre/design-versions/` (the same mechanism as
 [Checkpoints](checkpoints.md), in a separate folder that is never pruned).
 A version is only recorded when the files changed (content hash).
 
@@ -95,7 +95,7 @@ design stops versioning with an explicit error until it is removed.
 
 There is no separate edit tool: the agent edits files with the regular
 [filesystem tools](tools-fs.md) using the absolute paths returned above.
-Writes into `~/.moltis/designs/` that are not inside an existing design
+Writes into `~/.antre/designs/` that are not inside an existing design
 are refused.
 
 Designs follow these rules (returned to the agent with every create/open):
@@ -110,7 +110,7 @@ Designs follow these rules (returned to the agent with every create/open):
 
 A design system is a [skill](skill-tools.md) folder with a `DESIGN.md`
 (guidance) and a `tokens.css` (CSS custom properties). Three neutral starters
-are seeded into `~/.moltis/skills/` on startup and never overwritten:
+are seeded into `~/.antre/skills/` on startup and never overwritten:
 
 | Name | Look |
 |---|---|
@@ -192,7 +192,7 @@ work around the throttling.
 ```
 
 Vendored scripts (Preact and Preact hooks) are compiled into the binary.
-Operators can add `.js`/`.css` files to `~/.moltis/canvas/vendor/`; they are
+Operators can add `.js`/`.css` files to `~/.antre/canvas/vendor/`; they are
 served at `/_vendor/<name>` and listed with their SRI hash by
 `canvas.config`. Extra CDN origins are opt-in through
 `canvas.script_sources`.

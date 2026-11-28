@@ -8,8 +8,8 @@
 use std::sync::{Arc, RwLock};
 
 use {
-    moltis_config::FeedbackSettings,
-    moltis_observability::{
+    antre_config::FeedbackSettings,
+    antre_observability::{
         FeedbackSignal, FeedbackVocabulary, ScoreDeleteRecord, TraceId, feedback_score,
         feedback_score_id,
     },
@@ -224,13 +224,13 @@ impl FeedbackService {
 
         if let Some(signal) = signal {
             let score = feedback_score(&trace_id, signal, Some(&scoped_user), comment, environment);
-            moltis_observability::record(moltis_observability::Event::Score(Box::new(score)));
+            antre_observability::record(antre_observability::Event::Score(Box::new(score)));
             debug!(channel, ?signal, "recorded reaction feedback");
             return FeedbackOutcome::Recorded(signal);
         }
 
         let score_id = feedback_score_id(&trace_id, Some(&scoped_user));
-        moltis_observability::record(moltis_observability::Event::ScoreDelete(Box::new(
+        antre_observability::record(antre_observability::Event::ScoreDelete(Box::new(
             ScoreDeleteRecord::new(trace_id, score_id),
         )));
         FeedbackOutcome::Retracted
@@ -349,16 +349,16 @@ mod tests {
 
     #[derive(Default)]
     struct CollectingSink {
-        events: Mutex<Vec<moltis_observability::Event>>,
+        events: Mutex<Vec<antre_observability::Event>>,
     }
 
     #[async_trait::async_trait]
-    impl moltis_observability::ObservationSink for CollectingSink {
+    impl antre_observability::ObservationSink for CollectingSink {
         fn name(&self) -> &str {
             "collecting"
         }
 
-        fn record(&self, event: moltis_observability::Event) {
+        fn record(&self, event: antre_observability::Event) {
             self.events
                 .lock()
                 .unwrap_or_else(|e| e.into_inner())
@@ -414,7 +414,7 @@ mod tests {
     async fn a_thumbs_up_records_a_positive_score() {
         let _guard = sink_guard().await;
         let sink = Arc::new(CollectingSink::default());
-        moltis_observability::set_global_sink(Arc::clone(&sink) as Arc<_>);
+        antre_observability::set_global_sink(Arc::clone(&sink) as Arc<_>);
 
         let (service, links) = service(true);
         link_reply(&links, "42", "trace-1").await;
@@ -437,13 +437,13 @@ mod tests {
         let scored = events
             .iter()
             .filter_map(|e| match e {
-                moltis_observability::Event::Score(s) => Some(s),
+                antre_observability::Event::Score(s) => Some(s),
                 _ => None,
             })
             .count();
         assert_eq!(scored, 1);
 
-        moltis_observability::clear_global_sink();
+        antre_observability::clear_global_sink();
     }
 
     #[tokio::test]
@@ -490,7 +490,7 @@ mod tests {
     async fn removing_a_reaction_retracts_rather_than_scoring_again() {
         let _guard = sink_guard().await;
         let sink = Arc::new(CollectingSink::default());
-        moltis_observability::set_global_sink(Arc::clone(&sink) as Arc<_>);
+        antre_observability::set_global_sink(Arc::clone(&sink) as Arc<_>);
         let (service, links) = service(true);
         link_reply(&links, "42", "trace-1").await;
 
@@ -510,17 +510,17 @@ mod tests {
         assert_eq!(outcome, FeedbackOutcome::Retracted);
         let events = sink.events.lock().unwrap_or_else(|e| e.into_inner());
         assert!(matches!(events.as_slice(), [
-            moltis_observability::Event::ScoreDelete(_)
+            antre_observability::Event::ScoreDelete(_)
         ]));
         drop(events);
-        moltis_observability::clear_global_sink();
+        antre_observability::clear_global_sink();
     }
 
     #[tokio::test]
     async fn typed_feedback_does_not_depend_on_the_emoji_vocabulary() {
         let _guard = sink_guard().await;
         let sink = Arc::new(CollectingSink::default());
-        moltis_observability::set_global_sink(Arc::clone(&sink) as Arc<_>);
+        antre_observability::set_global_sink(Arc::clone(&sink) as Arc<_>);
         let links = Arc::new(MemoryLinks::default());
         let service = FeedbackService::default();
         service.apply(
@@ -553,9 +553,9 @@ mod tests {
                 .lock()
                 .unwrap_or_else(|e| e.into_inner())
                 .as_slice(),
-            [moltis_observability::Event::Score(_)]
+            [antre_observability::Event::Score(_)]
         ));
-        moltis_observability::clear_global_sink();
+        antre_observability::clear_global_sink();
     }
 
     #[tokio::test]

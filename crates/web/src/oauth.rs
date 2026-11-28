@@ -3,12 +3,12 @@
 use std::collections::HashMap;
 
 use {
+    antre_httpd::AppState,
     axum::{
         extract::{Query, State},
         http::StatusCode,
         response::{Html, IntoResponse},
     },
-    moltis_httpd::AppState,
 };
 
 pub async fn oauth_callback_handler(

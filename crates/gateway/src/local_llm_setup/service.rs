@@ -326,7 +326,7 @@ impl LocalLlmService for LiveLocalLlmService {
         let entry = LocalModelEntry {
             model_id: model_id.clone(),
             model_path: configured_local_model_path_override(
-                &moltis_config::loader::discover_and_load().providers,
+                &antre_config::loader::discover_and_load().providers,
             ),
             hf_repo: None,
             hf_filename: None,
@@ -342,7 +342,7 @@ impl LocalLlmService for LiveLocalLlmService {
 
         // Resolve effective idle timeout: per-model override → global default → None.
         let effective_timeout = entry.idle_timeout_secs.or_else(|| {
-            let cfg = moltis_config::loader::discover_and_load();
+            let cfg = antre_config::loader::discover_and_load();
             cfg.providers
                 .get("local")
                 .or_else(|| cfg.providers.get("local-llm"))
@@ -611,7 +611,7 @@ impl LocalLlmService for LiveLocalLlmService {
 
         // Resolve effective idle timeout: per-model override → global default → None.
         let effective_timeout = entry.idle_timeout_secs.or_else(|| {
-            let cfg = moltis_config::loader::discover_and_load();
+            let cfg = antre_config::loader::discover_and_load();
             cfg.providers
                 .get("local")
                 .or_else(|| cfg.providers.get("local-llm"))
@@ -887,7 +887,7 @@ async fn search_huggingface(
 
     let response = client
         .get(&url)
-        .header("User-Agent", "moltis/1.0")
+        .header("User-Agent", "antre/1.0")
         .send()
         .await
         .map_err(|e| format!("HuggingFace API request failed: {e}"))?;

@@ -1,6 +1,6 @@
 use {
+    antre_memory::schema::FileRow,
     anyhow::{Context, Result},
-    moltis_memory::schema::FileRow,
     zvec::{Collection, Doc, SearchQuery},
 };
 
@@ -530,8 +530,8 @@ mod tests {
         let guard = TestGuard::new();
         // TestGuard::new creates the collection via open_or_create_collection,
         // which writes the dimension-meta doc (source == META_DOC_SOURCE) under
-        // the PK "__moltis_dim_meta__".
-        let result = get_chunk_by_id(&guard, "__moltis_dim_meta__").unwrap();
+        // the PK "__antre_dim_meta__".
+        let result = get_chunk_by_id(&guard, "__antre_dim_meta__").unwrap();
         assert!(
             result.is_none(),
             "dimension-meta doc must return None from get_chunk_by_id"

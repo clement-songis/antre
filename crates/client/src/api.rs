@@ -3,7 +3,7 @@
 use std::future::Future;
 
 use {
-    moltis_protocol::{
+    antre_protocol::{
         client_api::{
             AgentIdentity, ApprovalDecision, ChatContext, ChatSendParams,
             ExecApprovalResolveParams, ModelEntry, SessionEntry, SessionKeyParams, methods,

@@ -9,9 +9,9 @@ use {
 };
 
 use {
-    moltis_channels::ChannelReplyTarget,
-    moltis_sessions::metadata::SessionEntry,
-    moltis_tools::{
+    antre_channels::ChannelReplyTarget,
+    antre_sessions::metadata::SessionEntry,
+    antre_tools::{
         approval::{ApprovalDecision, ApprovalManager, PendingApprovalView},
         exec::ApprovalBroadcaster,
     },
@@ -113,7 +113,7 @@ impl GatewayApprovalBroadcaster {
         &self,
         session_key: Option<&str>,
         command: &str,
-    ) -> moltis_tools::Result<()> {
+    ) -> antre_tools::Result<()> {
         let preview = truncate_command_preview(command, MAX_COMMAND_PREVIEW_LEN);
         let message = format!(
             "Approval needed for `{preview}`.\nUse /approvals to see the numbered list, then /approve N or /deny N. The web UI still works too.",
@@ -121,7 +121,7 @@ impl GatewayApprovalBroadcaster {
         notify_session_channel(&self.state, session_key, &message)
             .await
             .map_err(|error| {
-                moltis_tools::Error::message(format!("send approval notification: {error}"))
+                antre_tools::Error::message(format!("send approval notification: {error}"))
             })
     }
 }
@@ -162,7 +162,7 @@ impl ApprovalBroadcaster for GatewayApprovalBroadcaster {
         request_id: &str,
         command: &str,
         session_key: Option<&str>,
-    ) -> moltis_tools::Result<()> {
+    ) -> antre_tools::Result<()> {
         self.broadcast_pending(&PendingApprovalView {
             id: request_id.to_string(),
             command: command.to_string(),
@@ -172,7 +172,7 @@ impl ApprovalBroadcaster for GatewayApprovalBroadcaster {
         .await
     }
 
-    async fn broadcast_pending(&self, request: &PendingApprovalView) -> moltis_tools::Result<()> {
+    async fn broadcast_pending(&self, request: &PendingApprovalView) -> antre_tools::Result<()> {
         let session_key = request.session_key.as_deref();
         broadcast(
             &self.state,
@@ -195,7 +195,7 @@ impl ApprovalBroadcaster for GatewayApprovalBroadcaster {
         request_id: &str,
         decision: &ApprovalDecision,
         session_key: Option<&str>,
-    ) -> moltis_tools::Result<()> {
+    ) -> antre_tools::Result<()> {
         broadcast(
             &self.state,
             "exec.approval.resolved",

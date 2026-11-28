@@ -1,6 +1,6 @@
-#ifndef Moltis_Bridging_Header_h
-#define Moltis_Bridging_Header_h
+#ifndef Antre_Bridging_Header_h
+#define Antre_Bridging_Header_h
 
-#include "moltis_bridge.h"
+#include "antre_bridge.h"
 
 #endif

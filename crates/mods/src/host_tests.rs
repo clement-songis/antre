@@ -276,7 +276,7 @@ fn static_check_rejects_foreign_imports() {
         "evil:escape/fs@1.0.0",
         "wasi:sockets/tcp@0.2.0",
         "wasi:http/outgoing-handler@0.2.0",
-        "moltis:tool/outgoing-handler@0.1.0",
+        "antre:tool/outgoing-handler@0.1.0",
     ] {
         let component = engine.compile(&import_only(import)).unwrap();
         let err = engine
@@ -290,7 +290,7 @@ fn static_check_rejects_foreign_imports() {
 fn static_check_requires_net_for_http_import() {
     let engine = ModEngine::new(test_limits()).unwrap();
     let component = engine
-        .compile(&import_only("moltis:mods/http@0.1.0"))
+        .compile(&import_only("antre:mods/http@0.1.0"))
         .unwrap();
     assert!(engine.check_imports(&component, &caps(&["tool"])).is_err());
     assert!(
@@ -330,7 +330,7 @@ fn garbage_bytes_are_rejected() {
 }
 
 fn host_state(granted: CapabilitySet) -> HostState {
-    let dir = std::env::temp_dir().join("moltis-mods-host-state-unused.json");
+    let dir = std::env::temp_dir().join("antre-mods-host-state-unused.json");
     HostState {
         mod_id: ModId::parse("acme.x").unwrap(),
         granted,

@@ -1,4 +1,4 @@
-# Moltis Docs
+# Antre Docs
 
 The published documentation at <https://docs.moltis.org> is built with Astro from the Markdown files in `docs/src/`.
 

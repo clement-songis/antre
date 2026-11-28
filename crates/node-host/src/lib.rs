@@ -1,6 +1,6 @@
 //! Headless node host: connects to a gateway as a node and executes commands.
 //!
-//! Usage: `moltis node run --host <gateway> --token <device-token>`
+//! Usage: `antre node run --host <gateway> --token <device-token>`
 //!
 //! The node host establishes a WebSocket connection to the gateway,
 //! authenticates with a device token, and handles structured `system.exec.v1` commands
@@ -12,9 +12,9 @@ pub mod runner;
 pub mod service;
 
 pub use {
+    antre_protocol::SYSTEM_EXEC_COMMAND,
     error::Error,
     identity::NodeIdentity,
-    moltis_protocol::SYSTEM_EXEC_COMMAND,
     runner::{NodeConfig, NodeHost},
     service::ServiceConfig,
 };

@@ -17,7 +17,7 @@ use {
 };
 
 /// Instrumentation scope name reported to backends.
-pub const SCOPE_NAME: &str = "moltis";
+pub const SCOPE_NAME: &str = "antre";
 
 /// Identity and policy applied to one export batch.
 #[derive(Debug, Clone)]
@@ -77,7 +77,7 @@ fn bounded_json(value: &serde_json::Value, max: usize) -> Option<String> {
     }
 
     let marker = serde_json::json!({
-        "moltis_truncated": true,
+        "antre_truncated": true,
         "original_bytes": serialized.len(),
     })
     .to_string();
@@ -213,13 +213,13 @@ pub fn trace_to_span(trace: &TraceRecord, ctx: &ExportContext) -> wire::Span {
         // without copying the prompt itself into it.
         if let Some(input) = &trace.input {
             attributes.push(wire::KeyValue::int(
-                "moltis.input.bytes",
+                "antre.input.bytes",
                 payload_size(input),
             ));
         }
         if let Some(output) = &trace.output {
             attributes.push(wire::KeyValue::int(
-                "moltis.output.bytes",
+                "antre.output.bytes",
                 payload_size(output),
             ));
         }
@@ -400,13 +400,13 @@ fn push_payload_attrs(
     }
     if let Some(input) = &obs.input {
         out.push(wire::KeyValue::int(
-            "moltis.input.bytes",
+            "antre.input.bytes",
             payload_size(input),
         ));
     }
     if let Some(output) = &obs.output {
         out.push(wire::KeyValue::int(
-            "moltis.output.bytes",
+            "antre.output.bytes",
             payload_size(output),
         ));
     }
@@ -536,7 +536,7 @@ fn push_prompt_attrs(out: &mut Vec<wire::KeyValue>, obs: &ObservationRecord) {
     }
 }
 
-/// Resource attributes describing this Moltis instance.
+/// Resource attributes describing this Antre instance.
 #[must_use]
 pub fn resource_attributes(ctx: &ExportContext) -> Vec<wire::KeyValue> {
     let mut attrs = vec![
@@ -605,7 +605,7 @@ mod tests {
 
     fn ctx(profile: ExportProfile) -> ExportContext {
         ExportContext {
-            service_name: "moltis".into(),
+            service_name: "antre".into(),
             service_version: "20260726.01".into(),
             environment: Some("production".into()),
             profile,
@@ -684,7 +684,7 @@ mod tests {
         // Enough to alert on a runaway prompt without copying the prompt.
         let span = observation_to_span(&generation(), &otel_ctx());
         assert!(matches!(
-            attr_value(&span, "moltis.input.bytes"),
+            attr_value(&span, "antre.input.bytes"),
             Some(v) if v["intValue"].is_string()
         ));
     }
@@ -698,7 +698,7 @@ mod tests {
         let span = observation_to_span(&generation(), &ctx(profile));
 
         assert!(attr_value(&span, attr::OBSERVATION_INPUT).is_none());
-        assert!(attr_value(&span, "moltis.input.bytes").is_none());
+        assert!(attr_value(&span, "antre.input.bytes").is_none());
     }
 
     #[test]

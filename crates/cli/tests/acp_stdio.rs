@@ -1,6 +1,6 @@
-//! `moltis acp` speaks JSON-RPC on stdout, so nothing else may write there.
+//! `antre acp` speaks JSON-RPC on stdout, so nothing else may write there.
 //!
-//! The loopback tests in `moltis-acp` prove the protocol layer keeps its own
+//! The loopback tests in `antre-acp` prove the protocol layer keeps its own
 //! stream clean. They cannot catch the failure that actually bites: a `tracing`
 //! subscriber, a stray `println!`, or a startup banner in the *binary* landing
 //! on the same file descriptor. That needs the real process, so this drives it
@@ -21,13 +21,13 @@ use std::{
 fn run_acp_with_rust_log(args: &[&str], input: &str, rust_log: &str) -> (String, String) {
     let temp = tempfile::tempdir().expect("temp dir");
     std::fs::write(
-        temp.path().join("moltis.toml"),
+        temp.path().join("antre.toml"),
         "[providers]\noffered = [\"test-disabled\"]\n\n[code_index]\nenabled = false\n",
     )
     .expect("write isolated config");
-    let mut child = Command::new(env!("CARGO_BIN_EXE_moltis"))
+    let mut child = Command::new(env!("CARGO_BIN_EXE_antre"))
         .args(["--log-level", "trace"])
-        // Keep the test off the developer's real ~/.moltis.
+        // Keep the test off the developer's real ~/.antre.
         .args(["--config-dir", &temp.path().to_string_lossy()])
         .args(["--data-dir", &temp.path().to_string_lossy()])
         .args(args)
@@ -38,7 +38,7 @@ fn run_acp_with_rust_log(args: &[&str], input: &str, rust_log: &str) -> (String,
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
-        .expect("spawn moltis acp");
+        .expect("spawn antre acp");
     let child_stdout = child.stdout.take().expect("stdout");
     let (first_frame_tx, first_frame_rx) = mpsc::sync_channel(1);
     let stdout_reader = std::thread::spawn(move || {
@@ -69,7 +69,7 @@ fn run_acp_with_rust_log(args: &[&str], input: &str, rust_log: &str) -> (String,
         result => {
             let _ = child.kill();
             let _ = child.wait();
-            panic!("moltis acp did not return a response frame: {result:?}");
+            panic!("antre acp did not return a response frame: {result:?}");
         },
     }
     // The client closes only after receiving its response; dropping stdin then
@@ -82,12 +82,12 @@ fn run_acp_with_rust_log(args: &[&str], input: &str, rust_log: &str) -> (String,
             Some(status) => break status,
             None if std::time::Instant::now() >= deadline => {
                 let _ = child.kill();
-                panic!("moltis acp did not exit after stdin closed");
+                panic!("antre acp did not exit after stdin closed");
             },
             None => std::thread::sleep(Duration::from_millis(50)),
         }
     };
-    assert!(status.success(), "moltis acp exited with {status}");
+    assert!(status.success(), "antre acp exited with {status}");
 
     (
         stdout_reader.join().expect("stdout reader"),
@@ -124,20 +124,20 @@ fn stdout_carries_only_protocol_framing_with_logging_at_trace() {
 
     // The logs still have to go somewhere, or the redirect is untested.
     assert!(
-        stderr.contains("moltis starting"),
+        stderr.contains("antre starting"),
         "startup logging should be on stderr, got: {stderr}"
     );
 }
 
 #[test]
-fn initialize_reports_moltis_as_the_agent() {
+fn initialize_reports_antre_as_the_agent() {
     let (stdout, _stderr) = run_acp(&["acp", "--echo"], INITIALIZE);
     let line = stdout
         .lines()
         .find(|line| !line.trim().is_empty())
         .expect("a response frame");
     let frame: serde_json::Value = serde_json::from_str(line).expect("valid JSON");
-    assert_eq!(frame["result"]["agentInfo"]["name"], "moltis");
+    assert_eq!(frame["result"]["agentInfo"]["name"], "antre");
     assert_eq!(frame["result"]["protocolVersion"], 1);
 }
 
@@ -160,6 +160,6 @@ fn protocol_payloads_are_not_logged_even_at_trace() {
 fn without_echo_boots_the_real_backend_and_serves_protocol() {
     let (stdout, _stderr) = run_acp(&["acp"], INITIALIZE);
     let frame: serde_json::Value = serde_json::from_str(stdout.trim()).expect("valid JSON-RPC");
-    assert_eq!(frame["result"]["agentInfo"]["name"], "moltis");
+    assert_eq!(frame["result"]["agentInfo"]["name"], "antre");
     assert_eq!(frame["result"]["agentCapabilities"]["loadSession"], true);
 }

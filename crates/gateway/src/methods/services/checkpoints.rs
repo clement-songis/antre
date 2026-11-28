@@ -1,5 +1,5 @@
 use {
-    moltis_tools::checkpoints::{CheckpointManager, TurnRecord},
+    antre_tools::checkpoints::{CheckpointManager, TurnRecord},
     serde::{Deserialize, Serialize},
 };
 
@@ -94,7 +94,7 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                     serde_json::from_value(ctx.params.clone()).unwrap_or_default();
                 let session_key = resolve_session_key(&ctx, params.session_key).await?;
                 let limit = params.limit.unwrap_or(20).clamp(1, MAX_TURNS);
-                let manager = CheckpointManager::new(moltis_config::data_dir());
+                let manager = CheckpointManager::new(antre_config::data_dir());
                 let turns = manager
                     .read_turns(limit, Some(&session_key))
                     .map_err(|error| ErrorShape::from(ServiceError::message(error)))?;
@@ -111,7 +111,7 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                 let params: RestoreParams = serde_json::from_value(ctx.params.clone())
                     .map_err(|error| invalid(format!("invalid params: {error}")))?;
                 let session_key = resolve_session_key(&ctx, params.session_key.clone()).await?;
-                let manager = CheckpointManager::new(moltis_config::data_dir());
+                let manager = CheckpointManager::new(antre_config::data_dir());
                 let turns = manager
                     .read_turns(usize::MAX, Some(&session_key))
                     .map_err(|error| ErrorShape::from(ServiceError::message(error)))?;

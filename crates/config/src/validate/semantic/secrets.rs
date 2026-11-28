@@ -12,7 +12,7 @@ fn looks_like_env_var(value: &str) -> bool {
     false
 }
 
-pub(super) fn check_plaintext_api_keys(config: &MoltisConfig, diagnostics: &mut Vec<Diagnostic>) {
+pub(super) fn check_plaintext_api_keys(config: &AntreConfig, diagnostics: &mut Vec<Diagnostic>) {
     // LLM provider keys
     for (name, entry) in &config.providers.providers {
         if let Some(ref key) = entry.api_key {
@@ -106,7 +106,7 @@ pub(crate) fn check_file_references(
     diagnostics: &mut Vec<Diagnostic>,
 ) {
     // Only check if we can parse the config
-    let Ok(config) = toml::from_str::<MoltisConfig>(toml_str) else {
+    let Ok(config) = toml::from_str::<AntreConfig>(toml_str) else {
         return;
     };
 
@@ -131,7 +131,7 @@ pub(crate) fn check_file_references(
     }
 
     // Agent preset MCP allow/deny server validation — warn on unknown server names.
-    // Merge servers from both moltis.toml [mcp.servers] and the persistent
+    // Merge servers from both antre.toml [mcp.servers] and the persistent
     // mcp-servers.json registry file so we don't false-positive on servers
     // added via the API.
     let mut known_mcp_servers: std::collections::HashSet<String> = config

@@ -1,13 +1,13 @@
 # Reliable Delivery and Session Lanes
 
-Moltis does not drop replies silently, and it never runs two turns on the same
+Antre does not drop replies silently, and it never runs two turns on the same
 session at once. This page explains how replies reach channels, what happens
 when a channel fails, and how turns for one session wait their turn.
 
 ## Channel replies go through an outbox
 
 When a run answers a channel message (Telegram, Discord, Slack, Signal and the
-others), the answer is saved to an outbox in `moltis.db` before it is sent.
+others), the answer is saved to an outbox in `antre.db` before it is sent.
 This covers final answers, activity logbooks, terminal error messages, results
 of background sub-agents and the transcript of a voice reply that could not be
 sent.
@@ -32,7 +32,7 @@ stateDiagram-v2
 - **Order.** Replies to the same chat (and thread) go out in the order they
   were produced. A reply waits while an earlier one to that chat is still
   queued or being sent. Other chats are not held up.
-- **Restarts.** A reply that was being sent when Moltis stopped is sent again
+- **Restarts.** A reply that was being sent when Antre stopped is sent again
   at startup. A send can therefore be repeated once after a crash, but it is
   never lost.
 - **Isolation.** Each send has its own deadline (30 s by default). A chat
@@ -85,8 +85,8 @@ is scheduled), `delivered` or `failed`.
 
 ### Metrics
 
-- `moltis_delivery_enqueued_total{kind}`
-- `moltis_delivery_attempts_total{kind,status,channel}`, where `status` is
+- `antre_delivery_enqueued_total{kind}`
+- `antre_delivery_attempts_total{kind,status,channel}`, where `status` is
   `delivered`, `retry` or `failed`
 
 ## One run per session
@@ -137,7 +137,7 @@ sent to the session's bound channel.
 
 ## Memory prefetch has a deadline
 
-Before each private turn, Moltis searches long-term memory for context. Memory
+Before each private turn, Antre searches long-term memory for context. Memory
 is one store shared by all agents, so a locked database or an embedding service
 that hangs would otherwise stall every agent's turns. If the search takes more
 than 5 seconds, the turn goes on without recalled context, and the prefetch is

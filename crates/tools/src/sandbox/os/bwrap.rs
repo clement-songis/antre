@@ -227,20 +227,17 @@ mod tests {
         for dir in [
             "/usr",
             "/etc",
-            "/home/u/.moltis",
-            "/home/u/.moltis/files",
-            "/home/u/.moltis/sandbox/home/shared",
-            "/home/u/.moltis/sandbox/os/s1/tmp",
-            "/home/u/.moltis/logs",
-            "/home/u/.moltis/hooks",
+            "/home/u/.antre",
+            "/home/u/.antre/files",
+            "/home/u/.antre/sandbox/home/shared",
+            "/home/u/.antre/sandbox/os/s1/tmp",
+            "/home/u/.antre/logs",
+            "/home/u/.antre/hooks",
         ] {
             map.insert(PathBuf::from(dir), HostEntry::Dir);
         }
         map.insert(PathBuf::from("/bin"), HostEntry::Symlink("usr/bin".into()));
-        for file in [
-            "/home/u/.moltis/credentials.json",
-            "/home/u/.moltis/moltis.db",
-        ] {
+        for file in ["/home/u/.antre/credentials.json", "/home/u/.antre/antre.db"] {
             map.insert(PathBuf::from(file), HostEntry::File);
         }
         FakeFs(map)
@@ -248,13 +245,13 @@ mod tests {
 
     fn policy(network: OsNetworkAccess, workspace: WorkspaceMount) -> OsSandboxPolicy {
         OsSandboxPolicy::build(&OsPolicyInputs {
-            data_dir: PathBuf::from("/home/u/.moltis"),
-            config_dir: Some(PathBuf::from("/home/u/.config/moltis")),
+            data_dir: PathBuf::from("/home/u/.antre"),
+            config_dir: Some(PathBuf::from("/home/u/.config/antre")),
             user_home: Some(PathBuf::from("/home/u")),
-            home: PathBuf::from("/home/u/.moltis/sandbox/home/shared"),
-            tmp: PathBuf::from("/home/u/.moltis/sandbox/os/s1/tmp"),
+            home: PathBuf::from("/home/u/.antre/sandbox/home/shared"),
+            tmp: PathBuf::from("/home/u/.antre/sandbox/os/s1/tmp"),
             workspace_mount: workspace,
-            managed_files_dir: PathBuf::from("/home/u/.moltis/files"),
+            managed_files_dir: PathBuf::from("/home/u/.antre/files"),
             managed_files_mount: ManagedFilesMount::Ro,
             network,
             system_read_roots: vec![
@@ -273,8 +270,8 @@ mod tests {
         build_args(
             policy,
             &fake_fs(),
-            &[PathBuf::from("/home/u/.moltis/moltis.db")],
-            Path::new("/home/u/.moltis/sandbox/home/shared"),
+            &[PathBuf::from("/home/u/.antre/antre.db")],
+            Path::new("/home/u/.antre/sandbox/home/shared"),
             &["/bin/sh".into(), "-c".into(), "true".into()],
         )
     }
@@ -320,19 +317,19 @@ mod tests {
         assert!(has_seq(&args, &["--symlink", "usr/bin", "/bin"]));
         assert!(has_seq(&args, &[
             "--ro-bind",
-            "/home/u/.moltis",
-            "/home/u/.moltis"
+            "/home/u/.antre",
+            "/home/u/.antre"
         ]));
         assert!(has_seq(&args, &[
             "--bind",
-            "/home/u/.moltis/sandbox/home/shared",
-            "/home/u/.moltis/sandbox/home/shared"
+            "/home/u/.antre/sandbox/home/shared",
+            "/home/u/.antre/sandbox/home/shared"
         ]));
         assert!(!args.iter().any(|arg| arg == "/lib64"));
         assert!(!has_seq(&args, &[
             "--bind",
-            "/home/u/.moltis",
-            "/home/u/.moltis"
+            "/home/u/.antre",
+            "/home/u/.antre"
         ]));
     }
 
@@ -341,35 +338,35 @@ mod tests {
         let args = args(&policy(OsNetworkAccess::Blocked, WorkspaceMount::Rw));
         let bind = args
             .windows(2)
-            .position(|w| w[0] == "--bind" && w[1] == "/home/u/.moltis")
+            .position(|w| w[0] == "--bind" && w[1] == "/home/u/.antre")
             .unwrap();
         let mask = args
             .windows(3)
             .position(|w| {
                 w[0] == "--ro-bind"
                     && w[1] == "/dev/null"
-                    && w[2] == "/home/u/.moltis/credentials.json"
+                    && w[2] == "/home/u/.antre/credentials.json"
             })
             .unwrap();
         assert!(mask > bind);
         assert!(has_seq(&args, &[
             "--ro-bind",
             "/dev/null",
-            "/home/u/.moltis/moltis.db"
+            "/home/u/.antre/antre.db"
         ]));
-        assert!(has_seq(&args, &["--tmpfs", "/home/u/.moltis/logs"]));
-        assert!(has_seq(&args, &["--remount-ro", "/home/u/.moltis/logs"]));
+        assert!(has_seq(&args, &["--tmpfs", "/home/u/.antre/logs"]));
+        assert!(has_seq(&args, &["--remount-ro", "/home/u/.antre/logs"]));
         // Managed Files stays read-only inside the writable workspace.
         assert!(has_seq(&args, &[
             "--ro-bind",
-            "/home/u/.moltis/files",
-            "/home/u/.moltis/files"
+            "/home/u/.antre/files",
+            "/home/u/.antre/files"
         ]));
         // Hooks run on the host: read-only even in a writable workspace.
         assert!(has_seq(&args, &[
             "--ro-bind",
-            "/home/u/.moltis/hooks",
-            "/home/u/.moltis/hooks"
+            "/home/u/.antre/hooks",
+            "/home/u/.antre/hooks"
         ]));
         // Paths outside every bound root are never mentioned.
         assert!(!args.iter().any(|arg| arg.contains(".ssh")));
@@ -382,7 +379,7 @@ mod tests {
         assert_eq!(&args[dashdash + 1..], ["/bin/sh", "-c", "true"]);
         assert!(has_seq(&args, &[
             "--chdir",
-            "/home/u/.moltis/sandbox/home/shared"
+            "/home/u/.antre/sandbox/home/shared"
         ]));
     }
 
@@ -395,7 +392,7 @@ mod tests {
         std::fs::create_dir_all(&home).unwrap();
         std::fs::create_dir_all(&tmp).unwrap();
         std::fs::create_dir_all(data.join("agents/main")).unwrap();
-        std::fs::write(data.join("moltis.db"), b"").unwrap();
+        std::fs::write(data.join("antre.db"), b"").unwrap();
         std::fs::write(data.join("agents/main/memory.db-wal"), b"").unwrap();
         std::fs::write(data.join("notes.md"), b"").unwrap();
         std::fs::write(home.join("own.db"), b"").unwrap();
@@ -417,7 +414,7 @@ mod tests {
         let found = scan_denied_suffixes(&policy, 4);
         assert_eq!(found, vec![
             data.join("agents/main/memory.db-wal"),
-            data.join("moltis.db")
+            data.join("antre.db")
         ]);
     }
 

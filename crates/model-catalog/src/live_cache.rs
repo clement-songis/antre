@@ -52,8 +52,7 @@ impl LiveCache {
         std::fs::write(&tmp, serde_json::to_vec(snapshot)?)?;
         std::fs::rename(&tmp, &path)?;
         #[cfg(feature = "metrics")]
-        moltis_metrics::counter!(moltis_metrics::model_catalog::LIVE_CACHE_WRITES_TOTAL)
-            .increment(1);
+        antre_metrics::counter!(antre_metrics::model_catalog::LIVE_CACHE_WRITES_TOTAL).increment(1);
         Ok(())
     }
 

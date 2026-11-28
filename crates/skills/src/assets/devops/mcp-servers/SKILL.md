@@ -2,8 +2,8 @@
 name: mcp-servers
 description: Add, remove, configure, and troubleshoot MCP (Model Context Protocol) servers. Use when the user wants to connect external tools, manage MCP server lifecycle, or debug MCP connectivity issues.
 origin:
-  source: moltis
-  url: https://github.com/moltis-org/moltis
+  source: antre
+  url: https://github.com/antre-ai/antre
   version: "1.0"
 ---
 

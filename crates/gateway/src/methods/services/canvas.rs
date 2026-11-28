@@ -4,11 +4,11 @@
 use std::sync::Arc;
 
 use {
-    moltis_canvas::{
+    antre_canvas::{
         CanvasService, DesignFilter, DesignId, FrameKind, FrameNetwork, NewComment, StageFrame,
         Visibility,
     },
-    moltis_protocol::{ErrorShape, error_codes},
+    antre_protocol::{ErrorShape, error_codes},
     serde::{Deserialize, de::DeserializeOwned},
     serde_json::{Value, json},
 };
@@ -16,12 +16,12 @@ use {
 use super::{MethodContext, MethodRegistry};
 
 /// Map a canvas error to an RPC error shape.
-pub(crate) fn error_shape(error: &moltis_canvas::Error) -> ErrorShape {
+pub(crate) fn error_shape(error: &antre_canvas::Error) -> ErrorShape {
     let code = if error.is_not_found() {
         error_codes::NOT_FOUND
     } else if error.is_client_error() {
         error_codes::INVALID_REQUEST
-    } else if matches!(error, moltis_canvas::Error::Unavailable(_)) {
+    } else if matches!(error, antre_canvas::Error::Unavailable(_)) {
         error_codes::UNAVAILABLE
     } else {
         error_codes::INTERNAL
@@ -337,7 +337,7 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                 let service = service(&ctx)?;
                 let params: CreateParams = params(&ctx)?;
                 let created = service
-                    .create(moltis_canvas::service::CreateDesign {
+                    .create(antre_canvas::service::CreateDesign {
                         title: params.title,
                         html: params.html,
                         design_system: params.design_system,
@@ -469,19 +469,19 @@ mod tests {
     fn errors_map_to_protocol_codes() {
         let id = DesignId::generate();
         assert_eq!(
-            error_shape(&moltis_canvas::Error::NotFound(id.to_string())).code,
+            error_shape(&antre_canvas::Error::NotFound(id.to_string())).code,
             error_codes::NOT_FOUND
         );
         assert_eq!(
-            error_shape(&moltis_canvas::Error::InvalidId("x".into())).code,
+            error_shape(&antre_canvas::Error::InvalidId("x".into())).code,
             error_codes::INVALID_REQUEST
         );
         assert_eq!(
-            error_shape(&moltis_canvas::Error::Unavailable("x")).code,
+            error_shape(&antre_canvas::Error::Unavailable("x")).code,
             error_codes::UNAVAILABLE
         );
         assert_eq!(
-            error_shape(&moltis_canvas::Error::message("boom")).code,
+            error_shape(&antre_canvas::Error::message("boom")).code,
             error_codes::INTERNAL
         );
     }

@@ -1,8 +1,8 @@
 use {
     super::*,
+    antre_channels::{ChannelReplyTarget, ChannelType},
+    antre_common::types::ReplyPayload,
     async_trait::async_trait,
-    moltis_channels::{ChannelReplyTarget, ChannelType},
-    moltis_common::types::ReplyPayload,
     std::sync::{Arc, Mutex},
 };
 
@@ -31,16 +31,16 @@ struct RecordingOutbound {
 }
 
 #[async_trait]
-impl moltis_channels::ChannelOutbound for RecordingOutbound {
+impl antre_channels::ChannelOutbound for RecordingOutbound {
     async fn send_text(
         &self,
         account_id: &str,
         to: &str,
         text: &str,
         reply_to: Option<&str>,
-    ) -> moltis_channels::Result<()> {
+    ) -> antre_channels::Result<()> {
         if self.fail_text {
-            return Err(moltis_channels::Error::unavailable("test failure"));
+            return Err(antre_channels::Error::unavailable("test failure"));
         }
         self.sent_text
             .lock()
@@ -60,9 +60,9 @@ impl moltis_channels::ChannelOutbound for RecordingOutbound {
         to: &str,
         payload: &ReplyPayload,
         reply_to: Option<&str>,
-    ) -> moltis_channels::Result<()> {
+    ) -> antre_channels::Result<()> {
         if self.fail_media {
-            return Err(moltis_channels::Error::unavailable("test failure"));
+            return Err(antre_channels::Error::unavailable("test failure"));
         }
         self.sent_media
             .lock()

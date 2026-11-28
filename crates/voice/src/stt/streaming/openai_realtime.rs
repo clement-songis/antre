@@ -560,7 +560,7 @@ mod tests {
     fn session_update_shapes_language_and_prompt_per_model() {
         let request = StreamingSttRequest {
             language: Some("fr".into()),
-            prompt: Some("Moltis, Rust".into()),
+            prompt: Some("Antre, Rust".into()),
         };
         let live = OpenAiRealtimeStt::new(None, None, None, None).session_update(&request);
         let input = &live["session"]["audio"]["input"];
@@ -569,7 +569,7 @@ mod tests {
         assert!(input["turn_detection"].is_null());
         assert_eq!(input["transcription"]["languages"], json!(["fr"]));
         assert!(input["transcription"].get("language").is_none());
-        assert_eq!(input["transcription"]["prompt"], "Moltis, Rust");
+        assert_eq!(input["transcription"]["prompt"], "Antre, Rust");
 
         let whisper = OpenAiRealtimeStt::new(None, None, Some("gpt-realtime-whisper".into()), None)
             .session_update(&request);

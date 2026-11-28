@@ -1,16 +1,16 @@
 use std::sync::{Arc, RwLock};
 
 use {
+    antre_channels::fair_queue::{Admission, FairQueue, FairQueueConfig, FairQueueJob},
+    antre_gateway::{
+        channel_webhook_dedup::{ChannelWebhookAdmission, ChannelWebhookDedupeStore},
+        state::GatewayState,
+    },
     axum::{
         http::StatusCode,
         response::{IntoResponse, Json, Response},
     },
     bytes::Bytes,
-    moltis_channels::fair_queue::{Admission, FairQueue, FairQueueConfig, FairQueueJob},
-    moltis_gateway::{
-        channel_webhook_dedup::{ChannelWebhookAdmission, ChannelWebhookDedupeStore},
-        state::GatewayState,
-    },
     tokio_util::sync::CancellationToken,
 };
 
@@ -79,7 +79,7 @@ fn slack_json_response(status: StatusCode, body: serde_json::Value) -> Response 
 /// actual ingest afterwards. A queue that cannot accept the callback answers
 /// 503 so Slack retries rather than dropping the event silently.
 pub(super) async fn handle_slack_callback(
-    plugin: Arc<tokio::sync::RwLock<moltis_slack::SlackPlugin>>,
+    plugin: Arc<tokio::sync::RwLock<antre_slack::SlackPlugin>>,
     dispatcher: Arc<SlackCallbackDispatcher>,
     gateway_state: Arc<GatewayState>,
     kind: SlackCallbackKind,
@@ -87,7 +87,7 @@ pub(super) async fn handle_slack_callback(
     headers: axum::http::HeaderMap,
     body: Bytes,
 ) -> Response {
-    use moltis_channels::ChannelPlugin;
+    use antre_channels::ChannelPlugin;
 
     let verifier = {
         let plugin = plugin.read().await;
@@ -100,7 +100,7 @@ pub(super) async fn handle_slack_callback(
         );
     };
 
-    let verified = match moltis_gateway::channel_webhook_middleware::verify_channel_webhook(
+    let verified = match antre_gateway::channel_webhook_middleware::verify_channel_webhook(
         verifier.as_ref(),
         &gateway_state.channel_webhook_rate_limiter,
         &account_id,
@@ -185,7 +185,7 @@ pub(super) struct SlackCallbackDispatcher {
 }
 
 impl SlackCallbackDispatcher {
-    pub(super) fn start(plugin: Arc<tokio::sync::RwLock<moltis_slack::SlackPlugin>>) -> Arc<Self> {
+    pub(super) fn start(plugin: Arc<tokio::sync::RwLock<antre_slack::SlackPlugin>>) -> Arc<Self> {
         let config = FairQueueConfig::new(CALLBACK_QUEUE_CAPACITY, CALLBACK_WORKER_LIMIT);
         let queue = FairQueue::start(config, &CancellationToken::new(), move |job| {
             process_callback(Arc::clone(&plugin), job)
@@ -252,7 +252,7 @@ fn admit_callback(
 }
 
 async fn process_callback(
-    plugin: Arc<tokio::sync::RwLock<moltis_slack::SlackPlugin>>,
+    plugin: Arc<tokio::sync::RwLock<antre_slack::SlackPlugin>>,
     job: SlackCallbackJob,
 ) {
     let plugin = plugin.read().await;

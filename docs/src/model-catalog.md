@@ -1,6 +1,6 @@
 # Model Catalog
 
-Moltis keeps one catalog of model metadata that every feature reads: model
+Antre keeps one catalog of model metadata that every feature reads: model
 pickers, compaction, the context meter, image generation and voice defaults.
 It replaces the hand-maintained model lists that went stale every few weeks.
 
@@ -24,7 +24,7 @@ For each provider model:
 Sources are merged field by field; the first one that knows a field wins:
 
 1. **Overrides**: `[models.<id>]` and `[providers.<name>.model_overrides.<id>]`
-   in `moltis.toml`.
+   in `antre.toml`.
 2. **Runtime probes**: results of `models.detect_supported`.
 3. **Live provider metadata**: what each provider's `/models` returns
    (Anthropic limits and lifecycle, OpenAI shutdown dates, Copilot and Codex
@@ -34,7 +34,7 @@ Sources are merged field by field; the first one that knows a field wins:
 4. **Refreshed models.dev**: downloaded in the background (see below) and
    cached under `data_dir()/model-catalog/`.
 5. **Bundled snapshot**: the whole [models.dev](https://models.dev) catalog,
-   compressed into the binary (about 700 KB), plus Moltis's
+   compressed into the binary (about 700 KB), plus Antre's
    `crates/model-catalog/data/supplement.toml` for models models.dev does not
    list yet (mostly image and voice models).
 6. **Id heuristics**: patterns on the model id, as a last resort.
@@ -56,7 +56,7 @@ guessing.
 refresh = true
 refresh_urls = [
   "https://models.dev/api.json",
-  "https://raw.githubusercontent.com/clement-songis/moltis/main/crates/model-catalog/data/models-dev.json.gz",
+  "https://raw.githubusercontent.com/clement-songis/antre/main/crates/model-catalog/data/models-dev.json.gz",
 ]
 refresh_interval_hours = 12
 ```

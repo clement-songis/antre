@@ -19,8 +19,8 @@ use crate::{
 };
 
 use {
-    moltis_common::process_tree::OwnedProcessTree,
-    moltis_protocol::{
+    antre_common::process_tree::OwnedProcessTree,
+    antre_protocol::{
         ClientInfo, ConnectAuth, ConnectParamsV4, GatewayFrame, PROTOCOL_VERSION, ProtocolRange,
         RequestFrame, ResponseFrame, SYSTEM_EXEC_COMMAND, SystemExecRequest,
         is_safe_remote_env_key, roles,
@@ -202,7 +202,7 @@ impl NodeHost {
             client: ClientInfo {
                 id: self.config.node_id.clone(),
                 display_name: self.config.display_name.clone(),
-                version: moltis_config::VERSION.into(),
+                version: antre_config::VERSION.into(),
                 platform: self.config.platform.clone(),
                 device_family: None,
                 model_identifier: None,
@@ -231,7 +231,7 @@ impl NodeHost {
             extensions: {
                 let mut ext = std::collections::HashMap::new();
                 ext.insert(
-                    "moltis".into(),
+                    "antre".into(),
                     serde_json::json!({
                         "caps": self.config.caps,
                         "commands": self.config.commands,
@@ -636,7 +636,7 @@ impl NodeHost {
             .working_dir
             .as_deref()
             .map(PathBuf::from)
-            .or_else(moltis_config::home_dir)
+            .or_else(antre_config::home_dir)
             .ok_or_else(|| Error::Command("cannot determine node execution root".into()))?;
         let root = tokio::fs::canonicalize(&root).await.map_err(|error| {
             Error::Command(format!(
@@ -836,7 +836,7 @@ mod tests {
             "exitCode": 0,
         }))
         .unwrap();
-        assert!(payload.len() < moltis_protocol::MAX_PAYLOAD_BYTES);
+        assert!(payload.len() < antre_protocol::MAX_PAYLOAD_BYTES);
     }
 
     #[tokio::test]

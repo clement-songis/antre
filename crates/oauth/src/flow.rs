@@ -8,7 +8,7 @@ use {
 };
 
 #[cfg(feature = "metrics")]
-use moltis_metrics::{counter, oauth as oauth_metrics};
+use antre_metrics::{counter, oauth as oauth_metrics};
 
 use crate::{
     Error, Result,
@@ -34,7 +34,7 @@ impl OAuthFlow {
     pub fn new(config: OAuthConfig) -> Self {
         Self {
             config,
-            client: moltis_common::http_client::build_default_http_client(),
+            client: antre_common::http_client::build_default_http_client(),
         }
     }
 

@@ -112,25 +112,25 @@ impl AgentSessions {
     }
 
     /// Register every conversation so child sessions can find their parent.
-    pub(super) fn index_parents(&self, moltis_agent_id: &str, parents: &mut ParentIndex) {
+    pub(super) fn index_parents(&self, antre_agent_id: &str, parents: &mut ParentIndex) {
         for conversation in &self.conversations {
-            parents.insert(&conversation.key, conversation.dest_key(moltis_agent_id));
+            parents.insert(&conversation.key, conversation.dest_key(antre_agent_id));
         }
     }
 
-    /// Import every conversation as one Moltis session. Returns the IDs of
+    /// Import every conversation as one Antre session. Returns the IDs of
     /// all transcript windows found in the database (imported, unchanged or
     /// failed) so the JSONL pass does not import them a second time.
     pub(super) fn import(
         self,
         importer: &mut SessionImporter<'_>,
-        moltis_agent_id: &str,
+        antre_agent_id: &str,
         parents: &ParentIndex,
     ) -> HashSet<String> {
         let mut seen = HashSet::new();
         for conversation in self.conversations {
             let mut missing_events = 0_u32;
-            let dest_key = conversation.dest_key(moltis_agent_id);
+            let dest_key = conversation.dest_key(antre_agent_id);
             let parent_key = conversation
                 .parent_key()
                 .and_then(|parent| parents.resolve(conversation_key(parent)))
@@ -143,7 +143,7 @@ impl AgentSessions {
             importer.import_one(
                 SessionSource {
                     dest_key,
-                    moltis_agent_id,
+                    antre_agent_id,
                     label: conversation.label(),
                     source_line_count: conversation.source_size(),
                     archived: conversation.archived(),
@@ -189,7 +189,7 @@ fn is_cron_key(key: &str) -> bool {
 
 /// Every transcript window of one logical OpenClaw session, oldest first.
 ///
-/// OpenClaw starts a new window on `/new`, resets and compaction; Moltis has
+/// OpenClaw starts a new window on `/new`, resets and compaction; Antre has
 /// no such notion, so the windows become one session in order.
 struct Conversation {
     key: String,
@@ -217,15 +217,15 @@ impl Conversation {
         conversations
     }
 
-    /// Cron jobs land in Moltis' cron list; other conversations keep the key
+    /// Cron jobs land in Antre' cron list; other conversations keep the key
     /// of their first window, which never changes as windows are added.
-    fn dest_key(&self, moltis_agent_id: &str) -> String {
+    fn dest_key(&self, antre_agent_id: &str) -> String {
         if is_cron_key(&self.key)
             && let Some(job) = self.key.split(':').nth(3)
         {
-            return format!("cron:oc-{moltis_agent_id}-{job}");
+            return format!("cron:oc-{antre_agent_id}-{job}");
         }
-        dest_key(moltis_agent_id, &self.first().session_id)
+        dest_key(antre_agent_id, &self.first().session_id)
     }
 
     fn first(&self) -> &Window {

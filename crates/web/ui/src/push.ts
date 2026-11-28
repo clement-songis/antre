@@ -12,13 +12,13 @@ let currentSubscription: PushSubscription | null = null;
 let vapidPublicKey: string | null = null;
 let pushStateQueue: Promise<void> = Promise.resolve();
 
-const STATE_CACHE = "moltis-state";
-const PUSH_ENABLED_KEY = "/__moltis__/push-enabled";
-const PUSH_DISABLED_KEY = "/__moltis__/push-disabled";
-const PUSH_ROTATION_PENDING_KEY = "/__moltis__/push-rotation-pending";
-const PUSH_INTENT_GENERATION_KEY = "/__moltis__/push-intent-generation";
-const PUSH_INTENT_KEY = "moltis-push-enabled";
-const PUSH_STATE_LOCK = "moltis-push-state";
+const STATE_CACHE = "antre-state";
+const PUSH_ENABLED_KEY = "/__antre__/push-enabled";
+const PUSH_DISABLED_KEY = "/__antre__/push-disabled";
+const PUSH_ROTATION_PENDING_KEY = "/__antre__/push-rotation-pending";
+const PUSH_INTENT_GENERATION_KEY = "/__antre__/push-intent-generation";
+const PUSH_INTENT_KEY = "antre-push-enabled";
+const PUSH_STATE_LOCK = "antre-push-state";
 let intentGeneration = 0;
 
 interface RotationPending {
@@ -619,8 +619,8 @@ interface PresencePayload {
 	intent_generation: number;
 }
 
-const PRESENCE_CLIENT_KEY = "moltis-presence-client-id";
-const PRESENCE_SEQUENCE_KEY = "moltis-presence-sequence";
+const PRESENCE_CLIENT_KEY = "antre-presence-client-id";
+const PRESENCE_SEQUENCE_KEY = "antre-presence-sequence";
 const presenceClientId = (() => {
 	const fallback =
 		globalThis.crypto?.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;

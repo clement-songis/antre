@@ -1,4 +1,4 @@
-//! `moltis doctor` — health check, config validation, and environment audit.
+//! `antre doctor` — health check, config validation, and environment audit.
 //!
 //! Runs a series of checks against the local installation and prints a
 //! structured report with `[ok]`, `[warn]`, `[fail]`, `[skip]`, or `[info]`
@@ -7,13 +7,13 @@
 use std::path::{Path, PathBuf};
 
 use {
-    anyhow::Result,
-    moltis_config::{
-        MoltisConfig,
+    antre_config::{
+        AntreConfig,
         env_subst::{contains_env_placeholder, substitute_env_placeholders},
         schema::McpTransport,
         validate::{self, Severity},
     },
+    anyhow::Result,
     secrecy::ExposeSecret,
     tokio::process::Command,
 };
@@ -137,10 +137,10 @@ const OAUTH_PROVIDERS: &[&str] = &["openai-codex", "github-copilot"];
 // ── Entry point ─────────────────────────────────────────────────────────────
 
 pub async fn handle_doctor() -> Result<()> {
-    let config_dir = moltis_config::config_dir();
-    let data_dir = moltis_config::data_dir();
+    let config_dir = antre_config::config_dir();
+    let data_dir = antre_config::data_dir();
 
-    eprintln!("{BOLD}moltis doctor{RESET}");
+    eprintln!("{BOLD}antre doctor{RESET}");
     eprintln!("{BOLD}============={RESET}\n");
 
     let mut sections = Vec::new();
@@ -149,7 +149,7 @@ pub async fn handle_doctor() -> Result<()> {
     sections.push(check_config(config_dir.as_deref()));
 
     // Load config for subsequent checks (best-effort)
-    let config = moltis_config::discover_and_load();
+    let config = antre_config::discover_and_load();
 
     // 2. Security audit
     sections.push(check_security(&config, config_dir.as_deref(), &data_dir));
@@ -188,7 +188,7 @@ pub async fn handle_doctor() -> Result<()> {
 
 fn check_config(config_dir: Option<&Path>) -> Section {
     let label = config_dir
-        .map(|d| d.join("moltis.toml").display().to_string())
+        .map(|d| d.join("antre.toml").display().to_string())
         .unwrap_or_else(|| "default config".into());
     let mut section = Section::new(format!("Config ({label})"));
 
@@ -261,7 +261,7 @@ fn check_config(config_dir: Option<&Path>) -> Section {
     section
 }
 
-fn config_validation_status(diagnostic: &moltis_config::Diagnostic) -> Option<Status> {
+fn config_validation_status(diagnostic: &antre_config::Diagnostic) -> Option<Status> {
     if diagnostic.category != "security"
         && diagnostic.category != "unknown-provider"
         && diagnostic.category != "deprecated-field"
@@ -278,7 +278,7 @@ fn config_validation_status(diagnostic: &moltis_config::Diagnostic) -> Option<St
 
 // ── 2. Security audit ───────────────────────────────────────────────────────
 
-fn check_security(config: &MoltisConfig, config_dir: Option<&Path>, data_dir: &Path) -> Section {
+fn check_security(config: &AntreConfig, config_dir: Option<&Path>, data_dir: &Path) -> Section {
     let mut section = Section::new("Security");
 
     // Check for API keys in config file (should use env vars or credential store)
@@ -309,7 +309,7 @@ fn check_security(config: &MoltisConfig, config_dir: Option<&Path>, data_dir: &P
 
         // Config file permissions
         if let Some(dir) = config_dir {
-            let config_file = dir.join("moltis.toml");
+            let config_file = dir.join("antre.toml");
             if let Ok(meta) = std::fs::metadata(&config_file) {
                 let mode = meta.permissions().mode();
                 if mode & 0o044 != 0 {
@@ -407,21 +407,21 @@ fn check_directories(config_dir: Option<&Path>, data_dir: &Path) -> Section {
 
     // Check for expected files
     if let Some(dir) = config_dir {
-        let config_file = dir.join("moltis.toml");
+        let config_file = dir.join("antre.toml");
         if config_file.exists() {
-            section.push(Status::Ok, "moltis.toml present");
+            section.push(Status::Ok, "antre.toml present");
         } else {
-            section.push(Status::Info, "moltis.toml not found (using defaults)");
+            section.push(Status::Info, "antre.toml not found (using defaults)");
         }
     }
 
-    let db_file = data_dir.join("moltis.db");
+    let db_file = data_dir.join("antre.db");
     if db_file.exists() {
-        section.push(Status::Ok, "moltis.db present");
+        section.push(Status::Ok, "antre.db present");
     } else {
         section.push(
             Status::Info,
-            "moltis.db not found (will be created on first gateway start)",
+            "antre.db not found (will be created on first gateway start)",
         );
     }
 
@@ -429,7 +429,7 @@ fn check_directories(config_dir: Option<&Path>, data_dir: &Path) -> Section {
 }
 
 fn check_writable(section: &mut Section, dir: &Path, label: &str) {
-    let probe = dir.join(".moltis-doctor-probe");
+    let probe = dir.join(".antre-doctor-probe");
     match std::fs::write(&probe, b"probe") {
         Ok(()) => {
             let _ = std::fs::remove_file(&probe);
@@ -446,11 +446,11 @@ fn check_writable(section: &mut Section, dir: &Path, label: &str) {
 async fn check_database(data_dir: &Path) -> Section {
     let mut section = Section::new("Database");
 
-    let db_path = data_dir.join("moltis.db");
+    let db_path = data_dir.join("antre.db");
     if !db_path.exists() {
         section.push(
             Status::Skip,
-            "moltis.db not found (skipping connectivity check)",
+            "antre.db not found (skipping connectivity check)",
         );
         return section;
     }
@@ -485,7 +485,7 @@ async fn check_database(data_dir: &Path) -> Section {
 
 // ── 5. Provider readiness ───────────────────────────────────────────────────
 
-fn check_providers(config: &MoltisConfig) -> Section {
+fn check_providers(config: &AntreConfig) -> Section {
     let mut section = Section::new("Providers");
 
     if config.providers.providers.is_empty() {
@@ -545,7 +545,7 @@ fn check_providers(config: &MoltisConfig) -> Section {
 // ── 6. TLS health ───────────────────────────────────────────────────────────
 
 #[cfg(feature = "tls")]
-fn check_tls(config: &MoltisConfig) -> Section {
+fn check_tls(config: &AntreConfig) -> Section {
     let mut section = Section::new("TLS");
 
     if !config.tls.enabled {
@@ -569,7 +569,7 @@ fn check_tls(config: &MoltisConfig) -> Section {
 
     // Auto-generated certs
     if config.tls.auto_generate {
-        match moltis_httpd::tls::cert_dir() {
+        match antre_httpd::tls::cert_dir() {
             Ok(cert_dir) => {
                 let ca_path = cert_dir.join("ca.pem");
                 let server_cert = cert_dir.join("server.pem");
@@ -638,7 +638,7 @@ fn cert_age_days(path: &Path) -> Option<i64> {
 
 // ── 7. MCP server health ───────────────────────────────────────────────────
 
-fn check_mcp_servers(config: &MoltisConfig) -> Section {
+fn check_mcp_servers(config: &AntreConfig) -> Section {
     let mut section = Section::new("MCP Servers");
 
     if config.mcp.servers.is_empty() {
@@ -739,7 +739,7 @@ async fn detect_ssh_version() -> Option<String> {
 }
 
 async fn read_remote_exec_inventory(data_dir: &Path) -> Result<Option<RemoteExecInventory>> {
-    let db_path = data_dir.join("moltis.db");
+    let db_path = data_dir.join("antre.db");
     if !db_path.exists() {
         return Ok(None);
     }
@@ -847,7 +847,7 @@ async fn read_remote_exec_inventory(data_dir: &Path) -> Result<Option<RemoteExec
     }))
 }
 
-async fn check_remote_exec(config: &MoltisConfig, data_dir: &Path) -> Section {
+async fn check_remote_exec(config: &AntreConfig, data_dir: &Path) -> Section {
     let mut section = Section::new("Remote Execution");
     let exec_host = config.tools.exec.host.trim();
     let ssh_binary_path = which::which("ssh").ok();
@@ -909,7 +909,7 @@ async fn check_remote_exec(config: &MoltisConfig, data_dir: &Path) -> Section {
         Err(error) => {
             section.push(
                 Status::Fail,
-                format!("Failed to read managed SSH inventory from moltis.db: {error}"),
+                format!("Failed to read managed SSH inventory from antre.db: {error}"),
             );
             return section;
         },
@@ -962,7 +962,7 @@ async fn check_remote_exec(config: &MoltisConfig, data_dir: &Path) -> Section {
     } else {
         section.push(
             Status::Skip,
-            "moltis.db not found, managed SSH inventory unavailable",
+            "antre.db not found, managed SSH inventory unavailable",
         );
     }
 

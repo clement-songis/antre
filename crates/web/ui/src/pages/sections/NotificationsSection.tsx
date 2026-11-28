@@ -225,7 +225,7 @@ export function NotificationsSection(): VNode {
 				<div className="max-w-[600px] rounded-md border border-[var(--border)] bg-[var(--surface)] px-4 py-3">
 					<p className="m-0 text-sm font-medium text-[var(--text)]">Installation required</p>
 					<p className="mt-2 mb-0 text-xs text-[var(--muted)]">
-						On Safari, push notifications are only available for installed apps. Add moltis to your Dock using{" "}
+						On Safari, push notifications are only available for installed apps. Add antre to your Dock using{" "}
 						<strong>File {"\u2192"} Add to Dock</strong> (or Share {"\u2192"} Add to Dock on iOS), then open it from
 						there.
 					</p>

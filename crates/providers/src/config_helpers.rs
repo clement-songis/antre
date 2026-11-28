@@ -2,13 +2,13 @@
 
 use std::collections::{HashMap, HashSet};
 
-use {moltis_config::schema::ProvidersConfig, secrecy::ExposeSecret};
+use {antre_config::schema::ProvidersConfig, secrecy::ExposeSecret};
 
 use crate::model_id::configured_model_for_provider;
 
 /// Resolve an env value from overrides or process environment.
 pub(crate) fn env_value(env_overrides: &HashMap<String, String>, key: &str) -> Option<String> {
-    moltis_config::env_value_with_overrides(env_overrides, key)
+    antre_config::env_value_with_overrides(env_overrides, key)
 }
 
 /// Resolve an API key from config (Secret) or environment variable,
@@ -23,7 +23,7 @@ pub(crate) fn resolve_api_key(
         .get(provider)
         .and_then(|e| e.api_key.clone())
         .or_else(|| env_value(env_overrides, env_key).map(secrecy::Secret::new))
-        .or_else(|| moltis_config::generic_provider_api_key_from_env(provider, env_overrides))
+        .or_else(|| antre_config::generic_provider_api_key_from_env(provider, env_overrides))
         .filter(|s| !s.expose_secret().is_empty())
 }
 
@@ -65,7 +65,7 @@ fn gate_subscription_token(
 pub(crate) fn resolve_custom_anthropic_auth(
     config: &ProvidersConfig,
     name: &str,
-    entry: &moltis_config::schema::ProviderEntry,
+    entry: &antre_config::schema::ProviderEntry,
 ) -> Option<crate::anthropic::AnthropicAuth> {
     let allowed = config.allow_claude_subscription_tokens;
     if let Some(token) = entry
@@ -97,7 +97,7 @@ pub(crate) fn resolve_custom_anthropic_auth(
 ///    detected by its `sk-ant-oat` marker.
 /// 3. `ANTHROPIC_OAUTH_TOKEN`: a single setup-token (OpenClaw's env name).
 /// 4. The `anthropic` entry of `oauth_tokens.json`, e.g. written by
-///    `moltis import` from an OpenClaw installation.
+///    `antre import` from an OpenClaw installation.
 pub(crate) fn resolve_anthropic_auth(
     config: &ProvidersConfig,
     env_overrides: &HashMap<String, String>,
@@ -132,7 +132,7 @@ pub(crate) fn resolve_anthropic_auth(
     }
 
     #[cfg(feature = "provider-anthropic-oauth")]
-    if let Some(auth) = moltis_oauth::TokenStore::new()
+    if let Some(auth) = antre_oauth::TokenStore::new()
         .load("anthropic")
         .filter(|tokens| !tokens.access_token.expose_secret().is_empty())
         .and_then(|tokens| {
@@ -167,25 +167,25 @@ pub(crate) fn configured_models_for_provider(
 /// of `models_file` (entries win field by field). An unreadable file is
 /// logged and ignored so one bad path does not take the provider down.
 pub(crate) fn static_model_specs(
-    entry: &moltis_config::schema::ProviderEntry,
-) -> Vec<moltis_model_catalog::ModelSpec> {
+    entry: &antre_config::schema::ProviderEntry,
+) -> Vec<antre_model_catalog::ModelSpec> {
     let file_rows = entry
         .models_file
         .as_deref()
         .map(|path| {
-            moltis_model_catalog::static_models::load_models_file(path).unwrap_or_else(|error| {
+            antre_model_catalog::static_models::load_models_file(path).unwrap_or_else(|error| {
                 tracing::warn!(path = %path.display(), %error, "ignoring unreadable models_file");
                 Vec::new()
             })
         })
         .unwrap_or_default();
-    moltis_model_catalog::static_models::merge_static_entries(&entry.models, file_rows)
+    antre_model_catalog::static_models::merge_static_entries(&entry.models, file_rows)
 }
 
 /// A provider's configured extra headers. Invalid names or values are
 /// logged and skipped rather than failing every request.
 pub(crate) fn provider_headers(
-    entry: &moltis_config::schema::ProviderEntry,
+    entry: &antre_config::schema::ProviderEntry,
 ) -> reqwest::header::HeaderMap {
     let mut headers = reqwest::header::HeaderMap::new();
     for (name, value) in &entry.headers {
@@ -206,7 +206,7 @@ pub(crate) fn provider_headers(
 /// optional: a local server without auth gets an empty key, and no
 /// `Authorization` header is sent.
 pub(crate) fn custom_openai_endpoint(
-    entry: &moltis_config::schema::ProviderEntry,
+    entry: &antre_config::schema::ProviderEntry,
 ) -> Option<(secrecy::Secret<String>, String)> {
     let base_url = entry
         .base_url
@@ -235,7 +235,7 @@ pub(crate) fn normalize_unique_models(models: impl IntoIterator<Item = String>) 
 
 pub(crate) fn should_fetch_models(config: &ProvidersConfig, provider: &str) -> bool {
     config.get(provider).is_none_or(|entry| {
-        entry.fetch_models && !matches!(entry.catalog, moltis_model_catalog::CatalogMode::Static)
+        entry.fetch_models && !matches!(entry.catalog, antre_model_catalog::CatalogMode::Static)
     })
 }
 
@@ -251,23 +251,23 @@ pub(crate) fn models_for_catalog_mode(
         .map(|entry| entry.catalog)
         .unwrap_or_default();
     match mode {
-        moltis_model_catalog::CatalogMode::Static => {
+        antre_model_catalog::CatalogMode::Static => {
             crate::discovered_model::merge_preferred_and_discovered_models(preferred, Vec::new())
         },
-        moltis_model_catalog::CatalogMode::Live => {
+        antre_model_catalog::CatalogMode::Live => {
             crate::discovered_model::merge_preferred_and_discovered_models(preferred, discovered)
         },
-        moltis_model_catalog::CatalogMode::LiveStatic if discovered.is_empty() => {
+        antre_model_catalog::CatalogMode::LiveStatic if discovered.is_empty() => {
             tracing::warn!(
                 provider,
                 "live+static catalog: discovery returned nothing, using the static models"
             );
             crate::discovered_model::merge_preferred_and_discovered_models(preferred, Vec::new())
         },
-        moltis_model_catalog::CatalogMode::LiveStatic => {
+        antre_model_catalog::CatalogMode::LiveStatic => {
             let served: Vec<String> = discovered.iter().map(|model| model.id.clone()).collect();
             let merged =
-                moltis_model_catalog::static_models::merge_live_and_static(&preferred, &served);
+                antre_model_catalog::static_models::merge_live_and_static(&preferred, &served);
             if !merged.missing.is_empty() {
                 tracing::warn!(provider, models = ?merged.missing, "static models no longer served by the provider; dropped");
             }
@@ -316,8 +316,8 @@ mod tests {
     fn anthropic_entry(
         api_key: Option<&str>,
         setup_token: Option<&str>,
-    ) -> moltis_config::schema::ProviderEntry {
-        moltis_config::schema::ProviderEntry {
+    ) -> antre_config::schema::ProviderEntry {
+        antre_config::schema::ProviderEntry {
             api_key: api_key.map(|key| secrecy::Secret::new(key.to_string())),
             setup_token: setup_token.map(|token| secrecy::Secret::new(token.to_string())),
             ..Default::default()
@@ -325,7 +325,7 @@ mod tests {
     }
 
     fn config_with_anthropic(
-        entry: moltis_config::schema::ProviderEntry,
+        entry: antre_config::schema::ProviderEntry,
         allow: bool,
     ) -> ProvidersConfig {
         let mut config = ProvidersConfig {
@@ -388,12 +388,12 @@ mod tests {
 
     fn custom_entry(
         models: Vec<&str>,
-        catalog: moltis_model_catalog::CatalogMode,
+        catalog: antre_model_catalog::CatalogMode,
     ) -> ProvidersConfig {
         let mut config = ProvidersConfig::default();
         config
             .providers
-            .insert("custom-box".into(), moltis_config::schema::ProviderEntry {
+            .insert("custom-box".into(), antre_config::schema::ProviderEntry {
                 base_url: Some("http://box:8000/v1".into()),
                 models: models.into_iter().map(Into::into).collect(),
                 catalog,
@@ -408,7 +408,7 @@ mod tests {
 
     #[test]
     fn catalog_modes_decide_the_model_list() {
-        use moltis_model_catalog::CatalogMode;
+        use antre_model_catalog::CatalogMode;
         let served = || {
             vec![
                 crate::DiscoveredModel::new("b", "B"),
@@ -448,7 +448,7 @@ mod tests {
             r#"{"models": [{"id": "deepseek-v4.1-flash", "contextWindow": 1000000}, {"id": "a"}]}"#,
         )
         .unwrap();
-        let mut config = custom_entry(vec!["a"], moltis_model_catalog::CatalogMode::Static);
+        let mut config = custom_entry(vec!["a"], antre_model_catalog::CatalogMode::Static);
         if let Some(entry) = config.providers.get_mut("custom-box") {
             entry.models_file = Some(path);
         }
@@ -467,7 +467,7 @@ mod tests {
 
     #[test]
     fn provider_headers_skip_invalid_entries() {
-        let entry = moltis_config::schema::ProviderEntry {
+        let entry = antre_config::schema::ProviderEntry {
             headers: HashMap::from([
                 ("User-Agent".to_string(), "claude-code/2.1.280".to_string()),
                 ("bad header".to_string(), "x".to_string()),
@@ -482,11 +482,11 @@ mod tests {
 
     #[test]
     fn custom_endpoint_key_is_optional() {
-        let config = custom_entry(vec![], moltis_model_catalog::CatalogMode::Live);
+        let config = custom_entry(vec![], antre_model_catalog::CatalogMode::Live);
         let (key, base_url) = custom_openai_endpoint(&config.providers["custom-box"]).unwrap();
         assert!(key.expose_secret().is_empty());
         assert_eq!(base_url, "http://box:8000/v1");
-        let no_url = moltis_config::schema::ProviderEntry::default();
+        let no_url = antre_config::schema::ProviderEntry::default();
         assert!(custom_openai_endpoint(&no_url).is_none());
     }
 
@@ -506,16 +506,15 @@ mod tests {
             offered: vec!["openai".into()],
             ..ProvidersConfig::default()
         };
-        config.providers.insert(
-            "openai-codex".into(),
-            moltis_config::schema::ProviderEntry {
+        config
+            .providers
+            .insert("openai-codex".into(), antre_config::schema::ProviderEntry {
                 enabled: false,
                 ..Default::default()
-            },
-        );
+            });
         config.providers.insert(
             "github-copilot".into(),
-            moltis_config::schema::ProviderEntry {
+            antre_config::schema::ProviderEntry {
                 enabled: false,
                 ..Default::default()
             },

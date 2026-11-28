@@ -14,7 +14,7 @@ use {
         sessions::{Recency, today_start_ms},
         theme::Theme,
     },
-    moltis_client::protocol::client_api::SessionEntry,
+    antre_client::protocol::client_api::SessionEntry,
 };
 
 pub const WIDTH: f32 = 260.;

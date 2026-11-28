@@ -72,7 +72,7 @@ test.describe("Remote sandbox backend configuration", () => {
 					body: JSON.stringify({
 						ok: true,
 						restart_required: true,
-						config_path: "/test/moltis.toml",
+						config_path: "/test/antre.toml",
 						config: {
 							vercel: { configured: true, runtime: "node24", timeout_ms: 300000, vcpus: 2 },
 							daytona: { configured: false, api_url: "https://app.daytona.io/api" },
@@ -134,7 +134,7 @@ test.describe("Remote sandbox backend configuration", () => {
 					body: JSON.stringify({
 						ok: true,
 						restart_required: true,
-						config_path: "/test/moltis.toml",
+						config_path: "/test/antre.toml",
 						config: {
 							vercel: { configured: false, runtime: "node24", timeout_ms: 300000, vcpus: 2 },
 							daytona: { configured: true, api_url: "https://app.daytona.io/api" },
@@ -243,7 +243,7 @@ test.describe("Remote sandbox backend configuration", () => {
 					body: JSON.stringify({
 						ok: true,
 						restart_required: true,
-						config_path: "/test/moltis.toml",
+						config_path: "/test/antre.toml",
 						config: {
 							vercel: {
 								configured: true,

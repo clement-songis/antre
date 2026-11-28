@@ -6,9 +6,9 @@
 //! through the delivery outbox.
 
 use {
-    moltis_delivery::{DeliveryBody, DeliveryKind, NewDelivery},
-    moltis_sessions::PersistedMessage,
-    moltis_tools::spawn_agent_tasks::{SpawnTask, SpawnTaskStatus, SpawnTaskStore},
+    antre_delivery::{DeliveryBody, DeliveryKind, NewDelivery},
+    antre_sessions::PersistedMessage,
+    antre_tools::spawn_agent_tasks::{SpawnTask, SpawnTaskStatus, SpawnTaskStore},
     serde_json::{Value, json},
     tracing::{info, warn},
 };
@@ -109,7 +109,7 @@ impl LiveChatService {
             .await
             .and_then(|entry| entry.channel_binding)
             .and_then(|binding| {
-                serde_json::from_str::<moltis_channels::ChannelReplyTarget>(&binding).ok()
+                serde_json::from_str::<antre_channels::ChannelReplyTarget>(&binding).ok()
             })
         else {
             return;

@@ -22,13 +22,13 @@ const LINKS: Array<{ id: string; labelKey: string; href: string; icon: string }>
 	{
 		id: "issues",
 		labelKey: "common:header.reportIssueTitle",
-		href: "https://github.com/moltis-org/moltis/issues/new/choose",
+		href: "https://github.com/antre-ai/antre/issues/new/choose",
 		icon: "icon-github-issue",
 	},
 	{
 		id: "discussions",
 		labelKey: "common:header.discussions",
-		href: "https://github.com/moltis-org/moltis/discussions",
+		href: "https://github.com/antre-ai/antre/discussions",
 		icon: "icon-github-discussion",
 	},
 ];

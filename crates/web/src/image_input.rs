@@ -167,7 +167,7 @@ pub(crate) fn package_check_args(request: &ValidatedImageRequest) -> Vec<&str> {
         request.base().as_str(),
         "-c",
         CHECK_PACKAGES_SCRIPT,
-        "moltis-package-check",
+        "antre-package-check",
     ];
     args.extend(request.packages().iter().map(PackageName::as_str));
     args
@@ -301,7 +301,7 @@ mod tests {
         for value in [
             "ubuntu:25.10",
             "docker.io/library/ubuntu:latest",
-            "localhost:5000/moltis_image:v1",
+            "localhost:5000/antre_image:v1",
             "ubuntu@sha256:abcdef0123456789",
         ] {
             assert!(base_image(value).is_ok(), "expected {value:?} to be valid");
@@ -406,7 +406,7 @@ mod tests {
             "ubuntu:25.10",
             "-c",
             CHECK_PACKAGES_SCRIPT,
-            "moltis-package-check",
+            "antre-package-check",
             "curl",
             "git"
         ]);

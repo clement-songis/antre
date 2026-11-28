@@ -65,9 +65,9 @@ impl Default for FirecrackerSandboxConfig {
     fn default() -> Self {
         Self {
             firecracker_bin: PathBuf::from("firecracker"),
-            kernel_path: PathBuf::from("/opt/moltis/vmlinux"),
-            rootfs_path: PathBuf::from("/opt/moltis/rootfs.ext4"),
-            ssh_key_path: PathBuf::from("/opt/moltis/ssh_key"),
+            kernel_path: PathBuf::from("/opt/antre/vmlinux"),
+            rootfs_path: PathBuf::from("/opt/antre/rootfs.ext4"),
+            ssh_key_path: PathBuf::from("/opt/antre/ssh_key"),
             vcpus: 2,
             memory_mb: 512,
         }
@@ -683,9 +683,9 @@ impl Sandbox for FirecrackerSandbox {
             hasher.update(b"\n");
         }
         let hash = format!("{:x}", hasher.finalize());
-        let tag = format!("moltis-fc-{}", &hash[..12]);
+        let tag = format!("antre-fc-{}", &hash[..12]);
 
-        let data_dir = moltis_config::data_dir();
+        let data_dir = antre_config::data_dir();
         let images_dir = data_dir.join("sandbox").join("firecracker").join("images");
         let image_path = images_dir.join(format!("{tag}.ext4"));
 
@@ -715,7 +715,7 @@ impl Sandbox for FirecrackerSandbox {
         Self::copy_rootfs(&self.fc.rootfs_path, &temp_rootfs).await?;
 
         let (host_ip, guest_ip, subnet_idx) = self.allocate_subnet()?;
-        let tap_name = format!("moltis-fc{subnet_idx}");
+        let tap_name = format!("antre-fc{subnet_idx}");
         let api_socket = images_dir.join(format!("{tag}.sock"));
         let _ = std::fs::remove_file(&api_socket);
 
@@ -820,9 +820,9 @@ impl Sandbox for FirecrackerSandbox {
         }
 
         let (host_ip, guest_ip, subnet_idx) = self.allocate_subnet()?;
-        let tap_name = format!("moltis-fc{subnet_idx}");
+        let tap_name = format!("antre-fc{subnet_idx}");
 
-        let data_dir = moltis_config::data_dir();
+        let data_dir = antre_config::data_dir();
         let vm_dir = data_dir.join("sandbox").join("firecracker").join(&id.key);
         std::fs::create_dir_all(&vm_dir)
             .map_err(|e| Error::message(format!("firecracker: failed to create VM dir: {e}")))?;
@@ -902,7 +902,7 @@ impl Sandbox for FirecrackerSandbox {
             .ok_or_else(|| Error::message(format!("firecracker: no active VM for {id}")))?;
 
         let quoted_path = shell_words::quote(file_path);
-        let remote_tmp = format!("{file_path}.moltis-{}", uuid::Uuid::new_v4());
+        let remote_tmp = format!("{file_path}.antre-{}", uuid::Uuid::new_v4());
         let quoted_tmp = shell_words::quote(&remote_tmp);
         let preflight = format!(
             "path={quoted_path}; parent=$(dirname \"$path\"); \

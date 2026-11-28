@@ -20,15 +20,15 @@ use {
 
 use {
     crate::{Result, error::Error},
-    moltis_common::process_tree::OwnedProcessTree,
+    antre_common::process_tree::OwnedProcessTree,
 };
 
 #[cfg(feature = "metrics")]
-use moltis_metrics::{
+use antre_metrics::{
     counter, gauge, histogram, labels, sandbox as sandbox_metrics, tools as tools_metrics,
 };
 
-use moltis_agents::tool_registry::AgentTool;
+use antre_agents::tool_registry::AgentTool;
 
 /// Event describing a completed exec invocation, passed to the completion callback.
 #[derive(Debug, Clone)]
@@ -261,21 +261,21 @@ pub async fn exec_command(command: &str, opts: &ExecOpts) -> Result<ExecResult> 
     }
 }
 
-fn inject_moltis_data_dir(env: &mut Vec<(String, String)>, runs_on_host: bool) {
+fn inject_antre_data_dir(env: &mut Vec<(String, String)>, runs_on_host: bool) {
     if !runs_on_host {
         return;
     }
-    env.retain(|(key, _)| key != "MOLTIS_DATA_DIR");
+    env.retain(|(key, _)| key != "ANTRE_DATA_DIR");
     env.push((
-        "MOLTIS_DATA_DIR".to_owned(),
-        moltis_config::data_dir().to_string_lossy().into_owned(),
+        "ANTRE_DATA_DIR".to_owned(),
+        antre_config::data_dir().to_string_lossy().into_owned(),
     ));
 }
 
-fn inject_moltis_files_dir(env: &mut Vec<(String, String)>, files_dir: Option<String>) {
-    env.retain(|(key, _)| key != "MOLTIS_FILES_DIR");
+fn inject_antre_files_dir(env: &mut Vec<(String, String)>, files_dir: Option<String>) {
+    env.retain(|(key, _)| key != "ANTRE_FILES_DIR");
     if let Some(files_dir) = files_dir {
-        env.push(("MOLTIS_FILES_DIR".to_owned(), files_dir));
+        env.push(("ANTRE_FILES_DIR".to_owned(), files_dir));
     }
 }
 
@@ -634,7 +634,7 @@ impl AgentTool for ExecTool {
         let confined_home = confined_home.filter(|_| is_sandboxed);
         let files_dir = if runs_on_host {
             Some(
-                moltis_config::managed_files_dir()
+                antre_config::managed_files_dir()
                     .to_string_lossy()
                     .into_owned(),
             )
@@ -649,7 +649,7 @@ impl AgentTool for ExecTool {
         } else {
             None
         };
-        let host_default_dir = || moltis_config::home_dir().unwrap_or_else(moltis_config::data_dir);
+        let host_default_dir = || antre_config::home_dir().unwrap_or_else(antre_config::data_dir);
 
         // When running on the host, validate that the explicit working dir
         // actually exists — the LLM may remember a container path like
@@ -734,8 +734,8 @@ impl AgentTool for ExecTool {
             .iter()
             .map(|(k, v)| (k.clone(), v.expose_secret().clone()))
             .collect();
-        inject_moltis_data_dir(&mut env, runs_on_host);
-        inject_moltis_files_dir(&mut env, files_dir);
+        inject_antre_data_dir(&mut env, runs_on_host);
+        inject_antre_files_dir(&mut env, files_dir);
 
         let opts = ExecOpts {
             timeout: Duration::from_secs(timeout_secs),

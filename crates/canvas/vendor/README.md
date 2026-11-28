@@ -11,4 +11,4 @@ without any third-party CDN. Each file is pinned and listed in
 
 The source-map comment is stripped. To update, copy the files from the same
 npm package version used by `crates/web/ui` and refresh the hashes with
-`cargo test -p moltis-canvas vendor` (the test prints the expected values).
+`cargo test -p antre-canvas vendor` (the test prints the expected values).

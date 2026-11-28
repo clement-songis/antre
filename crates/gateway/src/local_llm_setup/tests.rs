@@ -33,8 +33,8 @@ mod tests {
 
     impl Drop for LocalModelConfigTestGuard {
         fn drop(&mut self) {
-            moltis_config::clear_config_dir();
-            moltis_config::clear_data_dir();
+            antre_config::clear_config_dir();
+            antre_config::clear_data_dir();
         }
     }
     #[test]
@@ -543,8 +543,8 @@ mod tests {
         let _guard = LocalModelConfigTestGuard::new();
         let config_dir = tempfile::tempdir().unwrap();
         let data_dir = tempfile::tempdir().unwrap();
-        moltis_config::set_config_dir(config_dir.path().to_path_buf());
-        moltis_config::set_data_dir(data_dir.path().to_path_buf());
+        antre_config::set_config_dir(config_dir.path().to_path_buf());
+        antre_config::set_data_dir(data_dir.path().to_path_buf());
 
         let entry = LocalModelEntry {
             model_id: custom_gguf_model_id("Qwen/Qwen3-4B-GGUF", "Qwen3-4B-Q4_K_M.gguf"),
@@ -563,7 +563,7 @@ mod tests {
         let mut registry = ProviderRegistry::empty();
         register_saved_local_models(
             &mut registry,
-            &moltis_config::schema::ProvidersConfig::default(),
+            &antre_config::schema::ProvidersConfig::default(),
         );
 
         assert!(registry.get(&entry.model_id).is_some());
@@ -579,19 +579,19 @@ mod tests {
     #[test]
     fn test_register_local_model_entry_keeps_non_local_collisions() {
         let mut registry = ProviderRegistry::empty();
-        let remote_provider = Arc::new(moltis_providers::openai::OpenAiProvider::new(
+        let remote_provider = Arc::new(antre_providers::openai::OpenAiProvider::new(
             secrecy::Secret::new("test-key".into()),
             "shared-model".into(),
             "https://example.com".into(),
         ));
         registry.register(
-            moltis_providers::ModelInfo {
+            antre_providers::ModelInfo {
                 id: "shared-model".into(),
                 provider: "openai".into(),
                 display_name: "Shared Remote Model".into(),
                 created_at: None,
                 recommended: false,
-                capabilities: moltis_providers::ModelCapabilities::default(),
+                capabilities: antre_providers::ModelCapabilities::default(),
             },
             remote_provider,
         );
@@ -659,19 +659,19 @@ mod tests {
             registry.register(info, provider);
         }
 
-        let remote_provider = Arc::new(moltis_providers::openai::OpenAiProvider::new(
+        let remote_provider = Arc::new(antre_providers::openai::OpenAiProvider::new(
             secrecy::Secret::new("test-key".into()),
             "custom-stale".into(),
             "https://example.com".into(),
         ));
         registry.register(
-            moltis_providers::ModelInfo {
+            antre_providers::ModelInfo {
                 id: "custom-stale".into(),
                 provider: "openai".into(),
                 display_name: "Remote Stale Alias".into(),
                 created_at: None,
                 recommended: false,
-                capabilities: moltis_providers::ModelCapabilities::default(),
+                capabilities: antre_providers::ModelCapabilities::default(),
             },
             remote_provider,
         );

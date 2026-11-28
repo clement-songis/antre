@@ -5,13 +5,13 @@
 use std::path::Path;
 
 use {
-    moltis_import_core::report::{CategoryReport, ImportCategory, ImportStatus},
+    antre_import_core::report::{CategoryReport, ImportCategory, ImportStatus},
     tracing::debug,
 };
 
 use crate::detect::CodexDetection;
 
-/// Import Codex instructions file into Moltis data directory.
+/// Import Codex instructions file into Antre data directory.
 pub fn import_memory(detection: &CodexDetection, dest_dir: &Path) -> CategoryReport {
     let Some(ref source) = detection.instructions_path else {
         return CategoryReport::skipped(ImportCategory::Memory);

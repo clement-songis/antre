@@ -6,11 +6,11 @@
 //! same contract as `send_image` and browser/map screenshots.
 
 use {
-    async_trait::async_trait,
-    moltis_agents::tool_registry::AgentTool,
-    moltis_providers::images_api::{
+    antre_agents::tool_registry::AgentTool,
+    antre_providers::images_api::{
         GeneratedImage, ImageGenerationRequest, ImageGenerationResult, ImagesApi, ImagesApiProvider,
     },
+    async_trait::async_trait,
     serde_json::{Value, json},
 };
 
@@ -36,7 +36,7 @@ const SUPPORTED_BACKGROUNDS: &[&str] = &["opaque", "transparent", "auto"];
 
 enum Backend {
     #[cfg(feature = "provider-openai-codex")]
-    Codex(moltis_providers::openai_codex_image::OpenAiCodexImageProvider),
+    Codex(antre_providers::openai_codex_image::OpenAiCodexImageProvider),
     Api(ImagesApiProvider),
 }
 
@@ -59,7 +59,7 @@ impl GenerateImageTool {
     pub fn new() -> Self {
         Self {
             backend: Backend::Codex(
-                moltis_providers::openai_codex_image::OpenAiCodexImageProvider::new(),
+                antre_providers::openai_codex_image::OpenAiCodexImageProvider::new(),
             ),
             description: "Generate an image from a text prompt using OpenAI gpt-image models via the existing OpenAI Codex OAuth login. Returns channel-sendable image media.".into(),
         }

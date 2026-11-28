@@ -1,4 +1,4 @@
-//! The `moltis` daemon as a supervised child process of the shell.
+//! The `antre` daemon as a supervised child process of the shell.
 //!
 //! The child listens on a free loopback port without TLS (the system WebView
 //! would reject the daemon's self-signed certificate, and loopback traffic
@@ -23,7 +23,7 @@ use crate::probe;
 const STARTUP_TIMEOUT: Duration = Duration::from_secs(120);
 const MAX_RESTARTS: u32 = 5;
 
-/// Directories for an isolated daemon (not the user's `~/.moltis`).
+/// Directories for an isolated daemon (not the user's `~/.antre`).
 #[derive(Debug, Clone)]
 pub struct IsolatedDirs {
     pub config: PathBuf,
@@ -53,27 +53,27 @@ impl Drop for Sidecar {
     }
 }
 
-/// Find an executable `moltis`: `explicit` first, then next to the shell
-/// (a packaged app ships it there), then `MOLTIS_BIN`, then `PATH`.
+/// Find an executable `antre`: `explicit` first, then next to the shell
+/// (a packaged app ships it there), then `ANTRE_BIN`, then `PATH`.
 #[must_use]
-pub fn find_moltis(
+pub fn find_antre(
     explicit: Option<&Path>,
     beside_exe: Option<&Path>,
-    moltis_bin: Option<OsString>,
+    antre_bin: Option<OsString>,
     path: Option<OsString>,
 ) -> Option<PathBuf> {
     if let Some(explicit) = explicit {
         return is_executable(explicit).then(|| explicit.to_path_buf());
     }
     let name = if cfg!(windows) {
-        "moltis.exe"
+        "antre.exe"
     } else {
-        "moltis"
+        "antre"
     };
     beside_exe
         .map(|dir| dir.join(name))
         .into_iter()
-        .chain(moltis_bin.map(PathBuf::from))
+        .chain(antre_bin.map(PathBuf::from))
         .chain(
             path.iter()
                 .flat_map(std::env::split_paths)
@@ -104,7 +104,7 @@ pub fn free_port() -> std::io::Result<u16> {
     Ok(listener.local_addr()?.port())
 }
 
-/// Arguments for `moltis` (global flags, then the `gateway` subcommand).
+/// Arguments for `antre` (global flags, then the `gateway` subcommand).
 #[must_use]
 pub fn gateway_args(port: u16, dirs: Option<&IsolatedDirs>) -> Vec<OsString> {
     let mut args: Vec<OsString> = vec![
@@ -210,7 +210,7 @@ async fn wait_ready(
     base: &Url,
 ) -> anyhow::Result<probe::Health> {
     tokio::select! {
-        status = child.wait() => anyhow::bail!("moltis exited during startup ({})", status?),
+        status = child.wait() => anyhow::bail!("antre exited during startup ({})", status?),
         health = probe::wait_until_healthy(base, STARTUP_TIMEOUT) => health,
     }
 }
@@ -234,17 +234,17 @@ mod tests {
     fn prefers_explicit_then_beside_exe_then_env_then_path() {
         let beside = tempfile::tempdir().unwrap();
         let on_path = tempfile::tempdir().unwrap();
-        let path_binary = executable(on_path.path(), "moltis");
+        let path_binary = executable(on_path.path(), "antre");
         let path_env = Some(on_path.path().as_os_str().to_owned());
 
         assert_eq!(
-            find_moltis(None, Some(beside.path()), None, path_env.clone()),
+            find_antre(None, Some(beside.path()), None, path_env.clone()),
             Some(path_binary.clone())
         );
 
-        let env_binary = executable(beside.path(), "custom-moltis");
+        let env_binary = executable(beside.path(), "custom-antre");
         assert_eq!(
-            find_moltis(
+            find_antre(
                 None,
                 None,
                 Some(env_binary.clone().into_os_string()),
@@ -253,13 +253,13 @@ mod tests {
             Some(env_binary)
         );
 
-        let beside_binary = executable(beside.path(), "moltis");
+        let beside_binary = executable(beside.path(), "antre");
         assert_eq!(
-            find_moltis(None, Some(beside.path()), None, path_env.clone()),
+            find_antre(None, Some(beside.path()), None, path_env.clone()),
             Some(beside_binary.clone())
         );
         assert_eq!(
-            find_moltis(Some(&path_binary), Some(beside.path()), None, path_env),
+            find_antre(Some(&path_binary), Some(beside.path()), None, path_env),
             Some(path_binary)
         );
     }
@@ -268,14 +268,14 @@ mod tests {
     #[test]
     fn ignores_non_executable_files() {
         let dir = tempfile::tempdir().unwrap();
-        std::fs::write(dir.path().join("moltis"), "").unwrap();
+        std::fs::write(dir.path().join("antre"), "").unwrap();
         assert_eq!(
-            find_moltis(None, Some(dir.path()), None, None),
+            find_antre(None, Some(dir.path()), None, None),
             None,
             "a non-executable file must not be picked"
         );
         assert_eq!(
-            find_moltis(Some(&dir.path().join("moltis")), None, None, None),
+            find_antre(Some(&dir.path().join("antre")), None, None, None),
             None
         );
     }
@@ -322,7 +322,7 @@ mod tests {
     #[tokio::test]
     async fn start_fails_fast_when_the_binary_exits() {
         let dir = tempfile::tempdir().unwrap();
-        let binary = executable(dir.path(), "moltis");
+        let binary = executable(dir.path(), "antre");
         let result =
             tokio::time::timeout(Duration::from_secs(10), start(binary, None, |_| {})).await;
         let error = result.unwrap().err().unwrap();

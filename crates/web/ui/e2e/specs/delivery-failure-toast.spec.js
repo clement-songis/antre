@@ -27,7 +27,7 @@ test.describe("channel delivery failures", () => {
 		const pageErrors = watchPageErrors(page);
 		const shown = await page.evaluate(
 			(event) => {
-				return window.__moltis_modules["delivery-events"].handleDeliveryEvent(event);
+				return window.__antre_modules["delivery-events"].handleDeliveryEvent(event);
 			},
 			deliveryEvent("failed", "telegram 502"),
 		);
@@ -45,7 +45,7 @@ test.describe("channel delivery failures", () => {
 		const pageErrors = watchPageErrors(page);
 		const shown = await page.evaluate(
 			(events) => {
-				var handler = window.__moltis_modules["delivery-events"].handleDeliveryEvent;
+				var handler = window.__antre_modules["delivery-events"].handleDeliveryEvent;
 				return events.map((event) => handler(event));
 			},
 			[deliveryEvent("queued", "telegram 502"), deliveryEvent("delivered", null)],

@@ -1,25 +1,25 @@
 [package]
 edition.workspace = true
-name              = "moltis-signal"
+name              = "antre-signal"
 version.workspace = true
 
 [dependencies]
-async-trait     = { workspace = true }
-base64          = { workspace = true }
-futures         = { workspace = true }
-moltis-channels = { workspace = true }
-moltis-common   = { workspace = true }
-moltis-media    = { workspace = true }
-reqwest         = { workspace = true }
-serde           = { workspace = true }
-serde_json      = { workspace = true }
-thiserror       = { workspace = true }
-time            = { workspace = true }
-tokio           = { workspace = true }
-tokio-util      = { workspace = true }
-tracing         = { workspace = true }
-url             = { workspace = true }
-uuid            = { workspace = true }
+antre-channels = { workspace = true }
+antre-common   = { workspace = true }
+antre-media    = { workspace = true }
+async-trait    = { workspace = true }
+base64         = { workspace = true }
+futures        = { workspace = true }
+reqwest        = { workspace = true }
+serde          = { workspace = true }
+serde_json     = { workspace = true }
+thiserror      = { workspace = true }
+time           = { workspace = true }
+tokio          = { workspace = true }
+tokio-util     = { workspace = true }
+tracing        = { workspace = true }
+url            = { workspace = true }
+uuid           = { workspace = true }
 
 [features]
 default = []

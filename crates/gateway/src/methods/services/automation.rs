@@ -233,16 +233,16 @@ pub(super) fn register(reg: &mut MethodRegistry) {
         Box::new(|ctx| {
             Box::pin(async move {
                 let config = ctx.state.inner.read().await.heartbeat_config.clone();
-                let heartbeat_path = moltis_config::heartbeat_path();
+                let heartbeat_path = antre_config::heartbeat_path();
                 let heartbeat_file_exists = heartbeat_path.exists();
-                let heartbeat_md = moltis_config::load_heartbeat_md();
-                let (_, prompt_source) = moltis_cron::heartbeat::resolve_heartbeat_prompt(
+                let heartbeat_md = antre_config::load_heartbeat_md();
+                let (_, prompt_source) = antre_cron::heartbeat::resolve_heartbeat_prompt(
                     config.prompt.as_deref(),
                     heartbeat_md.as_deref(),
                 );
                 // No meaningful prompt → heartbeat won't execute.
                 let has_prompt =
-                    prompt_source != moltis_cron::heartbeat::HeartbeatPromptSource::Default;
+                    prompt_source != antre_cron::heartbeat::HeartbeatPromptSource::Default;
                 // Find the heartbeat job to get its state.
                 let jobs_val = ctx
                     .state
@@ -251,7 +251,7 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                     .list()
                     .await
                     .map_err(ErrorShape::from)?;
-                let jobs: Vec<moltis_cron::types::CronJob> =
+                let jobs: Vec<antre_cron::types::CronJob> =
                     serde_json::from_value(jobs_val).unwrap_or_default();
                 let hb_job = jobs.iter().find(|j| j.name == "__heartbeat__");
                 Ok(serde_json::json!({
@@ -281,8 +281,8 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                         patch
                     };
 
-                    // Persist to moltis.toml so the config survives restarts.
-                    if let Err(e) = moltis_config::update_config(|cfg| {
+                    // Persist to antre.toml so the config survives restarts.
+                    if let Err(e) = antre_config::update_config(|cfg| {
                         cfg.heartbeat = patch.clone();
                     }) {
                         tracing::warn!(error = %e, "failed to persist heartbeat config");
@@ -296,25 +296,25 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                         .list()
                         .await
                         .map_err(ErrorShape::from)?;
-                    let jobs: Vec<moltis_cron::types::CronJob> =
+                    let jobs: Vec<antre_cron::types::CronJob> =
                         serde_json::from_value(jobs_val).unwrap_or_default();
-                    let interval_ms = moltis_cron::heartbeat::parse_interval_ms(&patch.every)
-                        .unwrap_or(moltis_cron::heartbeat::DEFAULT_INTERVAL_MS);
-                    let heartbeat_md = moltis_config::load_heartbeat_md();
+                    let interval_ms = antre_cron::heartbeat::parse_interval_ms(&patch.every)
+                        .unwrap_or(antre_cron::heartbeat::DEFAULT_INTERVAL_MS);
+                    let heartbeat_md = antre_config::load_heartbeat_md();
                     let (prompt, prompt_source) =
-                        moltis_cron::heartbeat::resolve_heartbeat_prompt(
+                        antre_cron::heartbeat::resolve_heartbeat_prompt(
                             patch.prompt.as_deref(),
                             heartbeat_md.as_deref(),
                         );
                     if prompt_source
-                        == moltis_cron::heartbeat::HeartbeatPromptSource::HeartbeatMd
+                        == antre_cron::heartbeat::HeartbeatPromptSource::HeartbeatMd
                     {
                         tracing::info!("loaded heartbeat prompt from HEARTBEAT.md");
                     }
                     if patch.prompt.as_deref().is_some_and(|p| !p.trim().is_empty())
                         && heartbeat_md.as_deref().is_some_and(|p| !p.trim().is_empty())
                         && prompt_source
-                            == moltis_cron::heartbeat::HeartbeatPromptSource::Config
+                            == antre_cron::heartbeat::HeartbeatPromptSource::Config
                     {
                         tracing::warn!(
                             "heartbeat prompt source conflict: config heartbeat.prompt overrides HEARTBEAT.md"
@@ -323,16 +323,16 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                     // Disable the job when there is no meaningful prompt,
                     // even if the user toggled enabled=true.
                     let has_prompt = prompt_source
-                        != moltis_cron::heartbeat::HeartbeatPromptSource::Default;
+                        != antre_cron::heartbeat::HeartbeatPromptSource::Default;
                     let effective_enabled = patch.enabled && has_prompt;
 
                     if let Some(hb_job) = jobs.iter().find(|j| j.id == "__heartbeat__") {
-                        let job_patch = moltis_cron::types::CronJobPatch {
-                            schedule: Some(moltis_cron::types::CronSchedule::Every {
+                        let job_patch = antre_cron::types::CronJobPatch {
+                            schedule: Some(antre_cron::types::CronSchedule::Every {
                                 every_ms: interval_ms,
                                 anchor_ms: None,
                             }),
-                            payload: Some(moltis_cron::types::CronPayload::AgentTurn {
+                            payload: Some(antre_cron::types::CronPayload::AgentTurn {
                                 message: prompt,
                                 model: patch.model.clone(),
                                 agent_id: patch.agent_id.clone(),
@@ -343,7 +343,7 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                                 to: patch.to.clone(),
                             }),
                             enabled: Some(effective_enabled),
-                            sandbox: Some(moltis_cron::types::CronSandboxConfig {
+                            sandbox: Some(antre_cron::types::CronSandboxConfig {
                                 enabled: patch.sandbox_enabled,
                                 image: patch.sandbox_image.clone(),
                                 auto_prune_container: None,
@@ -361,14 +361,14 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                             .map_err(ErrorShape::from)?;
                     } else if effective_enabled {
                         // Create the heartbeat job only when enabled with a valid prompt.
-                        let create = moltis_cron::types::CronJobCreate {
+                        let create = antre_cron::types::CronJobCreate {
                             id: Some("__heartbeat__".into()),
                             name: "__heartbeat__".into(),
-                            schedule: moltis_cron::types::CronSchedule::Every {
+                            schedule: antre_cron::types::CronSchedule::Every {
                                 every_ms: interval_ms,
                                 anchor_ms: None,
                             },
-                            payload: moltis_cron::types::CronPayload::AgentTurn {
+                            payload: antre_cron::types::CronPayload::AgentTurn {
                                 message: prompt,
                                 model: patch.model.clone(),
                                 agent_id: patch.agent_id.clone(),
@@ -378,16 +378,16 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                                 channel: patch.channel.clone(),
                                 to: patch.to.clone(),
                             },
-                            session_target: moltis_cron::types::SessionTarget::Named("heartbeat".into()),
+                            session_target: antre_cron::types::SessionTarget::Named("heartbeat".into()),
                             delete_after_run: false,
                             enabled: effective_enabled,
                             system: true,
-                            sandbox: moltis_cron::types::CronSandboxConfig {
+                            sandbox: antre_cron::types::CronSandboxConfig {
                                 enabled: patch.sandbox_enabled,
                                 image: patch.sandbox_image.clone(),
                                 auto_prune_container: None,
                             },
-                            wake_mode: moltis_cron::types::CronWakeMode::default(),
+                            wake_mode: antre_cron::types::CronWakeMode::default(),
                         };
                         let create_json = serde_json::to_value(create)
                             .map_err(|e| ErrorShape::new(error_codes::INVALID_REQUEST, format!("failed to serialize job: {e}")))?;
@@ -413,7 +413,7 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                     .list()
                     .await
                     .map_err(ErrorShape::from)?;
-                let jobs: Vec<moltis_cron::types::CronJob> =
+                let jobs: Vec<antre_cron::types::CronJob> =
                     serde_json::from_value(jobs_val).unwrap_or_default();
                 let hb_job = jobs
                     .iter()
@@ -445,7 +445,7 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                     .list()
                     .await
                     .map_err(ErrorShape::from)?;
-                let jobs: Vec<moltis_cron::types::CronJob> =
+                let jobs: Vec<antre_cron::types::CronJob> =
                     serde_json::from_value(jobs_val).unwrap_or_default();
                 let hb_job = jobs
                     .iter()

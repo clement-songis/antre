@@ -8,11 +8,11 @@ use std::{
 };
 
 #[cfg(feature = "metrics")]
-use moltis_metrics::MetricsHandle;
+use antre_metrics::MetricsHandle;
 
 // Re-export for use by other modules
 #[cfg(feature = "metrics")]
-pub use moltis_metrics::{MetricsHistoryPoint, MetricsStore, ProviderTokens, SqliteMetricsStore};
+pub use antre_metrics::{MetricsHistoryPoint, MetricsStore, ProviderTokens, SqliteMetricsStore};
 
 use tokio::sync::{RwLock, mpsc, oneshot};
 
@@ -67,16 +67,16 @@ impl Default for MetricsHistory {
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct MetricsUpdatePayload {
     /// Current metrics snapshot.
-    pub snapshot: moltis_metrics::MetricsSnapshot,
+    pub snapshot: antre_metrics::MetricsSnapshot,
     /// Latest history point for charts.
     pub point: MetricsHistoryPoint,
 }
 
-use moltis_protocol::{ConnectParams, EventFrame};
+use antre_protocol::{ConnectParams, EventFrame};
 
-use moltis_tools::sandbox::SandboxRouter;
+use antre_tools::sandbox::SandboxRouter;
 
-use {moltis_channels::ChannelReplyTarget, moltis_sessions::session_events::SessionEventBus};
+use {antre_channels::ChannelReplyTarget, antre_sessions::session_events::SessionEventBus};
 
 use crate::{
     auth::{CredentialStore, ResolvedAuth},
@@ -150,7 +150,7 @@ impl ConnectedClient {
     pub fn has_scope(&self, scope: &str) -> bool {
         self.scopes()
             .iter()
-            .any(|s| *s == moltis_protocol::scopes::ADMIN || *s == scope)
+            .any(|s| *s == antre_protocol::scopes::ADMIN || *s == scope)
     }
 
     /// Check whether this client is subscribed to the given event.
@@ -159,7 +159,7 @@ impl ConnectedClient {
         match &self.subscriptions {
             None => true,
             Some(set) => {
-                set.contains(moltis_protocol::subscriptions::WILDCARD) || set.contains(event)
+                set.contains(antre_protocol::subscriptions::WILDCARD) || set.contains(event)
             },
         }
     }
@@ -217,7 +217,7 @@ pub struct PendingInvoke {
 /// A server-initiated RPC request waiting for a client response.
 pub struct PendingClientRequest {
     pub method: String,
-    pub sender: oneshot::Sender<Result<serde_json::Value, moltis_protocol::ErrorShape>>,
+    pub sender: oneshot::Sender<Result<serde_json::Value, antre_protocol::ErrorShape>>,
     pub created_at: Instant,
 }
 
@@ -305,7 +305,7 @@ pub struct GatewayInner {
     /// Pending server → client RPC requests awaiting client responses (v4).
     pub pending_client_requests: HashMap<String, PendingClientRequest>,
     /// Heartbeat configuration (for gon data and RPC methods).
-    pub heartbeat_config: moltis_config::schema::HeartbeatConfig,
+    pub heartbeat_config: antre_config::schema::HeartbeatConfig,
     /// Pending channel reply targets: when a channel message triggers a chat
     /// send, we queue the reply target so the "final" response can be routed
     /// back to the originating channel.
@@ -315,7 +315,7 @@ pub struct GatewayInner {
     /// Per-channel-account TTS runtime overrides ((channel, account) -> override).
     pub tts_channel_overrides: HashMap<String, TtsRuntimeOverride>,
     /// Hook registry for dispatching lifecycle events.
-    pub hook_registry: Option<Arc<moltis_common::hooks::HookRegistry>>,
+    pub hook_registry: Option<Arc<antre_common::hooks::HookRegistry>>,
     /// Discovered hook metadata for the web UI.
     pub discovered_hooks: Vec<DiscoveredHookInfo>,
     /// Hook names that have been manually disabled via the UI.
@@ -337,9 +337,9 @@ pub struct GatewayInner {
     #[cfg(feature = "push-notifications")]
     pub push_service: Option<Arc<crate::push::PushService>>,
     /// LLM provider registry for lightweight generation (e.g. TTS phrases).
-    pub llm_providers: Option<Arc<RwLock<moltis_providers::ProviderRegistry>>>,
+    pub llm_providers: Option<Arc<RwLock<antre_providers::ProviderRegistry>>>,
     /// Cached user geolocation from browser Geolocation API, persisted to `USER.md`.
-    pub cached_location: Option<moltis_config::GeoLocation>,
+    pub cached_location: Option<antre_config::GeoLocation>,
     /// Per-session buffer for channel status messages (tool use, model selection).
     /// Drained when the final response is delivered to the channel.
     pub channel_status_log: HashMap<String, Vec<String>>,
@@ -360,13 +360,13 @@ pub struct GatewayInner {
 }
 
 impl GatewayInner {
-    fn new(hook_registry: Option<Arc<moltis_common::hooks::HookRegistry>>) -> Self {
+    fn new(hook_registry: Option<Arc<antre_common::hooks::HookRegistry>>) -> Self {
         Self {
             nodes: NodeRegistry::new(),
             pairing: PairingState::new(),
             pending_invokes: HashMap::new(),
             pending_client_requests: HashMap::new(),
-            heartbeat_config: moltis_config::schema::HeartbeatConfig::default(),
+            heartbeat_config: antre_config::schema::HeartbeatConfig::default(),
             channel_reply_queue: HashMap::new(),
             tts_session_overrides: HashMap::new(),
             tts_channel_overrides: HashMap::new(),
@@ -382,7 +382,7 @@ impl GatewayInner {
             #[cfg(feature = "push-notifications")]
             push_service: None,
             llm_providers: None,
-            cached_location: moltis_config::resolve_user_profile().location,
+            cached_location: antre_config::resolve_user_profile().location,
             channel_status_log: HashMap::new(),
             channel_command_mode_sessions: HashSet::new(),
             fast_mode_sessions: HashSet::new(),
@@ -414,7 +414,7 @@ pub struct GatewayState {
     /// Hostname for HelloOk.
     pub hostname: String,
     /// Loaded configuration snapshot for read-mostly request helpers.
-    pub config: moltis_config::schema::MoltisConfig,
+    pub config: antre_config::schema::AntreConfig,
     /// Auth configuration.
     pub auth: ResolvedAuth,
     /// Domain services.
@@ -423,35 +423,35 @@ pub struct GatewayState {
     /// `Arc` because it is shared cross-crate (e.g. `ExecTool` as `dyn EnvVarProvider`).
     pub credential_store: Option<Arc<CredentialStore>>,
     /// Per-session sandbox router (None if sandbox is not configured).
-    /// `Arc` because it is shared with `ExecTool`/`ProcessTool` in `moltis-tools`.
+    /// `Arc` because it is shared with `ExecTool`/`ProcessTool` in `antre-tools`.
     pub sandbox_router: Option<Arc<SandboxRouter>>,
     /// SQLite-backed pairing store for device token persistence.
     /// `None` in tests that don't need pairing.
     pub pairing_store: Option<Arc<PairingStore>>,
     /// Memory runtime for long-term memory search.
     /// `Arc` because it is cloned into background tokio tasks.
-    pub memory_manager: Option<moltis_memory::runtime::DynMemoryRuntime>,
+    pub memory_manager: Option<antre_memory::runtime::DynMemoryRuntime>,
     /// Code index for workspace codebase intelligence (discover, filter, status, peek).
     /// Always initialized in config-only mode; search is deferred to QMD backend.
-    pub code_index: Arc<moltis_code_index::CodeIndex>,
+    pub code_index: Arc<antre_code_index::CodeIndex>,
     /// Live agent instrumentation (Langfuse / OTLP / Datadog).
     /// `Arc` because the RPC handlers and the shutdown path both reach it.
     pub instrumentation: Arc<crate::server::instrumentation::InstrumentationState>,
     /// Reaction feedback: reply/trace correlation and score submission.
-    pub feedback: Arc<moltis_channels::FeedbackService>,
+    pub feedback: Arc<antre_channels::FeedbackService>,
     /// Whether the server is bound to a loopback address (localhost/127.0.0.1/::1).
     pub localhost_only: bool,
     /// Whether the server is known to be behind a reverse proxy.
-    /// Set via `MOLTIS_BEHIND_PROXY=true`.  When true, loopback source IPs are
+    /// Set via `ANTRE_BEHIND_PROXY=true`.  When true, loopback source IPs are
     /// never treated as proof of a direct local connection.
     pub behind_proxy: bool,
     /// Whether a non-loopback TCP source that already passed every other
     /// locality check (no proxy headers, loopback `Host`) should still count
-    /// as local. Set via `MOLTIS_TRUST_DOCKER_LOOPBACK=true` for Docker
+    /// as local. Set via `ANTRE_TRUST_DOCKER_LOOPBACK=true` for Docker
     /// deployments that publish the port only to `127.0.0.1` on the host
     /// (`-p 127.0.0.1:PORT:PORT`): Docker's DNAT rewrites the container-side
     /// TCP source to a bridge-network address, so it can never look loopback
-    /// from inside the container. See `moltis_auth::locality::is_local_connection`.
+    /// from inside the container. See `antre_auth::locality::is_local_connection`.
     pub trust_docker_loopback: bool,
     /// Whether TLS is active on the gateway listener.
     pub tls_active: bool,
@@ -463,7 +463,7 @@ pub struct GatewayState {
     /// Session event bus for cross-UI synchronisation (macOS ↔ web).
     pub session_event_bus: SessionEventBus,
     /// Cloud deploy platform (e.g. "flyio", "digitalocean"), read from
-    /// `MOLTIS_DEPLOY_PLATFORM`. `None` when running locally.
+    /// `ANTRE_DEPLOY_PLATFORM`. `None` when running locally.
     pub deploy_platform: Option<String>,
     /// Whether new node pairing requests are accepted. Disabled by default
     /// to prevent unauthenticated connection spam. Enable from the web UI or
@@ -481,7 +481,7 @@ pub struct GatewayState {
     pub metrics_store: Option<Arc<dyn MetricsStore>>,
     /// Encryption-at-rest vault for environment variables.
     #[cfg(feature = "vault")]
-    pub vault: Option<Arc<moltis_vault::Vault>>,
+    pub vault: Option<Arc<antre_vault::Vault>>,
 
     /// Late-bound connector manager, initialized after its dedicated database opens.
     #[cfg(feature = "connectors")]
@@ -498,17 +498,17 @@ pub struct GatewayState {
 
     // ── Generic webhook ingress ───────────────────────────────────────────────
     /// Webhook store for direct access from HTTP ingress handlers.
-    pub webhook_store: std::sync::OnceLock<Arc<dyn moltis_webhooks::store::WebhookStore>>,
+    pub webhook_store: std::sync::OnceLock<Arc<dyn antre_webhooks::store::WebhookStore>>,
     /// Persisted outbox for channel replies, set once the database is open.
-    pub delivery_outbox: std::sync::OnceLock<Arc<moltis_delivery::Outbox>>,
+    pub delivery_outbox: std::sync::OnceLock<Arc<antre_delivery::Outbox>>,
     /// Per-webhook rate limiter for generic webhook ingress.
-    pub webhook_rate_limiter: moltis_webhooks::rate_limit::WebhookRateLimiter,
+    pub webhook_rate_limiter: antre_webhooks::rate_limit::WebhookRateLimiter,
     /// Sender for queueing delivery IDs to the webhook worker.
     pub webhook_worker_tx: std::sync::OnceLock<mpsc::Sender<i64>>,
 
     // ── Skill usage telemetry ─────────────────────────────────────────────
     /// Late-bound skill usage store for per-skill read/write telemetry.
-    pub skill_usage_store: std::sync::OnceLock<moltis_skills::usage::SkillUsageStore>,
+    pub skill_usage_store: std::sync::OnceLock<antre_skills::usage::SkillUsageStore>,
 
     // ── Chat override (set once, read frequently) ─��───────────────────────
     /// Late-bound chat service override. Uses `std::sync::RwLock` (non-async)
@@ -548,7 +548,7 @@ impl GatewayState {
         Self::with_options(
             auth,
             services,
-            moltis_config::MoltisConfig::default(),
+            antre_config::AntreConfig::default(),
             None,
             None,
             None,
@@ -558,8 +558,8 @@ impl GatewayState {
             false,
             None,
             None,
-            Arc::new(moltis_code_index::CodeIndex::config_only(
-                moltis_code_index::CodeIndexConfig::default(),
+            Arc::new(antre_code_index::CodeIndex::config_only(
+                antre_code_index::CodeIndexConfig::default(),
             )),
             18789,
             false,
@@ -578,7 +578,7 @@ impl GatewayState {
     pub fn with_options(
         auth: ResolvedAuth,
         services: GatewayServices,
-        config: moltis_config::schema::MoltisConfig,
+        config: antre_config::schema::AntreConfig,
         sandbox_router: Option<Arc<SandboxRouter>>,
         credential_store: Option<Arc<CredentialStore>>,
         pairing_store: Option<Arc<PairingStore>>,
@@ -586,16 +586,16 @@ impl GatewayState {
         behind_proxy: bool,
         trust_docker_loopback: bool,
         tls_active: bool,
-        hook_registry: Option<Arc<moltis_common::hooks::HookRegistry>>,
-        memory_manager: Option<moltis_memory::runtime::DynMemoryRuntime>,
-        code_index: Arc<moltis_code_index::CodeIndex>,
+        hook_registry: Option<Arc<antre_common::hooks::HookRegistry>>,
+        memory_manager: Option<antre_memory::runtime::DynMemoryRuntime>,
+        code_index: Arc<antre_code_index::CodeIndex>,
         port: u16,
         ws_request_logs: bool,
         deploy_platform: Option<String>,
         session_event_bus: Option<SessionEventBus>,
         #[cfg(feature = "metrics")] metrics_handle: Option<MetricsHandle>,
         #[cfg(feature = "metrics")] metrics_store: Option<Arc<dyn MetricsStore>>,
-        #[cfg(feature = "vault")] vault: Option<Arc<moltis_vault::Vault>>,
+        #[cfg(feature = "vault")] vault: Option<Arc<antre_vault::Vault>>,
     ) -> Arc<Self> {
         let hostname = hostname::get()
             .ok()
@@ -603,7 +603,7 @@ impl GatewayState {
             .unwrap_or_else(|| "unknown".into());
 
         Arc::new(Self {
-            version: moltis_config::VERSION.to_string(),
+            version: antre_config::VERSION.to_string(),
             hostname,
             config,
             auth,
@@ -645,7 +645,7 @@ impl GatewayState {
                 crate::channel_webhook_rate_limit::ChannelWebhookRateLimiter::new(),
             webhook_store: std::sync::OnceLock::new(),
             delivery_outbox: std::sync::OnceLock::new(),
-            webhook_rate_limiter: moltis_webhooks::rate_limit::WebhookRateLimiter::default(),
+            webhook_rate_limiter: antre_webhooks::rate_limit::WebhookRateLimiter::default(),
             webhook_worker_tx: std::sync::OnceLock::new(),
             skill_usage_store: std::sync::OnceLock::new(),
             chat_override: std::sync::RwLock::new(None),
@@ -751,7 +751,7 @@ impl GatewayState {
         let count = self.client_registry.write().await.register_client(client);
 
         #[cfg(feature = "metrics")]
-        moltis_metrics::gauge!(moltis_metrics::system::CONNECTED_CLIENTS).set(count as f64);
+        antre_metrics::gauge!(antre_metrics::system::CONNECTED_CLIENTS).set(count as f64);
     }
 
     /// Remove a client by conn_id. Returns the removed client if found.
@@ -761,7 +761,7 @@ impl GatewayState {
         #[cfg(feature = "metrics")]
         {
             let _ = count;
-            moltis_metrics::gauge!(moltis_metrics::system::CONNECTED_CLIENTS).set(count as f64);
+            antre_metrics::gauge!(antre_metrics::system::CONNECTED_CLIENTS).set(count as f64);
         }
         #[cfg(not(feature = "metrics"))]
         let _ = count;
@@ -973,9 +973,9 @@ impl GatewayState {
         method: &str,
         params: serde_json::Value,
         timeout: std::time::Duration,
-    ) -> Result<serde_json::Value, moltis_protocol::ErrorShape> {
+    ) -> Result<serde_json::Value, antre_protocol::ErrorShape> {
         let request_id = uuid::Uuid::new_v4().to_string();
-        let req_frame = moltis_protocol::RequestFrame {
+        let req_frame = antre_protocol::RequestFrame {
             r#type: "req".into(),
             id: request_id.clone(),
             method: method.into(),
@@ -983,7 +983,7 @@ impl GatewayState {
             channel: None,
         };
         let json = serde_json::to_string(&req_frame).map_err(|e| {
-            moltis_protocol::ErrorShape::new(moltis_protocol::error_codes::INTERNAL, e.to_string())
+            antre_protocol::ErrorShape::new(antre_protocol::error_codes::INTERNAL, e.to_string())
         })?;
 
         let (tx, rx) = oneshot::channel();
@@ -996,8 +996,8 @@ impl GatewayState {
             .clients
             .contains_key(conn_id)
         {
-            return Err(moltis_protocol::ErrorShape::new(
-                moltis_protocol::error_codes::UNAVAILABLE,
+            return Err(antre_protocol::ErrorShape::new(
+                antre_protocol::error_codes::UNAVAILABLE,
                 "client not connected",
             ));
         }
@@ -1028,16 +1028,16 @@ impl GatewayState {
                 .await
                 .pending_client_requests
                 .remove(&request_id);
-            return Err(moltis_protocol::ErrorShape::new(
-                moltis_protocol::error_codes::UNAVAILABLE,
+            return Err(antre_protocol::ErrorShape::new(
+                antre_protocol::error_codes::UNAVAILABLE,
                 "client send failed",
             ));
         }
 
         match tokio::time::timeout(timeout, rx).await {
             Ok(Ok(result)) => result,
-            Ok(Err(_)) => Err(moltis_protocol::ErrorShape::new(
-                moltis_protocol::error_codes::UNAVAILABLE,
+            Ok(Err(_)) => Err(antre_protocol::ErrorShape::new(
+                antre_protocol::error_codes::UNAVAILABLE,
                 "client request cancelled",
             )),
             Err(_) => {
@@ -1046,8 +1046,8 @@ impl GatewayState {
                     .await
                     .pending_client_requests
                     .remove(&request_id);
-                Err(moltis_protocol::ErrorShape::new(
-                    moltis_protocol::error_codes::TIMEOUT,
+                Err(antre_protocol::ErrorShape::new(
+                    antre_protocol::error_codes::TIMEOUT,
                     "client request timeout",
                 ))
             },
@@ -1063,7 +1063,7 @@ impl GatewayState {
         let (removed, count) = self.client_registry.write().await.remove_client(conn_id);
 
         #[cfg(feature = "metrics")]
-        moltis_metrics::gauge!(moltis_metrics::system::CONNECTED_CLIENTS).set(count as f64);
+        antre_metrics::gauge!(antre_metrics::system::CONNECTED_CLIENTS).set(count as f64);
         #[cfg(not(feature = "metrics"))]
         let _ = count;
 
@@ -1105,7 +1105,7 @@ impl GatewayState {
         self.node_count.store(0, Ordering::Relaxed);
 
         #[cfg(feature = "metrics")]
-        moltis_metrics::gauge!(moltis_metrics::system::CONNECTED_CLIENTS).set(0.0);
+        antre_metrics::gauge!(antre_metrics::system::CONNECTED_CLIENTS).set(0.0);
 
         tracing::info!(
             reason,
@@ -1144,7 +1144,7 @@ mod tests {
             connect_params: ConnectParams {
                 min_protocol: 1,
                 max_protocol: 1,
-                client: moltis_protocol::ClientInfo {
+                client: antre_protocol::ClientInfo {
                     id: "test".into(),
                     display_name: None,
                     version: "0.0.0".into(),
@@ -1177,7 +1177,7 @@ mod tests {
             session_filter: None,
             payload_state_filter: None,
             joined_channels: HashSet::new(),
-            negotiated_protocol: moltis_protocol::PROTOCOL_VERSION,
+            negotiated_protocol: antre_protocol::PROTOCOL_VERSION,
         };
         (client, rx)
     }

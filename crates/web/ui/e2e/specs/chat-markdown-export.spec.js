@@ -50,8 +50,8 @@ test.describe("Chat Markdown export", () => {
 
 		await page.evaluate(
 			({ key, content }) => {
-				const cache = window.__moltis_modules?.["stores/session-history-cache"];
-				const sessions = window.__moltis_modules?.sessions;
+				const cache = window.__antre_modules?.["stores/session-history-cache"];
+				const sessions = window.__antre_modules?.sessions;
 				if (!(cache?.replaceSessionHistory && sessions?.switchSession)) {
 					throw new Error("session history E2E modules unavailable");
 				}

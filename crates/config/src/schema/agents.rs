@@ -412,12 +412,12 @@ pub struct PresetToolPolicy {
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum MemoryScope {
-    /// User-global: `~/.moltis/agent-memory/<preset>/`
+    /// User-global: `~/.antre/agent-memory/<preset>/`
     #[default]
     User,
-    /// Project-local: `.moltis/agent-memory/<preset>/`
+    /// Project-local: `.antre/agent-memory/<preset>/`
     Project,
-    /// Untracked local: `.moltis/agent-memory-local/<preset>/`
+    /// Untracked local: `.antre/agent-memory-local/<preset>/`
     Local,
 }
 

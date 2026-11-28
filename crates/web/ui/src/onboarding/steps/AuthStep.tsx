@@ -426,7 +426,7 @@ export function AuthStep({ onNext, skippable }: { onNext: () => void; skippable:
 						autoComplete="off"
 						value={setupCode}
 						onInput={(e) => setSetupCode(targetValue(e))}
-						placeholder="Code from the moltis terminal"
+						placeholder="Code from the antre terminal"
 					/>
 					<div className="text-xs text-[var(--muted)] mt-1">
 						{launchSetupCode && setupCode === launchSetupCode

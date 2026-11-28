@@ -1,7 +1,7 @@
 # Choosing a Provider
 
 Not sure which LLM provider to use? This page compares the providers
-supported by Moltis so you can pick the best fit for your use case.
+supported by Antre so you can pick the best fit for your use case.
 
 ## Quick Recommendations
 
@@ -74,7 +74,7 @@ though model selection is more limited.
 
 ### For local / offline use
 
-**Ollama** is the easiest path --- install it, pull a model, and Moltis
+**Ollama** is the easiest path --- install it, pull a model, and Antre
 auto-detects it. **Local LLM** runs GGUF models directly without a
 separate server. Both require sufficient RAM (8GB+ for small models,
 16GB+ recommended).

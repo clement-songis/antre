@@ -1,13 +1,11 @@
 use std::path::Path;
 
 use {
-    moltis_channels::ChannelType,
-    moltis_connector_caldav::{CalDavDatasetConfig, CalDavFilters, CalendarSelection},
-    moltis_connector_gmail::{GmailAccountConfig, GmailDatasetConfig},
-    moltis_connector_himalaya::{HimalayaAccountConfig, HimalayaBackend, HimalayaDatasetConfig},
-    moltis_connectors::{
-        Account, ConnectorItem, ConnectorKind, Dataset, ProjectionConfig, SyncRun,
-    },
+    antre_channels::ChannelType,
+    antre_connector_caldav::{CalDavDatasetConfig, CalDavFilters, CalendarSelection},
+    antre_connector_gmail::{GmailAccountConfig, GmailDatasetConfig},
+    antre_connector_himalaya::{HimalayaAccountConfig, HimalayaBackend, HimalayaDatasetConfig},
+    antre_connectors::{Account, ConnectorItem, ConnectorKind, Dataset, ProjectionConfig, SyncRun},
     secrecy::Secret,
     serde::{Deserialize, Serialize},
     serde_json::Value,
@@ -233,7 +231,7 @@ pub struct DatasetView {
 pub struct SyncRunView {
     pub id: String,
     pub dataset_id: String,
-    pub status: moltis_connectors::SyncRunStatus,
+    pub status: antre_connectors::SyncRunStatus,
     pub started_at: OffsetDateTime,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub finished_at: Option<OffsetDateTime>,
@@ -532,7 +530,7 @@ pub(super) fn dataset_view(
     };
     let projection_path = if dataset.projections.jsonl || dataset.projections.markdown {
         Some(
-            moltis_connectors::projection_directory(export_root, &dataset.name, &dataset.id)?
+            antre_connectors::projection_directory(export_root, &dataset.name, &dataset.id)?
                 .to_string_lossy()
                 .into_owned(),
         )

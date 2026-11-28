@@ -1,3 +1,3 @@
-//! Re-export Tailscale functionality from the `moltis-tailscale` crate.
+//! Re-export Tailscale functionality from the `antre-tailscale` crate.
 
-pub use moltis_tailscale::*;
+pub use antre_tailscale::*;

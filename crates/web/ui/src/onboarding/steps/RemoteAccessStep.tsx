@@ -690,7 +690,7 @@ export function RemoteAccessStep({ onNext, onBack }: { onNext: () => void; onBac
 							id="onboarding-cloudflare-hostname"
 							type="text"
 							className="provider-key-input w-full"
-							placeholder="moltis.example.com"
+							placeholder="antre.example.com"
 							value={cfForm.hostname}
 							onInput={(e) => setCfForm({ ...cfForm, hostname: targetValue(e) })}
 						/>

@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use {
-    moltis_channels::{ChannelReplyTarget, Error as ChannelError, Result as ChannelResult},
-    moltis_sessions::metadata::SqliteSessionMetadata,
+    antre_channels::{ChannelReplyTarget, Error as ChannelError, Result as ChannelResult},
+    antre_sessions::metadata::SqliteSessionMetadata,
 };
 
 use crate::{
@@ -43,7 +43,7 @@ pub(in crate::channel_events) async fn handle_btw(
     } else {
         None
     };
-    let provider: Arc<dyn moltis_agents::model::LlmProvider> = {
+    let provider: Arc<dyn antre_agents::model::LlmProvider> = {
         let reg = registry.read().await;
         let resolved = session_model
             .as_deref()
@@ -58,7 +58,7 @@ pub(in crate::channel_events) async fn handle_btw(
     // Read recent session history for context (last ~20 messages).
     let context_msgs = if let Some(ref store) = state.services.session_store {
         let history = store.read(session_key).await.unwrap_or_default();
-        let chat_msgs = moltis_agents::model::values_to_chat_messages_with_tool_result_limit(
+        let chat_msgs = antre_agents::model::values_to_chat_messages_with_tool_result_limit(
             &history,
             state.config.tools.max_tool_result_bytes,
         );
@@ -71,9 +71,9 @@ pub(in crate::channel_events) async fn handle_btw(
     // Build a minimal prompt and call the LLM with no tools.
     let system_prompt = "You are a helpful assistant. Answer the user's side question \
                          concisely. You have no tools available — answer from context only.";
-    let mut messages = vec![moltis_agents::ChatMessage::system(system_prompt)];
+    let mut messages = vec![antre_agents::ChatMessage::system(system_prompt)];
     messages.extend(context_msgs);
-    messages.push(moltis_agents::ChatMessage::user(args));
+    messages.push(antre_agents::ChatMessage::user(args));
 
     match provider.complete(&messages, &[]).await {
         Ok(response) => {
@@ -176,8 +176,8 @@ pub(in crate::channel_events) async fn handle_rollback(
     session_key: &str,
     args: &str,
 ) -> ChannelResult<String> {
-    let data_dir = moltis_config::data_dir();
-    let manager = moltis_tools::checkpoints::CheckpointManager::new(data_dir);
+    let data_dir = antre_config::data_dir();
+    let manager = antre_tools::checkpoints::CheckpointManager::new(data_dir);
 
     if args.is_empty() {
         // List recent turns.
@@ -543,7 +543,7 @@ pub(in crate::channel_events) async fn handle_steer(
 // ── /queue — queue a message for the next agent turn ────────────────────────
 
 fn validate_queued_message(args: &str) -> ChannelResult<()> {
-    if moltis_agents::runner::explicit_shell_command(args).is_some() {
+    if antre_agents::runner::explicit_shell_command(args).is_some() {
         return Err(ChannelError::invalid_input(
             "Shell commands cannot be submitted through /queue. Wait for the active run, then use /sh directly.",
         ));

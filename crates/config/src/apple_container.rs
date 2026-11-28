@@ -2,7 +2,7 @@
 //!
 //! The Apple Container service can drop XPC connections when multiple heavy
 //! operations (image pulls/builds) run concurrently. Keep those operations
-//! serialized across Moltis crates.
+//! serialized across Antre crates.
 
 #[cfg(target_os = "macos")]
 use std::sync::{

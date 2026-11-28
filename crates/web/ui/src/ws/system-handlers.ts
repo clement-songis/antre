@@ -78,8 +78,8 @@ export function handleNetworkAuditEntry(payload: unknown): void {
 }
 
 export function handleAuthCredentialsChanged(payload: AuthCredentialsPayload): void {
-	if (payload?.reason === "password_changed" && window.__moltisSuppressNextPasswordChangedRedirect === true) {
-		window.__moltisSuppressNextPasswordChangedRedirect = false;
+	if (payload?.reason === "password_changed" && window.__antreSuppressNextPasswordChangedRedirect === true) {
+		window.__antreSuppressNextPasswordChangedRedirect = false;
 		console.info("Deferring redirect for password_changed to show recovery key first");
 		return;
 	}

@@ -47,7 +47,7 @@ pub enum ApprovalReason {
 /// re-pointing a link counts as a change.
 pub fn hash_hook_dir(dir: &Path) -> Result<String> {
     let mut hasher = Sha256::new();
-    hasher.update(b"moltis-hook-dir-v1\n");
+    hasher.update(b"antre-hook-dir-v1\n");
     let mut files = 0usize;
     let mut total = 0u64;
     for entry in WalkDir::new(dir)

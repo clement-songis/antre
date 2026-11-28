@@ -8,9 +8,9 @@ use std::{
 
 use tracing::{debug, info, warn};
 
-use moltis_providers::ProviderRegistry;
+use antre_providers::ProviderRegistry;
 
-use moltis_tools::approval::{ApprovalManager, ApprovalMode, SecurityLevel};
+use antre_tools::approval::{ApprovalManager, ApprovalMode, SecurityLevel};
 
 // ── QMD helpers ──────────────────────────────────────────────────────────────
 
@@ -30,35 +30,32 @@ pub(crate) fn sanitize_qmd_index_name(root: &FsPath) -> String {
     }
     let sanitized = sanitized.trim_matches('_').to_string();
     if sanitized.is_empty() {
-        "moltis".into()
+        "antre".into()
     } else {
-        format!("moltis-{sanitized}")
+        format!("antre-{sanitized}")
     }
 }
 
 #[cfg(feature = "qmd")]
 pub(crate) fn build_qmd_collections(
     data_dir: &FsPath,
-    config: &moltis_config::schema::QmdConfig,
-) -> HashMap<String, moltis_qmd::QmdCollection> {
+    config: &antre_config::schema::QmdConfig,
+) -> HashMap<String, antre_qmd::QmdCollection> {
     if config.collections.is_empty() {
         return HashMap::from([
-            ("moltis-root-memory".into(), moltis_qmd::QmdCollection {
+            ("antre-root-memory".into(), antre_qmd::QmdCollection {
                 path: data_dir.to_path_buf(),
                 glob: "MEMORY.md".into(),
             }),
-            (
-                "moltis-root-memory-lower".into(),
-                moltis_qmd::QmdCollection {
-                    path: data_dir.to_path_buf(),
-                    glob: "memory.md".into(),
-                },
-            ),
-            ("moltis-memory".into(), moltis_qmd::QmdCollection {
+            ("antre-root-memory-lower".into(), antre_qmd::QmdCollection {
+                path: data_dir.to_path_buf(),
+                glob: "memory.md".into(),
+            }),
+            ("antre-memory".into(), antre_qmd::QmdCollection {
                 path: data_dir.join("memory"),
                 glob: "**/*.md".into(),
             }),
-            ("moltis-agents".into(), moltis_qmd::QmdCollection {
+            ("antre-agents".into(), antre_qmd::QmdCollection {
                 path: data_dir.join("agents"),
                 glob: "**/*.md".into(),
             }),
@@ -87,7 +84,7 @@ pub(crate) fn build_qmd_collections(
                 } else {
                     format!("{name}-{path_index}-{glob_index}")
                 };
-                collections.insert(key, moltis_qmd::QmdCollection {
+                collections.insert(key, antre_qmd::QmdCollection {
                     path: root.clone(),
                     glob: glob.clone(),
                 });
@@ -101,22 +98,22 @@ pub(crate) fn build_qmd_collections(
 // ── Sandbox helpers ──────────────────────────────────────────────────────────
 
 pub(crate) fn should_prebuild_sandbox_image(
-    mode: &moltis_tools::sandbox::SandboxMode,
+    mode: &antre_tools::sandbox::SandboxMode,
     packages: &[String],
 ) -> bool {
-    !matches!(mode, moltis_tools::sandbox::SandboxMode::Off) && !packages.is_empty()
+    !matches!(mode, antre_tools::sandbox::SandboxMode::Off) && !packages.is_empty()
 }
 
-pub(crate) fn instance_slug(config: &moltis_config::MoltisConfig) -> String {
+pub(crate) fn instance_slug(config: &antre_config::AntreConfig) -> String {
     let mut raw_name = config.identity.name.clone();
-    if let Some(file_identity) = moltis_config::load_identity_for_agent("main")
+    if let Some(file_identity) = antre_config::load_identity_for_agent("main")
         && file_identity.name.is_some()
     {
         raw_name = file_identity.name;
     }
 
     let base = raw_name
-        .unwrap_or_else(|| "moltis".to_string())
+        .unwrap_or_else(|| "antre".to_string())
         .to_lowercase();
     let mut out = String::new();
     let mut last_dash = false;
@@ -138,22 +135,22 @@ pub(crate) fn instance_slug(config: &moltis_config::MoltisConfig) -> String {
     }
     let out = out.trim_matches('-').to_string();
     if out.is_empty() {
-        "moltis".to_string()
+        "antre".to_string()
     } else {
         out
     }
 }
 
 pub(crate) fn sandbox_container_prefix(instance_slug: &str) -> String {
-    format!("moltis-{instance_slug}-sandbox")
+    format!("antre-{instance_slug}-sandbox")
 }
 
-pub fn sandbox_container_prefix_for_config(config: &moltis_config::MoltisConfig) -> String {
+pub fn sandbox_container_prefix_for_config(config: &antre_config::AntreConfig) -> String {
     sandbox_container_prefix(&instance_slug(config))
 }
 
 pub(crate) fn browser_container_prefix(instance_slug: &str) -> String {
-    format!("moltis-{instance_slug}-browser")
+    format!("antre-{instance_slug}-browser")
 }
 
 // ── Environment helpers ──────────────────────────────────────────────────────
@@ -322,7 +319,7 @@ pub(crate) async fn ensure_ollama_model(base_url: &str, model: &str) {
 
 // ── Approval manager ─────────────────────────────────────────────────────────
 
-pub fn approval_manager_from_config(config: &moltis_config::MoltisConfig) -> ApprovalManager {
+pub fn approval_manager_from_config(config: &antre_config::AntreConfig) -> ApprovalManager {
     let mut manager = ApprovalManager::default();
 
     manager.mode = ApprovalMode::parse(&config.tools.exec.approval_mode).unwrap_or_else(|| {
@@ -350,7 +347,7 @@ pub fn approval_manager_from_config(config: &moltis_config::MoltisConfig) -> App
 
 #[cfg(feature = "fs-tools")]
 pub(crate) fn fs_tools_host_warning_message(
-    router: &moltis_tools::sandbox::SandboxRouter,
+    router: &antre_tools::sandbox::SandboxRouter,
 ) -> Option<String> {
     if router.backend().is_real() {
         return None;
@@ -385,7 +382,7 @@ pub(crate) struct StartupMemProbe {
 
 impl StartupMemProbe {
     pub(crate) fn new() -> Self {
-        let enabled = env_flag_enabled("MOLTIS_STARTUP_MEM_TRACE");
+        let enabled = env_flag_enabled("ANTRE_STARTUP_MEM_TRACE");
         let last_rss_bytes = if enabled {
             process_rss_bytes()
         } else {
@@ -423,7 +420,7 @@ pub(crate) fn validate_proxy_tls_configuration(
 ) -> anyhow::Result<()> {
     if behind_proxy && tls_enabled && !allow_tls_behind_proxy {
         anyhow::bail!(
-            "MOLTIS_BEHIND_PROXY=true with Moltis TLS enabled is usually a proxy misconfiguration. Run with --no-tls (or MOLTIS_NO_TLS=true). If your proxy upstream is HTTPS/TCP passthrough by design, set MOLTIS_ALLOW_TLS_BEHIND_PROXY=true."
+            "ANTRE_BEHIND_PROXY=true with Antre TLS enabled is usually a proxy misconfiguration. Run with --no-tls (or ANTRE_NO_TLS=true). If your proxy upstream is HTTPS/TCP passthrough by design, set ANTRE_ALLOW_TLS_BEHIND_PROXY=true."
         );
     }
     Ok(())
@@ -464,7 +461,7 @@ pub(crate) fn log_directory_write_probe(dir: &FsPath) {
         .map(|d| d.as_nanos())
         .unwrap_or(0);
     let probe_path = dir.join(format!(
-        ".moltis-write-check-{}-{nanos}.tmp",
+        ".antre-write-check-{}-{nanos}.tmp",
         std::process::id()
     ));
 
@@ -507,9 +504,9 @@ pub(crate) fn log_directory_write_probe(dir: &FsPath) {
 // ── Config / storage startup logging ─────────────────────────────────────────
 
 pub(crate) fn log_startup_config_storage_diagnostics() {
-    let config_dir = moltis_config::config_dir().unwrap_or_else(|| PathBuf::from(".moltis"));
-    let discovered_config = moltis_config::loader::find_config_file();
-    let expected_config = moltis_config::find_or_default_config_path();
+    let config_dir = antre_config::config_dir().unwrap_or_else(|| PathBuf::from(".antre"));
+    let discovered_config = antre_config::loader::find_config_file();
+    let expected_config = antre_config::find_or_default_config_path();
     let provider_keys_path = config_dir.join("provider_keys.json");
 
     let discovered_display = discovered_config
@@ -540,7 +537,7 @@ pub(crate) fn log_startup_config_storage_diagnostics() {
     } else {
         warn!(
             path = %expected_config.display(),
-            "no config file detected on startup; Moltis is running with in-memory defaults until config is persisted"
+            "no config file detected on startup; Antre is running with in-memory defaults until config is persisted"
         );
     }
 
@@ -582,17 +579,17 @@ pub(crate) fn log_startup_config_storage_diagnostics() {
 // ── Cron delivery ────────────────────────────────────────────────────────────
 
 pub(crate) struct CronDeliveryHistory {
-    pub(crate) registry: Arc<moltis_channels::ChannelRegistry>,
-    pub(crate) metadata: Arc<moltis_sessions::metadata::SqliteSessionMetadata>,
-    pub(crate) store: Arc<moltis_sessions::store::SessionStore>,
+    pub(crate) registry: Arc<antre_channels::ChannelRegistry>,
+    pub(crate) metadata: Arc<antre_sessions::metadata::SqliteSessionMetadata>,
+    pub(crate) store: Arc<antre_sessions::store::SessionStore>,
     pub(crate) delivery_id: String,
 }
 
 fn cron_delivery_target(
-    registry: &moltis_channels::ChannelRegistry,
+    registry: &antre_channels::ChannelRegistry,
     account_id: &str,
     outbound_to: &str,
-) -> Option<moltis_channels::ChannelReplyTarget> {
+) -> Option<antre_channels::ChannelReplyTarget> {
     let channel_type = match registry.resolve_known_channel_type(account_id) {
         Ok(Some(channel_type)) => channel_type,
         Ok(None) => return None,
@@ -606,7 +603,7 @@ fn cron_delivery_target(
         },
     };
     let (chat_id, thread_id) = match channel_type {
-        moltis_channels::ChannelType::Telegram => match outbound_to.split_once(':') {
+        antre_channels::ChannelType::Telegram => match outbound_to.split_once(':') {
             Some((chat_id, thread_id)) if !chat_id.is_empty() && !thread_id.is_empty() => {
                 (chat_id.to_string(), Some(thread_id.to_string()))
             },
@@ -615,13 +612,13 @@ fn cron_delivery_target(
         },
         // WhatsApp accepts bare phone numbers for outbound sends, but inbound
         // conversations are keyed by their canonical phone-number JID.
-        moltis_channels::ChannelType::Whatsapp if !outbound_to.contains('@') => {
+        antre_channels::ChannelType::Whatsapp if !outbound_to.contains('@') => {
             (format!("{outbound_to}@s.whatsapp.net"), None)
         },
         _ => (outbound_to.to_string(), None),
     };
 
-    Some(moltis_channels::ChannelReplyTarget {
+    Some(antre_channels::ChannelReplyTarget {
         direct_chat: false,
         channel_type,
         account_id: account_id.to_string(),
@@ -633,8 +630,8 @@ fn cron_delivery_target(
 }
 
 fn same_channel_conversation(
-    left: &moltis_channels::ChannelReplyTarget,
-    right: &moltis_channels::ChannelReplyTarget,
+    left: &antre_channels::ChannelReplyTarget,
+    right: &antre_channels::ChannelReplyTarget,
 ) -> bool {
     left.channel_type == right.channel_type
         && left.account_id == right.account_id
@@ -660,7 +657,7 @@ async fn bound_cron_delivery_session(
         .unwrap_or_else(|| target.default_session_key());
     let entry = history.metadata.get(&session_key).await?;
     let binding = entry.channel_binding.as_deref()?;
-    let bound_target = serde_json::from_str::<moltis_channels::ChannelReplyTarget>(binding).ok()?;
+    let bound_target = serde_json::from_str::<antre_channels::ChannelReplyTarget>(binding).ok()?;
     same_channel_conversation(&target, &bound_target).then_some(session_key)
 }
 
@@ -730,7 +727,7 @@ async fn record_cron_delivery(
     session_key: &str,
     delivery_text: &str,
     run_id: &str,
-) -> moltis_sessions::Result<()> {
+) -> antre_sessions::Result<()> {
     let message = serde_json::to_value(cron_delivery_message(delivery_text, run_id))?;
     history.store.append(session_key, &message).await?;
     let message_count = history.store.count(session_key).await?;
@@ -739,23 +736,23 @@ async fn record_cron_delivery(
 }
 
 pub(crate) async fn maybe_deliver_cron_output(
-    outbound: Option<Arc<dyn moltis_channels::ChannelOutbound>>,
-    req: &moltis_cron::service::AgentTurnRequest,
+    outbound: Option<Arc<dyn antre_channels::ChannelOutbound>>,
+    req: &antre_cron::service::AgentTurnRequest,
     delivery_text: &str,
     history: Option<&CronDeliveryHistory>,
-) -> moltis_cron::Result<()> {
+) -> antre_cron::Result<()> {
     if !req.deliver || delivery_text.trim().is_empty() {
         return Ok(());
     }
 
     let (Some(channel_account), Some(chat_id)) = (&req.channel, &req.to) else {
-        return Err(moltis_cron::Error::message(
+        return Err(antre_cron::Error::message(
             "cron delivery requires both channel and destination",
         ));
     };
 
     let outbound = outbound.ok_or_else(|| {
-        moltis_cron::Error::message("cron delivery requested but channel outbound is unavailable")
+        antre_cron::Error::message("cron delivery requested but channel outbound is unavailable")
     })?;
 
     let bound_session = match history {
@@ -779,7 +776,7 @@ pub(crate) async fn maybe_deliver_cron_output(
         .send_text(channel_account, chat_id, delivery_text, None)
         .await
         .map_err(|error| {
-            moltis_cron::Error::message(format!(
+            antre_cron::Error::message(format!(
                 "failed to deliver cron output to {channel_account}: {error}"
             ))
         })?;
@@ -824,21 +821,21 @@ pub(crate) async fn maybe_deliver_cron_output(
 
 #[cfg(feature = "file-watcher")]
 pub(crate) async fn start_skill_hot_reload_watcher() -> anyhow::Result<(
-    moltis_skills::watcher::SkillWatcher,
-    tokio::sync::mpsc::UnboundedReceiver<moltis_skills::watcher::SkillWatchEvent>,
+    antre_skills::watcher::SkillWatcher,
+    tokio::sync::mpsc::UnboundedReceiver<antre_skills::watcher::SkillWatchEvent>,
 )> {
-    let watch_specs = tokio::task::spawn_blocking(moltis_skills::watcher::default_watch_specs)
+    let watch_specs = tokio::task::spawn_blocking(antre_skills::watcher::default_watch_specs)
         .await
         .map_err(|error| anyhow::anyhow!("skills watcher task failed: {error}"))??;
 
-    Ok(moltis_skills::watcher::SkillWatcher::start(watch_specs)?)
+    Ok(antre_skills::watcher::SkillWatcher::start(watch_specs)?)
 }
 
 // ── Local-LLM model restoration ─────────────────────────────────────────────
 
 pub(crate) fn restore_saved_local_llm_models(
     registry: &mut ProviderRegistry,
-    providers_config: &moltis_config::schema::ProvidersConfig,
+    providers_config: &antre_config::schema::ProvidersConfig,
 ) {
     #[cfg(feature = "local-llm")]
     {
@@ -861,9 +858,9 @@ mod container_prefix_tests {
 
     #[test]
     fn sandbox_prefix_for_config_is_identity_scoped() {
-        let prefix = sandbox_container_prefix_for_config(&moltis_config::MoltisConfig::default());
+        let prefix = sandbox_container_prefix_for_config(&antre_config::AntreConfig::default());
 
-        assert!(prefix.starts_with("moltis-"));
+        assert!(prefix.starts_with("antre-"));
         assert!(prefix.ends_with("-sandbox"));
     }
 }

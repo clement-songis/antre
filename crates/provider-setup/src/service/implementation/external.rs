@@ -1,9 +1,9 @@
-//! `providers.import_external`: copy another tool's credentials into Moltis's
+//! `providers.import_external`: copy another tool's credentials into Antre's
 //! own store, only when the user asks for it.
 
 use {
-    moltis_config::schema::ExternalCredentialSource,
-    moltis_service_traits::{ServiceError, ServiceResult},
+    antre_config::schema::ExternalCredentialSource,
+    antre_service_traits::{ServiceError, ServiceResult},
     serde_json::Value,
     tracing::info,
 };

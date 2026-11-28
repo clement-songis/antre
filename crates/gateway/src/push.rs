@@ -322,7 +322,7 @@ async fn validate_endpoint_destination(
 ) -> std::result::Result<(), PushSubscriptionValidationError> {
     tokio::time::timeout(
         DNS_VALIDATION_TIMEOUT,
-        moltis_common::ssrf::ssrf_check(endpoint, &[]),
+        antre_common::ssrf::ssrf_check(endpoint, &[]),
     )
     .await
     .map_err(|_| invalid_subscription("endpoint DNS resolution timed out"))?

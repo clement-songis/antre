@@ -2,7 +2,7 @@
 
 import { closeSessions, isMobile, toggleSessions } from "./mobile";
 
-const COLLAPSED_KEY = "moltis-sidebar-collapsed";
+const COLLAPSED_KEY = "antre-sidebar-collapsed";
 
 function readCollapsed(): boolean {
 	try {

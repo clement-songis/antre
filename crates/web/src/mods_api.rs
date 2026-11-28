@@ -2,6 +2,8 @@
 //! that changes which code runs needs `operator.admin`, like the RPC side.
 
 use {
+    antre_gateway::mods::{self as runtime, ModsApiError, ModsErrorKind},
+    antre_httpd::{AppState, auth_middleware::RequireAdmin},
     axum::{
         Json, Router,
         extract::{Path, State},
@@ -9,8 +11,6 @@ use {
         response::{IntoResponse, Response},
         routing::{get, post},
     },
-    moltis_gateway::mods::{self as runtime, ModsApiError, ModsErrorKind},
-    moltis_httpd::{AppState, auth_middleware::RequireAdmin},
     serde::Deserialize,
 };
 

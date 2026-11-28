@@ -159,14 +159,14 @@ context_command = "echo context"
 
 #[test]
 fn schema_drift_guard() {
-    let config = MoltisConfig::default();
+    let config = AntreConfig::default();
     let toml_value = toml::Value::try_from(&config).expect("serialize default config");
     let schema = build_schema_map();
     let mut missing = Vec::new();
     collect_missing_keys(&toml_value, &schema, "", &mut missing);
     assert!(
         missing.is_empty(),
-        "schema map is missing keys present in MoltisConfig::default(): {missing:?}\n\
+        "schema map is missing keys present in AntreConfig::default(): {missing:?}\n\
          Update build_schema_map() in validate.rs to include these fields."
     );
 }
@@ -287,7 +287,7 @@ rpc_timeout_ms = 8000
 fn server_external_url_is_known_field() {
     let toml = r#"
 [server]
-external_url = "https://moltis.example.com"
+external_url = "https://antre.example.com"
 "#;
     let result = validate_toml_str(toml);
     let unknown = result

@@ -1,8 +1,8 @@
 [package]
-description          = "Read-only Himalaya v2 adapter for Moltis connectors"
+description          = "Read-only Himalaya v2 adapter for Antre connectors"
 edition.workspace    = true
 license.workspace    = true
-name                 = "moltis-connector-himalaya"
+name                 = "antre-connector-himalaya"
 repository.workspace = true
 version.workspace    = true
 
@@ -12,21 +12,21 @@ metrics = ["dep:metrics"]
 tracing = ["dep:tracing"]
 
 [dependencies]
-anyhow            = { workspace = true }
-async-trait       = { workspace = true }
-mail-parser       = { workspace = true }
-metrics           = { optional = true, workspace = true }
-moltis-agents     = { workspace = true }
-moltis-common     = { features = ["process"], workspace = true }
-moltis-connectors = { workspace = true }
-serde             = { workspace = true }
-serde_json        = { workspace = true }
-sha2              = { workspace = true }
-thiserror         = { workspace = true }
-time              = { workspace = true }
-tokio             = { features = ["io-util", "process", "sync", "time"], workspace = true }
-tracing           = { optional = true, workspace = true }
-which             = { workspace = true }
+antre-agents     = { workspace = true }
+antre-common     = { features = ["process"], workspace = true }
+antre-connectors = { workspace = true }
+anyhow           = { workspace = true }
+async-trait      = { workspace = true }
+mail-parser      = { workspace = true }
+metrics          = { optional = true, workspace = true }
+serde            = { workspace = true }
+serde_json       = { workspace = true }
+sha2             = { workspace = true }
+thiserror        = { workspace = true }
+time             = { workspace = true }
+tokio            = { features = ["io-util", "process", "sync", "time"], workspace = true }
+tracing          = { optional = true, workspace = true }
+which            = { workspace = true }
 
 [dev-dependencies]
 tokio = { features = ["macros", "rt-multi-thread"], workspace = true }

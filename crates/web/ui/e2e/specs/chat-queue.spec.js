@@ -12,7 +12,7 @@ async function mockRpcs(page, responses) {
 	await page.evaluate((table) => {
 		window.__rpcCalls = [];
 		window.__rpcTable = table;
-		const state = window.__moltis_modules.state;
+		const state = window.__antre_modules.state;
 		const ws = state.ws;
 		if (!window.__rpcOriginalSend) window.__rpcOriginalSend = ws.send.bind(ws);
 		ws.send = (raw) => {
@@ -62,7 +62,7 @@ test.describe("Queued messages", () => {
 
 	test.afterEach(async ({ page }) => {
 		await page.evaluate(() => {
-			const ws = window.__moltis_modules?.state?.ws;
+			const ws = window.__antre_modules?.state?.ws;
 			if (ws && window.__rpcOriginalSend) ws.send = window.__rpcOriginalSend;
 		});
 	});

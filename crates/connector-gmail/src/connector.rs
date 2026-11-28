@@ -1,10 +1,10 @@
 use {
+    antre_connectors::{ConnectorItemInput, SourceDisposition, SourceObservation, SourceStateMap},
     base64::{
         Engine,
         engine::general_purpose::{URL_SAFE, URL_SAFE_NO_PAD},
     },
     futures::StreamExt,
-    moltis_connectors::{ConnectorItemInput, SourceDisposition, SourceObservation, SourceStateMap},
     sha2::{Digest, Sha256},
     std::{collections::HashSet, path::PathBuf, sync::Arc, time::Instant},
     time::{Duration, OffsetDateTime, format_description::well_known::Rfc3339},
@@ -449,11 +449,11 @@ fn response_error(message: &str) -> GmailConnectorError {
 fn record_operation(operation: &'static str, started: Instant, item_count: usize) {
     #[cfg(feature = "metrics")]
     {
-        metrics::counter!("moltis_connector_gmail_operations_total", "operation" => operation)
+        metrics::counter!("antre_connector_gmail_operations_total", "operation" => operation)
             .increment(1);
-        metrics::histogram!("moltis_connector_gmail_operation_duration_seconds", "operation" => operation)
+        metrics::histogram!("antre_connector_gmail_operation_duration_seconds", "operation" => operation)
             .record(started.elapsed().as_secs_f64());
-        metrics::histogram!("moltis_connector_gmail_observed_items", "operation" => operation)
+        metrics::histogram!("antre_connector_gmail_observed_items", "operation" => operation)
             .record(item_count as f64);
     }
     #[cfg(feature = "tracing")]

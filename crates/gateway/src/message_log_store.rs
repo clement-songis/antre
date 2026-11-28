@@ -1,9 +1,9 @@
 use {
-    async_trait::async_trait,
-    moltis_channels::{
+    antre_channels::{
         Error as ChannelError, Result as ChannelResult,
         message_log::{MessageLog, MessageLogEntry, SenderSummary},
     },
+    async_trait::async_trait,
     sqlx::SqlitePool,
 };
 

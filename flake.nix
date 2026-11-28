@@ -1,5 +1,5 @@
 {
-  description = "Moltis - Personal AI gateway inspired by OpenClaw";
+  description = "Antre - Personal AI gateway inspired by OpenClaw";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -89,9 +89,9 @@
               '';
             };
 
-        moltis-web-assets = pkgs.buildNpmPackage {
+        antre-web-assets = pkgs.buildNpmPackage {
           inherit src;
-          pname = "moltis-web-assets";
+          pname = "antre-web-assets";
           version = "0.1.0";
           npmRoot = "crates/web/ui";
           npmDeps = pkgs.fetchNpmDeps {
@@ -111,11 +111,11 @@
           '';
         };
 
-        moltis-wasm-tools = wasmCraneLib.buildPackage {
+        antre-wasm-tools = wasmCraneLib.buildPackage {
           inherit src;
-          pname = "moltis-wasm-tools";
+          pname = "antre-wasm-tools";
           doCheck = false;
-          cargoExtraArgs = "--target wasm32-wasip2 -p moltis-wasm-calc -p moltis-wasm-web-fetch -p moltis-wasm-web-search ";
+          cargoExtraArgs = "--target wasm32-wasip2 -p antre-wasm-calc -p antre-wasm-web-fetch -p antre-wasm-web-search ";
           nativeBuildInputs =
             with pkgs;
             [
@@ -131,7 +131,7 @@
       in
       {
         packages.default = rustPlatform.buildRustPackage {
-          pname = "moltis";
+          pname = "antre";
           version = "0.1.0";
           inherit src;
           doCheck = false;
@@ -146,9 +146,9 @@
           preBuild = ''
             # The crate expects prefixed symbols; nixpkgs' jemalloc is unprefixed.
             unset JEMALLOC_OVERRIDE
-            cp -r ${moltis-web-assets}/. crates/web/src/assets/
+            cp -r ${antre-web-assets}/. crates/web/src/assets/
             mkdir -p target/wasm32-wasip2/release/
-            ln -s ${moltis-wasm-tools}/lib/* target/wasm32-wasip2/release/
+            ln -s ${antre-wasm-tools}/lib/* target/wasm32-wasip2/release/
           '';
           cargoDeps = rustPlatform.importCargoLock {
             lockFile = ./Cargo.lock;
@@ -174,14 +174,14 @@
           ZVEC_LIB_DIR = pkgs.lib.optionalString (zvecPrebuilt != null) "${zvecPrebuilt}/lib";
           cargoBuildFlags = [
             "--bin"
-            "moltis"
+            "antre"
           ];
 
           meta = with pkgs.lib; {
             description = "Personal AI gateway inspired by OpenClaw";
             homepage = "https://www.moltis.org/";
             license = licenses.mit;
-            mainProgram = "moltis";
+            mainProgram = "antre";
           };
         };
 

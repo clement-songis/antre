@@ -3,119 +3,119 @@ description       = "Personal AI gateway inspired by OpenClaw"
 edition.workspace = true
 homepage          = "https://www.moltis.org/"
 license           = "MIT"
-name              = "moltis"
-repository        = "https://github.com/moltis-org/moltis"
+name              = "antre"
+repository        = "https://github.com/antre-ai/antre"
 version.workspace = true
 
 [package.metadata.deb]
 assets = [
   [
-    "target/release/moltis",
+    "target/release/antre",
     "usr/bin/",
     "755",
   ],
   [
     "../web/src/assets/**/*",
-    "usr/share/moltis/web/",
+    "usr/share/antre/web/",
     "644",
   ],
   [
     "../../docs/src/**/*",
-    "usr/share/moltis/docs/",
+    "usr/share/antre/docs/",
     "644",
   ],
   [
-    "target/release/moltis_wasm_calc.wasm",
-    "usr/share/moltis/wasm/",
+    "target/release/antre_wasm_calc.wasm",
+    "usr/share/antre/wasm/",
     "644",
   ],
   [
-    "target/release/moltis_wasm_web_fetch.wasm",
-    "usr/share/moltis/wasm/",
+    "target/release/antre_wasm_web_fetch.wasm",
+    "usr/share/antre/wasm/",
     "644",
   ],
   [
-    "target/release/moltis_wasm_web_search.wasm",
-    "usr/share/moltis/wasm/",
+    "target/release/antre_wasm_web_search.wasm",
+    "usr/share/antre/wasm/",
     "644",
   ],
 ]
-copyright = "2025, Moltis Contributors"
+copyright = "2025, Antre Contributors"
 depends = "$auto"
-maintainer = "Moltis Contributors"
-name = "moltis"
+maintainer = "Antre Contributors"
+name = "antre"
 priority = "optional"
 section = "net"
 
 [package.metadata.generate-rpm]
 assets = [
-  { dest = "/usr/bin/moltis", mode = "0755", source = "target/release/moltis" },
-  { dest = "/usr/share/moltis/docs/", mode = "0644", source = "docs/src/**/*" },
-  { dest = "/usr/share/moltis/wasm/", mode = "0644", source = "target/wasm32-wasip2/release/moltis_wasm_calc.wasm" },
-  { dest = "/usr/share/moltis/wasm/", mode = "0644", source = "target/wasm32-wasip2/release/moltis_wasm_web_fetch.wasm" },
-  { dest = "/usr/share/moltis/wasm/", mode = "0644", source = "target/wasm32-wasip2/release/moltis_wasm_web_search.wasm" },
-  { dest = "/usr/share/moltis/web/", mode = "0644", source = "crates/web/src/assets/**/*" },
+  { dest = "/usr/bin/antre", mode = "0755", source = "target/release/antre" },
+  { dest = "/usr/share/antre/docs/", mode = "0644", source = "docs/src/**/*" },
+  { dest = "/usr/share/antre/wasm/", mode = "0644", source = "target/wasm32-wasip2/release/antre_wasm_calc.wasm" },
+  { dest = "/usr/share/antre/wasm/", mode = "0644", source = "target/wasm32-wasip2/release/antre_wasm_web_fetch.wasm" },
+  { dest = "/usr/share/antre/wasm/", mode = "0644", source = "target/wasm32-wasip2/release/antre_wasm_web_search.wasm" },
+  { dest = "/usr/share/antre/web/", mode = "0644", source = "crates/web/src/assets/**/*" },
 ]
 license = "MIT"
-name = "moltis"
+name = "antre"
 summary = "Personal AI gateway inspired by OpenClaw"
 url = "https://www.moltis.org/"
 
 [[bin]]
-name = "moltis"
+name = "antre"
 path = "src/main.rs"
 
 [dependencies]
-agent-client-protocol   = { optional = true, workspace = true }
-anyhow                  = { workspace = true }
-async-trait             = { workspace = true }
-clap                    = { workspace = true }
-dotenvy                 = { workspace = true }
-indicatif               = { workspace = true }
-moltis-acp              = { optional = true, workspace = true }
-moltis-agents           = { workspace = true }
-moltis-browser          = { workspace = true }
-moltis-chat             = { optional = true, workspace = true }
-moltis-claude-import    = { optional = true, workspace = true }
-moltis-codex-import     = { optional = true, workspace = true }
-moltis-common           = { workspace = true }
-moltis-config           = { workspace = true }
-moltis-connectors       = { optional = true, workspace = true }
-moltis-cron             = { workspace = true }
-moltis-gateway          = { workspace = true }
-moltis-hermes-import    = { optional = true, workspace = true }
-moltis-httpd            = { workspace = true }
-moltis-import-core      = { workspace = true }
-moltis-mcp              = { optional = true, workspace = true }
-moltis-mcp-agent-bridge = { optional = true, workspace = true }
-moltis-memory           = { workspace = true }
-moltis-memory-zvec      = { optional = true, workspace = true }
-moltis-node-host        = { workspace = true }
-moltis-oauth            = { workspace = true }
-moltis-onboarding       = { workspace = true }
-moltis-openclaw-import  = { optional = true, workspace = true }
-moltis-plugins          = { workspace = true }
-moltis-portable         = { workspace = true }
-moltis-projects         = { workspace = true }
-moltis-protocol         = { workspace = true }
-moltis-providers        = { workspace = true }
-moltis-service-traits   = { optional = true, workspace = true }
-moltis-sessions         = { workspace = true }
-moltis-skills           = { workspace = true }
-moltis-tools            = { workspace = true }
-moltis-web              = { optional = true, workspace = true }
-open                    = { workspace = true }
-rand                    = { workspace = true }
-reqwest                 = { workspace = true }
-secrecy                 = { workspace = true }
-serde_json              = { workspace = true }
-sqlx                    = { workspace = true }
-time                    = { workspace = true }
-tokio                   = { workspace = true }
-tracing                 = { workspace = true }
-tracing-subscriber      = { workspace = true }
-uuid                    = { workspace = true }
-which                   = { workspace = true }
+agent-client-protocol  = { optional = true, workspace = true }
+antre-acp              = { optional = true, workspace = true }
+antre-agents           = { workspace = true }
+antre-browser          = { workspace = true }
+antre-chat             = { optional = true, workspace = true }
+antre-claude-import    = { optional = true, workspace = true }
+antre-codex-import     = { optional = true, workspace = true }
+antre-common           = { workspace = true }
+antre-config           = { workspace = true }
+antre-connectors       = { optional = true, workspace = true }
+antre-cron             = { workspace = true }
+antre-gateway          = { workspace = true }
+antre-hermes-import    = { optional = true, workspace = true }
+antre-httpd            = { workspace = true }
+antre-import-core      = { workspace = true }
+antre-mcp              = { optional = true, workspace = true }
+antre-mcp-agent-bridge = { optional = true, workspace = true }
+antre-memory           = { workspace = true }
+antre-memory-zvec      = { optional = true, workspace = true }
+antre-node-host        = { workspace = true }
+antre-oauth            = { workspace = true }
+antre-onboarding       = { workspace = true }
+antre-openclaw-import  = { optional = true, workspace = true }
+antre-plugins          = { workspace = true }
+antre-portable         = { workspace = true }
+antre-projects         = { workspace = true }
+antre-protocol         = { workspace = true }
+antre-providers        = { workspace = true }
+antre-service-traits   = { optional = true, workspace = true }
+antre-sessions         = { workspace = true }
+antre-skills           = { workspace = true }
+antre-tools            = { workspace = true }
+antre-web              = { optional = true, workspace = true }
+anyhow                 = { workspace = true }
+async-trait            = { workspace = true }
+clap                   = { workspace = true }
+dotenvy                = { workspace = true }
+indicatif              = { workspace = true }
+open                   = { workspace = true }
+rand                   = { workspace = true }
+reqwest                = { workspace = true }
+secrecy                = { workspace = true }
+serde_json             = { workspace = true }
+sqlx                   = { workspace = true }
+time                   = { workspace = true }
+tokio                  = { workspace = true }
+tracing                = { workspace = true }
+tracing-subscriber     = { workspace = true }
+uuid                   = { workspace = true }
+which                  = { workspace = true }
 
 [target.'cfg(all(not(target_os = "windows"), not(all(target_os = "linux", target_arch = "aarch64"))))'.dependencies]
 tikv-jemallocator = { optional = true, workspace = true }
@@ -127,23 +127,23 @@ tempfile    = { workspace = true }
 [features]
 acp = [
   "dep:agent-client-protocol",
-  "dep:moltis-acp",
-  "dep:moltis-chat",
-  "dep:moltis-mcp",
-  "dep:moltis-mcp-agent-bridge",
-  "dep:moltis-service-traits",
+  "dep:antre-acp",
+  "dep:antre-chat",
+  "dep:antre-mcp",
+  "dep:antre-mcp-agent-bridge",
+  "dep:antre-service-traits",
 ]
-agent = ["moltis-gateway/agent", "moltis-web?/agent"]
-caldav = ["moltis-gateway/caldav"]
-canvas = ["moltis-gateway/canvas", "moltis-httpd/canvas", "moltis-web?/canvas"]
-cloudflare-tunnel = ["moltis-httpd/cloudflare-tunnel", "moltis-web?/cloudflare-tunnel"]
+agent = ["antre-gateway/agent", "antre-web?/agent"]
+caldav = ["antre-gateway/caldav"]
+canvas = ["antre-gateway/canvas", "antre-httpd/canvas", "antre-web?/canvas"]
+cloudflare-tunnel = ["antre-httpd/cloudflare-tunnel", "antre-web?/cloudflare-tunnel"]
 connectors = [
-  "dep:moltis-connectors",
-  "moltis-gateway/connectors",
-  "moltis-httpd/connectors",
-  "moltis-web?/connectors",
+  "antre-gateway/connectors",
+  "antre-httpd/connectors",
+  "antre-web?/connectors",
+  "dep:antre-connectors",
 ]
-home-assistant = ["moltis-gateway/home-assistant"]
+home-assistant = ["antre-gateway/home-assistant"]
 # User-facing integrations stay default-on in the CLI crate per workspace policy,
 # even when the underlying implementation remains feature-gated in lower crates.
 #
@@ -151,11 +151,11 @@ home-assistant = ["moltis-gateway/home-assistant"]
 # adds zvec for source and container builds, where its native runtime can be
 # provided. Both exclude build-mode toggles (`embedded-*`) and accelerator-
 # specific features (`local-llm-cuda`, `local-llm-vulkan`).
-bundled-skills = ["moltis-gateway/bundled-skills", "moltis-web?/bundled-skills"]
+bundled-skills = ["antre-gateway/bundled-skills", "antre-web?/bundled-skills"]
 default = ["full"]
 full = ["portable", "zvec"]
-llm-compaction = ["moltis-gateway/llm-compaction"]
-mods = ["moltis-gateway/mods", "moltis-web?/mods"]
+llm-compaction = ["antre-gateway/llm-compaction"]
+mods = ["antre-gateway/mods", "antre-web?/mods"]
 portable = [
   "acp",
   "agent",
@@ -229,80 +229,80 @@ portable = [
 ]
 # Minimal build for memory-constrained devices (Raspberry Pi, etc.).
 # Build with: cargo build --release --no-default-features --features lightweight
-code-index-builtin = ["moltis-gateway/code-index-builtin"]
-code-splitter      = ["moltis-memory/code-splitter"]
-discord            = ["moltis-httpd/discord"]
-embedded-assets    = ["moltis-web?/embedded-assets"]
-embedded-wasm      = ["moltis-tools/embedded-wasm"]
-file-watcher       = ["moltis-gateway/file-watcher"]
-firecrawl          = ["moltis-gateway/firecrawl"]
-fs-tools           = ["moltis-gateway/fs-tools"]
-graphql            = ["moltis-httpd/graphql", "moltis-web?/graphql"]
+code-index-builtin = ["antre-gateway/code-index-builtin"]
+code-splitter      = ["antre-memory/code-splitter"]
+discord            = ["antre-httpd/discord"]
+embedded-assets    = ["antre-web?/embedded-assets"]
+embedded-wasm      = ["antre-tools/embedded-wasm"]
+file-watcher       = ["antre-gateway/file-watcher"]
+firecrawl          = ["antre-gateway/firecrawl"]
+fs-tools           = ["antre-gateway/fs-tools"]
+graphql            = ["antre-httpd/graphql", "antre-web?/graphql"]
 jemalloc           = ["dep:tikv-jemallocator"]
-lang-bash          = ["moltis-memory/lang-bash"]
-lang-c             = ["moltis-memory/lang-c"]
-lang-cpp           = ["moltis-memory/lang-cpp"]
-lang-css           = ["moltis-memory/lang-css"]
-lang-go            = ["moltis-memory/lang-go"]
-lang-html          = ["moltis-memory/lang-html"]
-lang-java          = ["moltis-memory/lang-java"]
-lang-javascript    = ["moltis-memory/lang-javascript"]
-lang-json          = ["moltis-memory/lang-json"]
-lang-markdown      = ["moltis-memory/lang-markdown"]
-lang-python        = ["moltis-memory/lang-python"]
-lang-ruby          = ["moltis-memory/lang-ruby"]
-lang-rust          = ["moltis-memory/lang-rust"]
-lang-toml          = ["moltis-memory/lang-toml"]
-lang-typescript    = ["moltis-memory/lang-typescript"]
+lang-bash          = ["antre-memory/lang-bash"]
+lang-c             = ["antre-memory/lang-c"]
+lang-cpp           = ["antre-memory/lang-cpp"]
+lang-css           = ["antre-memory/lang-css"]
+lang-go            = ["antre-memory/lang-go"]
+lang-html          = ["antre-memory/lang-html"]
+lang-java          = ["antre-memory/lang-java"]
+lang-javascript    = ["antre-memory/lang-javascript"]
+lang-json          = ["antre-memory/lang-json"]
+lang-markdown      = ["antre-memory/lang-markdown"]
+lang-python        = ["antre-memory/lang-python"]
+lang-ruby          = ["antre-memory/lang-ruby"]
+lang-rust          = ["antre-memory/lang-rust"]
+lang-toml          = ["antre-memory/lang-toml"]
+lang-typescript    = ["antre-memory/lang-typescript"]
 # jemalloc is intentionally unavailable on linux/aarch64 to avoid runtime
 # crashes on 16 KiB page kernels (e.g. Raspberry Pi OS variants).
-claude-import = ["dep:moltis-claude-import", "moltis-gateway/claude-import"]
-codex-import  = ["dep:moltis-codex-import", "moltis-gateway/codex-import"]
-hermes-import = ["dep:moltis-hermes-import", "moltis-gateway/hermes-import"]
+claude-import = ["antre-gateway/claude-import", "dep:antre-claude-import"]
+codex-import  = ["antre-gateway/codex-import", "dep:antre-codex-import"]
+hermes-import = ["antre-gateway/hermes-import", "dep:antre-hermes-import"]
 # Instrumentation exporters. Default-on so the `[instrumentation]` config can be
 # switched on without a rebuild; enabling the config, not the feature, is what
 # starts sending data. `langfuse` implies `otlp`: Langfuse ingests traces over
 # the OTLP wire format.
-langfuse = ["moltis-gateway/langfuse"]
+langfuse = ["antre-gateway/langfuse"]
 lightweight = ["jemalloc", "tls", "web-ui"]
-local-embeddings = ["moltis-gateway/local-embeddings"]
-local-llm = ["moltis-gateway/local-llm"]
-local-llm-cuda = ["local-llm", "moltis-gateway/local-llm-cuda"]
-local-llm-metal = ["local-llm", "moltis-gateway/local-llm-metal"]
-local-llm-vulkan = ["local-llm", "moltis-gateway/local-llm-vulkan"]
-matrix = ["moltis-httpd/matrix"]
-mdns = ["moltis-gateway/mdns"]
-metrics = ["moltis-httpd/metrics", "moltis-web?/metrics"]
-msteams = ["moltis-httpd/msteams"]
-netbird = ["moltis-httpd/netbird", "moltis-web?/netbird"]
-ngrok = ["moltis-httpd/ngrok", "moltis-web?/ngrok"]
-nostr = ["moltis-httpd/nostr"]
-openclaw-import = ["dep:moltis-openclaw-import", "moltis-gateway/openclaw-import"]
-os-sandbox = ["moltis-tools/os-sandbox"]
-otlp = ["moltis-gateway/otlp"]
-prometheus = ["moltis-httpd/prometheus"]
+local-embeddings = ["antre-gateway/local-embeddings"]
+local-llm = ["antre-gateway/local-llm"]
+local-llm-cuda = ["antre-gateway/local-llm-cuda", "local-llm"]
+local-llm-metal = ["antre-gateway/local-llm-metal", "local-llm"]
+local-llm-vulkan = ["antre-gateway/local-llm-vulkan", "local-llm"]
+matrix = ["antre-httpd/matrix"]
+mdns = ["antre-gateway/mdns"]
+metrics = ["antre-httpd/metrics", "antre-web?/metrics"]
+msteams = ["antre-httpd/msteams"]
+netbird = ["antre-httpd/netbird", "antre-web?/netbird"]
+ngrok = ["antre-httpd/ngrok", "antre-web?/ngrok"]
+nostr = ["antre-httpd/nostr"]
+openclaw-import = ["antre-gateway/openclaw-import", "dep:antre-openclaw-import"]
+os-sandbox = ["antre-tools/os-sandbox"]
+otlp = ["antre-gateway/otlp"]
+prometheus = ["antre-httpd/prometheus"]
 provider-github-copilot = [
-  "moltis-gateway/provider-github-copilot",
-  "moltis-providers/provider-github-copilot",
+  "antre-gateway/provider-github-copilot",
+  "antre-providers/provider-github-copilot",
 ]
-provider-kimi-code = ["moltis-gateway/provider-kimi-code", "moltis-providers/provider-kimi-code"]
-provider-openai-codex = ["moltis-gateway/provider-openai-codex"]
-push-notifications = ["moltis-httpd/push-notifications", "moltis-web?/push-notifications"]
-qmd = ["moltis-gateway/qmd"]
-signal = ["moltis-httpd/signal"]
-slack = ["moltis-httpd/slack"]
-tailscale = ["moltis-httpd/tailscale", "moltis-web?/tailscale"]
-telegram = ["moltis-gateway/telegram"]
-telephony = ["moltis-httpd/telephony"]
-tls = ["moltis-httpd/tls"]
-trusted-network = ["moltis-httpd/trusted-network"]
-vault = ["moltis-httpd/vault", "moltis-web?/vault"]
-vercel-sandbox = ["moltis-tools/vercel-sandbox"]
-voice = ["moltis-gateway/voice", "moltis-web?/voice"]
-wasm = ["moltis-tools/wasm"]
-web-ui = ["dep:moltis-web", "moltis-httpd/web-ui"]
-whatsapp = ["moltis-gateway/whatsapp"]
-zvec = ["dep:moltis-memory-zvec", "moltis-gateway/zvec"]
+provider-kimi-code = ["antre-gateway/provider-kimi-code", "antre-providers/provider-kimi-code"]
+provider-openai-codex = ["antre-gateway/provider-openai-codex"]
+push-notifications = ["antre-httpd/push-notifications", "antre-web?/push-notifications"]
+qmd = ["antre-gateway/qmd"]
+signal = ["antre-httpd/signal"]
+slack = ["antre-httpd/slack"]
+tailscale = ["antre-httpd/tailscale", "antre-web?/tailscale"]
+telegram = ["antre-gateway/telegram"]
+telephony = ["antre-httpd/telephony"]
+tls = ["antre-httpd/tls"]
+trusted-network = ["antre-httpd/trusted-network"]
+vault = ["antre-httpd/vault", "antre-web?/vault"]
+vercel-sandbox = ["antre-tools/vercel-sandbox"]
+voice = ["antre-gateway/voice", "antre-web?/voice"]
+wasm = ["antre-tools/wasm"]
+web-ui = ["antre-httpd/web-ui", "dep:antre-web"]
+whatsapp = ["antre-gateway/whatsapp"]
+zvec = ["antre-gateway/zvec", "dep:antre-memory-zvec"]
 
 [lints]
 workspace = true

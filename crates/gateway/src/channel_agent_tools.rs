@@ -1,12 +1,12 @@
 use {
-    anyhow::{Result, anyhow},
-    async_trait::async_trait,
-    moltis_agents::tool_registry::AgentTool,
-    moltis_channels::{
+    antre_agents::tool_registry::AgentTool,
+    antre_channels::{
         gating::{DmPolicy, GroupPolicy, MentionMode},
         plugin::ChannelType,
         store::{ChannelStore, StoredChannel},
     },
+    anyhow::{Result, anyhow},
+    async_trait::async_trait,
     serde::{Deserialize, Serialize},
     serde_json::{Map, Value, json},
     std::sync::Arc,
@@ -470,7 +470,7 @@ fn apply_channel_settings_patch(
             "api_base_url",
             matches!(channel_type, ChannelType::Slack),
         )?;
-        let api_base_url = moltis_channels::normalize_slack_api_base_url(api_base_url)
+        let api_base_url = antre_channels::normalize_slack_api_base_url(api_base_url)
             .map_err(|e| anyhow!("{e}"))?;
         config.insert("api_base_url".into(), json!(api_base_url));
         changes.push("api_base_url".to_string());
@@ -810,7 +810,7 @@ mod tests {
 
     #[async_trait]
     impl ChannelStore for MemoryChannelStore {
-        async fn list(&self) -> moltis_channels::Result<Vec<StoredChannel>> {
+        async fn list(&self) -> antre_channels::Result<Vec<StoredChannel>> {
             Ok(self.channels.lock().await.values().cloned().collect())
         }
 
@@ -818,7 +818,7 @@ mod tests {
             &self,
             channel_type: &str,
             account_id: &str,
-        ) -> moltis_channels::Result<Option<StoredChannel>> {
+        ) -> antre_channels::Result<Option<StoredChannel>> {
             Ok(self
                 .channels
                 .lock()
@@ -827,7 +827,7 @@ mod tests {
                 .cloned())
         }
 
-        async fn upsert(&self, channel: StoredChannel) -> moltis_channels::Result<()> {
+        async fn upsert(&self, channel: StoredChannel) -> antre_channels::Result<()> {
             self.channels.lock().await.insert(
                 (channel.channel_type.clone(), channel.account_id.clone()),
                 channel,
@@ -835,11 +835,7 @@ mod tests {
             Ok(())
         }
 
-        async fn delete(
-            &self,
-            channel_type: &str,
-            account_id: &str,
-        ) -> moltis_channels::Result<()> {
+        async fn delete(&self, channel_type: &str, account_id: &str) -> antre_channels::Result<()> {
             self.channels
                 .lock()
                 .await

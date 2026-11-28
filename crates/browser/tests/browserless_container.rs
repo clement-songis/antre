@@ -4,18 +4,18 @@
 //! during normal `cargo test` runs. Run them explicitly on a Docker host with:
 //!
 //! ```text
-//! cargo test -p moltis-browser --test browserless_container -- --ignored --nocapture
+//! cargo test -p antre-browser --test browserless_container -- --ignored --nocapture
 //! ```
 
 use std::{error::Error as StdError, path::Path, process::Command, time::Duration};
 
 use {
-    chromiumoxide::{Browser, handler::HandlerConfig},
-    futures::StreamExt,
-    moltis_browser::{
+    antre_browser::{
         container::{self, BrowserContainer, ContainerBackend},
         types::BrowserlessApiVersion,
     },
+    chromiumoxide::{Browser, handler::HandlerConfig},
+    futures::StreamExt,
 };
 
 type TestResult<T = ()> = Result<T, Box<dyn StdError + Send + Sync>>;
@@ -24,7 +24,7 @@ const V1_IMAGE: &str = "docker.io/browserless/chrome:latest";
 const V2_IMAGE: &str = "ghcr.io/browserless/chromium:v2.56.0";
 
 fn container_host() -> String {
-    std::env::var("MOLTIS_BROWSERLESS_TEST_HOST").unwrap_or_else(|_| "127.0.0.1".to_string())
+    std::env::var("ANTRE_BROWSERLESS_TEST_HOST").unwrap_or_else(|_| "127.0.0.1".to_string())
 }
 
 async fn connect_browser(
@@ -104,7 +104,7 @@ async fn browserless_v1_uses_legacy_connection_timeout() -> TestResult {
     let container = BrowserContainer::start_with_backend(
         ContainerBackend::Docker,
         V1_IMAGE,
-        "moltis-browserless-v1-test",
+        "antre-browserless-v1-test",
         1280,
         720,
         0,
@@ -143,7 +143,7 @@ async fn browserless_v2_launches_and_reuses_profile_dir() -> TestResult {
     container::ensure_image_with_backend(ContainerBackend::Docker, V2_IMAGE)?;
     let container_host = container_host();
     let mut temp_dir = None;
-    let profile_dir = if let Some(path) = std::env::var_os("MOLTIS_BROWSERLESS_TEST_PROFILE_DIR") {
+    let profile_dir = if let Some(path) = std::env::var_os("ANTRE_BROWSERLESS_TEST_PROFILE_DIR") {
         path.into()
     } else {
         let dir = tempfile::tempdir()?;
@@ -156,7 +156,7 @@ async fn browserless_v2_launches_and_reuses_profile_dir() -> TestResult {
     let first_container = BrowserContainer::start_with_backend_and_api_version(
         ContainerBackend::Docker,
         V2_IMAGE,
-        "moltis-browserless-v2-test",
+        "antre-browserless-v2-test",
         1280,
         720,
         0,
@@ -190,7 +190,7 @@ async fn browserless_v2_launches_and_reuses_profile_dir() -> TestResult {
     let second_container = BrowserContainer::start_with_backend_and_api_version(
         ContainerBackend::Docker,
         V2_IMAGE,
-        "moltis-browserless-v2-test",
+        "antre-browserless-v2-test",
         1280,
         720,
         0,

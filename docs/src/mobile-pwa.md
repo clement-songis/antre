@@ -1,21 +1,21 @@
 # Mobile PWA and Push Notifications
 
-Moltis can be installed as a Progressive Web App (PWA) on mobile devices, providing a native app-like experience with push notifications.
+Antre can be installed as a Progressive Web App (PWA) on mobile devices, providing a native app-like experience with push notifications.
 
 ## Installing on Mobile
 
 ### iOS (Safari)
 
-1. Open moltis in Safari
+1. Open antre in Safari
 2. Tap the Share button (box with arrow)
 3. Scroll down and tap "Add to Home Screen"
 4. Tap "Add" to confirm
 
-The app will appear on your home screen with the moltis icon.
+The app will appear on your home screen with the antre icon.
 
 ### Android (Chrome)
 
-1. Open moltis in Chrome
+1. Open antre in Chrome
 2. You should see an install banner at the bottom - tap "Install"
 3. Or tap the three-dot menu and select "Install app" or "Add to Home Screen"
 4. Tap "Install" to confirm
@@ -24,7 +24,7 @@ The app will appear in your app drawer and home screen.
 
 ## PWA Features
 
-When installed as a PWA, moltis provides:
+When installed as a PWA, antre provides:
 
 - **Standalone mode**: Full-screen experience without browser UI
 - **Offline support**: Previously loaded content remains accessible, with a dedicated offline page that reloads automatically once the connection returns
@@ -46,12 +46,12 @@ Push notifications allow you to receive alerts when the LLM responds, even when 
 
 ### Enabling Push Notifications
 
-1. Open the moltis app (must be installed as PWA on Safari/iOS)
+1. Open the antre app (must be installed as PWA on Safari/iOS)
 2. Go to **Settings > Notifications**
 3. Click **Enable** to subscribe to push notifications
 4. When prompted, allow notification permissions
 
-**Safari/iOS Note**: Push notifications only work when the app is installed as a PWA. If you see "Installation required", add moltis to your Dock first:
+**Safari/iOS Note**: Push notifications only work when the app is installed as a PWA. If you see "Installation required", add antre to your Dock first:
 - **macOS**: File → Add to Dock
 - **iOS**: Share → Add to Home Screen
 
@@ -72,14 +72,14 @@ Subscription changes are broadcast in real-time via WebSocket, so all connected 
 
 ### How It Works
 
-Moltis uses the Web Push API with VAPID (Voluntary Application Server Identification) keys:
+Antre uses the Web Push API with VAPID (Voluntary Application Server Identification) keys:
 
 1. **VAPID Keys**: On first run, the server generates a P-256 ECDSA key pair
 2. **Subscription**: The browser creates a push subscription using the server's public key
 3. **Registration**: The subscription details are sent to the server and stored
 4. **Notification**: When you need to be notified, the server encrypts and sends a push message
 
-Subscription endpoints must be absolute public HTTPS URLs. Moltis rejects
+Subscription endpoints must be absolute public HTTPS URLs. Antre rejects
 loopback, private, link-local, and malformed destinations before storing them
 and checks them again before delivery. Sends have a ten-second deadline and
 bounded concurrency, so an unavailable push service cannot hold up channel
@@ -167,7 +167,7 @@ Push notifications include:
 
 ```json
 {
-  "title": "moltis",
+  "title": "antre",
   "body": "Rolled out to staging and the smoke tests pass.",
   "url": "/chats/main",
   "sessionKey": "main",
@@ -177,7 +177,7 @@ Push notifications include:
 }
 ```
 
-The title is always `moltis`, so a private session label is not exposed on a
+The title is always `antre`, so a private session label is not exposed on a
 lock screen. The body is the reply with markdown syntax converted to readable
 plain text. Notification previews may still be visible on a locked device;
 control that exposure with the operating system's notification-preview setting.
@@ -222,7 +222,7 @@ Push notifications are controlled by the `push-notifications` feature flag, whic
 ```toml
 # In your Cargo.toml or when building
 [dependencies]
-moltis-gateway = { default-features = false, features = ["web-ui", "tls"] }
+antre-gateway = { default-features = false, features = ["web-ui", "tls"] }
 ```
 
 Or build without the feature:
@@ -298,5 +298,5 @@ Clear the service worker registration:
 
 1. Open browser DevTools
 2. Go to Application > Service Workers
-3. Click "Unregister" on the moltis service worker
+3. Click "Unregister" on the antre service worker
 4. Reload the page

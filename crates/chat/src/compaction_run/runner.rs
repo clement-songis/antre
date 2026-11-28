@@ -4,8 +4,8 @@
 //! [`run_compaction`], and related helpers.
 
 use {
-    moltis_agents::model::LlmProvider,
-    moltis_config::{CompactionConfig, CompactionMode},
+    antre_agents::model::LlmProvider,
+    antre_config::{CompactionConfig, CompactionMode},
     serde_json::Value,
     thiserror::Error,
 };
@@ -132,8 +132,8 @@ pub(crate) fn compaction_mode_key(mode: CompactionMode) -> &'static str {
 /// Kept as a single constant so UI, broadcast events, and any future
 /// doc links share the same wording. The reference to
 /// `chat.compaction.mode` matches the TOML key so users can paste it
-/// straight into `moltis.toml`.
-pub(crate) const SETTINGS_HINT: &str = "Change chat.compaction.mode in moltis.toml (or the web UI settings panel) \
+/// straight into `antre.toml`.
+pub(crate) const SETTINGS_HINT: &str = "Change chat.compaction.mode in antre.toml (or the web UI settings panel) \
      to pick a different compaction strategy. See \
      https://docs.moltis.org/compaction for a comparison of the four modes.";
 
@@ -209,13 +209,13 @@ pub(crate) async fn run_compaction(
                 p.context_window()
             } else {
                 tracing::warn!(
-                    window = moltis_agents::model::UNKNOWN_CONTEXT_WINDOW,
+                    window = antre_agents::model::UNKNOWN_CONTEXT_WINDOW,
                     "chat.compact: recency_preserving has no resolved provider, \
                      sizing the tail budget for an unknown context window; \
                      configure a session provider or set \
                      chat.compaction.mode = \"deterministic\""
                 );
-                moltis_agents::model::UNKNOWN_CONTEXT_WINDOW
+                antre_agents::model::UNKNOWN_CONTEXT_WINDOW
             };
             recency_preserving::run(history, config, context_window)
         },
@@ -361,7 +361,7 @@ mod tests {
     #[test]
     fn compaction_mode_key_matches_toml_serialization() {
         // The keys must match exactly what users would paste into
-        // `chat.compaction.mode` in moltis.toml, so UI consumers can
+        // `chat.compaction.mode` in antre.toml, so UI consumers can
         // display them and offer a "copy to clipboard" action.
         assert_eq!(
             compaction_mode_key(CompactionMode::Deterministic),

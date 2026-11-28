@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
 use {
+    antre_external_agents::{AcpPermissionHandler, AcpPermissionOptionKind, AcpPermissionRequest},
     async_trait::async_trait,
-    moltis_external_agents::{AcpPermissionHandler, AcpPermissionOptionKind, AcpPermissionRequest},
 };
 
-use moltis_tools::approval::{ApprovalDecision, ApprovalManager};
+use antre_tools::approval::{ApprovalDecision, ApprovalManager};
 
 pub(super) struct GatewayAcpPermissionHandler {
     approval_manager: Arc<ApprovalManager>,
@@ -30,12 +30,12 @@ impl AcpPermissionHandler for GatewayAcpPermissionHandler {
                 .collect::<Vec<_>>()
                 .join(", ")
         );
-        let session_key = request.moltis_session_key.as_deref();
+        let session_key = request.antre_session_key.as_deref();
         let (request_id, decision_rx) = self
             .approval_manager
             .create_request(&command, session_key)
             .await;
-        if let Some(session_key) = request.moltis_session_key.as_deref() {
+        if let Some(session_key) = request.antre_session_key.as_deref() {
             tracing::info!(request_id, session_key, "ACP permission request is pending");
         }
         match self.approval_manager.wait_for_decision(decision_rx).await {

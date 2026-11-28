@@ -5,7 +5,7 @@
 
 use std::path::Path;
 
-use crate::schema::MoltisConfig;
+use crate::schema::AntreConfig;
 
 #[path = "validate/agent_presets.rs"]
 mod agent_presets;
@@ -150,7 +150,7 @@ pub fn validate_toml_str(toml_str: &str) -> ValidationResult {
     }
 
     // 5. Type check - attempt full deserialization
-    if let Err(e) = toml::from_str::<MoltisConfig>(toml_str) {
+    if let Err(e) = toml::from_str::<AntreConfig>(toml_str) {
         let message = format!("type error: {e}");
         if !semantic::should_suppress_deprecated_conflict_type_error(
             &message,
@@ -166,7 +166,7 @@ pub fn validate_toml_str(toml_str: &str) -> ValidationResult {
     }
 
     // 6. Semantic warnings on parsed config (only if it parses)
-    if let Ok(config) = toml::from_str::<MoltisConfig>(toml_str) {
+    if let Ok(config) = toml::from_str::<AntreConfig>(toml_str) {
         semantic::check_semantic_warnings(&config, &mut diagnostics);
     }
 
@@ -237,14 +237,14 @@ fn check_shadowed_defaults(user_toml: &str, diagnostics: &mut Vec<Diagnostic>) {
             category: "shadowed-default",
             path: key.clone(),
             message: format!(
-                "'{key}' duplicates a built-in default; remove it from moltis.toml \
+                "'{key}' duplicates a built-in default; remove it from antre.toml \
                  to inherit future built-in updates"
             ),
         });
     }
 }
 
-/// Check the health of the Moltis-managed `defaults.toml`.
+/// Check the health of the Antre-managed `defaults.toml`.
 ///
 /// Emits a warning if `defaults.toml` is missing or unparseable.
 fn check_defaults_toml_health(diagnostics: &mut Vec<Diagnostic>) {
@@ -257,19 +257,19 @@ fn check_defaults_toml_health(diagnostics: &mut Vec<Diagnostic>) {
             severity: Severity::Warning,
             category: "defaults-health",
             path: String::new(),
-            message: "defaults.toml is missing; Moltis will regenerate it on next startup".into(),
+            message: "defaults.toml is missing; Antre will regenerate it on next startup".into(),
         });
         return;
     }
     if let Ok(raw) = std::fs::read_to_string(&path)
-        && toml::from_str::<MoltisConfig>(&raw).is_err()
+        && toml::from_str::<AntreConfig>(&raw).is_err()
     {
         diagnostics.push(Diagnostic {
             severity: Severity::Warning,
             category: "defaults-health",
             path: String::new(),
             message: "defaults.toml exists but failed to parse; \
-                      Moltis will regenerate it on next startup"
+                      Antre will regenerate it on next startup"
                 .into(),
         });
     }

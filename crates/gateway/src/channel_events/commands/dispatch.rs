@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use moltis_channels::{ChannelReplyTarget, Error as ChannelError, Result as ChannelResult};
+use antre_channels::{ChannelReplyTarget, Error as ChannelError, Result as ChannelResult};
 
 use crate::state::GatewayState;
 
@@ -83,7 +83,7 @@ pub(in crate::channel_events) async fn dispatch_command(
     let cmd = command.split_whitespace().next().unwrap_or("");
     let args = command[cmd.len()..].trim();
 
-    let privilege = moltis_channels::commands::all_commands()
+    let privilege = antre_channels::commands::all_commands()
         .iter()
         .find(|definition| definition.name == cmd)
         .map(|definition| definition.privilege())
@@ -97,7 +97,7 @@ pub(in crate::channel_events) async fn dispatch_command(
     }
 
     match cmd {
-        "help" => Ok(moltis_channels::commands::help_text()),
+        "help" => Ok(antre_channels::commands::help_text()),
         // Session management commands
         "new" => {
             session_handlers::handle_new(
@@ -214,17 +214,17 @@ mod tests {
             "queue",
         ];
 
-        for cmd in moltis_channels::commands::all_commands() {
+        for cmd in antre_channels::commands::all_commands() {
             assert!(
                 dispatched.contains(&cmd.name),
-                "command `/{name}` is registered in moltis_channels::commands but has no \
+                "command `/{name}` is registered in antre_channels::commands but has no \
                  dispatch arm in gateway dispatch_command. Add a match arm or update this test.",
                 name = cmd.name,
             );
         }
 
         // Reverse check: every dispatch arm should be in the registry.
-        let registry_names: Vec<&str> = moltis_channels::commands::all_commands()
+        let registry_names: Vec<&str> = antre_channels::commands::all_commands()
             .iter()
             .map(|c| c.name)
             .collect();
@@ -232,7 +232,7 @@ mod tests {
             assert!(
                 registry_names.contains(name),
                 "dispatch arm `/{name}` exists but is not in the centralized command registry. \
-                 Add it to moltis_channels::commands::all_commands().",
+                 Add it to antre_channels::commands::all_commands().",
             );
         }
     }

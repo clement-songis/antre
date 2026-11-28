@@ -21,14 +21,14 @@ pub struct DiscoveredModel {
     pub capabilities: Option<ModelCapabilities>,
     /// Metadata the provider API actually returned (live source). Empty for
     /// static catalog entries; capabilities above may still hold guesses.
-    pub metadata: moltis_model_catalog::ModelSpec,
+    pub metadata: antre_model_catalog::ModelSpec,
 }
 
 impl DiscoveredModel {
     pub fn new(id: impl Into<String>, display_name: impl Into<String>) -> Self {
         let id = id.into();
         Self {
-            metadata: moltis_model_catalog::ModelSpec::new(id.clone()),
+            metadata: antre_model_catalog::ModelSpec::new(id.clone()),
             id,
             display_name: display_name.into(),
             created_at: None,
@@ -39,7 +39,7 @@ impl DiscoveredModel {
 
     /// Attach live metadata returned by the provider API.
     #[must_use]
-    pub fn with_metadata(mut self, mut metadata: moltis_model_catalog::ModelSpec) -> Self {
+    pub fn with_metadata(mut self, mut metadata: antre_model_catalog::ModelSpec) -> Self {
         metadata.id.clone_from(&self.id);
         self.metadata = metadata;
         self

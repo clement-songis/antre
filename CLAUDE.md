@@ -1,5 +1,5 @@
 ---
-description: "Moltis engineering guide for Claude/Codex agents: Rust architecture, testing, security, and release workflows"
+description: "Antre engineering guide for Claude/Codex agents: Rust architecture, testing, security, and release workflows"
 alwaysApply: true
 ---
 
@@ -14,7 +14,7 @@ Enable new feature flags **by default** in `crates/cli/Cargo.toml` (opt-out, not
 ```toml
 [features]
 default = ["foo", ...]
-foo = ["moltis-gateway/foo"]
+foo = ["antre-gateway/foo"]
 ```
 
 ## Workspace Dependencies
@@ -24,7 +24,7 @@ Never add versions directly in crate `Cargo.toml`. Use latest stable crates.io v
 
 ## Config Schema and Validation
 
-When adding/renaming fields in `MoltisConfig` (`crates/config/src/schema.rs`), also update
+When adding/renaming fields in `AntreConfig` (`crates/config/src/schema.rs`), also update
 `build_schema_map()` in `crates/config/src/validate.rs`. New enum variants for string-typed
 fields need updates in `check_semantic_warnings()`.
 
@@ -127,7 +127,7 @@ JSX property in the `sections` array. When adding a new settings section:
 
 E2E tests dynamically import individual JS modules (`js/state.js`, `js/helpers.js`, etc.).
 With Vite bundling, these don't exist as standalone files. Shim files in `src/assets/js/`
-proxy to `window.__moltis_modules` (populated by `app.tsx`). When adding new modules that
+proxy to `window.__antre_modules` (populated by `app.tsx`). When adding new modules that
 tests import, add a shim file and expose the module in `app.tsx`.
 
 ### Selection Cards
@@ -137,7 +137,7 @@ States: `.selected`, `.disabled`, default. Badges: `.recommended-badge`, `.tier-
 
 ### Provider Config Storage
 
-Provider keys in `~/.config/moltis/provider_keys.json` via `KeyStore` in `provider_setup.rs`.
+Provider keys in `~/.config/antre/provider_keys.json` via `KeyStore` in `provider_setup.rs`.
 When adding fields, update: `ProviderConfig` struct, `available()` response, `save_key()`.
 
 ### Server-Injected Data (gon pattern)
@@ -171,7 +171,7 @@ Minimum bar before shipping:
 - Settings reachable from the web UI, with onboarding coverage if the channel is offered there
 - Advanced JSON config escape hatch for settings without dedicated HTML fields yet
 - Prefer declarative channel field definitions that can drive both HTML forms and advanced JSON guidance
-- Storage behavior explained clearly, web UI channel settings live in `data_dir()/moltis.db`, not `moltis.toml`
+- Storage behavior explained clearly, web UI channel settings live in `data_dir()/antre.db`, not `antre.toml`
 - Config template, validation, docs, and tests updated in the same PR
 - No silent access-control failures, OTP and allowlist behavior must be user-visible
 
@@ -182,7 +182,7 @@ middleware in `auth_middleware.rs`. Setup code printed to terminal on first run.
 `RequireAuth` middleware protects `/api/*` except `/api/auth/*` and `/api/gon`.
 `CredentialStore` persists argon2-hashed passwords, passkeys, API keys, sessions to JSON.
 
-CLI: `moltis auth reset-password`, `moltis auth reset-identity`.
+CLI: `antre auth reset-password`, `antre auth reset-identity`.
 
 ## Testing
 
@@ -233,7 +233,7 @@ Containers (Docker or Apple Container) in `crates/tools/src/sandbox.rs` (trait +
 `exec.rs` (ExecTool), `crates/cli/src/sandbox_commands.rs` (CLI), `crates/config/src/schema.rs` (config).
 
 Pre-built images use deterministic hash tags from base image + packages. Default packages
-in `default_sandbox_packages()`. CLI: `moltis sandbox {list,build,remove,clean}`.
+in `default_sandbox_packages()`. CLI: `antre sandbox {list,build,remove,clean}`.
 
 ## Logging Levels
 
@@ -251,9 +251,9 @@ in `default_sandbox_packages()`. CLI: `moltis sandbox {list,build,remove,clean}`
 
 ## Data and Config Directories
 
-- **Config**: `moltis_config::config_dir()` (`~/.moltis/`). Contains `moltis.toml`, `credentials.json`, `mcp-servers.json`.
-- **Data**: `moltis_config::data_dir()` (`~/.moltis/`). Contains DBs, sessions, logs, memory files.
-- **Never** use `directories::BaseDirs` outside `moltis-config`. Never use `std::env::current_dir()` for storage.
+- **Config**: `antre_config::config_dir()` (`~/.antre/`). Contains `antre.toml`, `credentials.json`, `mcp-servers.json`.
+- **Data**: `antre_config::data_dir()` (`~/.antre/`). Contains DBs, sessions, logs, memory files.
+- **Never** use `directories::BaseDirs` outside `antre-config`. Never use `std::env::current_dir()` for storage.
 - Workspace-scoped files (`MEMORY.md`, `memory/*.md`, etc.) resolve relative to `data_dir()`.
 - Gateway resolves `data_dir` once at startup; prefer that value over repeated calls.
 
@@ -263,12 +263,12 @@ sqlx migrations, each crate owns its `migrations/` directory. See `docs/sqlite-m
 
 | Crate | Tables |
 |-------|--------|
-| `moltis-projects` | `projects` |
-| `moltis-sessions` | `sessions`, `channel_sessions` |
-| `moltis-cron` | `cron_jobs`, `cron_runs` |
-| `moltis-gateway` | `auth_*`, `passkeys`, `api_keys`, `env_variables`, `message_log`, `channels` |
-| `moltis-memory` | `files`, `chunks`, `embedding_cache`, `chunks_fts` |
-| `moltis-canvas` | `canvas_designs`, `canvas_design_versions` |
+| `antre-projects` | `projects` |
+| `antre-sessions` | `sessions`, `channel_sessions` |
+| `antre-cron` | `cron_jobs`, `cron_runs` |
+| `antre-gateway` | `auth_*`, `passkeys`, `api_keys`, `env_variables`, `message_log`, `channels` |
+| `antre-memory` | `files`, `chunks`, `embedding_cache`, `chunks_fts` |
+| `antre-canvas` | `canvas_designs`, `canvas_design_versions` |
 
 New migration: `crates/<crate>/migrations/YYYYMMDDHHMMSS_description.sql` (use `IF NOT EXISTS`).
 New crate: add `run_migrations()` to `lib.rs`, call from `server.rs` in dependency order.
@@ -301,7 +301,7 @@ other AI/assistant session links) to commit messages or PR descriptions. Update
 
 ### Releases
 
-- Date-based versioning: `YYYYMMDD.NN` (e.g., `20260311.01`). Cargo.toml stays at static `0.1.0`; real version injected via `MOLTIS_VERSION` env var at build time.
+- Date-based versioning: `YYYYMMDD.NN` (e.g., `20260311.01`). Cargo.toml stays at static `0.1.0`; real version injected via `ANTRE_VERSION` env var at build time.
 - Never overwrite tags — always create new version.
 - Use `./scripts/prepare-release.sh [YYYYMMDD.NN]` for release prep (auto-computes next version if omitted).
 - Deploy template tags updated automatically by CI — don't manually update.
@@ -354,8 +354,8 @@ Exact commands (must match `local-validate.sh`):
 - Clippy: `just lint` (OS-aware: on macOS excludes CUDA features, on Linux uses `--all-features`)
 - Tests: targeted changed/added Rust tests only, derived from the branch diff. Override with `LOCAL_VALIDATE_TEST_CMD` when needed.
 - E2E: targeted changed/added Playwright specs only, derived from the branch diff. Override with `LOCAL_VALIDATE_E2E_CMD` when needed.
-- macOS app (Darwin hosts): `./scripts/build-swift-bridge.sh && ./scripts/generate-swift-project.sh && ./scripts/lint-swift.sh && xcodebuild -project apps/macos/Moltis.xcodeproj -scheme Moltis -configuration Release -destination "platform=macOS" -derivedDataPath apps/macos/.derivedData-local-validate CODE_SIGNING_ALLOWED=NO build`
-- iOS app (Darwin hosts): `cargo run -p moltis-schema-export -- apps/ios/GraphQL/Schema/schema.graphqls && ./scripts/generate-ios-project.sh && ./scripts/generate-ios-graphql.sh && ./scripts/generate-ios-project.sh && xcodebuild -project apps/ios/Moltis.xcodeproj -scheme Moltis -configuration Debug -destination "generic/platform=iOS" CODE_SIGNING_ALLOWED=NO build`
+- macOS app (Darwin hosts): `./scripts/build-swift-bridge.sh && ./scripts/generate-swift-project.sh && ./scripts/lint-swift.sh && xcodebuild -project apps/macos/Antre.xcodeproj -scheme Antre -configuration Release -destination "platform=macOS" -derivedDataPath apps/macos/.derivedData-local-validate CODE_SIGNING_ALLOWED=NO build`
+- iOS app (Darwin hosts): `cargo run -p antre-schema-export -- apps/ios/GraphQL/Schema/schema.graphqls && ./scripts/generate-ios-project.sh && ./scripts/generate-ios-graphql.sh && ./scripts/generate-ios-project.sh && xcodebuild -project apps/ios/Antre.xcodeproj -scheme Antre -configuration Debug -destination "generic/platform=iOS" CODE_SIGNING_ALLOWED=NO build`
 
 ### PR Descriptions
 

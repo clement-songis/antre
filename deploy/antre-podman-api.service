@@ -1,0 +1,24 @@
+[Unit]
+Description=Antre Podman API Service
+Before=antre.service
+
+[Service]
+Type=exec
+User=antre
+Group=antre
+Environment=HOME=/var/lib/antre
+Environment=XDG_DATA_HOME=/var/lib/antre/.local/share
+Environment=XDG_CONFIG_HOME=/var/lib/antre/.config
+Environment=XDG_RUNTIME_DIR=/run/antre
+RuntimeDirectory=antre
+RuntimeDirectoryMode=0700
+RuntimeDirectoryPreserve=yes
+Delegate=yes
+ExecStartPre=/usr/bin/mkdir -p /run/antre/podman
+ExecStartPre=/usr/bin/rm -f /run/antre/podman/podman.sock
+ExecStart=/usr/bin/podman system service --time=0 unix:///run/antre/podman/podman.sock
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

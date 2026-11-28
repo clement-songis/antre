@@ -1,18 +1,18 @@
 [package]
 edition.workspace = true
-name              = "moltis-whatsapp"
+name              = "antre-whatsapp"
 version.workspace = true
 
 [dependencies]
+antre-channels  = { workspace = true }
+antre-common    = { workspace = true }
+antre-config    = { workspace = true }
+antre-media     = { workspace = true }
+antre-metrics   = { optional = true, workspace = true }
 async-trait     = { workspace = true }
 base64          = { workspace = true }
 bytes           = { workspace = true }
 dashmap         = { workspace = true }
-moltis-channels = { workspace = true }
-moltis-common   = { workspace = true }
-moltis-config   = { workspace = true }
-moltis-media    = { workspace = true }
-moltis-metrics  = { optional = true, workspace = true }
 postcard        = { workspace = true }
 pulldown-cmark  = { workspace = true }
 qrcode          = { workspace = true }
@@ -36,7 +36,7 @@ whatsapp-rust-ureq-http-client = { workspace = true }
 
 [features]
 default = []
-metrics = ["dep:moltis-metrics"]
+metrics = ["dep:antre-metrics"]
 
 [dev-dependencies]
 tempfile = { workspace = true }

@@ -19,7 +19,7 @@ pub(crate) async fn run_session_summary_if_enabled(state: &Arc<GatewayState>, se
     }
 
     let write_mode = config.memory.agent_write_mode;
-    if !moltis_chat::memory_write_mode_allows_save(write_mode) {
+    if !antre_chat::memory_write_mode_allows_save(write_mode) {
         debug!("session summary: agent memory writes disabled, skipping");
         return;
     }
@@ -51,7 +51,7 @@ pub(crate) async fn run_session_summary_if_enabled(state: &Arc<GatewayState>, se
     };
 
     // Resolve a provider for the summary LLM call.
-    let provider: Arc<dyn moltis_agents::model::LlmProvider> = {
+    let provider: Arc<dyn antre_agents::model::LlmProvider> = {
         let inner = state.inner.read().await;
         let Some(ref registry) = inner.llm_providers else {
             return;
@@ -74,19 +74,19 @@ pub(crate) async fn run_session_summary_if_enabled(state: &Arc<GatewayState>, se
         .and_then(|e| e.agent_id)
         .unwrap_or_else(|| "main".to_string());
 
-    let chat_msgs = moltis_agents::model::values_to_chat_messages_with_tool_result_limit(
+    let chat_msgs = antre_agents::model::values_to_chat_messages_with_tool_result_limit(
         &history,
         config.tools.max_tool_result_bytes,
     );
-    let writer: Arc<dyn moltis_agents::memory_writer::MemoryWriter> = Arc::new(
-        moltis_chat::AgentScopedMemoryWriter::new(Arc::clone(mm), agent_id, write_mode),
+    let writer: Arc<dyn antre_agents::memory_writer::MemoryWriter> = Arc::new(
+        antre_chat::AgentScopedMemoryWriter::new(Arc::clone(mm), agent_id, write_mode),
     );
 
-    match moltis_agents::silent_turn::run_silent_memory_turn_with_prompt(
+    match antre_agents::silent_turn::run_silent_memory_turn_with_prompt(
         provider,
         &chat_msgs,
         writer,
-        moltis_agents::silent_turn::SilentTurnPrompt::SessionSummary,
+        antre_agents::silent_turn::SilentTurnPrompt::SessionSummary,
     )
     .await
     {

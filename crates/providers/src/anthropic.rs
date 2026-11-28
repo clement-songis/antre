@@ -9,7 +9,7 @@ use {async_trait::async_trait, futures::StreamExt, tokio_stream::Stream};
 
 use tracing::{debug, trace, warn};
 
-use moltis_agents::model::{
+use antre_agents::model::{
     AgentToolControls, ChatMessage, CompletionResponse, ContentPart, InputTokenAccounting,
     LlmProvider, StreamEvent, ToolCall, ToolChoice, Usage, UserContent,
 };
@@ -25,9 +25,9 @@ pub struct AnthropicProvider {
     /// Optional alias for metrics differentiation (e.g., "anthropic-work", "anthropic-2").
     alias: Option<String>,
     /// Optional reasoning effort level for extended thinking.
-    reasoning_effort: Option<moltis_agents::model::ReasoningEffort>,
+    reasoning_effort: Option<antre_agents::model::ReasoningEffort>,
     /// Prompt cache retention policy. When `None`, caching is disabled.
-    cache_retention: moltis_config::CacheRetention,
+    cache_retention: antre_config::CacheRetention,
     /// Global per-model context window overrides from `[models.<id>]` config.
     context_window_global: HashMap<String, u32>,
     /// Provider-scoped per-model context window overrides from
@@ -66,7 +66,7 @@ impl AnthropicProvider {
             client: crate::shared_http_client(),
             alias,
             reasoning_effort: None,
-            cache_retention: moltis_config::CacheRetention::Short,
+            cache_retention: antre_config::CacheRetention::Short,
             context_window_global: HashMap::new(),
             context_window_provider: HashMap::new(),
         }
@@ -77,14 +77,14 @@ impl AnthropicProvider {
     }
 
     #[must_use]
-    pub fn with_cache_retention(mut self, cache_retention: moltis_config::CacheRetention) -> Self {
+    pub fn with_cache_retention(mut self, cache_retention: antre_config::CacheRetention) -> Self {
         self.cache_retention = cache_retention;
         self
     }
 
     /// Returns `true` when prompt caching is enabled (short or long retention).
     fn caching_enabled(&self) -> bool {
-        !matches!(self.cache_retention, moltis_config::CacheRetention::None)
+        !matches!(self.cache_retention, antre_config::CacheRetention::None)
     }
 
     /// Set context window override maps extracted from config.
@@ -105,7 +105,7 @@ impl AnthropicProvider {
     /// Apply `thinking` configuration to an Anthropic request body based on
     /// the configured reasoning effort.
     fn apply_thinking(&self, body: &mut serde_json::Value) {
-        use moltis_agents::model::ReasoningEffort;
+        use antre_agents::model::ReasoningEffort;
         let Some(effort) = self.reasoning_effort else {
             return;
         };
@@ -316,21 +316,21 @@ fn parse_model_entry(entry: &serde_json::Value) -> Option<crate::DiscoveredModel
         .and_then(serde_json::Value::as_str)
         .and_then(crate::live_metadata::parse_date);
     let status = match obj.get("lifecycle").and_then(serde_json::Value::as_str) {
-        Some("deprecated") => Some(moltis_model_catalog::ModelStatus::Deprecated),
-        Some("retired") => Some(moltis_model_catalog::ModelStatus::Retired),
-        Some("active") => Some(moltis_model_catalog::ModelStatus::Active),
+        Some("deprecated") => Some(antre_model_catalog::ModelStatus::Deprecated),
+        Some("retired") => Some(antre_model_catalog::ModelStatus::Retired),
+        Some("active") => Some(antre_model_catalog::ModelStatus::Active),
         _ => None,
     };
 
     Some(
         crate::DiscoveredModel::new(model_id, normalize_display_name(model_id, display_name))
-            .with_metadata(moltis_model_catalog::ModelSpec {
+            .with_metadata(antre_model_catalog::ModelSpec {
                 display_name: crate::live_metadata::api_name(model_id, display_name),
                 context_window: tokens("max_input_tokens"),
                 max_output: tokens("max_tokens"),
                 status,
                 retires_at,
-                ..moltis_model_catalog::ModelSpec::default()
+                ..antre_model_catalog::ModelSpec::default()
             }),
     )
 }
@@ -731,13 +731,13 @@ impl LlmProvider for AnthropicProvider {
         self.alias.as_deref().unwrap_or("anthropic")
     }
 
-    fn reasoning_effort(&self) -> Option<moltis_agents::model::ReasoningEffort> {
+    fn reasoning_effort(&self) -> Option<antre_agents::model::ReasoningEffort> {
         self.reasoning_effort
     }
 
     fn with_reasoning_effort(
         self: std::sync::Arc<Self>,
-        effort: moltis_agents::model::ReasoningEffort,
+        effort: antre_agents::model::ReasoningEffort,
     ) -> Option<std::sync::Arc<dyn LlmProvider>> {
         Some(std::sync::Arc::new(Self {
             auth: self.auth.clone(),

@@ -5,7 +5,7 @@ const ENV_VARS: [&str; 2] = ["GEMINI_API_KEY", "GOOGLE_API_KEY"];
 /// Resolve the Gemini STT key: voice-specific config (or credential store) ->
 /// `GEMINI_API_KEY` / `GOOGLE_API_KEY` -> the Gemini LLM provider key, from
 /// `providers.gemini.api_key` or the key saved on the LLM settings page.
-pub(crate) fn resolve_gemini_key(cfg: &moltis_config::MoltisConfig) -> Option<Secret<String>> {
+pub(crate) fn resolve_gemini_key(cfg: &antre_config::AntreConfig) -> Option<Secret<String>> {
     resolve_with(
         cfg,
         |name| std::env::var(name).ok(),
@@ -14,14 +14,14 @@ pub(crate) fn resolve_gemini_key(cfg: &moltis_config::MoltisConfig) -> Option<Se
 }
 
 /// The Gemini key configured for the LLM provider, if any.
-pub(crate) fn gemini_llm_key(cfg: &moltis_config::MoltisConfig) -> Option<Secret<String>> {
+pub(crate) fn gemini_llm_key(cfg: &antre_config::AntreConfig) -> Option<Secret<String>> {
     llm_key_with(cfg, || {
         crate::provider_setup::KeyStore::new().load("gemini")
     })
 }
 
 fn resolve_with(
-    cfg: &moltis_config::MoltisConfig,
+    cfg: &antre_config::AntreConfig,
     env: impl Fn(&str) -> Option<String>,
     stored_llm_key: impl FnOnce() -> Option<String>,
 ) -> Option<Secret<String>> {
@@ -41,7 +41,7 @@ fn resolve_with(
 }
 
 fn llm_key_with(
-    cfg: &moltis_config::MoltisConfig,
+    cfg: &antre_config::AntreConfig,
     stored_llm_key: impl FnOnce() -> Option<String>,
 ) -> Option<Secret<String>> {
     cfg.providers
@@ -67,18 +67,17 @@ mod tests {
         None
     }
 
-    fn with_llm_provider_key(cfg: &mut moltis_config::MoltisConfig, key: &str) {
-        cfg.providers.providers.insert(
-            "gemini".to_string(),
-            moltis_config::schema::ProviderEntry {
+    fn with_llm_provider_key(cfg: &mut antre_config::AntreConfig, key: &str) {
+        cfg.providers
+            .providers
+            .insert("gemini".to_string(), antre_config::schema::ProviderEntry {
                 api_key: Some(Secret::new(key.to_string())),
-                ..moltis_config::schema::ProviderEntry::default()
-            },
-        );
+                ..antre_config::schema::ProviderEntry::default()
+            });
     }
 
     fn resolved(
-        cfg: &moltis_config::MoltisConfig,
+        cfg: &antre_config::AntreConfig,
         env: impl Fn(&str) -> Option<String>,
         store: impl FnOnce() -> Option<String>,
     ) -> Option<String> {
@@ -87,13 +86,13 @@ mod tests {
 
     #[test]
     fn no_key_anywhere_resolves_to_none() {
-        let cfg = moltis_config::MoltisConfig::default();
+        let cfg = antre_config::AntreConfig::default();
         assert!(resolved(&cfg, no_env, no_store).is_none());
     }
 
     #[test]
     fn saved_llm_key_is_the_last_fallback() {
-        let mut cfg = moltis_config::MoltisConfig::default();
+        let mut cfg = antre_config::AntreConfig::default();
         let store = || Some("saved-llm-key".to_string());
         assert_eq!(
             resolved(&cfg, no_env, store).as_deref(),
@@ -110,7 +109,7 @@ mod tests {
 
     #[test]
     fn env_vars_win_over_llm_keys_and_skip_blank_values() {
-        let mut cfg = moltis_config::MoltisConfig::default();
+        let mut cfg = antre_config::AntreConfig::default();
         with_llm_provider_key(&mut cfg, "llm-key");
         let store = || Some("saved-llm-key".to_string());
 
@@ -143,7 +142,7 @@ mod tests {
 
     #[test]
     fn voice_key_wins_over_everything() {
-        let mut cfg = moltis_config::MoltisConfig::default();
+        let mut cfg = antre_config::AntreConfig::default();
         with_llm_provider_key(&mut cfg, "llm-key");
         cfg.voice.stt.gemini.api_key = Some(Secret::new("voice-key".to_string()));
         let env = |_: &str| Some("env-key".to_string());
@@ -158,17 +157,17 @@ mod tests {
         let _lock = crate::config_override_test_lock();
         let config_dir = tempfile::tempdir().unwrap();
         let data_dir = tempfile::tempdir().unwrap();
-        moltis_config::set_config_dir(config_dir.path().to_path_buf());
-        moltis_config::set_data_dir(data_dir.path().to_path_buf());
+        antre_config::set_config_dir(config_dir.path().to_path_buf());
+        antre_config::set_data_dir(data_dir.path().to_path_buf());
 
         crate::provider_setup::KeyStore::new()
             .save_config("gemini", Some("saved-llm-key".into()), None, None)
             .unwrap();
-        let cfg = moltis_config::MoltisConfig::default();
+        let cfg = antre_config::AntreConfig::default();
         let from_store = gemini_llm_key(&cfg).map(|key| key.expose_secret().clone());
 
-        moltis_config::clear_config_dir();
-        moltis_config::clear_data_dir();
+        antre_config::clear_config_dir();
+        antre_config::clear_data_dir();
         assert_eq!(from_store.as_deref(), Some("saved-llm-key"));
     }
 }

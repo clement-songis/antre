@@ -1,6 +1,6 @@
 # Instrumentation
 
-Moltis can export what a completed agent run did — its LLM calls, tool
+Antre can export what a completed agent run did — its LLM calls, tool
 invocations and retrievals, with timings, token usage and errors — to an
 external backend.
 
@@ -14,7 +14,7 @@ pass in the agent runtime:
 | **OTLP** | Any OpenTelemetry backend — Grafana Tempo/Alloy, Honeycomb, an OpenTelemetry Collector |
 | **Datadog** | Datadog APM, through the Datadog Agent's OTLP intake |
 
-> **Instrumentation is disabled by default.** Unlike every other Moltis feature
+> **Instrumentation is disabled by default.** Unlike every other Antre feature
 > flag, it stays off until you turn it on: enabling it sends data about your
 > conversations to a third party. Read [What gets sent](#what-gets-sent) before
 > switching it on.
@@ -23,7 +23,7 @@ pass in the agent runtime:
 
 This is the most important thing to understand about the design.
 
-Langfuse is an LLM-native product. Moltis sends completed traces, conversation
+Langfuse is an LLM-native product. Antre sends completed traces, conversation
 content, token usage, session and user attribution, and reaction feedback so
 Langfuse can provide LLM observability and infer costs.
 
@@ -35,12 +35,12 @@ actively harmful:
 - it copies user conversation content into a system that was never scoped,
   reviewed, or access-controlled for it.
 
-So Moltis applies a different **export profile** per backend:
+So Antre applies a different **export profile** per backend:
 
 | | Langfuse | OTLP / Datadog |
 | --- | --- | --- |
 | Prompts, completions, tool arguments and results | ✅ sent | ❌ **never sent** by default |
-| Payload sizes (`moltis.input.bytes`) | — | ✅ sent |
+| Payload sizes (`antre.input.bytes`) | — | ✅ sent |
 | Observation type (`AGENT`, `TOOL`, `RETRIEVER`, …) | ✅ `langfuse.observation.type` | ✅ as `gen_ai.operation.name` |
 | Model, latency, errors | ✅ | ✅ |
 | Token counts | ✅ usage details with cache split; Langfuse infers cost | ✅ counts only |
@@ -54,12 +54,12 @@ sending prompts to Datadog: the default for any newly configured OTLP-family
 backend is `metadata_only`.
 
 **For Grafana specifically:** most of what you want is already available
-without this feature. Moltis exposes a Prometheus endpoint at `/metrics` with
-`moltis_llm_*` counters for tokens, latency and time-to-first-token. Scrape
+without this feature. Antre exposes a Prometheus endpoint at `/metrics` with
+`antre_llm_*` counters for tokens, latency and time-to-first-token. Scrape
 that for dashboards and alerts; use the OTLP exporter here when you want
 per-run traces to correlate a latency spike with a specific agent run.
 
-Moltis does not currently integrate Langfuse Prompt Management, datasets or
+Antre does not currently integrate Langfuse Prompt Management, datasets or
 dataset runs, evaluators, or media uploads. User reaction scores are the only
 evaluation signal sent directly to Langfuse.
 
@@ -68,7 +68,7 @@ evaluation signal sent directly to Langfuse.
 Prefer the process environment for the secret key:
 
 ```sh
-export MOLTIS_INSTRUMENTATION__LANGFUSE__SECRET_KEY='sk-lf-...'
+export ANTRE_INSTRUMENTATION__LANGFUSE__SECRET_KEY='sk-lf-...'
 ```
 
 ```toml
@@ -85,7 +85,7 @@ public_key = "pk-lf-..."
 Keys come from your Langfuse project settings. For a self-hosted deployment,
 point `host` at your own instance — no data leaves your network.
 
-Once Moltis has restarted, use **Settings → Instrumentation → Test connection**
+Once Antre has restarted, use **Settings → Instrumentation → Test connection**
 in the web UI to verify the host is reachable and the credentials are accepted
 before relying on it.
 
@@ -106,9 +106,9 @@ Authorization = "Basic ..."   # if your collector requires auth
 
 ## Quick start: Datadog
 
-Run the Datadog Agent with OTLP ingest enabled and point Moltis at it. This is
+Run the Datadog Agent with OTLP ingest enabled and point Antre at it. This is
 the recommended setup — the Agent handles batching, retries and your API key,
-so no Datadog credential needs to live in the Moltis config at all.
+so no Datadog credential needs to live in the Antre config at all.
 
 ```toml
 [instrumentation]
@@ -117,7 +117,7 @@ enabled = true
 [instrumentation.datadog]
 enabled  = true
 endpoint = "http://localhost:4318/v1/traces"
-service  = "moltis"
+service  = "antre"
 ```
 
 To post to Datadog's intake directly instead, set `endpoint` to the regional
@@ -125,7 +125,7 @@ OTLP intake URL and supply `api_key`.
 
 ## Where the settings live
 
-Instrumentation is configured in `moltis.toml` under `[instrumentation]`, either
+Instrumentation is configured in `antre.toml` under `[instrumentation]`, either
 by editing the file directly or through **Settings → Configuration** in the web
 UI, which edits the same TOML. Either way the change takes effect on restart.
 
@@ -174,12 +174,12 @@ With Langfuse enabled and default settings, each completed agent run produces:
   into fresh / cache-read / cache-write buckets, and time-to-first-token;
 - a completed **`TOOL`** or **`RETRIEVER`** observation for each tool call,
   with arguments and results;
-- the session key as the session id, so a Langfuse session matches a Moltis
+- the session key as the session id, so a Langfuse session matches a Antre
   conversation;
 - the channel sender as the user id, namespaced per channel (`telegram:42`).
 
 Root and child observations are immutable and exported exactly once, after
-completion. Moltis does not send in-progress observation updates. Cancelled or
+completion. Antre does not send in-progress observation updates. Cancelled or
 timed-out work is closed as an error rather than exported as successful work.
 
 You can narrow this without turning the backend off:
@@ -267,7 +267,7 @@ and shown in the settings UI — if you see them, raise `queue_capacity` or lowe
 | `enabled` | `false` | |
 | `host` | `https://cloud.langfuse.com` | Set to your self-hosted URL to keep data on-premises. |
 | `public_key` | `""` | |
-| `secret_key` | unset | Prefer `MOLTIS_INSTRUMENTATION__LANGFUSE__SECRET_KEY`; a config value is also accepted and is never logged. |
+| `secret_key` | unset | Prefer `ANTRE_INSTRUMENTATION__LANGFUSE__SECRET_KEY`; a config value is also accepted and is never logged. |
 | `capture_input` | `true` | |
 | `capture_output` | `true` | |
 | `capture_tool_io` | `true` | |
@@ -291,7 +291,7 @@ and shown in the settings UI — if you see them, raise `queue_capacity` or lowe
 | `enabled` | `false` | |
 | `endpoint` | `http://localhost:4318/v1/traces` | The Datadog Agent's OTLP intake. |
 | `api_key` | unset | Only needed when posting to the intake directly. |
-| `service` | `"moltis"` | Datadog service name. |
+| `service` | `"antre"` | Datadog service name. |
 | `content` | `"metadata_only"` | |
 | `timeout_secs` | `10` | |
 
@@ -350,10 +350,10 @@ score after deletion. Two reacting users still count separately.
 
 ## Cost
 
-Moltis exports the model id and token usage details, including separate
+Antre exports the model id and token usage details, including separate
 cache-read and cache-write buckets, but it does not compute or export a cost of
 its own. Langfuse infers cost from its own versioned model definitions and
-pricing tiers, which stay current without Moltis shipping a price table that
+pricing tiers, which stay current without Antre shipping a price table that
 would go stale and then override them.
 
 Unknown, private or custom models may show no cost until their pricing is
@@ -366,7 +366,7 @@ Trace observations are sent to Langfuse using OTLP/HTTP JSON at
 `x-langfuse-ingestion-version: 4`, selecting Langfuse's v4 ingestion contract.
 The exporter sends only completed, immutable root and child observations.
 
-OTLP cannot represent feedback scores. Moltis therefore creates, replaces and
+OTLP cannot represent feedback scores. Antre therefore creates, replaces and
 deletes `BOOLEAN` feedback through Langfuse's dedicated Scores API at
 `/api/public/scores`, using a separate ordered sink.
 
@@ -383,7 +383,7 @@ Spans carry two attribute vocabularies depending on the profile:
 level and the backend level — the master switch gates everything. Then use
 Test connection in the settings UI.
 
-**Traces appear but token counts look wrong.** Moltis reports fresh input
+**Traces appear but token counts look wrong.** Antre reports fresh input
 tokens separately from cache reads and writes, because Langfuse prices them
 differently. A run with heavy prompt caching will show a low `input` and a
 large `input_cache_read`; that is correct, not a bug.

@@ -7,7 +7,7 @@ use std::{
 
 use secrecy::{ExposeSecret, Secret};
 
-use {moltis_config::schema::ProvidersConfig, moltis_oauth::TokenStore};
+use {antre_config::schema::ProvidersConfig, antre_oauth::TokenStore};
 
 use crate::{
     key_store::{KeyStore, ProviderConfig, normalize_model_entries, normalize_model_list},
@@ -18,11 +18,11 @@ use crate::{
 // ── Config directory helpers ───────────────────────────────────────────────
 
 pub(crate) fn current_config_dir() -> PathBuf {
-    moltis_config::config_dir().unwrap_or_else(|| PathBuf::from(".config/moltis"))
+    antre_config::config_dir().unwrap_or_else(|| PathBuf::from(".config/antre"))
 }
 
 pub(crate) fn home_config_dir_if_different() -> Option<PathBuf> {
-    moltis_config::user_global_config_dir_if_different()
+    antre_config::user_global_config_dir_if_different()
 }
 
 pub(crate) fn home_key_store() -> Option<(KeyStore, PathBuf)> {
@@ -38,33 +38,33 @@ pub(crate) fn home_token_store() -> Option<(TokenStore, PathBuf)> {
 }
 
 pub(crate) fn home_provider_config() -> Option<(ProvidersConfig, PathBuf)> {
-    let path = moltis_config::find_user_global_config_file()?;
+    let path = antre_config::find_user_global_config_file()?;
     let home_dir = home_config_dir_if_different()?;
     if !path.starts_with(&home_dir) {
         return None;
     }
-    let loaded = moltis_config::loader::load_config(&path).ok()?;
+    let loaded = antre_config::loader::load_config(&path).ok()?;
     Some((loaded.providers, path))
 }
 
 // ── Provider name helpers ──────────────────────────────────────────────────
 
 pub(crate) fn normalize_provider_name(value: &str) -> String {
-    moltis_config::normalize_provider_name(value).unwrap_or_default()
+    antre_config::normalize_provider_name(value).unwrap_or_default()
 }
 
 pub(crate) fn env_value_with_overrides(
     env_overrides: &HashMap<String, String>,
     key: &str,
 ) -> Option<String> {
-    moltis_config::env_value_with_overrides(env_overrides, key)
+    antre_config::env_value_with_overrides(env_overrides, key)
 }
 
 pub(crate) fn set_provider_enabled_in_config(
     provider: &str,
     enabled: bool,
-) -> moltis_service_traits::ServiceResult<()> {
-    moltis_config::update_config(|cfg| {
+) -> antre_service_traits::ServiceResult<()> {
+    antre_config::update_config(|cfg| {
         let entry = cfg
             .providers
             .providers
@@ -72,7 +72,7 @@ pub(crate) fn set_provider_enabled_in_config(
             .or_default();
         entry.enabled = enabled;
     })
-    .map_err(moltis_service_traits::ServiceError::message)?;
+    .map_err(antre_service_traits::ServiceError::message)?;
     Ok(())
 }
 
@@ -177,7 +177,7 @@ pub fn config_with_saved_keys(
         if !saved.models.is_empty() {
             // Merge: saved models (from "Choose model" UI) go first, then
             // config models. normalize_model_list deduplicates.
-            let mut merged: Vec<moltis_model_catalog::ModelEntry> =
+            let mut merged: Vec<antre_model_catalog::ModelEntry> =
                 saved.models.into_iter().map(Into::into).collect();
             merged.append(&mut entry.models);
             entry.models = normalize_model_entries(merged);
@@ -263,10 +263,8 @@ pub fn detect_auto_provider_sources_with_overrides(
             sources.push(format!("env:{env_key}"));
         }
         if provider.auth_type == AuthType::ApiKey
-            && let Some(source) = moltis_config::generic_provider_env_source_for_provider(
-                provider.name,
-                env_overrides,
-            )
+            && let Some(source) =
+                antre_config::generic_provider_env_source_for_provider(provider.name, env_overrides)
         {
             sources.push(source);
         }
@@ -348,7 +346,7 @@ pub fn detect_auto_provider_sources_with_overrides(
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 #[cfg(test)]
 mod tests {
-    use {super::*, moltis_config::schema::ProviderEntry};
+    use {super::*, antre_config::schema::ProviderEntry};
 
     #[test]
     fn config_with_saved_keys_merges_base_url_and_models() {

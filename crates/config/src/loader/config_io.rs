@@ -1,6 +1,6 @@
 use {
     super::*,
-    crate::{env_subst::substitute_env, schema::MoltisConfig},
+    crate::{env_subst::substitute_env, schema::AntreConfig},
     std::{
         path::{Path, PathBuf},
         sync::Mutex,
@@ -24,25 +24,25 @@ fn atomic_write(path: &Path, content: impl AsRef<[u8]>) -> std::io::Result<()> {
 
 /// Load config from the given path (any supported format).
 ///
-/// After parsing, `MOLTIS_*` env vars are applied as overrides.
+/// After parsing, `ANTRE_*` env vars are applied as overrides.
 ///
 /// Uses a two-pass approach so that `[env]` section values are available
 /// for `${VAR}` substitution in other sections of the same config file.
-pub fn load_config(path: &Path) -> crate::Result<MoltisConfig> {
+pub fn load_config(path: &Path) -> crate::Result<AntreConfig> {
     load_config_with_aliases(path, true)
 }
 
 fn load_config_with_aliases(
     path: &Path,
     apply_third_party_aliases: bool,
-) -> crate::Result<MoltisConfig> {
+) -> crate::Result<AntreConfig> {
     let raw = std::fs::read_to_string(path).map_err(|source| {
         crate::Error::external(format!("failed to read {}", path.display()), source)
     })?;
 
     // First pass: resolve process env vars, parse to extract [env] section.
     let first_pass = substitute_env(&raw);
-    let preliminary: MoltisConfig = parse_config(&first_pass, path)?;
+    let preliminary: AntreConfig = parse_config(&first_pass, path)?;
 
     // Second pass: re-substitute using both process env and [env] values.
     // This allows ${VAR} in other sections to reference [env]-defined vars.
@@ -72,21 +72,21 @@ pub fn load_config_value(path: &Path) -> crate::Result<serde_json::Value> {
 /// Discover and load config from standard locations using layered merge.
 ///
 /// Merge order:
-/// 1. Built-in Rust defaults (`MoltisConfig::default()`)
-/// 2. Moltis-managed `defaults.toml` (refreshed on every startup)
-/// 3. User override file `moltis.{toml,yaml,yml,json}`
-/// 4. `MOLTIS_*` environment variable overrides
+/// 1. Built-in Rust defaults (`AntreConfig::default()`)
+/// 2. Antre-managed `defaults.toml` (refreshed on every startup)
+/// 3. User override file `antre.{toml,yaml,yml,json}`
+/// 4. `ANTRE_*` environment variable overrides
 ///
 /// One-time config initialization — call once at process startup.
 ///
 /// Performs all write side-effects that prepare the config directory:
-/// - Refreshes Moltis-managed `defaults.toml`
+/// - Refreshes Antre-managed `defaults.toml`
 /// - Writes a default config template on first run
 /// - Persists a randomly generated port so it stays stable
 ///
 /// After this, use [`discover_and_load`] (read-only) to load config.
 pub fn initialize_config() {
-    // Refresh Moltis-managed defaults.toml.
+    // Refresh Antre-managed defaults.toml.
     if let Some(dir) = config_dir()
         && let Err(e) = crate::defaults::write_defaults_toml(&dir)
     {
@@ -100,7 +100,7 @@ pub fn initialize_config() {
             path = %default_path.display(),
             "no config file found, writing default config with random port"
         );
-        let mut config = MoltisConfig::default();
+        let mut config = AntreConfig::default();
         config.server.port = generate_random_port();
         if let Err(e) = write_default_config(&default_path, &config) {
             warn!(
@@ -144,34 +144,34 @@ pub fn initialize_config() {
 /// function everywhere else.
 ///
 /// User config search order:
-/// 1. `./moltis.{toml,yaml,yml,json}` (project-local)
-/// 2. `~/.config/moltis/moltis.{toml,yaml,yml,json}` (user-global)
+/// 1. `./antre.{toml,yaml,yml,json}` (project-local)
+/// 2. `~/.config/antre/antre.{toml,yaml,yml,json}` (user-global)
 ///
-/// Returns `MoltisConfig::default()` if no config file is found.
-pub fn discover_and_load() -> MoltisConfig {
+/// Returns `AntreConfig::default()` if no config file is found.
+pub fn discover_and_load() -> AntreConfig {
     discover_and_load_readonly()
 }
 
 /// Load config using layered merge without writing any files.
 ///
 /// Identical to [`discover_and_load`]. Retained for backward compatibility.
-pub fn discover_and_load_readonly() -> MoltisConfig {
+pub fn discover_and_load_readonly() -> AntreConfig {
     discover_and_load_readonly_with_aliases(true)
 }
 
 /// Load config without merging markdown agent definitions.
-pub fn discover_and_load_readonly_without_agent_defs() -> MoltisConfig {
+pub fn discover_and_load_readonly_without_agent_defs() -> AntreConfig {
     discover_and_load_readonly_with_options(true, false)
 }
 
-fn discover_and_load_readonly_with_aliases(apply_third_party_aliases: bool) -> MoltisConfig {
+fn discover_and_load_readonly_with_aliases(apply_third_party_aliases: bool) -> AntreConfig {
     discover_and_load_readonly_with_options(apply_third_party_aliases, true)
 }
 
 fn discover_and_load_readonly_with_options(
     apply_third_party_aliases: bool,
     include_agent_defs: bool,
-) -> MoltisConfig {
+) -> AntreConfig {
     let mut cfg = if let Some(path) = find_config_file() {
         debug!(path = %path.display(), "loading config (read-only)");
         match load_layered_config(&path, apply_third_party_aliases) {
@@ -184,7 +184,7 @@ fn discover_and_load_readonly_with_options(
             Err(e) => {
                 warn!(path = %path.display(), error = %e, "failed to load config, using defaults");
                 apply_env_overrides_with_options(
-                    MoltisConfig::default(),
+                    AntreConfig::default(),
                     std::env::vars(),
                     apply_third_party_aliases,
                 )
@@ -192,7 +192,7 @@ fn discover_and_load_readonly_with_options(
         }
     } else {
         apply_env_overrides_with_options(
-            MoltisConfig::default(),
+            AntreConfig::default(),
             std::env::vars(),
             apply_third_party_aliases,
         )
@@ -218,7 +218,7 @@ fn discover_and_load_readonly_with_options(
 fn load_layered_config(
     user_path: &Path,
     apply_third_party_aliases: bool,
-) -> crate::Result<MoltisConfig> {
+) -> crate::Result<AntreConfig> {
     let is_toml = user_path
         .extension()
         .and_then(|e| e.to_str())
@@ -236,14 +236,14 @@ fn load_layered_config(
 fn load_layered_config_toml(
     user_path: &Path,
     apply_third_party_aliases: bool,
-) -> crate::Result<MoltisConfig> {
+) -> crate::Result<AntreConfig> {
     let user_raw = std::fs::read_to_string(user_path).map_err(|source| {
         crate::Error::external(format!("failed to read {}", user_path.display()), source)
     })?;
 
     // Two-pass env substitution on the user file (same as load_config).
     let user_first_pass = substitute_env(&user_raw);
-    let preliminary: MoltisConfig = parse_config(&user_first_pass, user_path)?;
+    let preliminary: AntreConfig = parse_config(&user_first_pass, user_path)?;
 
     let user_substituted = if preliminary.env.is_empty() {
         user_first_pass
@@ -296,8 +296,8 @@ pub fn find_config_file() -> Option<PathBuf> {
         }
     }
 
-    // User-global: ~/.config/moltis/
-    if let Some(dir) = home_dir().map(|h| h.join(".config").join("moltis")) {
+    // User-global: ~/.config/antre/
+    if let Some(dir) = home_dir().map(|h| h.join(".config").join("antre")) {
         for name in CONFIG_FILENAMES {
             let p = dir.join(name);
             if p.exists() {
@@ -315,7 +315,7 @@ pub fn find_or_default_config_path() -> PathBuf {
     }
     config_dir()
         .unwrap_or_else(|| PathBuf::from("."))
-        .join("moltis.toml")
+        .join("antre.toml")
 }
 
 /// Lock guarding config read-modify-write cycles.
@@ -337,7 +337,7 @@ static CONFIG_SAVE_LOCK: Mutex<ConfigSaveState> = Mutex::new(ConfigSaveState { t
 ///
 /// Acquires a process-wide lock so concurrent callers cannot race.
 /// Returns the path written to.
-pub fn update_config(f: impl FnOnce(&mut MoltisConfig)) -> crate::Result<PathBuf> {
+pub fn update_config(f: impl FnOnce(&mut AntreConfig)) -> crate::Result<PathBuf> {
     let mut guard = CONFIG_SAVE_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let target_path = find_or_default_config_path();
     guard.target_path = Some(target_path.clone());
@@ -354,7 +354,7 @@ pub fn update_config(f: impl FnOnce(&mut MoltisConfig)) -> crate::Result<PathBuf
 /// Creates parent directories if needed. Returns the path written to.
 ///
 /// Prefer [`update_config`] for read-modify-write cycles to avoid races.
-pub fn save_config(config: &MoltisConfig) -> crate::Result<PathBuf> {
+pub fn save_config(config: &AntreConfig) -> crate::Result<PathBuf> {
     let mut guard = CONFIG_SAVE_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let target_path = find_or_default_config_path();
     guard.target_path = Some(target_path.clone());
@@ -366,7 +366,7 @@ pub fn save_config(config: &MoltisConfig) -> crate::Result<PathBuf> {
 /// Validates the input by parsing it first. Acquires the config save lock
 /// so concurrent callers cannot race.  Returns the path written to.
 pub fn save_raw_config(toml_str: &str) -> crate::Result<PathBuf> {
-    let _: MoltisConfig = toml::from_str(toml_str)
+    let _: AntreConfig = toml::from_str(toml_str)
         .map_err(|source| crate::Error::external(format!("invalid config: {source}"), source))?;
     let mut guard = CONFIG_SAVE_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let path = find_or_default_config_path();
@@ -383,7 +383,7 @@ pub fn save_raw_config(toml_str: &str) -> crate::Result<PathBuf> {
 ///
 /// For existing TOML files, this preserves user comments by merging the new
 /// serialized values into the current document structure before writing.
-pub fn save_config_to_path(path: &Path, config: &MoltisConfig) -> crate::Result<PathBuf> {
+pub fn save_config_to_path(path: &Path, config: &AntreConfig) -> crate::Result<PathBuf> {
     let mut guard = CONFIG_SAVE_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     guard.target_path = Some(path.to_path_buf());
     if let Some(parent) = path.parent() {
@@ -422,14 +422,14 @@ pub fn save_config_to_path(path: &Path, config: &MoltisConfig) -> crate::Result<
 /// built-in values from being materialized during unrelated config writes.
 ///
 /// For new files, writes only non-default values.
-pub fn save_user_config_to_path(path: &Path, config: &MoltisConfig) -> crate::Result<PathBuf> {
+pub fn save_user_config_to_path(path: &Path, config: &AntreConfig) -> crate::Result<PathBuf> {
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent)?;
     }
 
     let effective_toml = toml::to_string_pretty(config)
         .map_err(|source| crate::Error::external("serialize config", source))?;
-    let defaults_toml = toml::to_string_pretty(&MoltisConfig::default())
+    let defaults_toml = toml::to_string_pretty(&AntreConfig::default())
         .map_err(|source| crate::Error::external("serialize defaults", source))?;
 
     let effective_doc = effective_toml
@@ -692,7 +692,7 @@ pub fn compact_config() -> crate::Result<(usize, usize)> {
         .parse::<toml_edit::DocumentMut>()
         .map_err(|source| crate::Error::external("parse user TOML", source))?;
 
-    let defaults_toml = toml::to_string_pretty(&MoltisConfig::default())
+    let defaults_toml = toml::to_string_pretty(&AntreConfig::default())
         .map_err(|source| crate::Error::external("serialize defaults", source))?;
     let defaults_doc = defaults_toml
         .parse::<toml_edit::DocumentMut>()
@@ -728,7 +728,7 @@ fn count_leaf_keys(table: &toml_edit::Table) -> usize {
 /// Write the default config file to the user-global config path.
 /// Only called when no config file exists yet.
 /// Uses a comprehensive template with all options documented.
-pub(super) fn write_default_config(path: &Path, config: &MoltisConfig) -> crate::Result<()> {
+pub(super) fn write_default_config(path: &Path, config: &AntreConfig) -> crate::Result<()> {
     if path.exists() {
         return Ok(());
     }
@@ -742,21 +742,21 @@ pub(super) fn write_default_config(path: &Path, config: &MoltisConfig) -> crate:
     Ok(())
 }
 
-/// Apply `MOLTIS_*` environment variable overrides to a loaded config.
+/// Apply `ANTRE_*` environment variable overrides to a loaded config.
 ///
 /// Maps env vars to config fields using `__` as a section separator and
 /// lowercasing. For example:
-/// - `MOLTIS_AUTH_DISABLED=true` → `auth.disabled = true`
-/// - `MOLTIS_TOOLS_EXEC_DEFAULT_TIMEOUT_SECS=60` → `tools.exec.default_timeout_secs = 60`
-/// - `MOLTIS_CHAT_MESSAGE_QUEUE_MODE=collect` → `chat.message_queue_mode = "collect"`
+/// - `ANTRE_AUTH_DISABLED=true` → `auth.disabled = true`
+/// - `ANTRE_TOOLS_EXEC_DEFAULT_TIMEOUT_SECS=60` → `tools.exec.default_timeout_secs = 60`
+/// - `ANTRE_CHAT_MESSAGE_QUEUE_MODE=collect` → `chat.message_queue_mode = "collect"`
 ///
 /// The config is serialized to a JSON value, env overrides are merged in,
-/// then deserialized back. Only env vars with the `MOLTIS_` prefix are
-/// considered. `MOLTIS_CONFIG_DIR`, `MOLTIS_DATA_DIR`, `MOLTIS_SHARE_DIR`,
-/// `MOLTIS_ASSETS_DIR`, `MOLTIS_TOKEN`, `MOLTIS_PASSWORD`, `MOLTIS_TAILSCALE`,
-/// `MOLTIS_WEBAUTHN_RP_ID`, and `MOLTIS_WEBAUTHN_ORIGIN` are excluded
+/// then deserialized back. Only env vars with the `ANTRE_` prefix are
+/// considered. `ANTRE_CONFIG_DIR`, `ANTRE_DATA_DIR`, `ANTRE_SHARE_DIR`,
+/// `ANTRE_ASSETS_DIR`, `ANTRE_TOKEN`, `ANTRE_PASSWORD`, `ANTRE_TAILSCALE`,
+/// `ANTRE_WEBAUTHN_RP_ID`, and `ANTRE_WEBAUTHN_ORIGIN` are excluded
 /// (they are handled separately).
-pub fn apply_env_overrides(config: MoltisConfig) -> MoltisConfig {
+pub fn apply_env_overrides(config: AntreConfig) -> AntreConfig {
     apply_env_overrides_with_options(config, std::env::vars(), true)
 }
 
@@ -764,38 +764,38 @@ pub fn apply_env_overrides(config: MoltisConfig) -> MoltisConfig {
 /// Exposed for testing without mutating the process environment.
 #[cfg(test)]
 pub(super) fn apply_env_overrides_with(
-    config: MoltisConfig,
+    config: AntreConfig,
     vars: impl Iterator<Item = (String, String)>,
-) -> MoltisConfig {
+) -> AntreConfig {
     apply_env_overrides_with_options(config, vars, true)
 }
 
 #[cfg(test)]
 pub(super) fn apply_env_overrides_without_aliases(
-    config: MoltisConfig,
+    config: AntreConfig,
     vars: impl Iterator<Item = (String, String)>,
-) -> MoltisConfig {
+) -> AntreConfig {
     apply_env_overrides_with_options(config, vars, false)
 }
 
 fn apply_env_overrides_with_options(
-    config: MoltisConfig,
+    config: AntreConfig,
     vars: impl Iterator<Item = (String, String)>,
     apply_third_party_aliases: bool,
-) -> MoltisConfig {
+) -> AntreConfig {
     use serde_json::Value;
 
     const EXCLUDED: &[&str] = &[
-        "MOLTIS_CONFIG_DIR",
-        "MOLTIS_DATA_DIR",
-        "MOLTIS_SHARE_DIR",
-        "MOLTIS_ASSETS_DIR",
-        "MOLTIS_TOKEN",
-        "MOLTIS_PASSWORD",
-        "MOLTIS_TAILSCALE",
-        "MOLTIS_WEBAUTHN_RP_ID",
-        "MOLTIS_WEBAUTHN_ORIGIN",
-        "MOLTIS_EXTERNAL_URL",
+        "ANTRE_CONFIG_DIR",
+        "ANTRE_DATA_DIR",
+        "ANTRE_SHARE_DIR",
+        "ANTRE_ASSETS_DIR",
+        "ANTRE_TOKEN",
+        "ANTRE_PASSWORD",
+        "ANTRE_TAILSCALE",
+        "ANTRE_WEBAUTHN_RP_ID",
+        "ANTRE_WEBAUTHN_ORIGIN",
+        "ANTRE_EXTERNAL_URL",
     ];
 
     let mut root: Value = match serde_json::to_value(&config) {
@@ -855,7 +855,7 @@ fn apply_env_overrides_with_options(
     ];
 
     for (key, val) in vars {
-        // Check third-party aliases first (before the MOLTIS_ prefix check).
+        // Check third-party aliases first (before the ANTRE_ prefix check).
         let mut matched_alias = false;
         if apply_third_party_aliases {
             for &(alias_key, path) in ENV_ALIASES {
@@ -878,15 +878,15 @@ fn apply_env_overrides_with_options(
             continue;
         }
 
-        if !key.starts_with("MOLTIS_") {
+        if !key.starts_with("ANTRE_") {
             continue;
         }
         if EXCLUDED.contains(&key.as_str()) {
             continue;
         }
 
-        // MOLTIS_AUTH__DISABLED → ["auth", "disabled"]
-        let path_parts: Vec<String> = key["MOLTIS_".len()..]
+        // ANTRE_AUTH__DISABLED → ["auth", "disabled"]
+        let path_parts: Vec<String> = key["ANTRE_".len()..]
             .split("__")
             .map(|segment| segment.to_lowercase())
             .collect();
@@ -917,13 +917,13 @@ fn apply_env_overrides_with_options(
 ///
 /// Lookup precedence: process env → `overrides` map.
 pub fn resubstitute_config(
-    config: &MoltisConfig,
+    config: &AntreConfig,
     overrides: &std::collections::HashMap<String, String>,
-) -> crate::Result<MoltisConfig> {
+) -> crate::Result<AntreConfig> {
     let mut json = serde_json::to_value(config)
         .map_err(|source| crate::Error::external("serialize config for resubstitution", source))?;
     resolve_placeholders_in_value(&mut json, overrides);
-    let reloaded: MoltisConfig = serde_json::from_value(json).map_err(|source| {
+    let reloaded: AntreConfig = serde_json::from_value(json).map_err(|source| {
         crate::Error::external("deserialize config after resubstitution", source)
     })?;
     Ok(apply_env_overrides(reloaded))
@@ -958,7 +958,7 @@ pub(super) fn parse_env_value(val: &str) -> serde_json::Value {
     let trimmed = val.trim();
 
     // Support JSON arrays/objects for list-like env overrides, e.g.
-    // MOLTIS_PROVIDERS__OFFERED='["openai","github-copilot"]' or '[]'.
+    // ANTRE_PROVIDERS__OFFERED='["openai","github-copilot"]' or '[]'.
     if ((trimmed.starts_with('[') && trimmed.ends_with(']'))
         || (trimmed.starts_with('{') && trimmed.ends_with('}')))
         && let Ok(parsed) = serde_json::from_str::<serde_json::Value>(trimmed)
@@ -1017,7 +1017,7 @@ pub(super) fn set_nested(root: &mut serde_json::Value, path: &[String], val: ser
     }
 }
 
-pub(super) fn parse_config(raw: &str, path: &Path) -> crate::Result<MoltisConfig> {
+pub(super) fn parse_config(raw: &str, path: &Path) -> crate::Result<AntreConfig> {
     let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("toml");
 
     match ext {

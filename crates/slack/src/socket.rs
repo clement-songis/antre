@@ -10,7 +10,7 @@ mod callbacks;
 #[cfg(test)]
 mod tests;
 
-use moltis_channels::{
+use antre_channels::{
     config_view::ChannelConfigView,
     gating::{DmPolicy, GroupPolicy, is_allowed},
     message_log::MessageLogEntry,
@@ -54,19 +54,19 @@ pub async fn start_socket_mode(
     account_id: &str,
     config: SlackAccountConfig,
     accounts: AccountStateMap,
-    message_log: Option<Arc<dyn moltis_channels::message_log::MessageLog>>,
+    message_log: Option<Arc<dyn antre_channels::message_log::MessageLog>>,
     event_sink: Option<Arc<dyn ChannelEventSink>>,
-) -> moltis_channels::Result<()> {
+) -> antre_channels::Result<()> {
     let bot_token_str = config.bot_token.expose_secret().clone();
     let app_token_str = config.app_token.expose_secret().clone();
 
     if bot_token_str.is_empty() {
-        return Err(moltis_channels::Error::invalid_input(
+        return Err(antre_channels::Error::invalid_input(
             "Slack bot_token is required",
         ));
     }
     if app_token_str.is_empty() {
-        return Err(moltis_channels::Error::invalid_input(
+        return Err(antre_channels::Error::invalid_input(
             "Slack app_token is required for Socket Mode",
         ));
     }
@@ -79,7 +79,7 @@ pub async fn start_socket_mode(
     let auth_response = session
         .auth_test()
         .await
-        .map_err(|e| moltis_channels::Error::unavailable(format!("auth.test failed: {e}")))?;
+        .map_err(|e| antre_channels::Error::unavailable(format!("auth.test failed: {e}")))?;
 
     let bot_user_id = auth_response.user_id.to_string();
     info!(account_id, bot_user_id, "slack bot authenticated");
@@ -98,7 +98,7 @@ pub async fn start_socket_mode(
             cancel: cancel.clone(),
             bot_user_id: Some(bot_user_id),
             stream_recipients: Default::default(),
-            otp: std::sync::Mutex::new(moltis_channels::otp::OtpState::new(otp_cooldown_secs)),
+            otp: std::sync::Mutex::new(antre_channels::otp::OtpState::new(otp_cooldown_secs)),
             dedup: std::sync::Mutex::new(crate::state::EventDedup::default()),
         });
     }
@@ -465,13 +465,13 @@ pub(crate) async fn handle_inbound(
     // Check activation mode for non-DM channels.
     if !is_dm {
         match config.mention_mode {
-            moltis_channels::gating::MentionMode::Mention => {
+            antre_channels::gating::MentionMode::Mention => {
                 if !is_mention {
                     return;
                 }
             },
-            moltis_channels::gating::MentionMode::None => return,
-            moltis_channels::gating::MentionMode::Always => {},
+            antre_channels::gating::MentionMode::None => return,
+            antre_channels::gating::MentionMode::Always => {},
         }
     }
 
@@ -531,9 +531,9 @@ pub(crate) async fn handle_inbound(
         };
 
         #[cfg(feature = "metrics")]
-        moltis_metrics::counter!(
-            moltis_metrics::channels::MESSAGES_RECEIVED_TOTAL,
-            moltis_metrics::labels::CHANNEL => "slack"
+        antre_metrics::counter!(
+            antre_metrics::channels::MESSAGES_RECEIVED_TOTAL,
+            antre_metrics::labels::CHANNEL => "slack"
         )
         .increment(1);
 
@@ -923,9 +923,9 @@ async fn handle_otp_flow(
     match init_result {
         OtpInitResult::Created(code) => {
             #[cfg(feature = "metrics")]
-            moltis_metrics::counter!(
-                moltis_metrics::channels::OTP_CHALLENGES_TOTAL,
-                moltis_metrics::labels::CHANNEL => "slack"
+            antre_metrics::counter!(
+                antre_metrics::channels::OTP_CHALLENGES_TOTAL,
+                antre_metrics::labels::CHANNEL => "slack"
             )
             .increment(1);
             send_otp_status(accounts, account_id, channel_id, OTP_CHALLENGE_MSG).await;
@@ -959,9 +959,9 @@ fn record_otp_verification(result: &OtpVerifyResult) {
         OtpVerifyResult::Expired => "expired",
         OtpVerifyResult::NoPending => return,
     };
-    moltis_metrics::counter!(
-        moltis_metrics::channels::OTP_VERIFICATIONS_TOTAL,
-        moltis_metrics::labels::CHANNEL => "slack",
+    antre_metrics::counter!(
+        antre_metrics::channels::OTP_VERIFICATIONS_TOTAL,
+        antre_metrics::labels::CHANNEL => "slack",
         "result" => label
     )
     .increment(1);

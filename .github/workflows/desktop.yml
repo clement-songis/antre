@@ -87,4 +87,4 @@ jobs:
           cargo test --locked --features mockup mockup::
 
       - name: Client crate tests
-        run: cargo test --locked -p moltis-client --all-features
+        run: cargo test --locked -p antre-client --all-features

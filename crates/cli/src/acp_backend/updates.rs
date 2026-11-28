@@ -1,4 +1,4 @@
-//! Translating Moltis chat broadcasts into ACP `session/update` notifications.
+//! Translating Antre chat broadcasts into ACP `session/update` notifications.
 //!
 //! The gateway broadcasts a turn's progress as JSON event frames — the same
 //! ones the Web UI consumes over its WebSocket. This module is the pure mapping
@@ -147,7 +147,7 @@ fn agent_thought(text: impl Into<String>) -> acp::SessionUpdate {
 
 /// Identifier the client uses to correlate a tool call's start with its end.
 ///
-/// Moltis labels tool calls by name within a run, so the name is what the two
+/// Antre labels tool calls by name within a run, so the name is what the two
 /// frames have in common.
 fn tool_call_id(payload: &Value) -> String {
     first_non_empty(

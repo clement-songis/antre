@@ -9,7 +9,7 @@ umask 077
 : "${APPLE_API_ISSUER_ID:?required}"
 ARCHIVE="${1:?usage: notarize-macos.sh ARCHIVE}"
 
-TMP_DIR="$(mktemp -d "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/moltis-notary.XXXXXX")"
+TMP_DIR="$(mktemp -d "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/antre-notary.XXXXXX")"
 trap 'rm -rf "$TMP_DIR"' EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM

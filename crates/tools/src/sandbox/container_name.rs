@@ -7,7 +7,7 @@ const DIGEST_LEN: usize = 24;
 const APPLE_CONTAINER_PREFIX_MAX_LEN: usize = 27;
 
 pub(crate) fn apple_container_prefix(prefix: &str) -> String {
-    let normalized = normalize_component(prefix, "moltis-sandbox");
+    let normalized = normalize_component(prefix, "antre-sandbox");
     compact_component(
         &normalized,
         prefix,
@@ -78,26 +78,26 @@ mod tests {
     #[test]
     fn preserves_names_that_fit() {
         assert_eq!(
-            apple_container_name("moltis-test-sandbox", "session-abc", 0),
-            "moltis-test-sandbox-session-abc"
+            apple_container_name("antre-test-sandbox", "session-abc", 0),
+            "antre-test-sandbox-session-abc"
         );
     }
 
     #[test]
     fn bounds_default_session_name() {
         let name = apple_container_name(
-            "moltis-moltis-sandbox",
+            "antre-antre-sandbox",
             "session-4fc5159e-0cb6-49f2-8eba-553ba3ec897b",
             0,
         );
         assert!(name.len() <= APPLE_CONTAINER_ID_MAX_LEN);
-        assert!(name.starts_with("moltis-moltis-sandbox-session-"));
+        assert!(name.starts_with("antre-antre-sandbox-session-"));
     }
 
     #[test]
     fn reserves_space_for_generation_suffix() {
         let name = apple_container_name(
-            "moltis-moltis-sandbox",
+            "antre-antre-sandbox",
             "session-4fc5159e-0cb6-49f2-8eba-553ba3ec897b",
             u32::MAX,
         );
@@ -118,10 +118,10 @@ mod tests {
 
     #[test]
     fn normalized_inputs_remain_distinct() {
-        let first = apple_container_name("moltis/sandbox", "session:abc", 0);
-        let second = apple_container_name("moltis?sandbox", "session?abc", 0);
+        let first = apple_container_name("antre/sandbox", "session:abc", 0);
+        let second = apple_container_name("antre?sandbox", "session?abc", 0);
         assert_ne!(first, second);
         assert!(first.len() <= APPLE_CONTAINER_ID_MAX_LEN);
-        assert!(has_apple_container_prefix(&first, "moltis/sandbox"));
+        assert!(has_apple_container_prefix(&first, "antre/sandbox"));
     }
 }

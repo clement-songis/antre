@@ -10,9 +10,9 @@ use {
     tracing::info,
 };
 
-use moltis_channels::{Result, plugin::ChannelOutbound};
+use antre_channels::{Result, plugin::ChannelOutbound};
 
-use moltis_common::types::ReplyPayload;
+use antre_common::types::ReplyPayload;
 
 use crate::{
     markdown::{self, TELEGRAM_MAX_MESSAGE_LEN},

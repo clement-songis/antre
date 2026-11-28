@@ -12,11 +12,11 @@
 //! Falls back to a `data:` URI when no store is available (tests, CLI-only).
 
 use {
+    antre_agents::tool_registry::AgentTool,
+    antre_media::mime::mime_from_extension,
+    antre_sessions::store::SessionStore,
     async_trait::async_trait,
     base64::{Engine as _, engine::general_purpose::STANDARD as BASE64},
-    moltis_agents::tool_registry::AgentTool,
-    moltis_media::mime::mime_from_extension,
-    moltis_sessions::store::SessionStore,
     serde_json::{Value, json},
     std::{path::Path, sync::Arc},
     tracing::debug,

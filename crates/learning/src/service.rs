@@ -5,14 +5,14 @@
 use std::{collections::HashSet, path::Path, time::Instant};
 
 use {
-    moltis_config::{AgentMemoryWriteMode, LearningConfig},
+    antre_config::{AgentMemoryWriteMode, LearningConfig},
     serde::Serialize,
     time::{Duration, OffsetDateTime},
     tokio::sync::Mutex,
 };
 
 #[cfg(feature = "metrics")]
-use moltis_metrics::{counter, histogram, labels, learning as metrics};
+use antre_metrics::{counter, histogram, labels, learning as metrics};
 
 use crate::{
     blobs::sha256_hex,

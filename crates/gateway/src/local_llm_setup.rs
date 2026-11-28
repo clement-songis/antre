@@ -21,7 +21,7 @@ use {
 };
 
 #[allow(unused_imports)]
-use moltis_providers::{ProviderRegistry, local_gguf, local_llm, model_id::raw_model_id};
+use antre_providers::{ProviderRegistry, local_gguf, local_llm, model_id::raw_model_id};
 
 #[allow(unused_imports)]
 use crate::{

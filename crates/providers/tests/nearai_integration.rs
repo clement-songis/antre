@@ -9,9 +9,9 @@
 mod registered_provider;
 
 use {
+    antre_agents::model::{ChatMessage, LlmProvider, StreamEvent},
+    antre_providers::nearai,
     futures::StreamExt,
-    moltis_agents::model::{ChatMessage, LlmProvider, StreamEvent},
-    moltis_providers::nearai,
     secrecy::Secret,
     std::sync::Arc,
 };

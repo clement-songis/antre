@@ -7,7 +7,7 @@
 
 use std::process::ExitCode;
 
-use moltis_model_catalog::{
+use antre_model_catalog::{
     diff::CatalogDiff,
     models_dev::ModelsDevCatalog,
     refresh::MIN_MODELS,

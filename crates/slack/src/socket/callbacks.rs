@@ -5,7 +5,7 @@ use {
     tracing::{debug, warn},
 };
 
-use moltis_channels::plugin::{ChannelReplyTarget, ChannelType};
+use antre_channels::plugin::{ChannelReplyTarget, ChannelType};
 
 use crate::{
     callback_worker::{CallbackAdmission, CallbackAdmissionError, CallbackJob},

@@ -6,11 +6,11 @@
 //! the pre-PR behaviour or need maximum token reduction.
 
 use {
-    moltis_agents::model::{
+    antre_agents::model::{
         ChatMessage, LlmProvider, StreamEvent, Usage,
         values_to_chat_messages_with_tool_result_limit,
     },
-    moltis_config::{CompactionConfig, CompactionMode},
+    antre_config::{CompactionConfig, CompactionMode},
     serde_json::Value,
     tokio_stream::StreamExt,
     tracing::info,
@@ -76,7 +76,7 @@ pub(super) async fn run(
     }
 
     // `config.summary_model` / `max_summary_tokens` aren't wired yet —
-    // tracked by beads issue moltis-8me.
+    // tracked by beads issue antre-8me.
     let _ = config;
 
     if summary.is_empty() {
@@ -104,7 +104,7 @@ pub(super) async fn run(
 mod tests {
     use {
         super::{super::test_support::StubProvider, *},
-        moltis_config::CompactionMode,
+        antre_config::CompactionMode,
         serde_json::json,
     };
 

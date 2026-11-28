@@ -87,7 +87,7 @@ impl LangfuseConfig {
         let mut headers = BTreeMap::new();
         headers.insert("Authorization".to_string(), self.basic_auth_header());
         // Langfuse surfaces these in its own diagnostics.
-        headers.insert("X-Langfuse-Sdk-Name".to_string(), "moltis".to_string());
+        headers.insert("X-Langfuse-Sdk-Name".to_string(), "antre".to_string());
         headers.insert(
             "X-Langfuse-Sdk-Version".to_string(),
             env!("CARGO_PKG_VERSION").to_string(),
@@ -116,7 +116,7 @@ impl LangfuseConfig {
             endpoint: self.url(OTEL_TRACES_PATH),
             headers: self.otlp_auth_headers(),
             timeout: self.timeout,
-            service_name: "moltis".to_string(),
+            service_name: "antre".to_string(),
             service_version,
             environment: self.environment.clone(),
             profile: ExportProfile::langfuse(),

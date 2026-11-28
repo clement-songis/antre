@@ -1,4 +1,4 @@
-// ── Design canvas types (mirror `moltis-canvas` serde shapes) ─────
+// ── Design canvas types (mirror `antre-canvas` serde shapes) ─────
 
 export interface Design {
 	id: string;

@@ -3,7 +3,7 @@ included:
   - Widget
 
 excluded:
-  - Moltis.xcodeproj
+  - Antre.xcodeproj
 
 line_length:
   warning: 120

@@ -1,6 +1,6 @@
 ---
 theme: default
-title: Moltis, A Rust-native Claw You Can Trust
+title: Antre, A Rust-native Claw You Can Trust
 info: |
   OpenClaw Meetup Lisbon
   March 31, 2026
@@ -18,11 +18,11 @@ drawings:
       <span class="opacity-50">•</span>
       <span>March 31, 2026</span>
     </div>
-    <img src="https://www.moltis.org/favicon.svg" alt="Moltis logo" class="h-16 w-16 rounded-2xl shadow-md" />
+    <img src="https://www.moltis.org/favicon.svg" alt="Antre logo" class="h-16 w-16 rounded-2xl shadow-md" />
   </div>
 
   <div class="mt-10 text-5xl font-semibold uppercase tracking-[0.25em] text-orange-600">
-    Moltis
+    Antre
   </div>
 
   <h1 class="mt-5 max-w-4xl text-6xl leading-[1.05] font-semibold tracking-tight text-gray-950">
@@ -46,7 +46,7 @@ drawings:
 About 60 seconds.
 
 Open with the core claim, not the feature list.
-The key line is: most agent demos prove capability once, Moltis is about whether
+The key line is: most agent demos prove capability once, Antre is about whether
 you would trust an agent to keep running on a machine you care about.
 
 Audience warm-up options:
@@ -68,13 +68,13 @@ Shorter version if you want to move faster:
 
 ---
 
-# Why Moltis exists
+# Why Antre exists
 
 <div class="grid grid-cols-3 gap-6 mt-8">
   <div class="rounded-xl border border-gray-200 px-5 py-4">
     <div class="text-xl font-semibold text-orange-600">Same direction</div>
     <div class="mt-3 text-sm leading-6">
-      I loved what OpenClaw unlocked. Moltis exists because I wanted to run my own version of that future.
+      I loved what OpenClaw unlocked. Antre exists because I wanted to run my own version of that future.
     </div>
   </div>
   <div class="rounded-xl border border-gray-200 px-5 py-4">
@@ -92,7 +92,7 @@ Shorter version if you want to move faster:
 </div>
 
 <div class="mt-8 rounded-xl border border-orange-300 bg-orange-50 px-5 py-4 text-lg">
-This project started from admiration, not rejection. Moltis is my opinionated Rust-native take on the same future.
+This project started from admiration, not rejection. Antre is my opinionated Rust-native take on the same future.
 </div>
 
 <!--
@@ -120,9 +120,9 @@ Your spoken version:
   <ul>
     <li>At the time, people were struggling so much with installing OpenClaw that someone in San Francisco built a business around setting it up for other people on Mac minis</li>
     <li>That was a real signal to me that the appetite was huge, but the setup still had too much friction</li>
-    <li>I wanted Moltis to be something you can get running quickly, without turning setup into a side quest</li>
+    <li>I wanted Antre to be something you can get running quickly, without turning setup into a side quest</li>
     <li>That meant one-binary installs, Docker and Docker Compose paths, Homebrew on macOS, and binaries for Linux architectures people actually use</li>
-    <li>Installing Moltis should take a few minutes at most, and on DigitalOcean it can take about a minute</li>
+    <li>Installing Antre should take a few minutes at most, and on DigitalOcean it can take about a minute</li>
   </ul>
 </div>
 
@@ -135,7 +135,7 @@ About 60 seconds.
 
 This is a pragmatic product point.
 You can say that part of the motivation was seeing how much friction there still
-was in getting agents running for normal people. Moltis takes a hard stance that
+was in getting agents running for normal people. Antre takes a hard stance that
 installation has to be fast enough that curiosity survives the setup process.
 -->
 
@@ -165,7 +165,7 @@ installation has to be fast enough that curiosity survives the setup process.
 </div>
 
 <div class="mt-8 rounded-xl border border-orange-300 bg-orange-50 px-5 py-4 text-lg">
-That is the design center for Moltis: not just "can it do something cool?", but "can I safely let it keep running?"
+That is the design center for Antre: not just "can it do something cool?", but "can I safely let it keep running?"
 </div>
 
 <!--
@@ -173,13 +173,13 @@ About 75 seconds.
 
 This slide is the setup. The audience already knows agents are impressive.
 The pivot is: the interesting engineering question is not capability, it's
-operability and trust. That lets you talk about Moltis as infrastructure rather
+operability and trust. That lets you talk about Antre as infrastructure rather
 than as another chat wrapper.
 -->
 
 ---
 
-# What Moltis actually is
+# What Antre actually is
 
 ## Local-first persistent agent server
 
@@ -224,9 +224,9 @@ Same agent, same context, multiple frontends, without handing everything to a cl
 <!--
 About 90 seconds.
 
-Keep this crisp. Moltis is not "an app", it is a server for your personal
+Keep this crisp. Antre is not "an app", it is a server for your personal
 agent. Emphasize persistence, multiple providers, and multiple channels.
-If you want one phrase: "ChatGPT is a tab, Moltis is infrastructure."
+If you want one phrase: "ChatGPT is a tab, Antre is infrastructure."
 The codebase-size moment is there to signal that this is already a real piece of
 software, not a toy prototype built over a long weekend.
 -->
@@ -382,7 +382,7 @@ ownership means you can run it on your own hardware with understandable tradeoff
 </div>
 
 <div class="mt-10 rounded-xl border border-orange-300 bg-orange-50 px-5 py-4 text-lg">
-One of my motivations for Moltis was simple: if agents are going to get real permissions, security cannot be a bolt-on.
+One of my motivations for Antre was simple: if agents are going to get real permissions, security cannot be a bolt-on.
 </div>
 
 <!--
@@ -399,7 +399,7 @@ that security is part of the product shape, not just a README section.
 
 ---
 
-# What people actually use Moltis for
+# What people actually use Antre for
 
 <div class="grid grid-cols-2 gap-5 mt-6">
   <div class="rounded-xl border border-gray-200 px-4 py-3">
@@ -445,7 +445,7 @@ that security is part of the product shape, not just a README section.
 </div>
 
 <div class="mt-8 rounded-xl border border-orange-300 bg-orange-50 px-5 py-4 text-lg">
-The pattern is clear: people are wiring Moltis into real workflows, not treating it like a toy chatbot.
+The pattern is clear: people are wiring Antre into real workflows, not treating it like a toy chatbot.
 </div>
 
 <!--
@@ -555,7 +555,7 @@ This is not a vanity slide. The point is product velocity and real usage.
 </div>
 
 <div class="mt-4 rounded-xl border border-orange-300 bg-orange-50 px-5 py-3 text-base">
-The pitch for Rust people is simple: Moltis uses Rust as an architecture tool, not just as an implementation language.
+The pitch for Rust people is simple: Antre uses Rust as an architecture tool, not just as an implementation language.
 </div>
 
 <!--
@@ -573,7 +573,7 @@ type boundaries, and a smaller trust surface."
 
 ---
 
-# Why try Moltis if you already know OpenClaw?
+# Why try Antre if you already know OpenClaw?
 
 <div class="grid grid-cols-3 gap-6 mt-8">
   <div class="rounded-xl border border-gray-200 px-5 py-4">
@@ -676,7 +676,7 @@ If time is tight, spend only 45 seconds here.
     <div class="mt-4">
       <ul>
         <li>native macOS app experience</li>
-        <li>same Moltis core reused through the Rust Swift bridge</li>
+        <li>same Antre core reused through the Rust Swift bridge</li>
         <li>native UI without splitting the product into separate engines</li>
       </ul>
     </div>
@@ -704,7 +704,7 @@ logic.
 
 1. Agents are becoming infrastructure, not toys
 2. The trust model is part of the product
-3. Moltis is one answer: local, persistent, auditable
+3. Antre is one answer: local, persistent, auditable
 
 </div>
 
@@ -717,7 +717,7 @@ If you want an agent server you can actually leave running, come find me after.
 </div>
 
 <div class="mt-4 text-xl leading-9 font-medium text-center">
-🐙 https://github.com/moltis-org/moltis &nbsp;&nbsp;&nbsp;•&nbsp;&nbsp;&nbsp; 📚 https://docs.moltis.org
+🐙 https://github.com/antre-ai/antre &nbsp;&nbsp;&nbsp;•&nbsp;&nbsp;&nbsp; 📚 https://docs.moltis.org
 </div>
 
 <!--

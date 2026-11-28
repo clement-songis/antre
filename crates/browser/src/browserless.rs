@@ -13,7 +13,7 @@ struct LaunchOptions<'a> {
     args: &'a [String],
 }
 
-/// Compute the Browserless session timeout from Moltis pool lifecycle settings.
+/// Compute the Browserless session timeout from Antre pool lifecycle settings.
 pub(crate) fn session_timeout_ms(
     idle_timeout_secs: u64,
     navigation_timeout_ms: u64,
@@ -94,7 +94,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn session_timeout_uses_moltis_lifecycle_floor() {
+    fn session_timeout_uses_antre_lifecycle_floor() {
         assert_eq!(session_timeout_ms(300, 30_000, 1800), 1_800_000);
     }
 

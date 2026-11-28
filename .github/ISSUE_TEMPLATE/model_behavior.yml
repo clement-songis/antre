@@ -17,7 +17,7 @@ body:
     attributes:
       label: Preflight Checklist
       options:
-        - label: I have searched [existing issues](https://github.com/moltis-org/moltis/issues?q=is%3Aissue+label%3Amodel-behavior) for similar reports
+        - label: I have searched [existing issues](https://github.com/antre-ai/antre/issues?q=is%3Aissue+label%3Amodel-behavior) for similar reports
           required: true
         - label: This report does NOT contain sensitive information (API keys, passwords, personal data)
           required: true
@@ -93,9 +93,9 @@ body:
   - type: input
     id: version
     attributes:
-      label: Moltis version
-      description: Run `moltis --version` and paste the output.
-      placeholder: "e.g., moltis 0.3.8"
+      label: Antre version
+      description: Run `antre --version` and paste the output.
+      placeholder: "e.g., antre 0.3.8"
     validations:
       required: true
 

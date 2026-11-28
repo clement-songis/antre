@@ -1,10 +1,10 @@
 //! Discord CDN attachment download and attachment classification.
 
 use {
-    moltis_channels::{
+    antre_channels::{
         Error as ChannelError, InboundMediaDownloader, InboundMediaSource, Result as ChannelsResult,
     },
-    moltis_common::{http_client::build_default_http_client, ssrf::ssrf_check},
+    antre_common::{http_client::build_default_http_client, ssrf::ssrf_check},
     serenity::{all::Attachment, async_trait},
 };
 

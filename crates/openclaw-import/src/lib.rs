@@ -1,4 +1,4 @@
-//! Import data from an existing OpenClaw installation into Moltis.
+//! Import data from an existing OpenClaw installation into Antre.
 //!
 //! Provides detection, scanning, and selective import of:
 //! - User/agent identity
@@ -138,7 +138,7 @@ pub fn scan(detection: &OpenClawDetection) -> ImportScan {
     }
 }
 
-/// Perform a selective import from OpenClaw into Moltis.
+/// Perform a selective import from OpenClaw into Antre.
 ///
 /// Each category is independent — partial failures don't block others.
 /// Returns a detailed report of what was imported, skipped, and failed.
@@ -155,7 +155,7 @@ pub fn import(
     let agent_id_mapping: std::collections::HashMap<String, String> = imported_agents
         .agents
         .iter()
-        .map(|a| (a.openclaw_id.clone(), a.moltis_id.clone()))
+        .map(|a| (a.openclaw_id.clone(), a.antre_id.clone()))
         .collect();
     report.imported_agents = Some(imported_agents.clone());
 
@@ -222,11 +222,11 @@ pub fn import(
             if let Some(ref source_ws) = agent.source_workspace
                 && (source_ws.join("MEMORY.md").is_file() || source_ws.join("memory").is_dir())
             {
-                let agent_data_dir = data_dir.join("agents").join(&agent.moltis_id);
+                let agent_data_dir = data_dir.join("agents").join(&agent.antre_id);
                 let agent_report = memory::import_agent_memory(source_ws, &agent_data_dir);
                 if agent_report.items_imported > 0 {
                     debug!(
-                        agent = %agent.moltis_id,
+                        agent = %agent.antre_id,
                         imported = agent_report.items_imported,
                         "imported per-agent memory"
                     );
@@ -248,12 +248,12 @@ pub fn import(
                     .any(|name| source_ws.join(name).is_file());
 
                 if has_files {
-                    let agent_data_dir = data_dir.join("agents").join(&agent.moltis_id);
+                    let agent_data_dir = data_dir.join("agents").join(&agent.antre_id);
                     let agent_report =
                         workspace_files::import_agent_workspace_files(source_ws, &agent_data_dir);
                     if agent_report.items_imported > 0 {
                         debug!(
-                            agent = %agent.moltis_id,
+                            agent = %agent.antre_id,
                             imported = agent_report.items_imported,
                             "imported per-agent workspace files"
                         );
@@ -304,7 +304,7 @@ pub fn import(
         } else {
             info!(
                 count = presets.len(),
-                "persisted agent presets to moltis.toml"
+                "persisted agent presets to antre.toml"
             );
         }
     }
@@ -331,7 +331,7 @@ pub fn import_sessions_only(detection: &OpenClawDetection, data_dir: &Path) -> C
     let agent_id_mapping: std::collections::HashMap<String, String> = imported_agents
         .agents
         .iter()
-        .map(|a| (a.openclaw_id.clone(), a.moltis_id.clone()))
+        .map(|a| (a.openclaw_id.clone(), a.antre_id.clone()))
         .collect();
     sessions::import_sessions(
         detection,
@@ -376,11 +376,11 @@ fn save_import_state(path: &Path, report: &ImportReport) -> error::Result<()> {
     Ok(())
 }
 
-/// Persist imported identity data to `moltis.toml`.
+/// Persist imported identity data to `antre.toml`.
 ///
 /// Loads any existing config, merges identity and timezone, and writes back.
 fn persist_identity(imported: &identity::ImportedIdentity, config_dir: &Path) -> error::Result<()> {
-    let config_path = config_dir.join("moltis.toml");
+    let config_path = config_dir.join("antre.toml");
     let mut config = load_or_default_config(&config_path);
 
     info!(
@@ -406,8 +406,8 @@ fn persist_identity(imported: &identity::ImportedIdentity, config_dir: &Path) ->
     }
 
     if let Some(ref tz_str) = imported.user_timezone {
-        if let Ok(tz) = tz_str.parse::<moltis_config::Timezone>() {
-            debug!(timezone = tz_str, "persisting user timezone to moltis.toml");
+        if let Ok(tz) = tz_str.parse::<antre_config::Timezone>() {
+            debug!(timezone = tz_str, "persisting user timezone to antre.toml");
             config.user.timezone = Some(tz);
         } else {
             warn!(timezone = tz_str, "unknown timezone, skipping");
@@ -415,22 +415,22 @@ fn persist_identity(imported: &identity::ImportedIdentity, config_dir: &Path) ->
     }
 
     if let Some(ref user_name) = imported.user_name {
-        debug!(user_name, "persisting user name to moltis.toml");
+        debug!(user_name, "persisting user name to antre.toml");
         config.user.name = Some(user_name.clone());
     }
 
     save_config_to_path(&config_path, &config)
 }
 
-/// Persist imported agent presets to `[agents.presets.*]` in `moltis.toml`.
+/// Persist imported agent presets to `[agents.presets.*]` in `antre.toml`.
 ///
 /// Merges with existing presets — existing presets with the same name are
 /// preserved (not overwritten) so re-imports don't discard user tweaks.
 fn persist_agent_presets(
-    presets: &std::collections::HashMap<String, moltis_config::schema::AgentPreset>,
+    presets: &std::collections::HashMap<String, antre_config::schema::AgentPreset>,
     config_dir: &Path,
 ) -> error::Result<()> {
-    let config_path = config_dir.join("moltis.toml");
+    let config_path = config_dir.join("antre.toml");
     let mut config = load_or_default_config(&config_path);
 
     for (id, preset) in presets {
@@ -444,16 +444,16 @@ fn persist_agent_presets(
     save_config_to_path(&config_path, &config)
 }
 
-/// Persist imported channel configs to `[channels.*]` in `moltis.toml`.
+/// Persist imported channel configs to `[channels.*]` in `antre.toml`.
 fn persist_channels(imported: &channels::ImportedChannels, config_dir: &Path) -> error::Result<()> {
-    let config_path = config_dir.join("moltis.toml");
+    let config_path = config_dir.join("antre.toml");
     let mut config = load_or_default_config(&config_path);
 
     for ch in &imported.telegram {
         ensure_channel_offered(&mut config.channels.offered, "telegram");
         let allowlist: Vec<String> = ch.allowed_users.iter().map(|id| id.to_string()).collect();
 
-        // Map OpenClaw dm_policy to Moltis format (default to "allowlist")
+        // Map OpenClaw dm_policy to Antre format (default to "allowlist")
         let dm_policy = match ch.dm_policy.as_deref() {
             Some("pairing") => "pairing",
             Some("otp") => "otp",
@@ -468,7 +468,7 @@ fn persist_channels(imported: &channels::ImportedChannels, config_dir: &Path) ->
             "allowlist": allowlist,
         });
 
-        debug!(account_id = %ch.account_id, "persisting Telegram channel to moltis.toml");
+        debug!(account_id = %ch.account_id, "persisting Telegram channel to antre.toml");
         config
             .channels
             .telegram
@@ -491,7 +491,7 @@ fn persist_channels(imported: &channels::ImportedChannels, config_dir: &Path) ->
             "guild_allowlist": ch.guild_allowlist,
         });
 
-        debug!(account_id = %ch.account_id, "persisting Discord channel to moltis.toml");
+        debug!(account_id = %ch.account_id, "persisting Discord channel to antre.toml");
         config.channels.discord.insert(ch.account_id.clone(), value);
     }
 
@@ -522,7 +522,7 @@ fn persist_channels(imported: &channels::ImportedChannels, config_dir: &Path) ->
             }
         }
 
-        debug!(account_id = %ch.account_id, "persisting Signal channel to moltis.toml");
+        debug!(account_id = %ch.account_id, "persisting Signal channel to antre.toml");
         config.channels.signal.insert(ch.account_id.clone(), value);
     }
 
@@ -581,23 +581,23 @@ fn map_signal_group_policy(policy: Option<&str>) -> &'static str {
     }
 }
 
-/// Load a `MoltisConfig` from a TOML file, or return defaults if not found.
-fn load_or_default_config(path: &Path) -> moltis_config::MoltisConfig {
+/// Load a `AntreConfig` from a TOML file, or return defaults if not found.
+fn load_or_default_config(path: &Path) -> antre_config::AntreConfig {
     if !path.is_file() {
-        return moltis_config::MoltisConfig::default();
+        return antre_config::AntreConfig::default();
     }
     let Ok(content) = std::fs::read_to_string(path) else {
-        return moltis_config::MoltisConfig::default();
+        return antre_config::AntreConfig::default();
     };
     toml::from_str(&content).unwrap_or_default()
 }
 
-/// Serialize a `MoltisConfig` to TOML and write it to the given path.
+/// Serialize a `AntreConfig` to TOML and write it to the given path.
 ///
-/// Delegates to [`moltis_config::loader::save_config_to_path`] so that
+/// Delegates to [`antre_config::loader::save_config_to_path`] so that
 /// existing comments in the TOML file are preserved during import.
-fn save_config_to_path(path: &Path, config: &moltis_config::MoltisConfig) -> error::Result<()> {
-    moltis_config::loader::save_config_to_path(path, config)
+fn save_config_to_path(path: &Path, config: &antre_config::AntreConfig) -> error::Result<()> {
+    antre_config::loader::save_config_to_path(path, config)
         .map_err(|e| error::Error::message(e.to_string()))?;
     Ok(())
 }
@@ -606,7 +606,7 @@ fn add_todos(report: &mut ImportReport, detection: &OpenClawDetection) {
     for channel in &detection.unsupported_channels {
         report.add_todo(
             format!("{channel} channel"),
-            format!("The {channel} channel is not yet implemented in Moltis."),
+            format!("The {channel} channel is not yet implemented in Antre."),
         );
     }
 
@@ -619,7 +619,7 @@ fn add_todos(report: &mut ImportReport, detection: &OpenClawDetection) {
 
     report.add_todo(
         "Tool policies",
-        "OpenClaw's tool policy format differs from Moltis's configuration.",
+        "OpenClaw's tool policy format differs from Antre's configuration.",
     );
 }
 
@@ -974,12 +974,12 @@ mod tests {
         };
         let report = import(&detection, &selection, &config_dir, &data_dir);
 
-        // Identity should be persisted to moltis.toml
-        let config_path = config_dir.join("moltis.toml");
-        assert!(config_path.is_file(), "moltis.toml should be created");
+        // Identity should be persisted to antre.toml
+        let config_path = config_dir.join("antre.toml");
+        assert!(config_path.is_file(), "antre.toml should be created");
 
         let content = std::fs::read_to_string(&config_path).unwrap();
-        let config: moltis_config::MoltisConfig = toml::from_str(&content).unwrap();
+        let config: antre_config::AntreConfig = toml::from_str(&content).unwrap();
 
         assert_eq!(config.identity.name.as_deref(), Some("Claude"));
         assert_eq!(config.identity.theme.as_deref(), Some("wise owl"));
@@ -1016,12 +1016,12 @@ mod tests {
         };
         let report = import(&detection, &selection, &config_dir, &data_dir);
 
-        // Channels should be persisted to moltis.toml
-        let config_path = config_dir.join("moltis.toml");
-        assert!(config_path.is_file(), "moltis.toml should be created");
+        // Channels should be persisted to antre.toml
+        let config_path = config_dir.join("antre.toml");
+        assert!(config_path.is_file(), "antre.toml should be created");
 
         let content = std::fs::read_to_string(&config_path).unwrap();
-        let config: moltis_config::MoltisConfig = toml::from_str(&content).unwrap();
+        let config: antre_config::AntreConfig = toml::from_str(&content).unwrap();
 
         assert!(
             !config.channels.telegram.is_empty(),
@@ -1083,11 +1083,11 @@ mod tests {
         };
         let report = import(&detection, &selection, &config_dir, &data_dir);
 
-        let config_path = config_dir.join("moltis.toml");
-        assert!(config_path.is_file(), "moltis.toml should be created");
+        let config_path = config_dir.join("antre.toml");
+        assert!(config_path.is_file(), "antre.toml should be created");
 
         let content = std::fs::read_to_string(&config_path).unwrap();
-        let config: moltis_config::MoltisConfig = toml::from_str(&content).unwrap();
+        let config: antre_config::AntreConfig = toml::from_str(&content).unwrap();
 
         assert!(
             config
@@ -1142,15 +1142,15 @@ mod tests {
         std::fs::create_dir_all(&data_dir).unwrap();
 
         // Pre-existing config with theme already set
-        let existing = moltis_config::MoltisConfig {
-            identity: moltis_config::AgentIdentity {
+        let existing = antre_config::AntreConfig {
+            identity: antre_config::AgentIdentity {
                 theme: Some("chill cat".to_string()),
                 ..Default::default()
             },
             ..Default::default()
         };
         let toml_str = toml::to_string_pretty(&existing).unwrap();
-        std::fs::write(config_dir.join("moltis.toml"), &toml_str).unwrap();
+        std::fs::write(config_dir.join("antre.toml"), &toml_str).unwrap();
 
         let detection = detect::detect_at(home).unwrap();
         let selection = ImportSelection {
@@ -1159,8 +1159,8 @@ mod tests {
         };
         import(&detection, &selection, &config_dir, &data_dir);
 
-        let content = std::fs::read_to_string(config_dir.join("moltis.toml")).unwrap();
-        let config: moltis_config::MoltisConfig = toml::from_str(&content).unwrap();
+        let content = std::fs::read_to_string(config_dir.join("antre.toml")).unwrap();
+        let config: antre_config::AntreConfig = toml::from_str(&content).unwrap();
 
         // Imported name should be set
         assert_eq!(config.identity.name.as_deref(), Some("Claude"));
@@ -1182,9 +1182,9 @@ mod tests {
         let detection = detect::detect_at(home).unwrap();
         let report = import(&detection, &ImportSelection::all(), &config_dir, &data_dir);
 
-        // moltis.toml should contain both identity and channels
-        let content = std::fs::read_to_string(config_dir.join("moltis.toml")).unwrap();
-        let config: moltis_config::MoltisConfig = toml::from_str(&content).unwrap();
+        // antre.toml should contain both identity and channels
+        let content = std::fs::read_to_string(config_dir.join("antre.toml")).unwrap();
+        let config: antre_config::AntreConfig = toml::from_str(&content).unwrap();
 
         assert_eq!(config.identity.name.as_deref(), Some("Claude"));
         assert_eq!(config.user.name.as_deref(), Some("Penso"));
@@ -1207,7 +1207,7 @@ mod tests {
         std::fs::create_dir_all(&data_dir).unwrap();
 
         // Write a config file with comments (simulating the template)
-        let template = r#"# Moltis configuration
+        let template = r#"# Antre configuration
 # See docs for all options
 
 [identity]
@@ -1221,7 +1221,7 @@ mod tests {
 [channels]
 # Configure messaging channels below
 "#;
-        std::fs::write(config_dir.join("moltis.toml"), template).unwrap();
+        std::fs::write(config_dir.join("antre.toml"), template).unwrap();
 
         let detection = detect::detect_at(home).unwrap();
         let selection = ImportSelection {
@@ -1234,15 +1234,15 @@ mod tests {
             "identity should have been imported, report: {report:?}"
         );
 
-        let content = std::fs::read_to_string(config_dir.join("moltis.toml")).unwrap();
+        let content = std::fs::read_to_string(config_dir.join("antre.toml")).unwrap();
 
         // Imported values should be present
-        let config: moltis_config::MoltisConfig = toml::from_str(&content).unwrap();
+        let config: antre_config::AntreConfig = toml::from_str(&content).unwrap();
         assert_eq!(config.identity.name.as_deref(), Some("Claude"));
 
         // Comments from the original template should be preserved
         assert!(
-            content.contains("# Moltis configuration"),
+            content.contains("# Antre configuration"),
             "top-level comment should be preserved, got:\n{content}"
         );
         assert!(
@@ -1282,9 +1282,9 @@ mod tests {
         let detection = detect::detect_at(home).unwrap();
         let _report = import(&detection, &ImportSelection::all(), &config_dir, &data_dir);
 
-        // moltis.toml should contain a preset for the non-default agent
-        let content = std::fs::read_to_string(config_dir.join("moltis.toml")).unwrap();
-        let config: moltis_config::MoltisConfig = toml::from_str(&content).unwrap();
+        // antre.toml should contain a preset for the non-default agent
+        let content = std::fs::read_to_string(config_dir.join("antre.toml")).unwrap();
+        let config: antre_config::AntreConfig = toml::from_str(&content).unwrap();
 
         assert!(
             config.agents.presets.contains_key("researcher"),
@@ -1324,12 +1324,12 @@ mod tests {
         std::fs::create_dir_all(&data_dir).unwrap();
 
         // Pre-existing config with a customized "helper" preset
-        let mut existing = moltis_config::MoltisConfig::default();
+        let mut existing = antre_config::AntreConfig::default();
         existing
             .agents
             .presets
-            .insert("helper".to_string(), moltis_config::schema::AgentPreset {
-                identity: moltis_config::AgentIdentity {
+            .insert("helper".to_string(), antre_config::schema::AgentPreset {
+                identity: antre_config::AgentIdentity {
                     name: Some("Custom Helper".to_string()),
                     ..Default::default()
                 },
@@ -1337,13 +1337,13 @@ mod tests {
                 ..Default::default()
             });
         let toml_str = toml::to_string_pretty(&existing).unwrap();
-        std::fs::write(config_dir.join("moltis.toml"), &toml_str).unwrap();
+        std::fs::write(config_dir.join("antre.toml"), &toml_str).unwrap();
 
         let detection = detect::detect_at(home).unwrap();
         import(&detection, &ImportSelection::all(), &config_dir, &data_dir);
 
-        let content = std::fs::read_to_string(config_dir.join("moltis.toml")).unwrap();
-        let config: moltis_config::MoltisConfig = toml::from_str(&content).unwrap();
+        let content = std::fs::read_to_string(config_dir.join("antre.toml")).unwrap();
+        let config: antre_config::AntreConfig = toml::from_str(&content).unwrap();
 
         // Existing preset should be preserved, not overwritten
         let preset = config.agents.presets.get("helper").unwrap();

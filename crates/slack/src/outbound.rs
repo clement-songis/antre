@@ -8,7 +8,7 @@ use {
     tracing::{debug, warn},
 };
 
-use moltis_channels::{
+use antre_channels::{
     Error as ChannelError, Result as ChannelResult,
     plugin::{
         ButtonStyle, ChannelOutbound, ChannelStreamOutbound, ChannelThreadContext,
@@ -16,7 +16,7 @@ use moltis_channels::{
     },
 };
 
-use moltis_common::types::ReplyPayload;
+use antre_common::types::ReplyPayload;
 
 use crate::{
     client::slack_client_for_base_url,
@@ -36,7 +36,7 @@ const STREAM_MIN_INITIAL_CHARS: usize = 30;
 fn shared_http_client() -> reqwest::Client {
     static CLIENT: std::sync::OnceLock<reqwest::Client> = std::sync::OnceLock::new();
     CLIENT
-        .get_or_init(moltis_common::http_client::build_default_http_client)
+        .get_or_init(antre_common::http_client::build_default_http_client)
         .clone()
 }
 
@@ -616,9 +616,9 @@ impl ChannelOutbound for SlackOutbound {
         }
 
         #[cfg(feature = "metrics")]
-        moltis_metrics::counter!(
-            moltis_metrics::channels::MESSAGES_SENT_TOTAL,
-            moltis_metrics::labels::CHANNEL => "slack"
+        antre_metrics::counter!(
+            antre_metrics::channels::MESSAGES_SENT_TOTAL,
+            antre_metrics::labels::CHANNEL => "slack"
         )
         .increment(1);
 
@@ -661,9 +661,9 @@ impl ChannelOutbound for SlackOutbound {
         }
 
         #[cfg(feature = "metrics")]
-        moltis_metrics::counter!(
-            moltis_metrics::channels::MESSAGES_SENT_TOTAL,
-            moltis_metrics::labels::CHANNEL => "slack"
+        antre_metrics::counter!(
+            antre_metrics::channels::MESSAGES_SENT_TOTAL,
+            antre_metrics::labels::CHANNEL => "slack"
         )
         .increment(1);
 
@@ -1079,7 +1079,7 @@ mod tests {
                 cancel: tokio_util::sync::CancellationToken::new(),
                 bot_user_id: Some("UBOT".to_string()),
                 stream_recipients: Default::default(),
-                otp: std::sync::Mutex::new(moltis_channels::otp::OtpState::new(300)),
+                otp: std::sync::Mutex::new(antre_channels::otp::OtpState::new(300)),
                 dedup: std::sync::Mutex::new(crate::state::EventDedup::default()),
             });
         SlackOutbound { accounts }

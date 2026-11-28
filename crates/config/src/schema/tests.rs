@@ -6,11 +6,11 @@ use super::*;
 fn chat_reasoning_default_omitted_is_none() {
     assert_eq!(ChatConfig::default().reasoning_default, None);
     for source in ["", "[chat]"] {
-        let config: MoltisConfig = toml::from_str(source).unwrap();
+        let config: AntreConfig = toml::from_str(source).unwrap();
         assert_eq!(config.chat.reasoning_default, None);
         let serialized = toml::to_string(&config).unwrap();
         assert!(!serialized.contains("reasoning_default"));
-        let restored: MoltisConfig = toml::from_str(&serialized).unwrap();
+        let restored: AntreConfig = toml::from_str(&serialized).unwrap();
         assert_eq!(restored.chat.reasoning_default, None);
     }
 }
@@ -26,13 +26,13 @@ fn chat_reasoning_default_deserialize_and_roundtrip() {
         ("extra-high", ReasoningEffort::ExtraHigh),
         ("max", ReasoningEffort::Max),
     ] {
-        let config: MoltisConfig =
+        let config: AntreConfig =
             toml::from_str(&format!("[chat]\nreasoning_default = {value:?}")).unwrap();
         assert_eq!(config.chat.reasoning_default, Some(expected));
         assert_eq!(ReasoningEffort::try_from(value), Ok(expected));
         let serialized = toml::to_string(&config).unwrap();
         assert!(serialized.contains(&format!("reasoning_default = {:?}", expected.as_str())));
-        let restored: MoltisConfig = toml::from_str(&serialized).unwrap();
+        let restored: AntreConfig = toml::from_str(&serialized).unwrap();
         assert_eq!(restored.chat.reasoning_default, Some(expected));
         let json = serde_json::to_string(&expected).unwrap();
         assert_eq!(json, format!("{:?}", expected.as_str()));
@@ -49,14 +49,13 @@ fn chat_reasoning_default_rejects_invalid_values() {
         assert!(ReasoningEffort::try_from(value).is_err());
         assert!(serde_json::from_str::<ReasoningEffort>(&format!("{value:?}")).is_err());
         assert!(
-            toml::from_str::<MoltisConfig>(&format!("[chat]\nreasoning_default = {value:?}"))
+            toml::from_str::<AntreConfig>(&format!("[chat]\nreasoning_default = {value:?}"))
                 .is_err()
         );
     }
     for value in ["true", "42", "[]", "{}"] {
         assert!(
-            toml::from_str::<MoltisConfig>(&format!("[chat]\nreasoning_default = {value}"))
-                .is_err()
+            toml::from_str::<AntreConfig>(&format!("[chat]\nreasoning_default = {value}")).is_err()
         );
     }
 }
@@ -118,19 +117,19 @@ fn skills_config_sidecar_files_default_disabled() {
 [skills]
 enabled = true
 "#;
-    let parsed: MoltisConfig = toml::from_str(toml).unwrap();
+    let parsed: AntreConfig = toml::from_str(toml).unwrap();
     assert!(!parsed.skills.enable_agent_sidecar_files);
 }
 
 #[test]
 fn tools_loop_detector_window_defaults_to_two() {
-    let config: MoltisConfig = toml::from_str("").unwrap();
+    let config: AntreConfig = toml::from_str("").unwrap();
     assert_eq!(config.tools.agent_loop_detector_window, 2);
 }
 
 #[test]
 fn cloudflare_tunnel_config_defaults_to_disabled() {
-    let config: MoltisConfig = toml::from_str("").unwrap();
+    let config: AntreConfig = toml::from_str("").unwrap();
     assert!(!config.cloudflare_tunnel.enabled);
     assert!(config.cloudflare_tunnel.token.is_none());
     assert!(config.cloudflare_tunnel.hostname.is_none());
@@ -138,12 +137,12 @@ fn cloudflare_tunnel_config_defaults_to_disabled() {
 
 #[test]
 fn cloudflare_tunnel_config_parses_token_and_hostname() {
-    let config: MoltisConfig = toml::from_str(
+    let config: AntreConfig = toml::from_str(
         r#"
 [cloudflare_tunnel]
 enabled = true
 token = "cf-token"
-hostname = "moltis.example.com"
+hostname = "antre.example.com"
 "#,
     )
     .unwrap();
@@ -159,19 +158,19 @@ hostname = "moltis.example.com"
     );
     assert_eq!(
         config.cloudflare_tunnel.hostname.as_deref(),
-        Some("moltis.example.com")
+        Some("antre.example.com")
     );
 }
 
 #[test]
 fn netbird_config_defaults_to_off() {
-    let config: MoltisConfig = toml::from_str("").unwrap();
+    let config: AntreConfig = toml::from_str("").unwrap();
     assert_eq!(config.netbird.mode, "off");
 }
 
 #[test]
 fn netbird_config_parses_serve_mode() {
-    let config: MoltisConfig = toml::from_str(
+    let config: AntreConfig = toml::from_str(
         r#"
 [netbird]
 mode = "serve"
@@ -189,7 +188,7 @@ fn env_section_parses() {
 BRAVE_API_KEY = "test-key"
 OPENROUTER_API_KEY = "sk-or-test"
 "#;
-    let config: MoltisConfig = toml::from_str(toml).unwrap();
+    let config: AntreConfig = toml::from_str(toml).unwrap();
     assert_eq!(config.env.len(), 2);
     assert_eq!(config.env.get("BRAVE_API_KEY").unwrap(), "test-key");
     assert_eq!(config.env.get("OPENROUTER_API_KEY").unwrap(), "sk-or-test");
@@ -197,13 +196,13 @@ OPENROUTER_API_KEY = "sk-or-test"
 
 #[test]
 fn env_section_defaults_to_empty() {
-    let config: MoltisConfig = toml::from_str("").unwrap();
+    let config: AntreConfig = toml::from_str("").unwrap();
     assert!(config.env.is_empty());
 }
 
 #[test]
 fn agents_config_defaults_include_builtin_presets() {
-    let config: MoltisConfig = toml::from_str("").unwrap();
+    let config: AntreConfig = toml::from_str("").unwrap();
     assert_eq!(config.agents.default_preset.as_deref(), Some("research"));
     for name in [
         "research",
@@ -231,7 +230,7 @@ fn agents_config_defaults_include_builtin_presets() {
 
 #[test]
 fn modes_config_defaults_include_builtin_presets() {
-    let config: MoltisConfig = toml::from_str("").unwrap();
+    let config: AntreConfig = toml::from_str("").unwrap();
     for name in [
         "concise",
         "technical",
@@ -252,7 +251,7 @@ fn modes_config_defaults_include_builtin_presets() {
 
 #[test]
 fn modes_config_parses_and_overrides_presets() {
-    let config: MoltisConfig = toml::from_str(
+    let config: AntreConfig = toml::from_str(
         r#"
 [modes.presets.concise]
 name = "Tiny"
@@ -282,7 +281,7 @@ prompt = "Use the custom overlay."
 
 #[test]
 fn mcp_config_defaults_request_timeout() {
-    let config: MoltisConfig = toml::from_str("").unwrap();
+    let config: AntreConfig = toml::from_str("").unwrap();
     assert_eq!(config.mcp.request_timeout_secs, 30);
 }
 
@@ -310,7 +309,7 @@ fn mcp_server_entry_maps_transport_aliases_to_shared_type() {
 
 #[test]
 fn mcp_server_entry_parses_request_timeout_override() {
-    let config: MoltisConfig = toml::from_str(
+    let config: AntreConfig = toml::from_str(
         r#"
 [mcp.servers.memory]
 command = "npx"
@@ -331,7 +330,7 @@ request_timeout_secs = 75
 
 #[test]
 fn mcp_server_entry_parses_env_values_as_secrets() {
-    let config: MoltisConfig = toml::from_str(
+    let config: AntreConfig = toml::from_str(
         r#"
 [mcp.servers.github]
 command = "npx"
@@ -356,7 +355,7 @@ GITHUB_PERSONAL_ACCESS_TOKEN = "ghp-secret"
 
 #[test]
 fn mcp_oauth_override_parses_client_secret_as_secret() {
-    let config: MoltisConfig = toml::from_str(
+    let config: AntreConfig = toml::from_str(
         r#"
 [mcp.servers.hubspot]
 url = "https://mcp.hubspot.com"
@@ -403,7 +402,7 @@ theme = "thorough"
 allow = ["web_search", "web_fetch"]
 deny = ["exec"]
 "#;
-    let config: MoltisConfig = toml::from_str(toml).unwrap();
+    let config: AntreConfig = toml::from_str(toml).unwrap();
     assert_eq!(config.agents.default_preset.as_deref(), Some("research"));
     let preset = config.agents.get_preset("research").unwrap();
     assert_eq!(preset.model.as_deref(), Some("openai/gpt-5.2"));
@@ -439,7 +438,7 @@ system_prompt_suffix = "User research override."
 [agents.presets.research.identity]
 name = "Scout"
 "#;
-    let config: MoltisConfig = toml::from_str(toml).unwrap();
+    let config: AntreConfig = toml::from_str(toml).unwrap();
 
     assert_eq!(config.agents.default_preset.as_deref(), Some("custom"));
     assert!(config.agents.presets.contains_key("coder"));
@@ -839,7 +838,7 @@ fn sandbox_wasm_tool_limits_deserialize() {
 mode = "all"
 scope = "session"
 workspace_mount = "ro"
-host_data_dir = "/host/moltis-data"
+host_data_dir = "/host/antre-data"
 
 [wasm_tool_limits]
 default_memory = 2048
@@ -852,7 +851,7 @@ memory = 300
     )
     .unwrap();
 
-    assert_eq!(config.host_data_dir.as_deref(), Some("/host/moltis-data"));
+    assert_eq!(config.host_data_dir.as_deref(), Some("/host/antre-data"));
     let limits = config.wasm_tool_limits.unwrap();
     assert_eq!(limits.default_memory, 2048);
     assert_eq!(limits.default_fuel, 5000);
@@ -984,11 +983,11 @@ url = "http://192.168.0.9:11434"
 
 #[test]
 fn memory_embedding_legacy_aliases_map_to_current_fields() {
-    let config: MoltisConfig = toml::from_str(
+    let config: AntreConfig = toml::from_str(
         r#"
 [memory]
 embedding_provider = "custom"
-embedding_base_url = "http://moltis-embeddings:7997/v1"
+embedding_base_url = "http://antre-embeddings:7997/v1"
 embedding_model = "intfloat/multilingual-e5-small"
 embedding_api_key = "secret-key"
 "#,
@@ -998,7 +997,7 @@ embedding_api_key = "secret-key"
     assert_eq!(config.memory.provider, Some(MemoryProvider::Custom));
     assert_eq!(
         config.memory.base_url.as_deref(),
-        Some("http://moltis-embeddings:7997/v1")
+        Some("http://antre-embeddings:7997/v1")
     );
     assert_eq!(
         config.memory.model.as_deref(),
@@ -1026,7 +1025,7 @@ tool_mode = "text"
 enabled = true
 tool_mode = "native"
 "#;
-    let config: MoltisConfig = toml::from_str(toml_str).unwrap();
+    let config: AntreConfig = toml::from_str(toml_str).unwrap();
     assert_eq!(
         config.providers.get("ollama").unwrap().tool_mode,
         ToolMode::Text
@@ -1074,7 +1073,7 @@ wire_api = "anthropic"
 setup_token = "sk-ant-oat01-backup"
 models = ["claude-opus-5-5"]
 "#;
-    let config: MoltisConfig = toml::from_str(toml_str).unwrap();
+    let config: AntreConfig = toml::from_str(toml_str).unwrap();
     let entry = config.providers.get("custom-anthropic-backup").unwrap();
     assert_eq!(entry.wire_api, WireApi::Anthropic);
     assert!(entry.setup_token.is_some());
@@ -1094,7 +1093,7 @@ base_url = "https://gmn.example.com/v1"
 wire_api = "responses"
 models = ["gpt-5.3-codex"]
 "#;
-    let config: MoltisConfig = toml::from_str(toml_str).unwrap();
+    let config: AntreConfig = toml::from_str(toml_str).unwrap();
     let entry = config.providers.get("custom-mn").unwrap();
     assert_eq!(entry.wire_api, WireApi::Responses);
 }
@@ -1105,7 +1104,7 @@ fn provider_entry_wire_api_defaults_to_chat_completions() {
 [providers.openai]
 enabled = true
 "#;
-    let config: MoltisConfig = toml::from_str(toml_str).unwrap();
+    let config: AntreConfig = toml::from_str(toml_str).unwrap();
     let entry = config.providers.get("openai").unwrap();
     assert_eq!(entry.wire_api, WireApi::ChatCompletions);
 }
@@ -1121,7 +1120,7 @@ binary = "claude"
 models = ["claude-opus-4-8", "claude-sonnet-4-6"]
 efforts = ["high", "xhigh"]
 "#;
-    let config: MoltisConfig = toml::from_str(toml_str).unwrap();
+    let config: AntreConfig = toml::from_str(toml_str).unwrap();
     let entry = config.external_agents.agents.get("claude-code").unwrap();
     assert_eq!(entry.models, vec!["claude-opus-4-8", "claude-sonnet-4-6"]);
     assert_eq!(entry.efforts, vec!["high", "xhigh"]);
@@ -1152,21 +1151,21 @@ fn provider_entry_wire_api_serializes_responses() {
 
 #[test]
 fn terminal_enabled_defaults_to_true() {
-    let cfg: MoltisConfig = toml::from_str("").unwrap();
+    let cfg: AntreConfig = toml::from_str("").unwrap();
     assert!(cfg.server.terminal_enabled);
     // Note: is_terminal_enabled() is NOT tested here because it reads
-    // the MOLTIS_TERMINAL_DISABLED env var, which may be set in CI.
+    // the ANTRE_TERMINAL_DISABLED env var, which may be set in CI.
 }
 
 #[test]
 fn terminal_enabled_parsed_from_config() {
-    let cfg: MoltisConfig = toml::from_str("[server]\nterminal_enabled = false\n").unwrap();
+    let cfg: AntreConfig = toml::from_str("[server]\nterminal_enabled = false\n").unwrap();
     assert!(!cfg.server.terminal_enabled);
 }
 
 #[test]
 fn terminal_disabled_via_config_reflects_in_helper() {
-    let cfg: MoltisConfig = toml::from_str("[server]\nterminal_enabled = false\n").unwrap();
+    let cfg: AntreConfig = toml::from_str("[server]\nterminal_enabled = false\n").unwrap();
     // When the env var is not set, the helper returns the config value.
     // (We cannot test the env-var override here because workspace lints
     // deny unsafe code, and `std::env::set_var` is unsafe.)
@@ -1175,13 +1174,13 @@ fn terminal_disabled_via_config_reflects_in_helper() {
 
 #[test]
 fn rpc_timeout_ms_defaults_to_5000() {
-    let cfg: MoltisConfig = toml::from_str("").unwrap();
+    let cfg: AntreConfig = toml::from_str("").unwrap();
     assert_eq!(cfg.server.rpc_timeout_ms, 5000);
 }
 
 #[test]
 fn rpc_timeout_ms_parsed_from_config() {
-    let cfg: MoltisConfig = toml::from_str("[server]\nrpc_timeout_ms = 8000\n").unwrap();
+    let cfg: AntreConfig = toml::from_str("[server]\nrpc_timeout_ms = 8000\n").unwrap();
     assert_eq!(cfg.server.rpc_timeout_ms, 8000);
 }
 
@@ -1194,7 +1193,7 @@ base_url = "http://127.0.0.1:8003/v1"
 [voice.stt.whisper]
 base_url = "http://127.0.0.1:8001/v1"
 "#;
-    let config: MoltisConfig = toml::from_str(toml_str).unwrap();
+    let config: AntreConfig = toml::from_str(toml_str).unwrap();
 
     assert_eq!(
         config.voice.tts.openai.base_url.as_deref(),
@@ -1208,25 +1207,25 @@ base_url = "http://127.0.0.1:8001/v1"
 
 #[test]
 fn external_url_defaults_to_none() {
-    let cfg: MoltisConfig = toml::from_str("").unwrap();
+    let cfg: AntreConfig = toml::from_str("").unwrap();
     assert!(cfg.server.external_url.is_none());
 }
 
 #[test]
 fn external_url_parses_from_toml() {
-    let cfg: MoltisConfig =
-        toml::from_str("[server]\nexternal_url = \"https://moltis.example.com\"\n").unwrap();
+    let cfg: AntreConfig =
+        toml::from_str("[server]\nexternal_url = \"https://antre.example.com\"\n").unwrap();
     assert_eq!(
         cfg.server.external_url.as_deref(),
-        Some("https://moltis.example.com")
+        Some("https://antre.example.com")
     );
 }
 
 #[test]
 fn effective_external_url_returns_config_value() {
-    let cfg: MoltisConfig =
+    let cfg: AntreConfig =
         toml::from_str("[server]\nexternal_url = \"https://from-config.example.com\"\n").unwrap();
-    // When MOLTIS_EXTERNAL_URL is not set, the config value is returned.
+    // When ANTRE_EXTERNAL_URL is not set, the config value is returned.
     // (We cannot test the env-var override here because set_var is unsafe.)
     let effective = cfg.server.effective_external_url();
     assert!(effective.is_some());
@@ -1235,7 +1234,7 @@ fn effective_external_url_returns_config_value() {
 
 #[test]
 fn effective_external_url_strips_trailing_slash() {
-    let cfg: MoltisConfig =
+    let cfg: AntreConfig =
         toml::from_str("[server]\nexternal_url = \"https://example.com/\"\n").unwrap();
     assert_eq!(
         cfg.server.effective_external_url().as_deref(),
@@ -1245,7 +1244,7 @@ fn effective_external_url_strips_trailing_slash() {
 
 #[test]
 fn effective_external_url_returns_none_when_unset() {
-    let cfg: MoltisConfig = toml::from_str("").unwrap();
+    let cfg: AntreConfig = toml::from_str("").unwrap();
     assert!(cfg.server.effective_external_url().is_none());
 }
 
@@ -1291,7 +1290,7 @@ fn mcp_policy_empty_toml_is_all() {
     let toml_str = r#"
 [agents.presets.test]
 "#;
-    let config: MoltisConfig = toml::from_str(toml_str).unwrap();
+    let config: AntreConfig = toml::from_str(toml_str).unwrap();
     let preset = config.agents.presets.get("test").unwrap();
     assert!(preset.mcp.is_all());
 }
@@ -1303,7 +1302,7 @@ fn mcp_policy_empty_allow_is_not_all() {
 [agents.presets.test.mcp]
 allow_servers = []
 "#;
-    let config: MoltisConfig = toml::from_str(toml_str).unwrap();
+    let config: AntreConfig = toml::from_str(toml_str).unwrap();
     let preset = config.agents.presets.get("test").unwrap();
     assert!(!preset.mcp.is_all());
     assert_eq!(preset.mcp, PresetMcpPolicy::Allow(vec![]));
@@ -1316,7 +1315,7 @@ fn mcp_policy_both_fields_is_error() {
 allow_servers = ["github"]
 deny_servers = ["home-assistant"]
 "#;
-    let result: Result<MoltisConfig, _> = toml::from_str(toml_str);
+    let result: Result<AntreConfig, _> = toml::from_str(toml_str);
     assert!(result.is_err());
     let err = result.unwrap_err().to_string();
     assert!(
@@ -1355,7 +1354,7 @@ fn preset_sandbox_mode_parses_typed_values() {
 [agents.presets.test.sandbox]
 mode = "non-main"
 "#;
-    let config: MoltisConfig = toml::from_str(toml_str).unwrap();
+    let config: AntreConfig = toml::from_str(toml_str).unwrap();
     let preset = config.agents.presets.get("test").unwrap();
     assert_eq!(preset.sandbox.mode, Some(PresetSandboxMode::NonMain));
 }
@@ -1366,12 +1365,12 @@ fn preset_sandbox_mode_rejects_unknown_values() {
 [agents.presets.test.sandbox]
 mode = "sometimes"
 "#;
-    let result: Result<MoltisConfig, _> = toml::from_str(toml_str);
+    let result: Result<AntreConfig, _> = toml::from_str(toml_str);
     assert!(result.is_err());
 }
 #[test]
 fn external_agents_default_to_enabled_for_detection() {
-    let config = MoltisConfig::default();
+    let config = AntreConfig::default();
 
     assert!(config.external_agents.enabled);
     assert!(config.external_agents.agents.is_empty());
@@ -1379,7 +1378,7 @@ fn external_agents_default_to_enabled_for_detection() {
 
 #[test]
 fn tls_loopback_http_missing_from_legacy_config_keeps_https() {
-    let config: MoltisConfig = toml::from_str("[tls]\nenabled = true\n").unwrap();
+    let config: AntreConfig = toml::from_str("[tls]\nenabled = true\n").unwrap();
     assert!(!config.tls.loopback_http);
     assert!(config.tls_active());
 }
@@ -1402,7 +1401,7 @@ fn tls_loopback_http_serves_plain_http_only_on_loopback() {
 
 #[test]
 fn new_install_template_opts_into_loopback_http() {
-    let config: MoltisConfig =
+    let config: AntreConfig =
         toml::from_str(&crate::template::default_config_template(18789)).unwrap();
     assert!(config.tls.loopback_http);
     assert!(config.tls.enabled);
@@ -1417,9 +1416,9 @@ fn open_browser_parses_kebab_case_and_defaults_to_first_run() {
         ("always", OpenBrowser::Always),
         ("never", OpenBrowser::Never),
     ] {
-        let config: MoltisConfig =
+        let config: AntreConfig =
             toml::from_str(&format!("[server]\nopen_browser = \"{raw}\"\n")).unwrap();
         assert_eq!(config.server.open_browser, expected);
     }
-    assert!(toml::from_str::<MoltisConfig>("[server]\nopen_browser = \"sometimes\"\n").is_err());
+    assert!(toml::from_str::<AntreConfig>("[server]\nopen_browser = \"sometimes\"\n").is_err());
 }

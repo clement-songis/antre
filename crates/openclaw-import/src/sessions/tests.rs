@@ -45,7 +45,7 @@ fn setup_session_legacy_layout(home: &Path, agent: &str, key: &str, lines: &[&st
 
 fn imported_history_path(destination: &Path, key: &str) -> std::path::PathBuf {
     let path =
-        moltis_sessions::store::SessionStore::new(destination.to_path_buf()).history_path_for(key);
+        antre_sessions::store::SessionStore::new(destination.to_path_buf()).history_path_for(key);
     std::fs::create_dir_all(path.parent().unwrap()).unwrap();
     path
 }

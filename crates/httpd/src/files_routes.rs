@@ -1,4 +1,9 @@
 use {
+    antre_gateway::{
+        auth::AuthIdentity,
+        files::{FilesError, LocalFilesService},
+    },
+    antre_protocol::scopes,
     axum::{
         Extension, Json, Router,
         body::Body,
@@ -9,11 +14,6 @@ use {
     },
     base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD},
     futures::StreamExt,
-    moltis_gateway::{
-        auth::AuthIdentity,
-        files::{FilesError, LocalFilesService},
-    },
-    moltis_protocol::scopes,
     serde::Deserialize,
     std::sync::Arc,
     tokio::io::AsyncWriteExt,
@@ -23,9 +23,9 @@ use {
 use crate::AppState;
 
 pub const MAX_FILE_UPLOAD_SIZE: u64 = 1024 * 1024 * 1024;
-const FILE_PATH_HEADER: &str = "x-moltis-file-path";
+const FILE_PATH_HEADER: &str = "x-antre-file-path";
 const FILE_PATH_HEADER_PREFIX: &str = "base64url:";
-const OVERWRITE_HEADER: &str = "x-moltis-overwrite";
+const OVERWRITE_HEADER: &str = "x-antre-overwrite";
 
 #[derive(Clone, Copy)]
 enum FilesAccess {
@@ -448,14 +448,14 @@ fn api_error(status: StatusCode, message: impl Into<String>) -> Response {
 mod tests {
     use {
         super::*,
-        axum::{body::to_bytes, http::Request},
-        moltis_gateway::{
+        antre_gateway::{
             auth,
             auth::{AuthIdentity, AuthMethod},
             methods::MethodRegistry,
             services::GatewayServices,
             state::GatewayState,
         },
+        axum::{body::to_bytes, http::Request},
         std::sync::Arc,
         tower::ServiceExt,
     };

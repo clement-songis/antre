@@ -1,6 +1,6 @@
 # Release Verification
 
-Moltis releases use **multiple signing layers** to provide strong supply chain guarantees:
+Antre releases use **multiple signing layers** to provide strong supply chain guarantees:
 
 | Method | Proves | Verification |
 |--------|--------|-------------|
@@ -10,7 +10,7 @@ Moltis releases use **multiple signing layers** to provide strong supply chain g
 | **SHA256/SHA512 checksums** | File integrity (no corruption/tampering in transit) | `sha256sum --check` |
 
 All attestations are publicly visible on the
-[repository attestations page](https://github.com/moltis-org/moltis/attestations).
+[repository attestations page](https://github.com/antre-ai/antre/attestations).
 
 ## macOS Release Credentials
 
@@ -56,7 +56,7 @@ The easiest way to verify a release is with the included script:
 ./scripts/verify-release.sh --checksums --version VERSION
 
 # Verify specific local files
-./scripts/verify-release.sh moltis-VERSION-x86_64-unknown-linux-gnu.tar.gz
+./scripts/verify-release.sh antre-VERSION-x86_64-unknown-linux-gnu.tar.gz
 ```
 
 ### GitHub Artifact Attestations
@@ -67,20 +67,20 @@ the [GitHub CLI](https://cli.github.com/):
 
 ```bash
 # Verify a downloaded binary
-gh attestation verify moltis-VERSION-x86_64-unknown-linux-gnu.tar.gz \
-  -R moltis-org/moltis
+gh attestation verify antre-VERSION-x86_64-unknown-linux-gnu.tar.gz \
+  -R antre-ai/antre
 
 # Verify a Docker image
-gh attestation verify oci://ghcr.io/moltis-org/moltis:VERSION \
-  -R moltis-org/moltis
+gh attestation verify oci://ghcr.io/antre-ai/antre:VERSION \
+  -R antre-ai/antre
 
 # Verify an SBOM
-gh attestation verify moltis-sbom.spdx.json \
-  -R moltis-org/moltis
+gh attestation verify antre-sbom.spdx.json \
+  -R antre-ai/antre
 ```
 
 Browse all attestations at
-<https://github.com/moltis-org/moltis/attestations>.
+<https://github.com/antre-ai/antre/attestations>.
 
 ### Manual Verification
 
@@ -88,10 +88,10 @@ Browse all attestations at
 
 ```bash
 # Download the artifact and its checksum
-curl -LO https://github.com/moltis-org/moltis/releases/download/VERSION/moltis-VERSION-x86_64-unknown-linux-gnu.tar.gz
-curl -LO https://github.com/moltis-org/moltis/releases/download/VERSION/moltis-VERSION-x86_64-unknown-linux-gnu.tar.gz.sha256
+curl -LO https://github.com/antre-ai/antre/releases/download/VERSION/antre-VERSION-x86_64-unknown-linux-gnu.tar.gz
+curl -LO https://github.com/antre-ai/antre/releases/download/VERSION/antre-VERSION-x86_64-unknown-linux-gnu.tar.gz.sha256
 
-sha256sum --check moltis-VERSION-x86_64-unknown-linux-gnu.tar.gz.sha256
+sha256sum --check antre-VERSION-x86_64-unknown-linux-gnu.tar.gz.sha256
 ```
 
 #### 2. Verify GPG signature
@@ -110,12 +110,12 @@ curl -fsSL https://pen.so/gpg.asc | gpg --import
 gpg --fingerprint F7649BBF
 
 # Download the detached signature
-curl -LO https://github.com/moltis-org/moltis/releases/download/VERSION/moltis-VERSION-x86_64-unknown-linux-gnu.tar.gz.asc
+curl -LO https://github.com/antre-ai/antre/releases/download/VERSION/antre-VERSION-x86_64-unknown-linux-gnu.tar.gz.asc
 
 # Verify
 gpg --verify \
-  moltis-VERSION-x86_64-unknown-linux-gnu.tar.gz.asc \
-  moltis-VERSION-x86_64-unknown-linux-gnu.tar.gz
+  antre-VERSION-x86_64-unknown-linux-gnu.tar.gz.asc \
+  antre-VERSION-x86_64-unknown-linux-gnu.tar.gz
 ```
 
 You should see `Good signature from ...` with the maintainer's identity.
@@ -126,15 +126,15 @@ You should see `Good signature from ...` with the maintainer's identity.
 # Install cosign: https://docs.sigstore.dev/cosign/system_config/installation/
 
 # Download signature and certificate
-curl -LO https://github.com/moltis-org/moltis/releases/download/VERSION/moltis-VERSION-x86_64-unknown-linux-gnu.tar.gz.sig
-curl -LO https://github.com/moltis-org/moltis/releases/download/VERSION/moltis-VERSION-x86_64-unknown-linux-gnu.tar.gz.crt
+curl -LO https://github.com/antre-ai/antre/releases/download/VERSION/antre-VERSION-x86_64-unknown-linux-gnu.tar.gz.sig
+curl -LO https://github.com/antre-ai/antre/releases/download/VERSION/antre-VERSION-x86_64-unknown-linux-gnu.tar.gz.crt
 
 cosign verify-blob \
-  --signature moltis-VERSION-x86_64-unknown-linux-gnu.tar.gz.sig \
-  --certificate moltis-VERSION-x86_64-unknown-linux-gnu.tar.gz.crt \
+  --signature antre-VERSION-x86_64-unknown-linux-gnu.tar.gz.sig \
+  --certificate antre-VERSION-x86_64-unknown-linux-gnu.tar.gz.crt \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-  --certificate-identity-regexp 'https://github\.com/moltis-org/moltis/' \
-  moltis-VERSION-x86_64-unknown-linux-gnu.tar.gz
+  --certificate-identity-regexp 'https://github\.com/antre-ai/antre/' \
+  antre-VERSION-x86_64-unknown-linux-gnu.tar.gz
 ```
 
 #### 4. Verify Docker images
@@ -142,8 +142,8 @@ cosign verify-blob \
 ```bash
 cosign verify \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-  --certificate-identity-regexp 'https://github\.com/moltis-org/moltis/' \
-  ghcr.io/moltis-org/moltis:VERSION
+  --certificate-identity-regexp 'https://github\.com/antre-ai/antre/' \
+  ghcr.io/antre-ai/antre:VERSION
 ```
 
 ## What Each Layer Proves
@@ -157,7 +157,7 @@ in GitHub's attestation ledger and verifiable with `gh attestation verify`.
 This provides SLSA v1.0 Build Level 2 guarantees.
 
 **Sigstore signatures** prove the artifact was built inside the
-`moltis-org/moltis` GitHub Actions workflow using OIDC-based keyless signing.
+`antre-ai/antre` GitHub Actions workflow using OIDC-based keyless signing.
 This guards against a compromised maintainer laptop — even if someone steals
 credentials, they cannot reproduce a valid Sigstore certificate from the CI
 environment. Signatures are recorded in Sigstore's Rekor transparency log.

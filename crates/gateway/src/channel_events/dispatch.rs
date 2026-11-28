@@ -41,7 +41,7 @@ pub(in crate::channel_events) async fn dispatch_to_chat(
         // on the agent-run path, which `/sh` returns before reaching. So
         // letting the ceiling widen this guard would hand out an `exec` that
         // no `deny` can take back.
-        if !trusted_channel_turn && moltis_agents::runner::explicit_shell_command(text).is_some() {
+        if !trusted_channel_turn && antre_agents::runner::explicit_shell_command(text).is_some() {
             warn!(
                 account_id = %reply_to.account_id,
                 chat_id = %reply_to.chat_id,
@@ -196,7 +196,7 @@ pub(in crate::channel_events) async fn dispatch_to_chat(
             "_session_key": &session_key,
             // Defer reply-target registration until chat.send() actually
             // starts executing this message (after semaphore acquire).
-            moltis_chat::params::CHANNEL_REPLY_TARGET: &reply_to,
+            antre_chat::params::CHANNEL_REPLY_TARGET: &reply_to,
             "_native_channel_request": true,
         });
 
@@ -215,7 +215,7 @@ pub(in crate::channel_events) async fn dispatch_to_chat(
         // reaction follows the message itself — through queueing and replay —
         // rather than whatever else shares the session.
         if let Some(ref key) = ack_key {
-            params[moltis_chat::params::ACK_KEYS] = serde_json::json!([key]);
+            params[antre_chat::params::ACK_KEYS] = serde_json::json!([key]);
         }
 
         // Attach thread context if available.

@@ -11,8 +11,8 @@ mod registered_provider;
 use std::{collections::HashSet, sync::Arc, time::Duration};
 
 use {
+    antre_agents::model::{ChatMessage, LlmProvider, ReasoningEffort, StreamEvent},
     futures::StreamExt,
-    moltis_agents::model::{ChatMessage, LlmProvider, ReasoningEffort, StreamEvent},
     secrecy::{ExposeSecret, Secret},
 };
 

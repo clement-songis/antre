@@ -18,18 +18,18 @@ use crate::{
 };
 
 use {
-    moltis_agents::{
+    antre_agents::{
         AgentRunError,
         model::LlmProvider,
         runner::{AgentLoopLimits, RunnerEvent, run_agent_loop_with_context_and_limits},
         tool_registry::{AgentTool, ToolRegistry},
     },
-    moltis_config::{
+    antre_config::{
         AgentRuntimeLimits,
         schema::{AgentPreset, AgentsConfig},
     },
-    moltis_providers::ProviderRegistry,
-    moltis_sessions::{metadata::SqliteSessionMetadata, store::SessionStore},
+    antre_providers::ProviderRegistry,
+    antre_sessions::{metadata::SqliteSessionMetadata, store::SessionStore},
 };
 
 use crate::sessions_communicate::{
@@ -277,18 +277,18 @@ fn default_spawn_task_store() -> Arc<SpawnTaskStore> {
 /// Resolve the memory directory for a preset based on its scope.
 fn resolve_memory_dir(
     preset_name: &str,
-    scope: &moltis_config::schema::MemoryScope,
+    scope: &antre_config::schema::MemoryScope,
 ) -> std::path::PathBuf {
-    use moltis_config::schema::MemoryScope;
+    use antre_config::schema::MemoryScope;
     match scope {
         MemoryScope::User => {
-            let data_dir = moltis_config::data_dir();
+            let data_dir = antre_config::data_dir();
             data_dir.join("agent-memory").join(preset_name)
         },
-        MemoryScope::Project => std::path::PathBuf::from(".moltis")
+        MemoryScope::Project => std::path::PathBuf::from(".antre")
             .join("agent-memory")
             .join(preset_name),
-        MemoryScope::Local => std::path::PathBuf::from(".moltis")
+        MemoryScope::Local => std::path::PathBuf::from(".antre")
             .join("agent-memory-local")
             .join(preset_name),
     }
@@ -298,7 +298,7 @@ fn resolve_memory_dir(
 /// Returns `None` if the file doesn't exist or is empty.
 fn load_memory_context(
     preset_name: &str,
-    config: &moltis_config::schema::PresetMemoryConfig,
+    config: &antre_config::schema::PresetMemoryConfig,
 ) -> Option<String> {
     let dir = resolve_memory_dir(preset_name, &config.scope);
     load_memory_from_dir(&dir, config.max_lines)
@@ -350,7 +350,7 @@ fn build_sub_agent_prompt(
     let mut prompt = String::new();
 
     // Prefer workspace identity for the target agent; fall back to preset fields.
-    let workspace_identity = preset_name.and_then(moltis_config::load_identity_for_agent);
+    let workspace_identity = preset_name.and_then(antre_config::load_identity_for_agent);
     let identity_name = workspace_identity
         .as_ref()
         .and_then(|id| id.name.as_deref())
@@ -381,19 +381,19 @@ fn build_sub_agent_prompt(
     }
     prompt.push_str("Complete the task thoroughly and return a clear result.\n\n");
     prompt.push_str(&format!(
-        "Managed Files: use $MOLTIS_FILES_DIR when it is set (host: {}; supported container sandboxes: {}).\n\n",
-        moltis_config::managed_files_dir().display(),
+        "Managed Files: use $ANTRE_FILES_DIR when it is set (host: {}; supported container sandboxes: {}).\n\n",
+        antre_config::managed_files_dir().display(),
         crate::sandbox::SANDBOX_FILES_DIR,
     ));
 
     // Inject target workspace persona (Soul / Guidelines / Role markers).
     // Cap AGENTS.md the same way direct chat does (`chat.workspace_file_max_chars`).
-    let workspace_file_max_chars = moltis_config::discover_and_load()
+    let workspace_file_max_chars = antre_config::discover_and_load()
         .chat
         .workspace_file_max_chars
         .max(1);
     if let Some(name) = preset_name {
-        if let Some(soul) = moltis_config::load_soul_for_agent(name)
+        if let Some(soul) = antre_config::load_soul_for_agent(name)
             .map(|s| s.trim().to_string())
             .filter(|s| !s.is_empty())
         {
@@ -401,7 +401,7 @@ fn build_sub_agent_prompt(
             prompt.push_str(&soul);
             prompt.push_str("\n\n");
         }
-        if let Some(agents_md) = moltis_config::load_agents_md_for_agent(name)
+        if let Some(agents_md) = antre_config::load_agents_md_for_agent(name)
             .map(|s| s.trim().to_string())
             .filter(|s| !s.is_empty())
         {
@@ -413,7 +413,7 @@ fn build_sub_agent_prompt(
             ));
             prompt.push_str("\n\n");
         }
-        if let Some(guidelines) = moltis_config::load_guidelines_md_for_agent(name)
+        if let Some(guidelines) = antre_config::load_guidelines_md_for_agent(name)
             .map(|s| s.trim().to_string())
             .filter(|s| !s.is_empty())
         {
@@ -530,7 +530,7 @@ impl AgentTool for SpawnAgentTool {
             .ok_or_else(|| Error::message("missing required parameter: task"))?;
         let context = str_param(&params, "context").unwrap_or("");
         let (preset_name, preset) = self.resolve_preset(&params).await?;
-        let config = moltis_config::discover_and_load();
+        let config = antre_config::discover_and_load();
         let runtime_limits =
             AgentRuntimeLimits::resolve_for_spawned_agent(&config.tools, preset.as_ref());
         let explicit_model = str_param(&params, "model").map(String::from);
@@ -681,7 +681,7 @@ impl AgentTool for SpawnAgentTool {
         if nonblocking {
             #[cfg(feature = "metrics")]
             {
-                use moltis_metrics::{counter, gauge, labels, spawn as spawn_metrics};
+                use antre_metrics::{counter, gauge, labels, spawn as spawn_metrics};
                 counter!(spawn_metrics::SPAWNED_TOTAL, labels::MODE => "nonblocking").increment(1);
                 gauge!(spawn_metrics::TASKS_IN_FLIGHT).increment(1.0);
             }
@@ -734,7 +734,7 @@ impl AgentTool for SpawnAgentTool {
 
                         #[cfg(feature = "metrics")]
                         {
-                            use moltis_metrics::{counter, gauge, labels, spawn as spawn_metrics};
+                            use antre_metrics::{counter, gauge, labels, spawn as spawn_metrics};
                             counter!(
                                 spawn_metrics::COMPLETED_TOTAL,
                                 labels::STATUS => "cancelled"
@@ -830,7 +830,7 @@ impl AgentTool for SpawnAgentTool {
 
                 #[cfg(feature = "metrics")]
                 {
-                    use moltis_metrics::{counter, gauge, labels, spawn as spawn_metrics};
+                    use antre_metrics::{counter, gauge, labels, spawn as spawn_metrics};
                     counter!(
                         spawn_metrics::COMPLETED_TOTAL,
                         labels::STATUS => status_label.to_string()
@@ -861,7 +861,7 @@ impl AgentTool for SpawnAgentTool {
 
         #[cfg(feature = "metrics")]
         {
-            use moltis_metrics::{counter, labels, spawn as spawn_metrics};
+            use antre_metrics::{counter, labels, spawn as spawn_metrics};
             counter!(spawn_metrics::SPAWNED_TOTAL, labels::MODE => "blocking").increment(1);
         }
 
@@ -890,7 +890,7 @@ impl AgentTool for SpawnAgentTool {
 
         #[cfg(feature = "metrics")]
         {
-            use moltis_metrics::{counter, labels, spawn as spawn_metrics};
+            use antre_metrics::{counter, labels, spawn as spawn_metrics};
             let status = if result.is_ok() {
                 "completed"
             } else {
@@ -932,8 +932,8 @@ async fn run_spawned_agent(
     task: String,
     tool_context: serde_json::Value,
     runtime_limits: AgentRuntimeLimits,
-) -> Result<moltis_agents::runner::AgentRunResult, AgentRunError> {
-    let user_content = moltis_agents::UserContent::text(&task);
+) -> Result<antre_agents::runner::AgentRunResult, AgentRunError> {
+    let user_content = antre_agents::UserContent::text(&task);
     let agent_future = run_agent_loop_with_context_and_limits(
         provider,
         &sub_tools,

@@ -1,18 +1,18 @@
 [package]
+description          = "Home Assistant integration for Antre"
 edition.workspace    = true
-name                 = "moltis-home-assistant"
+name                 = "antre-home-assistant"
 repository.workspace = true
 version.workspace    = true
-description          = "Home Assistant integration for Moltis"
 
 [dependencies]
+antre-agents      = { workspace = true }
+antre-config      = { workspace = true }
+antre-metrics     = { optional = true, workspace = true }
 anyhow            = { workspace = true }
 async-trait       = { workspace = true }
 bytes             = { workspace = true }
 futures-util      = { workspace = true }
-moltis-agents     = { workspace = true }
-moltis-config     = { workspace = true }
-moltis-metrics    = { optional = true, workspace = true }
 reqwest           = { workspace = true }
 secrecy           = { workspace = true }
 serde             = { workspace = true }
@@ -21,19 +21,19 @@ thiserror         = { workspace = true }
 tokio             = { workspace = true }
 tokio-tungstenite = { workspace = true }
 tracing           = { workspace = true }
-urlencoding        = { workspace = true }
+urlencoding       = { workspace = true }
 
 [dev-dependencies]
-dotenvy          = { workspace = true }
-secrecy          = { workspace = true }
-time             = { workspace = true }
-tokio            = { workspace = true, features = ["rt-multi-thread", "macros", "test-util", "time"] }
-wiremock         = { workspace = true }
-serde_json       = { workspace = true }
+dotenvy    = { workspace = true }
+secrecy    = { workspace = true }
+serde_json = { workspace = true }
+time       = { workspace = true }
+tokio      = { features = ["macros", "rt-multi-thread", "test-util", "time"], workspace = true }
+wiremock   = { workspace = true }
 
 [features]
 default = ["tracing"]
-metrics = ["dep:moltis-metrics"]
+metrics = ["dep:antre-metrics"]
 tracing = []
 
 [lints]

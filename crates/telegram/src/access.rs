@@ -1,6 +1,6 @@
 use {
-    moltis_channels::gating::{self, DmPolicy, GroupPolicy, MentionMode},
-    moltis_common::types::ChatType,
+    antre_channels::gating::{self, DmPolicy, GroupPolicy, MentionMode},
+    antre_common::types::ChatType,
 };
 
 use crate::config::TelegramAccountConfig;

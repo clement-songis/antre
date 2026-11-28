@@ -1,21 +1,21 @@
 [package]
 edition.workspace    = true
-name                 = "moltis-acp"
+name                 = "antre-acp"
 repository.workspace = true
 version.workspace    = true
 
 [features]
 default = []
-metrics = ["dep:moltis-metrics"]
+metrics = ["dep:antre-metrics"]
 tracing = ["dep:tracing"]
 
 [dependencies]
 agent-client-protocol = { workspace = true }
+antre-metrics         = { optional = true, workspace = true }
 anyhow                = { workspace = true }
 async-trait           = { workspace = true }
 bytes                 = { workspace = true }
 futures               = { workspace = true }
-moltis-metrics        = { optional = true, workspace = true }
 serde_json            = { workspace = true }
 tokio                 = { workspace = true }
 tokio-util            = { features = ["codec", "compat", "io"], workspace = true }

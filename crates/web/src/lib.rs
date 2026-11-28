@@ -1,7 +1,7 @@
 //! Web UI: static asset serving, SPA routing, share pages, terminal PTY,
 //! and all browser-facing handlers.
 //!
-//! This crate depends on `moltis-gateway` for [`AppState`] and server-side
+//! This crate depends on `antre-gateway` for [`AppState`] and server-side
 //! services. It provides [`web_routes()`] which returns an Axum `Router` that
 //! the CLI (or any other host) can merge into the gateway router.
 
@@ -26,8 +26,8 @@ pub mod terminal;
 pub use error::{Error, Result};
 
 use {
+    antre_httpd::AppState,
     axum::{Router, routing::get},
-    moltis_httpd::AppState,
 };
 
 /// Build the web-UI router: pages, API routes, assets, and SPA fallback.
@@ -138,79 +138,78 @@ fn build_api_routes() -> Router<AppState> {
         )
         .route(
             "/api/env",
-            get(moltis_httpd::env_routes::env_list).post(moltis_httpd::env_routes::env_set),
+            get(antre_httpd::env_routes::env_list).post(antre_httpd::env_routes::env_set),
         )
         .route(
             "/api/env/{id}",
-            axum::routing::delete(moltis_httpd::env_routes::env_delete),
+            axum::routing::delete(antre_httpd::env_routes::env_delete),
         )
-        .route("/api/ssh", get(moltis_httpd::ssh_routes::ssh_status))
-        .route("/api/ssh/doctor", get(moltis_httpd::ssh_routes::ssh_doctor))
+        .route("/api/ssh", get(antre_httpd::ssh_routes::ssh_status))
+        .route("/api/ssh/doctor", get(antre_httpd::ssh_routes::ssh_doctor))
         .route(
             "/api/ssh/host-key/scan",
-            axum::routing::post(moltis_httpd::ssh_routes::ssh_scan_host_key),
+            axum::routing::post(antre_httpd::ssh_routes::ssh_scan_host_key),
         )
         .route(
             "/api/ssh/doctor/test-active",
-            axum::routing::post(moltis_httpd::ssh_routes::ssh_doctor_test_active),
+            axum::routing::post(antre_httpd::ssh_routes::ssh_doctor_test_active),
         )
         .route(
             "/api/ssh/keys/generate",
-            axum::routing::post(moltis_httpd::ssh_routes::ssh_generate_key),
+            axum::routing::post(antre_httpd::ssh_routes::ssh_generate_key),
         )
         .route(
             "/api/ssh/keys/import",
-            axum::routing::post(moltis_httpd::ssh_routes::ssh_import_key),
+            axum::routing::post(antre_httpd::ssh_routes::ssh_import_key),
         )
         .route(
             "/api/ssh/keys/{id}",
-            axum::routing::delete(moltis_httpd::ssh_routes::ssh_delete_key),
+            axum::routing::delete(antre_httpd::ssh_routes::ssh_delete_key),
         )
         .route(
             "/api/ssh/targets",
-            axum::routing::post(moltis_httpd::ssh_routes::ssh_create_target),
+            axum::routing::post(antre_httpd::ssh_routes::ssh_create_target),
         )
         .route(
             "/api/ssh/targets/{id}",
-            axum::routing::delete(moltis_httpd::ssh_routes::ssh_delete_target),
+            axum::routing::delete(antre_httpd::ssh_routes::ssh_delete_target),
         )
         .route(
             "/api/ssh/targets/{id}/default",
-            axum::routing::post(moltis_httpd::ssh_routes::ssh_set_default_target),
+            axum::routing::post(antre_httpd::ssh_routes::ssh_set_default_target),
         )
         .route(
             "/api/ssh/targets/{id}/test",
-            axum::routing::post(moltis_httpd::ssh_routes::ssh_test_target),
+            axum::routing::post(antre_httpd::ssh_routes::ssh_test_target),
         )
         .route(
             "/api/ssh/targets/{id}/pin",
-            axum::routing::post(moltis_httpd::ssh_routes::ssh_pin_target_host_key)
-                .delete(moltis_httpd::ssh_routes::ssh_clear_target_host_key),
+            axum::routing::post(antre_httpd::ssh_routes::ssh_pin_target_host_key)
+                .delete(antre_httpd::ssh_routes::ssh_clear_target_host_key),
         )
         .route(
             "/api/config",
-            get(moltis_httpd::tools_routes::config_get)
-                .post(moltis_httpd::tools_routes::config_save),
+            get(antre_httpd::tools_routes::config_get).post(antre_httpd::tools_routes::config_save),
         )
         .route(
             "/api/config/validate",
-            axum::routing::post(moltis_httpd::tools_routes::config_validate),
+            axum::routing::post(antre_httpd::tools_routes::config_validate),
         )
         .route(
             "/api/config/template",
-            get(moltis_httpd::tools_routes::config_template),
+            get(antre_httpd::tools_routes::config_template),
         )
         .route(
             "/api/config/provenance",
-            get(moltis_httpd::tools_routes::config_provenance),
+            get(antre_httpd::tools_routes::config_provenance),
         )
         .route(
             "/api/restart",
-            axum::routing::post(moltis_httpd::tools_routes::restart),
+            axum::routing::post(antre_httpd::tools_routes::restart),
         )
         .route(
             "/api/system/update",
-            axum::routing::post(moltis_httpd::tools_routes::update),
+            axum::routing::post(antre_httpd::tools_routes::update),
         )
         .route("/api/sessions", get(api::api_sessions_handler))
         .route(
@@ -219,8 +218,8 @@ fn build_api_routes() -> Router<AppState> {
         )
         .route(
             "/api/sessions/{session_key}/upload",
-            axum::routing::post(moltis_httpd::upload_routes::session_upload).layer(
-                axum::extract::DefaultBodyLimit::max(moltis_httpd::upload_routes::MAX_UPLOAD_SIZE),
+            axum::routing::post(antre_httpd::upload_routes::session_upload).layer(
+                axum::extract::DefaultBodyLimit::max(antre_httpd::upload_routes::MAX_UPLOAD_SIZE),
             ),
         )
         .route(
@@ -228,8 +227,8 @@ fn build_api_routes() -> Router<AppState> {
             get(api::api_session_media_handler),
         )
         .route("/api/logs/download", get(api::api_logs_download_handler))
-        .nest("/api/files", moltis_httpd::files_routes::files_router())
-        .nest("/api/data", moltis_httpd::data_routes::data_router());
+        .nest("/api/files", antre_httpd::files_routes::files_router())
+        .nest("/api/data", antre_httpd::data_routes::data_router());
 
     #[cfg(feature = "mods")]
     let protected = protected.merge(mods_api::routes());
@@ -239,19 +238,19 @@ fn build_api_routes() -> Router<AppState> {
     let protected = protected
         .route(
             "/api/metrics",
-            get(moltis_httpd::metrics_routes::api_metrics_handler),
+            get(antre_httpd::metrics_routes::api_metrics_handler),
         )
         .route(
             "/api/metrics/summary",
-            get(moltis_httpd::metrics_routes::api_metrics_summary_handler),
+            get(antre_httpd::metrics_routes::api_metrics_summary_handler),
         )
         .route(
             "/api/metrics/history",
-            get(moltis_httpd::metrics_routes::api_metrics_history_handler),
+            get(antre_httpd::metrics_routes::api_metrics_history_handler),
         )
         .route(
             "/api/metrics/insights",
-            get(moltis_httpd::metrics_routes::api_metrics_insights_handler),
+            get(antre_httpd::metrics_routes::api_metrics_insights_handler),
         );
 
     protected
@@ -260,31 +259,31 @@ fn build_api_routes() -> Router<AppState> {
 /// Add feature-specific routes to API routes.
 fn add_feature_routes(routes: Router<AppState>) -> Router<AppState> {
     #[cfg(feature = "canvas")]
-    let routes = routes.nest("/api/canvas", moltis_httpd::canvas_routes::canvas_router());
+    let routes = routes.nest("/api/canvas", antre_httpd::canvas_routes::canvas_router());
 
     #[cfg(feature = "ngrok")]
-    let routes = routes.nest("/api/ngrok", moltis_httpd::ngrok_routes::ngrok_router());
+    let routes = routes.nest("/api/ngrok", antre_httpd::ngrok_routes::ngrok_router());
 
     #[cfg(feature = "cloudflare-tunnel")]
     let routes = routes.nest(
         "/api/cloudflare-tunnel",
-        moltis_httpd::cloudflare_tunnel_routes::cloudflare_tunnel_router(),
+        antre_httpd::cloudflare_tunnel_routes::cloudflare_tunnel_router(),
     );
 
     #[cfg(feature = "tailscale")]
     let routes = routes.nest(
         "/api/tailscale",
-        moltis_httpd::tailscale_routes::tailscale_router(),
+        antre_httpd::tailscale_routes::tailscale_router(),
     );
 
     #[cfg(feature = "netbird")]
     let routes = routes.nest(
         "/api/netbird",
-        moltis_httpd::netbird_routes::netbird_router(),
+        antre_httpd::netbird_routes::netbird_router(),
     );
 
     #[cfg(feature = "push-notifications")]
-    let routes = routes.nest("/api/push", moltis_httpd::push_routes::push_router());
+    let routes = routes.nest("/api/push", antre_httpd::push_routes::push_router());
 
     #[cfg(feature = "voice")]
     let routes = routes.route("/api/stt/ws", get(stt_ws::api_stt_ws_upgrade_handler));

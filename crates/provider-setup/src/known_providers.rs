@@ -53,8 +53,8 @@ impl KnownProvider {
     }
 }
 
-impl From<moltis_providers::model_catalogs::HostedProviderCard> for KnownProvider {
-    fn from(card: moltis_providers::model_catalogs::HostedProviderCard) -> Self {
+impl From<antre_providers::model_catalogs::HostedProviderCard> for KnownProvider {
+    fn from(card: antre_providers::model_catalogs::HostedProviderCard) -> Self {
         Self {
             name: card.name,
             display_name: card.display_name,
@@ -295,7 +295,7 @@ pub fn known_providers() -> Vec<KnownProvider> {
     ];
     let mut providers = providers;
     providers.extend(
-        moltis_providers::model_catalogs::hosted_provider_cards()
+        antre_providers::model_catalogs::hosted_provider_cards()
             .into_iter()
             .map(KnownProvider::from),
     );

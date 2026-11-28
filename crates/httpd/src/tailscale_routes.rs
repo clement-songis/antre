@@ -12,7 +12,7 @@ use {
     tracing::{debug, error, info, warn},
 };
 
-use moltis_gateway::tailscale::{TailscaleManager, TailscaleMode, validate_tailscale_config};
+use antre_gateway::tailscale::{TailscaleManager, TailscaleMode, validate_tailscale_config};
 
 use crate::server::AppState;
 
@@ -45,7 +45,7 @@ async fn status_handler(State(state): State<AppState>) -> impl IntoResponse {
     let port = state.gateway.port;
     match state.tailscale_manager.status().await {
         Ok(status) => {
-            let passkey_warning = moltis_gateway::server::sync_runtime_webauthn_host_and_notice(
+            let passkey_warning = antre_gateway::server::sync_runtime_webauthn_host_and_notice(
                 &state.gateway,
                 state.webauthn_registry.as_ref(),
                 status.hostname.as_deref(),
@@ -140,7 +140,7 @@ async fn configure_handler(
             info!(mode = %mode, "tailscale mode applied successfully");
             let status = state.tailscale_manager.status().await.ok();
             let passkey_warning = if let Some(ref s) = status {
-                moltis_gateway::server::sync_runtime_webauthn_host_and_notice(
+                antre_gateway::server::sync_runtime_webauthn_host_and_notice(
                     &state.gateway,
                     state.webauthn_registry.as_ref(),
                     s.hostname.as_deref(),

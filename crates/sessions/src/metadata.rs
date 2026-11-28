@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::Result;
 
-pub use moltis_protocol::ExternalAgentKind;
+pub use antre_protocol::ExternalAgentKind;
 
 /// A single session entry in the metadata index.
 #[derive(Debug, Clone, Serialize, Deserialize)]

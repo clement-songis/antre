@@ -17,7 +17,7 @@ use crate::config::{
 
 use crate::access;
 
-use moltis_channels::{
+use antre_channels::{
     ChannelEvent, ChannelType, InboundMediaDownloader, InboundMediaSource,
     gating::{DmPolicy, MentionMode},
     message_log::MessageLogEntry,
@@ -229,7 +229,7 @@ fn voice_stt_unavailable_log_body(caption: &str) -> String {
 }
 
 async fn log_discord_message(
-    message_log: Option<&std::sync::Arc<dyn moltis_channels::message_log::MessageLog>>,
+    message_log: Option<&std::sync::Arc<dyn antre_channels::message_log::MessageLog>>,
     account_id: &str,
     peer_id: &str,
     username: &Option<String>,
@@ -376,7 +376,7 @@ async fn resolve_discord_inbound_media(
                     "downloaded discord image attachment"
                 );
                 let (final_data, media_type) =
-                    match moltis_media::image_ops::optimize_for_llm(&image_data, None) {
+                    match antre_media::image_ops::optimize_for_llm(&image_data, None) {
                         Ok(optimized) => {
                             if optimized.was_resized {
                                 info!(
@@ -612,9 +612,9 @@ impl EventHandler for Handler {
 
         // Check DM / guild / mention policy.
         let chat_type = if is_guild {
-            moltis_common::types::ChatType::Group
+            antre_common::types::ChatType::Group
         } else {
-            moltis_common::types::ChatType::Dm
+            antre_common::types::ChatType::Dm
         };
         let guild_id_str = msg.guild_id.map(|g| g.to_string());
         let basic_access = access::check_access(
@@ -919,9 +919,9 @@ impl EventHandler for Handler {
         );
 
         #[cfg(feature = "metrics")]
-        moltis_metrics::counter!(
-            moltis_metrics::channels::MESSAGES_RECEIVED_TOTAL,
-            moltis_metrics::labels::CHANNEL => "discord"
+        antre_metrics::counter!(
+            antre_metrics::channels::MESSAGES_RECEIVED_TOTAL,
+            antre_metrics::labels::CHANNEL => "discord"
         )
         .increment(1);
 

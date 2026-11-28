@@ -9,9 +9,9 @@
 //! authenticated operator rather than from the request.
 
 use {
-    moltis_channels::FeedbackOutcome,
-    moltis_observability::FeedbackSignal,
-    moltis_protocol::{ErrorShape, error_codes},
+    antre_channels::FeedbackOutcome,
+    antre_observability::FeedbackSignal,
+    antre_protocol::{ErrorShape, error_codes},
 };
 
 use super::MethodRegistry;
@@ -89,7 +89,7 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                 // stable value is required for that upsert to keep working
                 // across reconnects, which also rules out the connection id.
                 //
-                // The web surface has exactly one identity because Moltis has
+                // The web surface has exactly one identity because Antre has
                 // exactly one account: a single password, no user table, and
                 // passkeys registered as "owner". `AuthIdentity` carries only a
                 // method and scopes, so there is no per-person id to derive
@@ -97,16 +97,16 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                 // constant states that honestly rather than manufacturing a
                 // per-connection identity that would break the toggle.
                 //
-                // If Moltis ever grows real accounts, this is the line that has
+                // If Antre ever grows real accounts, this is the line that has
                 // to change, and the score id derivation will follow.
-                let user_id = moltis_channels::trace_link::WEB_CHANNEL;
+                let user_id = antre_channels::trace_link::WEB_CHANNEL;
 
                 let outcome = ctx
                     .state
                     .feedback
                     .submit_signal(
-                        moltis_channels::trace_link::WEB_CHANNEL,
-                        moltis_channels::trace_link::WEB_CHANNEL,
+                        antre_channels::trace_link::WEB_CHANNEL,
+                        antre_channels::trace_link::WEB_CHANNEL,
                         session_key,
                         message_id,
                         signal,

@@ -33,7 +33,7 @@ Options:
 
 Environment:
   GPG_KEY_ID          Default GPG key (overridden by --key)
-  MOLTIS_REPO         GitHub repo (default: moltis-org/moltis)
+  ANTRE_REPO         GitHub repo (default: antre-ai/antre)
 
 Examples:
   ./scripts/gpg-sign-release.sh                          # latest, default key
@@ -44,7 +44,7 @@ EOF
 
 # --- Parse arguments ---
 KEY_ID="${GPG_KEY_ID:-}"
-REPO="${MOLTIS_REPO:-moltis-org/moltis}"
+REPO="${ANTRE_REPO:-antre-ai/antre}"
 DRY_RUN=false
 VERSION=""
 
@@ -124,25 +124,25 @@ echo "Downloading release artifacts for $VERSION..."
 gh release download "$VERSION" \
   --repo "$REPO" \
   --dir "$WORK_DIR" \
-  --pattern 'moltis*.deb' \
-  --pattern 'moltis*.rpm' \
-  --pattern 'moltis*.pkg.tar.zst' \
-  --pattern 'moltis*.AppImage' \
-  --pattern 'moltis*.snap' \
-  --pattern 'moltis*.tar.gz' \
-  --pattern 'moltis*.zip' \
-  --pattern 'moltis*.exe' \
-  --pattern 'moltis*.cdx.json' \
-  --pattern 'moltis*.spdx.json'
+  --pattern 'antre*.deb' \
+  --pattern 'antre*.rpm' \
+  --pattern 'antre*.pkg.tar.zst' \
+  --pattern 'antre*.AppImage' \
+  --pattern 'antre*.snap' \
+  --pattern 'antre*.tar.gz' \
+  --pattern 'antre*.zip' \
+  --pattern 'antre*.exe' \
+  --pattern 'antre*.cdx.json' \
+  --pattern 'antre*.spdx.json'
 
 ARTIFACTS=()
 while IFS= read -r -d '' f; do
   ARTIFACTS+=("$f")
 done < <(find "$WORK_DIR" -maxdepth 1 -type f \
-  \( -name 'moltis*.deb' -o -name 'moltis*.rpm' -o -name 'moltis*.pkg.tar.zst' \
-     -o -name 'moltis*.AppImage' -o -name 'moltis*.snap' -o -name 'moltis*.tar.gz' \
-     -o -name 'moltis*.zip' -o -name 'moltis*.exe' \
-     -o -name 'moltis*.cdx.json' -o -name 'moltis*.spdx.json' \) \
+  \( -name 'antre*.deb' -o -name 'antre*.rpm' -o -name 'antre*.pkg.tar.zst' \
+     -o -name 'antre*.AppImage' -o -name 'antre*.snap' -o -name 'antre*.tar.gz' \
+     -o -name 'antre*.zip' -o -name 'antre*.exe' \
+     -o -name 'antre*.cdx.json' -o -name 'antre*.spdx.json' \) \
   -print0 | sort -z)
 
 if [[ ${#ARTIFACTS[@]} -eq 0 ]]; then
@@ -234,5 +234,5 @@ echo "  ./scripts/verify-release.sh --version $VERSION"
 echo ""
 echo "Or manually:"
 echo "  curl -fsSL https://pen.so/gpg.asc | gpg --import"
-echo "  gpg --verify moltis-${VERSION}-x86_64-unknown-linux-gnu.tar.gz.asc \\"
-echo "               moltis-${VERSION}-x86_64-unknown-linux-gnu.tar.gz"
+echo "  gpg --verify antre-${VERSION}-x86_64-unknown-linux-gnu.tar.gz.asc \\"
+echo "               antre-${VERSION}-x86_64-unknown-linux-gnu.tar.gz"

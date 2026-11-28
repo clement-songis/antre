@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 /// External agent transport kind for session binding.
 ///
-/// Defined in `moltis-protocol` so session storage, config validation, runtime
+/// Defined in `antre-protocol` so session storage, config validation, runtime
 /// crates and native clients share one type.
 /// Serialises to kebab-case strings matching the canonical agent identifiers.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]

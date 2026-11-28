@@ -1,6 +1,6 @@
-//! Error type of `moltis-client`.
+//! Error type of `antre-client`.
 
-use moltis_protocol::{ErrorShape, error_codes};
+use antre_protocol::{ErrorShape, error_codes};
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {

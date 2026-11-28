@@ -1,8 +1,8 @@
 use std::{collections::HashSet, sync::Arc, time::Duration};
 
 use {
-    moltis_agents::model::{ChatMessage, CompletionResponse},
-    moltis_connector_caldav::CalDavDatasetConfig,
+    antre_agents::model::{ChatMessage, CompletionResponse},
+    antre_connector_caldav::CalDavDatasetConfig,
     serde_json::{Map, Value, json},
     time::OffsetDateTime,
     tokio::sync::RwLock,
@@ -27,12 +27,12 @@ const MAX_WARNING_CHARS: usize = 500;
 const COMPLETION_TIMEOUT: Duration = Duration::from_secs(60);
 
 pub struct ConnectorPlanner {
-    registry: Arc<RwLock<moltis_providers::ProviderRegistry>>,
+    registry: Arc<RwLock<antre_providers::ProviderRegistry>>,
 }
 
 impl ConnectorPlanner {
     #[must_use]
-    pub fn new(registry: Arc<RwLock<moltis_providers::ProviderRegistry>>) -> Self {
+    pub fn new(registry: Arc<RwLock<antre_providers::ProviderRegistry>>) -> Self {
         Self { registry }
     }
 

@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 
 use {
-    moltis_sessions::metadata::SessionEntry,
+    antre_sessions::metadata::SessionEntry,
     secrecy::Secret,
     serde::{Deserialize, Serialize},
 };
@@ -77,7 +77,7 @@ pub(crate) struct ValidationSummary {
 #[derive(Debug, Serialize)]
 pub(crate) struct VersionResponse {
     pub bridge_version: &'static str,
-    pub moltis_version: &'static str,
+    pub antre_version: &'static str,
     pub config_dir: String,
 }
 
@@ -252,7 +252,7 @@ pub(crate) struct DeleteEnvVarRequest {
 
 #[derive(Debug, Serialize)]
 pub(crate) struct ListEnvVarsResponse {
-    pub env_vars: Vec<moltis_gateway::auth::EnvVarEntry>,
+    pub env_vars: Vec<antre_gateway::auth::EnvVarEntry>,
     pub vault_status: String,
 }
 
@@ -371,7 +371,7 @@ pub(crate) struct AuthPasswordChangeResponse {
 
 #[derive(Debug, Serialize)]
 pub(crate) struct AuthPasskeysResponse {
-    pub passkeys: Vec<moltis_gateway::auth::PasskeyEntry>,
+    pub passkeys: Vec<antre_gateway::auth::PasskeyEntry>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -526,7 +526,7 @@ pub(crate) struct SandboxContainerNameRequest {
 
 #[derive(Debug, Serialize)]
 pub(crate) struct SandboxContainersResponse {
-    pub containers: Vec<moltis_tools::sandbox::RunningContainer>,
+    pub containers: Vec<antre_tools::sandbox::RunningContainer>,
 }
 
 #[derive(Debug, Serialize)]
@@ -537,5 +537,5 @@ pub(crate) struct SandboxCleanContainersResponse {
 
 #[derive(Debug, Serialize)]
 pub(crate) struct SandboxDiskUsageResponse {
-    pub usage: moltis_tools::sandbox::ContainerDiskUsage,
+    pub usage: antre_tools::sandbox::ContainerDiskUsage,
 }

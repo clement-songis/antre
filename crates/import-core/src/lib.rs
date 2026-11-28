@@ -1,6 +1,6 @@
-//! Shared types and utilities for importing data from external AI tools into Moltis.
+//! Shared types and utilities for importing data from external AI tools into Antre.
 //!
-//! Used by `moltis-openclaw-import`, `moltis-claude-import`, and `moltis-hermes-import`.
+//! Used by `antre-openclaw-import`, `antre-claude-import`, and `antre-hermes-import`.
 
 pub mod mcp;
 pub mod report;

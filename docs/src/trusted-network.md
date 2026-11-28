@@ -30,7 +30,7 @@ you explicitly trust.
 
 ## Configuration
 
-Enable trusted network mode in `moltis.toml`:
+Enable trusted network mode in `antre.toml`:
 
 ```toml
 [tools.exec.sandbox]
@@ -100,7 +100,7 @@ Both allowed and denied requests are recorded in the network audit log.
 ## Network Audit
 
 Every proxied request is logged to an in-memory ring buffer (2048 entries)
-and persisted to `~/.moltis/network-audit.jsonl`. The audit log is
+and persisted to `~/.antre/network-audit.jsonl`. The audit log is
 accessible from:
 
 - **Settings > Network Audit** in the web UI
@@ -215,7 +215,7 @@ denied domains — add them to the allowlist only if they are legitimate.
 
 **Proxy not starting**: Check the gateway startup log for
 `trusted-network proxy started` (it shows the `proxy_url` with the bound
-port). If missing, verify `network = "trusted"` is set in `moltis.toml`. If
+port). If missing, verify `network = "trusted"` is set in `antre.toml`. If
 the log says the proxy could not bind, a pinned `proxy_port` is already in
 use (another gateway?); sandboxed HTTP access then fails closed.
 

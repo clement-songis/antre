@@ -1,35 +1,35 @@
 # OpenClaw Import
 
-Moltis can automatically detect and import data from an existing [OpenClaw](https://docs.openclaw.ai) installation. This lets you migrate to Moltis without losing your provider keys, memory files, skills, sessions, personality, or channel configuration.
+Antre can automatically detect and import data from an existing [OpenClaw](https://docs.openclaw.ai) installation. This lets you migrate to Antre without losing your provider keys, memory files, skills, sessions, personality, or channel configuration.
 
-> **Your OpenClaw installation is never modified.** The import is strictly read-only — Moltis copies data into its own directory and does not write to, move, or delete anything under `~/.openclaw/`. You can safely keep using OpenClaw alongside Moltis, and re-import at any time to pick up new data.
+> **Your OpenClaw installation is never modified.** The import is strictly read-only — Antre copies data into its own directory and does not write to, move, or delete anything under `~/.openclaw/`. You can safely keep using OpenClaw alongside Antre, and re-import at any time to pick up new data.
 
 ## How Detection Works
 
-Moltis checks for an OpenClaw installation in two locations:
+Antre checks for an OpenClaw installation in two locations:
 
 1. The path set in the `OPENCLAW_HOME` environment variable
 2. `~/.openclaw/` (default)
 
-If the directory exists and contains recognizable OpenClaw files (`openclaw.json`, agent directories, etc.), Moltis considers it detected. The workspace directory respects the `OPENCLAW_PROFILE` environment variable for multi-profile setups.
+If the directory exists and contains recognizable OpenClaw files (`openclaw.json`, agent directories, etc.), Antre considers it detected. The workspace directory respects the `OPENCLAW_PROFILE` environment variable for multi-profile setups.
 
 ## What Gets Imported
 
 | Category | Source | Destination | Notes |
 |----------|--------|-------------|-------|
-| **Identity** | `openclaw.json` agent name, theme, and timezone | `moltis.toml` identity section | Preserves existing Moltis identity if already configured |
-| **Providers** | Agent auth-profiles (API keys) | `~/.moltis/provider_keys.json` | Maps OpenClaw provider names to Moltis equivalents (e.g., `google` becomes `gemini`) |
-| **Skills** | `skills/` directories with `SKILL.md` | `~/.moltis/skills/` | Copies entire skill directories; skips duplicates |
-| **Memory** | `MEMORY.md` and all `memory/*.md` files | `~/.moltis/MEMORY.md` and `~/.moltis/memory/` | Imports daily logs, project notes, and all other markdown memory files. Appends with `<!-- Imported from OpenClaw -->` separator for idempotency |
-| **Channels** | Telegram and Discord bot configuration in `openclaw.json` | `moltis.toml` channels section | Supports both flat and multi-account Telegram configs |
-| **Sessions** | Per-agent SQLite database `agents/*/agent/openclaw-agent.sqlite` (current OpenClaw) and JSONL conversation files under `agents/*/sessions/` (older releases) | `~/.moltis/sessions/v1/` and `~/.moltis/memory/sessions/` | Converts OpenClaw message format to Moltis format; prefixes keys with `oc:`. Also generates markdown transcripts for memory search indexing |
-| **MCP Servers** | `mcp-servers.json` | `~/.moltis/mcp-servers.json` | Merges with existing servers; skips duplicates by name |
-| **Workspace Files** | `SOUL.md`, `IDENTITY.md`, `USER.md`, `TOOLS.md`, `AGENTS.md`, `HEARTBEAT.md`, `BOOT.md` | `~/.moltis/` (root) or `~/.moltis/agents/<id>/` | Copies raw workspace files; skips if destination already has user content. Replaces auto-seeded defaults |
-| **Agent Presets** | Non-default agents in `agents.list` | `moltis.toml` `[agents.presets.*]` | Creates `spawn_agent` presets with name, theme, and model. Existing presets are preserved |
+| **Identity** | `openclaw.json` agent name, theme, and timezone | `antre.toml` identity section | Preserves existing Antre identity if already configured |
+| **Providers** | Agent auth-profiles (API keys) | `~/.antre/provider_keys.json` | Maps OpenClaw provider names to Antre equivalents (e.g., `google` becomes `gemini`) |
+| **Skills** | `skills/` directories with `SKILL.md` | `~/.antre/skills/` | Copies entire skill directories; skips duplicates |
+| **Memory** | `MEMORY.md` and all `memory/*.md` files | `~/.antre/MEMORY.md` and `~/.antre/memory/` | Imports daily logs, project notes, and all other markdown memory files. Appends with `<!-- Imported from OpenClaw -->` separator for idempotency |
+| **Channels** | Telegram and Discord bot configuration in `openclaw.json` | `antre.toml` channels section | Supports both flat and multi-account Telegram configs |
+| **Sessions** | Per-agent SQLite database `agents/*/agent/openclaw-agent.sqlite` (current OpenClaw) and JSONL conversation files under `agents/*/sessions/` (older releases) | `~/.antre/sessions/v1/` and `~/.antre/memory/sessions/` | Converts OpenClaw message format to Antre format; prefixes keys with `oc:`. Also generates markdown transcripts for memory search indexing |
+| **MCP Servers** | `mcp-servers.json` | `~/.antre/mcp-servers.json` | Merges with existing servers; skips duplicates by name |
+| **Workspace Files** | `SOUL.md`, `IDENTITY.md`, `USER.md`, `TOOLS.md`, `AGENTS.md`, `HEARTBEAT.md`, `BOOT.md` | `~/.antre/` (root) or `~/.antre/agents/<id>/` | Copies raw workspace files; skips if destination already has user content. Replaces auto-seeded defaults |
+| **Agent Presets** | Non-default agents in `agents.list` | `antre.toml` `[agents.presets.*]` | Creates `spawn_agent` presets with name, theme, and model. Existing presets are preserved |
 
 ### Workspace files explained
 
-These markdown files shape your agent's personality and behavior. Moltis uses them in the same way OpenClaw does:
+These markdown files shape your agent's personality and behavior. Antre uses them in the same way OpenClaw does:
 
 - **`SOUL.md`** — personality directives (tone, style, boundaries)
 - **`IDENTITY.md`** — agent name, emoji, creature/vibe theme
@@ -45,19 +45,19 @@ If you customized any of these files in OpenClaw, they will carry over. If the d
 
 If your OpenClaw installation has multiple agents (defined in `openclaw.json`'s `agents.list` or detected from `agents/` directories), all of them are imported:
 
-- The **default agent** becomes Moltis's `main` agent
+- The **default agent** becomes Antre's `main` agent
 - **Non-default agents** are created as separate agent personas with their name, theme, and emoji
-- **Non-default agents become `spawn_agent` presets** in `moltis.toml`, so the main agent can delegate tasks to them via the `spawn_agent` tool. Each preset inherits the agent's name, theme, and model override. See [Agent Presets](agent-presets.md) for details
-- **Per-agent workspace files** (`SOUL.md`, `IDENTITY.md`, etc.) are copied to `~/.moltis/agents/<id>/`, giving each agent its own personality
+- **Non-default agents become `spawn_agent` presets** in `antre.toml`, so the main agent can delegate tasks to them via the `spawn_agent` tool. Each preset inherits the agent's name, theme, and model override. See [Agent Presets](agent-presets.md) for details
+- **Per-agent workspace files** (`SOUL.md`, `IDENTITY.md`, etc.) are copied to `~/.antre/agents/<id>/`, giving each agent its own personality
 - **Per-agent sessions** are prefixed with `oc:<agent_id>:` so they appear under the correct agent
 - Agents without per-agent workspace files inherit from the root files automatically
 
 ### Session storage
 
-Current OpenClaw releases keep each agent's sessions in a SQLite database, `agents/<id>/agent/openclaw-agent.sqlite`; older releases wrote one JSONL file per session. Moltis reads both:
+Current OpenClaw releases keep each agent's sessions in a SQLite database, `agents/<id>/agent/openclaw-agent.sqlite`; older releases wrote one JSONL file per session. Antre reads both:
 
 - The database is opened **read-only**, so the import works while OpenClaw is running (it waits up to 5 seconds for OpenClaw's write lock)
-- Each OpenClaw conversation becomes one Moltis session. OpenClaw starts a new transcript generation (`session_windows` row) on `/new`, resets and compaction; the generations of one session key are joined in order, under the key of the first one, `oc:<agent_id>:<session_id>` (the key a `<session_id>.jsonl` file gets)
+- Each OpenClaw conversation becomes one Antre session. OpenClaw starts a new transcript generation (`session_windows` row) on `/new`, resets and compaction; the generations of one session key are joined in order, under the key of the first one, `oc:<agent_id>:<session_id>` (the key a `<session_id>.jsonl` file gets)
 - Cron jobs become one session per job, keyed `cron:oc-<agent_id>-<job_id>`, so they appear in the Cron tab. Isolated runs (`agent:<id>:cron:<job>:run:<run>`) join their job's session
 - Transcript records come from `transcript_events`, stored as plain JSON or zstd-compressed. Records that OpenClaw moved to a cold archive (`session_transcript_cold_archives`, embedded in the database or published under `agents/<id>/sessions/cold/`) are read back from that archive; if an archive file is missing, the rest of the session is still imported and the report shows a warning
 - Titles come from the session key and its origin (`session_nodes.entry_json`), falling back to the session's display name or label. Sessions archived in OpenClaw are imported as archived
@@ -69,7 +69,7 @@ Current OpenClaw releases keep each agent's sessions in a SQLite database, `agen
 
 ### During Onboarding
 
-If Moltis detects an OpenClaw installation at first launch, an **Import** step appears in the onboarding wizard before the identity and provider steps. You can select which categories to import using checkboxes, then proceed with the rest of setup.
+If Antre detects an OpenClaw installation at first launch, an **Import** step appears in the onboarding wizard before the identity and provider steps. You can select which categories to import using checkboxes, then proceed with the rest of setup.
 
 ### From Settings
 
@@ -83,14 +83,14 @@ The import section only appears when an OpenClaw installation is detected.
 
 ## Importing via CLI
 
-The `moltis import` command provides three subcommands:
+The `antre import` command provides three subcommands:
 
 ### Detect
 
 Check whether an OpenClaw installation exists and preview what can be imported:
 
 ```bash
-moltis import detect
+antre import detect
 ```
 
 Example output:
@@ -111,7 +111,7 @@ OpenClaw installation detected at /Users/you/.openclaw
 Use `--json` for machine-readable output:
 
 ```bash
-moltis import detect --json
+antre import detect --json
 ```
 
 ### Import All
@@ -119,13 +119,13 @@ moltis import detect --json
 Import everything at once:
 
 ```bash
-moltis import all
+antre import all
 ```
 
 Preview what would happen without writing anything:
 
 ```bash
-moltis import all --dry-run
+antre import all --dry-run
 ```
 
 ### Import Selected Categories
@@ -133,7 +133,7 @@ moltis import all --dry-run
 Import only specific categories:
 
 ```bash
-moltis import select -c providers,skills,memory
+antre import select -c providers,skills,memory
 ```
 
 Valid category names: `identity`, `providers`, `skills`, `memory`, `channels`, `sessions`, `mcp_servers`, `workspace-files`.
@@ -141,7 +141,7 @@ Valid category names: `identity`, `providers`, `skills`, `memory`, `channels`, `
 Combine with `--dry-run` to preview:
 
 ```bash
-moltis import select -c sessions --dry-run
+antre import select -c sessions --dry-run
 ```
 
 ## Importing via RPC
@@ -173,7 +173,7 @@ The response includes a report with per-category status (`imported`, `skipped`, 
 
 ## Incremental Session Import
 
-If you continue using OpenClaw after the initial import, Moltis will detect new messages when you re-import. Sessions are compared by source size — the line count of a JSONL file, or the highest event sequence of a SQLite transcript — and if the source has grown since the last import, Moltis re-converts the full session and updates the metadata.
+If you continue using OpenClaw after the initial import, Antre will detect new messages when you re-import. Sessions are compared by source size — the line count of a JSONL file, or the highest event sequence of a SQLite transcript — and if the source has grown since the last import, Antre re-converts the full session and updates the metadata.
 
 On incremental update:
 - The session's original `id` and `created_at` are preserved
@@ -185,11 +185,11 @@ Legacy metadata (from imports before incremental support) will trigger a one-tim
 
 ## Automatic Background Syncing
 
-When the `file-watcher` feature is enabled (default), Moltis automatically watches the OpenClaw sessions directory for changes. Any new or appended session files are synced incrementally within seconds, without requiring a manual re-import.
+When the `file-watcher` feature is enabled (default), Antre automatically watches the OpenClaw sessions directory for changes. Any new or appended session files are synced incrementally within seconds, without requiring a manual re-import.
 
 **How it works:**
 
-- Moltis uses OS-level file notifications (FSEvents on macOS, inotify on Linux) to detect `.jsonl` file changes in the OpenClaw sessions directory. Writes to the SQLite database are not watched: they are picked up by the 60-second sync, which only runs when that directory exists. Otherwise, re-run the import to pick up new SQLite messages
+- Antre uses OS-level file notifications (FSEvents on macOS, inotify on Linux) to detect `.jsonl` file changes in the OpenClaw sessions directory. Writes to the SQLite database are not watched: they are picked up by the 60-second sync, which only runs when that directory exists. Otherwise, re-run the import to pick up new SQLite messages
 - Events are debounced with a 5-second window to batch rapid writes during active conversations
 - A 60-second periodic fallback ensures changes are caught even if file notifications are missed
 - Only sessions are synced automatically — provider keys, memory, skills, and other categories are handled by the manual import or their own dedicated watchers
@@ -214,17 +214,17 @@ To disable automatic syncing, compile without the `file-watcher` feature.
 Running the import multiple times is safe:
 
 - **Memory** uses an `<!-- Imported from OpenClaw -->` marker to avoid duplicating `MEMORY.md` content. Individual memory files skip if they already exist at the destination
-- **Skills** skip directories that already exist in the Moltis skills folder
+- **Skills** skip directories that already exist in the Antre skills folder
 - **MCP servers** skip entries with matching names
-- **Sessions** use `oc:` prefixed keys that won't collide with native Moltis sessions. Unchanged sessions (same source size) are skipped; grown sessions are re-converted
+- **Sessions** use `oc:` prefixed keys that won't collide with native Antre sessions. Unchanged sessions (same source size) are skipped; grown sessions are re-converted
 - **Provider keys** merge with existing keys without overwriting
 - **Workspace files** skip if the destination already has user content; replace only auto-seeded defaults
 
 ## Provider Name Mapping
 
-OpenClaw and Moltis use different names for some providers:
+OpenClaw and Antre use different names for some providers:
 
-| OpenClaw Name | Moltis Name |
+| OpenClaw Name | Antre Name |
 |---------------|-------------|
 | `google` | `gemini` |
 | `anthropic` | `anthropic` |
@@ -251,12 +251,12 @@ OpenClaw stores API keys in agent auth-profiles. If the key was rotated or expir
 
 ### Memory import appears incomplete
 
-The import brings over `MEMORY.md` and all `.md` files from the `memory/` directory (daily logs, project notes, custom files). Non-markdown files are skipped. OpenClaw's SQLite vector database is not imported because embeddings are not portable across models — Moltis will re-index the imported files automatically.
+The import brings over `MEMORY.md` and all `.md` files from the `memory/` directory (daily logs, project notes, custom files). Non-markdown files are skipped. OpenClaw's SQLite vector database is not imported because embeddings are not portable across models — Antre will re-index the imported files automatically.
 
 ### Session transcripts
 
-When sessions are imported, Moltis also generates markdown transcripts in `~/.moltis/memory/sessions/`. These contain the user/assistant conversation text and are indexed by the memory system, making your imported OpenClaw conversations searchable.
+When sessions are imported, Antre also generates markdown transcripts in `~/.antre/memory/sessions/`. These contain the user/assistant conversation text and are indexed by the memory system, making your imported OpenClaw conversations searchable.
 
 ### Workspace files not appearing
 
-If a workspace file wasn't imported, it may already exist at the destination with custom content. The import never overwrites user-customized files. Check `~/.moltis/SOUL.md` (or `~/.moltis/agents/<id>/SOUL.md` for non-default agents) to see what's there. You can delete it and re-import to get the OpenClaw version.
+If a workspace file wasn't imported, it may already exist at the destination with custom content. The import never overwrites user-customized files. Check `~/.antre/SOUL.md` (or `~/.antre/agents/<id>/SOUL.md` for non-default agents) to see what's there. You can delete it and re-import to get the OpenClaw version.

@@ -3,15 +3,15 @@
 //! Integrates with the shared `ChannelWebhookVerifier` infrastructure.
 
 use {
-    bytes::Bytes,
-    http::HeaderMap,
-    moltis_channels::{
+    antre_channels::{
         ChannelType,
         channel_webhook_middleware::{
             ChannelWebhookRatePolicy, ChannelWebhookRejection, ChannelWebhookVerifier,
             VerifiedChannelWebhook,
         },
     },
+    bytes::Bytes,
+    http::HeaderMap,
     std::sync::Arc,
 };
 

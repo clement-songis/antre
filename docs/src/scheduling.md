@@ -1,6 +1,6 @@
 # Scheduling (Cron Jobs)
 
-Moltis includes a built-in cron system that lets the agent schedule and manage
+Antre includes a built-in cron system that lets the agent schedule and manage
 recurring tasks. Jobs can fire agent turns, send system events, or trigger
 other actions on a flexible schedule.
 
@@ -16,7 +16,7 @@ directory. If the file is empty and no pending events exist, the heartbeat
 turn is skipped to save tokens.
 
 Heartbeat replies can also be delivered to a configured channel destination via
-`[heartbeat] deliver`, `channel`, and `to` in `moltis.toml`, or from the web UI
+`[heartbeat] deliver`, `channel`, and `to` in `antre.toml`, or from the web UI
 under **Settings -> Heartbeat**.
 
 ### Active Hours
@@ -32,7 +32,7 @@ changing it requires a restart.
 ## Event-Driven Heartbeat Wake
 
 Normally the heartbeat fires on its regular schedule. The **wake** system lets
-other parts of Moltis trigger an immediate heartbeat when something noteworthy
+other parts of Antre trigger an immediate heartbeat when something noteworthy
 happens, so the agent can react in near real-time.
 
 ### Wake Mode
@@ -65,7 +65,7 @@ Aliases are accepted: `"immediate"`, `"immediately"` map to `"now"`;
 
 ### System Events Queue
 
-Moltis maintains an in-memory bounded queue of **system events** — short text
+Antre maintains an in-memory bounded queue of **system events** — short text
 summaries of things that happened (command completions, cron triggers, etc.).
 When the heartbeat fires, any pending events are drained from the queue and
 prepended to the heartbeat prompt so the agent sees what occurred.
@@ -76,21 +76,21 @@ deduplicated. Events that arrive after the buffer is full are silently dropped
 
 ### Exec Completion Events
 
-When a background command finishes (via the `exec` tool), Moltis automatically
+When a background command finishes (via the `exec` tool), Antre automatically
 enqueues a summary event with the command name, exit code, and a short preview
 of stdout/stderr. If the heartbeat is idle, it is woken immediately so the
 agent can react to the result.
 
 Exec-triggered wakes have a cooldown guard so a heartbeat turn that runs `exec`
 does not immediately re-wake itself in a loop. Configure it with
-`[heartbeat].wake_cooldown` in `moltis.toml`:
+`[heartbeat].wake_cooldown` in `antre.toml`:
 
 ```toml
 [heartbeat]
 wake_cooldown = "5m" # default; set "0" to disable
 ```
 
-The value uses Moltis duration syntax such as `"30s"`, `"10m"`, or `"1h"`.
+The value uses Antre duration syntax such as `"30s"`, `"10m"`, or `"1h"`.
 The cooldown applies only to exec-completion wakes. Cron jobs with
 `wakeMode = "now"` still wake the heartbeat immediately.
 
@@ -147,7 +147,7 @@ transient tool shortcut:
 }
 ```
 
-Moltis resolves the account and destination from trusted session context,
+Antre resolves the account and destination from trusted session context,
 converts the payload to an isolated `agentTurn`, and stores the normal
 `deliver`, `channel`, and `to` fields. The shortcut itself is not persisted.
 It returns an error outside a messaging-channel conversation.
@@ -181,13 +181,13 @@ Example:
 ```
 
 Channel delivery is separate from session targeting. The cron job still runs in
-an isolated cron session, then Moltis forwards the finished output to the
-requested channel destination. After a successful send, Moltis also adds the
+an isolated cron session, then Antre forwards the finished output to the
+requested channel destination. After a successful send, Antre also adds the
 delivered text to that destination's existing bound conversation. A follow-up
 in the same chat (and, where supported, the same topic) can therefore refer to
 the scheduled message naturally. No additional configuration is required.
 
-Moltis only updates history when the channel account and exact destination map
+Antre only updates history when the channel account and exact destination map
 to an existing bound conversation. Delivery to a new or unbound destination
 still succeeds, but does not create a conversation implicitly. Delivery
 failures and empty non-heartbeat outputs are recorded as failed cron runs and
@@ -218,10 +218,10 @@ sandbox isolation, and job notification details.
 
 | Metric | Type | Description |
 |--------|------|-------------|
-| `moltis_cron_jobs_scheduled` | Gauge | Number of scheduled jobs |
-| `moltis_cron_executions_total` | Counter | Job executions |
-| `moltis_cron_execution_duration_seconds` | Histogram | Job duration |
-| `moltis_cron_errors_total` | Counter | Failed jobs |
-| `moltis_cron_stuck_jobs_cleared_total` | Counter | Jobs exceeding 2h timeout |
-| `moltis_cron_input_tokens_total` | Counter | Input tokens from cron runs |
-| `moltis_cron_output_tokens_total` | Counter | Output tokens from cron runs |
+| `antre_cron_jobs_scheduled` | Gauge | Number of scheduled jobs |
+| `antre_cron_executions_total` | Counter | Job executions |
+| `antre_cron_execution_duration_seconds` | Histogram | Job duration |
+| `antre_cron_errors_total` | Counter | Failed jobs |
+| `antre_cron_stuck_jobs_cleared_total` | Counter | Jobs exceeding 2h timeout |
+| `antre_cron_input_tokens_total` | Counter | Input tokens from cron runs |
+| `antre_cron_output_tokens_total` | Counter | Output tokens from cron runs |

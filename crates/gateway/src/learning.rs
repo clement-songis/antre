@@ -1,6 +1,6 @@
 //! Gateway side of the learning loop: starts the service, schedules reviews
 //! after runs, runs the curator on idle, and adapts the provider registry to
-//! the review model. The loop itself lives in `moltis-learning`.
+//! the review model. The loop itself lives in `antre-learning`.
 
 mod history;
 mod model;

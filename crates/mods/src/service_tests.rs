@@ -3,8 +3,8 @@
 use {
     super::*,
     crate::test_fixtures::*,
+    antre_common::hooks::{HookAction, HookEvent, HookPayload, HookRegistry},
     async_trait::async_trait,
-    moltis_common::hooks::{HookAction, HookEvent, HookPayload, HookRegistry},
 };
 
 struct Env {
@@ -316,7 +316,7 @@ fn packages_with_forbidden_imports_are_rejected_and_not_stored() {
     assert_eq!(fs::read_dir(env.mods_dir.join("store")).unwrap().count(), 0);
 
     let http_without_net =
-        wat::parse_str(r#"(component (import "moltis:mods/http@0.1.0" (instance)))"#).unwrap();
+        wat::parse_str(r#"(component (import "antre:mods/http@0.1.0" (instance)))"#).unwrap();
     let path = env.package("http", "0.1.0", "", &http_without_net);
     assert!(matches!(
         service.install_local(&path),
@@ -436,7 +436,7 @@ impl HookHandler for CoreHook {
         &self,
         _event: HookEvent,
         _payload: &HookPayload,
-    ) -> moltis_common::Result<HookAction> {
+    ) -> antre_common::Result<HookAction> {
         Ok(HookAction::Block("core".into()))
     }
 }
@@ -537,7 +537,7 @@ fn pinning_can_be_turned_off() {
 /// `just mod-demo`. Skipped otherwise, like the bundled WASM tool tests.
 fn demo_component() -> Option<Vec<u8>> {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../target/wasm32-wasip2/release/moltis_mod_word_stats.wasm");
+        .join("../../target/wasm32-wasip2/release/antre_mod_word_stats.wasm");
     match fs::read(&path) {
         Ok(bytes) => Some(bytes),
         Err(_) => {
@@ -555,7 +555,7 @@ fn demo_package(env: &Env, bytes: &[u8], manifest: &str) -> PathBuf {
     dir
 }
 
-const DEMO_MANIFEST: &str = include_str!("../../../examples/mods/word-stats/moltis-mod.toml");
+const DEMO_MANIFEST: &str = include_str!("../../../examples/mods/word-stats/antre-mod.toml");
 
 #[tokio::test(flavor = "multi_thread")]
 async fn demo_mod_runs_end_to_end() {
@@ -570,7 +570,7 @@ async fn demo_mod_runs_end_to_end() {
     .unwrap();
     let path = demo_package(&env, &bytes, DEMO_MANIFEST);
     let hash = pending_hash(&service.install_local(&path).unwrap());
-    let id = ModId::parse("moltis-examples.word-stats").unwrap();
+    let id = ModId::parse("antre-examples.word-stats").unwrap();
     service.grant(&id, &hash, InstallMode::Interactive).unwrap();
     service.enable(&id).unwrap();
 
@@ -604,7 +604,7 @@ async fn demo_mod_runs_end_to_end() {
         .await
         .unwrap();
     assert!(matches!(action, HookAction::Continue));
-    let kv = fs::read_to_string(env.mods_dir.join("kv/moltis-examples.word-stats.json")).unwrap();
+    let kv = fs::read_to_string(env.mods_dir.join("kv/antre-examples.word-stats.json")).unwrap();
     assert!(kv.contains("\"sessions_seen\":\"1\""), "{kv}");
 }
 
@@ -623,7 +623,7 @@ async fn demo_mod_without_storage_grant_degrades() {
     assert_ne!(manifest, DEMO_MANIFEST);
     let path = demo_package(&env, &bytes, &manifest);
     let hash = pending_hash(&service.install_local(&path).unwrap());
-    let id = ModId::parse("moltis-examples.word-stats").unwrap();
+    let id = ModId::parse("antre-examples.word-stats").unwrap();
     service.grant(&id, &hash, InstallMode::Interactive).unwrap();
     service.enable(&id).unwrap();
     let mut tools = ToolRegistry::new();
@@ -638,7 +638,7 @@ async fn demo_mod_without_storage_grant_degrades() {
     assert!(out.get("total_calls").is_none());
     assert!(
         !env.mods_dir
-            .join("kv/moltis-examples.word-stats.json")
+            .join("kv/antre-examples.word-stats.json")
             .exists()
     );
 }

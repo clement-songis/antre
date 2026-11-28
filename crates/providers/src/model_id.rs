@@ -9,25 +9,22 @@ pub(crate) const REASONING_SUFFIX_SEP: char = '@';
 /// Reasoning effort suffixes appended to model IDs.
 ///
 /// Derived from [`ReasoningEffort::ALL`] — one entry per level.
-pub(crate) const REASONING_SUFFIXES: &[(&str, moltis_agents::model::ReasoningEffort)] = &[
+pub(crate) const REASONING_SUFFIXES: &[(&str, antre_agents::model::ReasoningEffort)] = &[
     (
         "reasoning-minimal",
-        moltis_agents::model::ReasoningEffort::Minimal,
+        antre_agents::model::ReasoningEffort::Minimal,
     ),
-    ("reasoning-low", moltis_agents::model::ReasoningEffort::Low),
+    ("reasoning-low", antre_agents::model::ReasoningEffort::Low),
     (
         "reasoning-medium",
-        moltis_agents::model::ReasoningEffort::Medium,
+        antre_agents::model::ReasoningEffort::Medium,
     ),
-    (
-        "reasoning-high",
-        moltis_agents::model::ReasoningEffort::High,
-    ),
+    ("reasoning-high", antre_agents::model::ReasoningEffort::High),
     (
         "reasoning-xhigh",
-        moltis_agents::model::ReasoningEffort::ExtraHigh,
+        antre_agents::model::ReasoningEffort::ExtraHigh,
     ),
-    ("reasoning-max", moltis_agents::model::ReasoningEffort::Max),
+    ("reasoning-max", antre_agents::model::ReasoningEffort::Max),
 ];
 
 #[must_use]
@@ -46,7 +43,7 @@ pub fn namespaced_model_id(provider: &str, model_id: &str) -> String {
 #[must_use]
 pub fn split_reasoning_suffix(
     model_id: &str,
-) -> (&str, Option<moltis_agents::model::ReasoningEffort>) {
+) -> (&str, Option<antre_agents::model::ReasoningEffort>) {
     if let Some((base, suffix)) = model_id.rsplit_once(REASONING_SUFFIX_SEP) {
         for &(tag, effort) in REASONING_SUFFIXES {
             if suffix == tag {
@@ -90,7 +87,7 @@ mod tests {
 
     #[test]
     fn split_reasoning_suffix_parses_effort_levels() {
-        use moltis_agents::model::ReasoningEffort;
+        use antre_agents::model::ReasoningEffort;
         assert_eq!(
             split_reasoning_suffix("anthropic::claude-opus-4-5@reasoning-high"),
             ("anthropic::claude-opus-4-5", Some(ReasoningEffort::High))
@@ -120,7 +117,7 @@ mod tests {
 
     #[test]
     fn reasoning_suffixes_covers_all_efforts() {
-        use moltis_agents::model::ReasoningEffort;
+        use antre_agents::model::ReasoningEffort;
         for effort in ReasoningEffort::ALL {
             assert!(
                 REASONING_SUFFIXES.iter().any(|(_, e)| e == effort),

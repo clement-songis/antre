@@ -13,7 +13,7 @@ use {
         traits::McpClientTrait,
         types::{McpToolDef, ToolContent},
     },
-    moltis_config::schema::McpServerId,
+    antre_config::schema::McpServerId,
     tokio::sync::RwLock,
 };
 
@@ -145,9 +145,9 @@ impl McpToolBridge {
     }
 }
 
-/// Trait for agent-callable tools, matching `AgentTool` in moltis-agents.
+/// Trait for agent-callable tools, matching `AgentTool` in antre-agents.
 ///
-/// We define our own copy here to avoid a circular dependency on moltis-agents.
+/// We define our own copy here to avoid a circular dependency on antre-agents.
 /// The gateway wires `McpToolBridge` into the `ToolRegistry` via a thin adapter.
 #[async_trait]
 pub trait McpAgentTool: Send + Sync {
@@ -574,7 +574,7 @@ mod tests {
         }));
         let _ = slot.replace(replacement).await;
 
-        let params = serde_json::json!({"query": "moltis"});
+        let params = serde_json::json!({"query": "antre"});
         bridge.execute(params.clone()).await.unwrap();
 
         assert!(old_received.lock().await.is_none());
@@ -605,7 +605,7 @@ mod tests {
         let _new_slot = ClientSlot::with_client(replacement);
 
         let error = bridge
-            .execute(serde_json::json!({"query": "moltis"}))
+            .execute(serde_json::json!({"query": "antre"}))
             .await
             .expect_err("invalidated bridge should not call a recreated server");
 

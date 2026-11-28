@@ -9,7 +9,7 @@ use {
     zvec::{Collection, Doc, Fts, SearchQuery},
 };
 
-use moltis_memory::{
+use antre_memory::{
     error::{Error, Result as MemoryResult},
     schema::{ChunkRow, FileRow},
     search::{self, SearchResult},
@@ -466,7 +466,7 @@ impl MemoryStore for ZvecMemoryStore {
         // mutually exclusive within one route. `embedding` has HNSW (no FTS),
         // `text` has FTS (no HNSW). Per zvec docs: "run separate queries and
         // merge results in your application." We run both concurrently (they
-        // share no state) and merge via the shared [`moltis_memory::search`]
+        // share no state) and merge via the shared [`antre_memory::search`]
         // functions.
         let (vector_results, keyword_results) = tokio::join!(
             async {
@@ -678,7 +678,7 @@ mod tests {
     }
 
     fn cache_path() -> PathBuf {
-        let dir = std::env::temp_dir().join("moltis-zvec-store-test");
+        let dir = std::env::temp_dir().join("antre-zvec-store-test");
         let _ = std::fs::create_dir_all(&dir);
         let file = format!(
             "store_test_{}_{}.redb",
@@ -901,7 +901,7 @@ mod tests {
         let _ = std::fs::remove_file(&cache_path);
     }
 
-    // merge_weighted / merge_rrf unit coverage lives in moltis-memory's
+    // merge_weighted / merge_rrf unit coverage lives in antre-memory's
     // `search::tests` module so it runs regardless of which backend is
     // compiled. The zvec backend exercises them end-to-end via
     // `hybrid_search` in the tests below.

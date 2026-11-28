@@ -11,9 +11,9 @@
 use std::{collections::HashSet, time::Duration};
 
 use {
+    antre_agents::model::{ChatMessage, CompletionResponse, LlmProvider, StreamEvent, ToolCall},
+    antre_providers::openai::OpenAiProvider,
     futures::StreamExt,
-    moltis_agents::model::{ChatMessage, CompletionResponse, LlmProvider, StreamEvent, ToolCall},
-    moltis_providers::openai::OpenAiProvider,
     secrecy::{ExposeSecret, Secret},
 };
 
@@ -154,7 +154,7 @@ fn classifies_only_transient_provider_errors_for_retries() {
     assert!(!is_transient_provider_error("HTTP 404 model not found"));
 }
 
-/// Tool schema in moltis-internal flat format.
+/// Tool schema in antre-internal flat format.
 fn weather_tool() -> serde_json::Value {
     serde_json::json!({
         "name": "get_weather",

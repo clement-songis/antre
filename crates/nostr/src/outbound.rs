@@ -14,19 +14,19 @@ use std::{
 };
 
 use {
-    async_trait::async_trait,
-    moltis_channels::{
+    antre_channels::{
         ChannelOutbound, ChannelStreamOutbound, Result as ChannelResult, StreamReceiver,
         plugin::StreamEvent,
     },
-    moltis_common::types::ReplyPayload,
+    antre_common::types::ReplyPayload,
+    async_trait::async_trait,
     nostr_sdk::prelude::*,
 };
 
 use crate::state::AccountState;
 
 #[cfg(feature = "metrics")]
-use moltis_metrics::{counter, histogram, nostr as nostr_metrics};
+use antre_metrics::{counter, histogram, nostr as nostr_metrics};
 
 /// Shared account state map type.
 ///
@@ -198,7 +198,7 @@ impl NostrOutbound {
     fn config_handle(&self, account_id: &str) -> ChannelResult<crate::state::SharedConfig> {
         let accounts = self.accounts.read().unwrap_or_else(|e| e.into_inner());
         let state = accounts.get(account_id).ok_or_else(|| {
-            moltis_channels::Error::unavailable(format!("nostr account not found: {account_id}"))
+            antre_channels::Error::unavailable(format!("nostr account not found: {account_id}"))
         })?;
         Ok(Arc::clone(&state.config))
     }
@@ -277,7 +277,7 @@ impl NostrOutbound {
             }
         }
         Err(last_error.map_or_else(
-            || moltis_channels::Error::unavailable("retraction failed"),
+            || antre_channels::Error::unavailable("retraction failed"),
             Into::into,
         ))
     }
@@ -333,9 +333,7 @@ impl NostrOutbound {
         let (client, keys, config) = {
             let accounts = self.accounts.read().unwrap_or_else(|e| e.into_inner());
             let state = accounts.get(account_id).ok_or_else(|| {
-                moltis_channels::Error::unavailable(format!(
-                    "nostr account not found: {account_id}"
-                ))
+                antre_channels::Error::unavailable(format!("nostr account not found: {account_id}"))
             })?;
             (
                 state.client.clone(),
@@ -375,7 +373,7 @@ impl NostrOutbound {
         }
 
         let recipient = PublicKey::parse(to).map_err(|e| {
-            moltis_channels::Error::invalid_input(format!("invalid recipient pubkey: {e}"))
+            antre_channels::Error::invalid_input(format!("invalid recipient pubkey: {e}"))
         })?;
         Ok((client, keys, SendTarget::Dm(recipient)))
     }
@@ -445,7 +443,7 @@ impl ChannelOutbound for NostrOutbound {
                         #[cfg(feature = "metrics")]
                         counter!(nostr_metrics::MESSAGE_SEND_ERRORS_TOTAL, "reason" => "gift_wrap")
                             .increment(1);
-                        moltis_channels::Error::external("nostr", e)
+                        antre_channels::Error::external("nostr", e)
                     })?;
                 let npub = recipient.to_bech32().unwrap_or_else(|_| recipient.to_hex());
                 tracing::debug!(account_id, to = %npub, len = text.len(), "sent gift-wrapped DM");
@@ -697,7 +695,7 @@ impl ChannelStreamOutbound for NostrOutbound {
                             self.withdraw_partial_reply(account_id, &client, &group_id, target)
                                 .await;
                             return Err(result.err().unwrap_or_else(|| {
-                                moltis_channels::Error::unavailable("group send revoked")
+                                antre_channels::Error::unavailable("group send revoked")
                             }));
                         }
                         last_edit = tokio::time::Instant::now();
@@ -806,7 +804,7 @@ mod tests {
             config: Arc::new(tokio::sync::RwLock::new(config)),
             cached_allowlist: Arc::new(RwLock::new(Vec::new())),
             cancel: CancellationToken::new(),
-            otp: Arc::new(std::sync::Mutex::new(moltis_channels::otp::OtpState::new(
+            otp: Arc::new(std::sync::Mutex::new(antre_channels::otp::OtpState::new(
                 300,
             ))),
             reply_ctx: Arc::new(std::sync::Mutex::new(ReplyContexts::new())),
@@ -928,7 +926,7 @@ mod tests {
     async fn refuses_group_send_when_mention_mode_is_none() {
         let outbound = outbound_with_config(NostrAccountConfig {
             groups: vec!["grp".into()],
-            group_mention_mode: moltis_channels::gating::MentionMode::None,
+            group_mention_mode: antre_channels::gating::MentionMode::None,
             ..Default::default()
         });
         let resolved = outbound
@@ -952,7 +950,7 @@ mod tests {
     async fn legacy_target_is_refused_when_mention_mode_is_none() {
         let outbound = outbound_with_config(NostrAccountConfig {
             groups: vec!["grp".into()],
-            group_mention_mode: moltis_channels::gating::MentionMode::None,
+            group_mention_mode: antre_channels::gating::MentionMode::None,
             ..Default::default()
         });
         assert!(outbound.resolve("acct", "grp").await.is_err());
@@ -962,8 +960,8 @@ mod tests {
     #[tokio::test]
     async fn other_mention_modes_still_publish() {
         for mode in [
-            moltis_channels::gating::MentionMode::Mention,
-            moltis_channels::gating::MentionMode::Always,
+            antre_channels::gating::MentionMode::Mention,
+            antre_channels::gating::MentionMode::Always,
         ] {
             let outbound = outbound_with_config(NostrAccountConfig {
                 groups: vec!["grp".into()],
@@ -1022,7 +1020,7 @@ mod tests {
         // Switching the group to receive-only must stop it too.
         rewrite_config(&outbound, NostrAccountConfig {
             groups: vec!["grp".into()],
-            group_mention_mode: moltis_channels::gating::MentionMode::None,
+            group_mention_mode: antre_channels::gating::MentionMode::None,
             ..Default::default()
         })
         .await;

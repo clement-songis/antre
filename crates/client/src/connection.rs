@@ -17,11 +17,11 @@ use std::{
 #[cfg(feature = "tracing")]
 use tracing::{debug, warn};
 use {
-    futures::{SinkExt, StreamExt},
-    moltis_protocol::{
+    antre_protocol::{
         ClientInfo, ConnectAuth, ConnectParamsV4, ErrorShape, EventFrame, Extensions, HelloOk,
         PROTOCOL_VERSION, ProtocolRange, RequestFrame, ResponseFrame, error_codes, roles,
     },
+    futures::{SinkExt, StreamExt},
     secrecy::{ExposeSecret, SecretString},
     serde::{Serialize, de::DeserializeOwned},
     serde_json::Value,
@@ -37,7 +37,7 @@ use {
 };
 
 #[cfg(feature = "metrics")]
-use moltis_metrics::{client as metric, counter, histogram};
+use antre_metrics::{client as metric, counter, histogram};
 
 use crate::{
     endpoint::Endpoint,
@@ -93,7 +93,7 @@ impl ConnectOptions {
             api_key: None,
             client,
             request_timeout: Duration::from_secs(60),
-            handshake_timeout: Duration::from_millis(moltis_protocol::HANDSHAKE_TIMEOUT_MS),
+            handshake_timeout: Duration::from_millis(antre_protocol::HANDSHAKE_TIMEOUT_MS),
         }
     }
 

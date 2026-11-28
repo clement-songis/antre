@@ -280,7 +280,7 @@ jobs:
     permissions:
       contents: read
     env:
-      MOLTIS_SANDBOX_RUNTIME_E2E: "1"
+      ANTRE_SANDBOX_RUNTIME_E2E: "1"
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
@@ -307,7 +307,7 @@ jobs:
           shared-key: sandbox-runtime-e2e-v1
           cache-all-crates: true
       - name: Exercise Docker and Podman OCI file transfers
-        run: cargo test -p moltis-tools runtime_oci_file_transfers -- --nocapture
+        run: cargo test -p antre-tools runtime_oci_file_transfers -- --nocapture
 
   coverage:
     name: Code Coverage
@@ -373,7 +373,7 @@ jobs:
           ./scripts/download-tailwindcss-cli.sh tailwindcss-linux-x64
           TAILWINDCSS=./tailwindcss-linux-x64 ./scripts/build-web-assets.sh
       - name: Generate coverage
-        run: cargo llvm-cov --workspace --exclude moltis-tools --exclude moltis-swift-bridge --lcov --output-path lcov.info
+        run: cargo llvm-cov --workspace --exclude antre-tools --exclude antre-swift-bridge --lcov --output-path lcov.info
       - name: Upload to Codecov
         uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
         with:
@@ -418,9 +418,9 @@ jobs:
           ./scripts/download-tailwindcss-cli.sh tailwindcss-linux-x64
           TAILWINDCSS=./tailwindcss-linux-x64 ./scripts/build-web-assets.sh
 
-      - name: Build moltis binary
+      - name: Build antre binary
         timeout-minutes: 20
-        run: cargo build --bin moltis
+        run: cargo build --bin antre
 
       - name: Reclaim Rust build disk for E2E
         run: bash ./scripts/cleanup-e2e-build-artifacts.sh
@@ -440,7 +440,7 @@ jobs:
         working-directory: crates/web/ui
         env:
           CI: "true"
-          MOLTIS_BINARY: ${{ github.workspace }}/target/e2e-bin/moltis
+          ANTRE_BINARY: ${{ github.workspace }}/target/e2e-bin/antre
         run: ./e2e/run-ci.sh
 
       - name: Upload test results
@@ -501,10 +501,10 @@ jobs:
 
       - name: Build Swift bridge and generate Xcode project
         env:
-          MOLTIS_SWIFT_BRIDGE_PROFILE: swift-ci
-          MOLTIS_SWIFT_BRIDGE_TARGETS: aarch64-apple-darwin
-          MOLTIS_SWIFT_BRIDGE_SKIP_WASM_BUILD: "1"
-          MOLTIS_SWIFT_BRIDGE_SKIP_WASM_PRECOMPILE: "1"
+          ANTRE_SWIFT_BRIDGE_PROFILE: swift-ci
+          ANTRE_SWIFT_BRIDGE_TARGETS: aarch64-apple-darwin
+          ANTRE_SWIFT_BRIDGE_SKIP_WASM_BUILD: "1"
+          ANTRE_SWIFT_BRIDGE_SKIP_WASM_PRECOMPILE: "1"
         run: |
           ./scripts/build-swift-bridge.sh
           ./scripts/generate-swift-project.sh
@@ -515,8 +515,8 @@ jobs:
       - name: Build macOS app
         run: |
           xcodebuild \
-            -project apps/macos/Moltis.xcodeproj \
-            -scheme Moltis \
+            -project apps/macos/Antre.xcodeproj \
+            -scheme Antre \
             -configuration Release \
             -destination "platform=macOS" \
             -derivedDataPath apps/macos/.derivedData-ci \
@@ -551,7 +551,7 @@ jobs:
 
       - name: Export GraphQL schema and generate project
         run: |
-          cargo run -p moltis-schema-export -- apps/ios/GraphQL/Schema/schema.graphqls
+          cargo run -p antre-schema-export -- apps/ios/GraphQL/Schema/schema.graphqls
           ./scripts/generate-ios-project.sh
           ./scripts/generate-ios-graphql.sh
           ./scripts/generate-ios-project.sh
@@ -559,8 +559,8 @@ jobs:
       - name: Build iOS app
         run: |
           xcodebuild \
-            -project apps/ios/Moltis.xcodeproj \
-            -scheme Moltis \
+            -project apps/ios/Antre.xcodeproj \
+            -scheme Antre \
             -configuration Debug \
             -destination "generic/platform=iOS" \
             CODE_SIGNING_ALLOWED=NO \

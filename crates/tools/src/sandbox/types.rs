@@ -139,7 +139,7 @@ pub enum WorkspaceMount {
     Rw,
 }
 
-pub use moltis_config::schema::ManagedFilesMountConfig as ManagedFilesMount;
+pub use antre_config::schema::ManagedFilesMountConfig as ManagedFilesMount;
 
 impl std::fmt::Display for WorkspaceMount {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -171,12 +171,12 @@ impl std::fmt::Display for HomePersistence {
     }
 }
 
-impl From<&moltis_config::schema::HomePersistenceConfig> for HomePersistence {
-    fn from(value: &moltis_config::schema::HomePersistenceConfig) -> Self {
+impl From<&antre_config::schema::HomePersistenceConfig> for HomePersistence {
+    fn from(value: &antre_config::schema::HomePersistenceConfig) -> Self {
         match value {
-            moltis_config::schema::HomePersistenceConfig::Off => Self::Off,
-            moltis_config::schema::HomePersistenceConfig::Session => Self::Session,
-            moltis_config::schema::HomePersistenceConfig::Shared => Self::Shared,
+            antre_config::schema::HomePersistenceConfig::Off => Self::Off,
+            antre_config::schema::HomePersistenceConfig::Session => Self::Session,
+            antre_config::schema::HomePersistenceConfig::Shared => Self::Shared,
         }
     }
 }
@@ -193,7 +193,7 @@ pub struct ResourceLimits {
     pub pids_max: Option<u32>,
 }
 
-pub use moltis_network_filter::NetworkPolicy;
+pub use antre_network_filter::NetworkPolicy;
 
 /// Configuration for sandbox behavior.
 #[derive(Debug, Clone, Deserialize)]
@@ -203,7 +203,7 @@ pub struct SandboxConfig {
     pub scope: SandboxScope,
     pub workspace_mount: WorkspaceMount,
     pub managed_files_mount: ManagedFilesMount,
-    /// Host-visible path for Moltis `data_dir()` when running container-backed
+    /// Host-visible path for Antre `data_dir()` when running container-backed
     /// sandboxes from inside another container.
     pub host_data_dir: Option<PathBuf>,
     /// Persistence strategy for `/home/sandbox`.
@@ -310,7 +310,7 @@ impl Default for SandboxConfig {
             no_network: false,
             network: NetworkPolicy::default(),
             trusted_domains: Vec::new(),
-            proxy_port: moltis_network_filter::DEFAULT_PROXY_PORT,
+            proxy_port: antre_network_filter::DEFAULT_PROXY_PORT,
             backend: "auto".into(),
             resource_limits: ResourceLimits::default(),
             gpus: None,
@@ -344,8 +344,8 @@ impl Default for SandboxConfig {
     }
 }
 
-impl From<&moltis_config::schema::SandboxConfig> for SandboxConfig {
-    fn from(cfg: &moltis_config::schema::SandboxConfig) -> Self {
+impl From<&antre_config::schema::SandboxConfig> for SandboxConfig {
+    fn from(cfg: &antre_config::schema::SandboxConfig) -> Self {
         Self {
             mode: match cfg.mode.as_str() {
                 "all" => SandboxMode::All,
@@ -391,7 +391,7 @@ impl From<&moltis_config::schema::SandboxConfig> for SandboxConfig {
             trusted_domains: cfg.trusted_domains.clone(),
             proxy_port: cfg
                 .proxy_port
-                .unwrap_or(moltis_network_filter::DEFAULT_PROXY_PORT),
+                .unwrap_or(antre_network_filter::DEFAULT_PROXY_PORT),
             backend: cfg.backend.clone(),
             resource_limits: ResourceLimits {
                 memory_limit: cfg.resource_limits.memory_limit.clone(),
@@ -445,7 +445,7 @@ impl std::fmt::Display for SandboxId {
 /// Result of a `build_image` call.
 #[derive(Debug, Clone)]
 pub struct BuildImageResult {
-    /// The full image tag (e.g. `moltis-sandbox:abc123`).
+    /// The full image tag (e.g. `antre-sandbox:abc123`).
     pub tag: String,
     /// Whether the build was actually performed (false = image already existed).
     pub built: bool,

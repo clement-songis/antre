@@ -14,8 +14,8 @@ use std::{
 };
 
 use {
+    antre_agents::model::{ChatMessage, LlmProvider, ReasoningEffort, StreamEvent, ToolCall},
     futures::StreamExt,
-    moltis_agents::model::{ChatMessage, LlmProvider, ReasoningEffort, StreamEvent, ToolCall},
     secrecy::{ExposeSecret, Secret},
 };
 

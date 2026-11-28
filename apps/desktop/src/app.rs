@@ -14,7 +14,7 @@ pub fn run() {
                 return;
             }
             // Notifications are attributed to the bundle (see Info.plist).
-            cx.set_app_identity("org.moltis.desktop", "Moltis");
+            cx.set_app_identity("ai.antre.desktop", "Antre");
             cx.set_global(Theme::for_appearance(cx.window_appearance()));
             bind_keys(cx);
             cx.on_action(|_: &Quit, cx| cx.quit());
@@ -28,12 +28,12 @@ pub fn run() {
 fn menus() -> Vec<Menu> {
     vec![
         Menu {
-            name: "Moltis".into(),
+            name: "Antre".into(),
             items: vec![
                 MenuItem::action("Settings…", OpenWebSettings),
                 MenuItem::separator(),
-                MenuItem::action("Hide Moltis", Hide),
-                MenuItem::action("Quit Moltis", Quit),
+                MenuItem::action("Hide Antre", Hide),
+                MenuItem::action("Quit Antre", Quit),
             ],
             disabled: false,
         },
@@ -75,12 +75,12 @@ fn open_window(cx: &mut App) {
     let opened = cx.open_window(
         WindowOptions {
             window_bounds: Some(WindowBounds::Windowed(bounds)),
-            titlebar: Some(crate::titlebar::options("Moltis")),
+            titlebar: Some(crate::titlebar::options("Antre")),
             window_min_size: Some(size(px(720.), px(480.))),
             app_owns_titlebar_drag: cfg!(target_os = "macos"),
-            // Matches `org.moltis.desktop.desktop`, so Linux desktops show
+            // Matches `ai.antre.desktop.desktop`, so Linux desktops show
             // the launcher's name and icon for the window.
-            app_id: Some("org.moltis.desktop".into()),
+            app_id: Some("ai.antre.desktop".into()),
             ..WindowOptions::default()
         },
         |window, cx| {

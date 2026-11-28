@@ -14,7 +14,7 @@ cd "${IOS_APP_DIR}"
 
 # XcodeGen preserves workspace metadata, which can leave Apollo codegen reading
 # a Package.resolved entry that predates the exact version in project.yml.
-rm -f Moltis.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+rm -f Antre.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
 
 # Create a stub local.xcconfig if missing (gitignored; needed by project.yml).
 if [[ ! -f local.xcconfig ]]; then
@@ -25,4 +25,4 @@ fi
 
 xcodegen generate --spec project.yml
 
-echo "Generated ${IOS_APP_DIR}/Moltis.xcodeproj"
+echo "Generated ${IOS_APP_DIR}/Antre.xcodeproj"

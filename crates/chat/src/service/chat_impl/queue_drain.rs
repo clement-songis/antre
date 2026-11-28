@@ -8,7 +8,7 @@ use {
     tracing::{info, warn},
 };
 
-use moltis_config::MessageQueueMode;
+use antre_config::MessageQueueMode;
 
 use crate::{
     runtime::ChatRuntime,
@@ -29,7 +29,7 @@ impl LiveChatService {
         queued_replay: bool,
     ) {
         self.state
-            .finalize_active_channel_acks(activity_id, moltis_channels::ChannelAckOutcome::Failure)
+            .finalize_active_channel_acks(activity_id, antre_channels::ChannelAckOutcome::Failure)
             .await;
         drop(permit);
         if !queued_replay {
@@ -203,7 +203,7 @@ enum ReplayDisposition {
     Terminal,
 }
 
-fn replay_disposition(result: &moltis_service_traits::ServiceResult) -> ReplayDisposition {
+fn replay_disposition(result: &antre_service_traits::ServiceResult) -> ReplayDisposition {
     let Ok(payload) = result else {
         return ReplayDisposition::Terminal;
     };
@@ -220,14 +220,14 @@ async fn settle_replay(
     state: &Arc<dyn ChatRuntime>,
     session_key: &str,
     keys: Vec<String>,
-    result: &moltis_service_traits::ServiceResult,
+    result: &antre_service_traits::ServiceResult,
 ) {
     if let Err(error) = result {
         warn!(session = %session_key, error = %error, "failed to replay queued message");
     }
     if replay_disposition(result) == ReplayDisposition::Terminal && !keys.is_empty() {
         state
-            .finalize_channel_acks(keys, moltis_channels::ChannelAckOutcome::Failure)
+            .finalize_channel_acks(keys, antre_channels::ChannelAckOutcome::Failure)
             .await;
     }
 }
@@ -236,7 +236,7 @@ async fn abandon(state: &Arc<dyn ChatRuntime>, queued: &[QueuedMessage]) {
     let keys = crate::channel_acks::merged_ack_keys(queued.iter().map(|m| &m.params));
     if !keys.is_empty() {
         state
-            .finalize_channel_acks(keys, moltis_channels::ChannelAckOutcome::Failure)
+            .finalize_channel_acks(keys, antre_channels::ChannelAckOutcome::Failure)
             .await;
     }
 }
@@ -263,8 +263,8 @@ fn merge_content_blocks(queued: &[QueuedMessage]) -> Vec<Value> {
 mod tests {
     use {
         super::*,
+        antre_service_traits::{ChatService, ServiceResult},
         async_trait::async_trait,
-        moltis_service_traits::{ChatService, ServiceResult},
         std::{collections::HashSet, sync::Mutex},
         tokio::sync::{OwnedSemaphorePermit, Semaphore},
     };

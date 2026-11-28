@@ -125,7 +125,7 @@ impl AppleContainerSandbox {
         self.config
             .container_prefix
             .as_deref()
-            .unwrap_or("moltis-sandbox")
+            .unwrap_or("antre-sandbox")
     }
 
     pub(crate) fn container_policy_fingerprint(&self) -> String {
@@ -894,7 +894,7 @@ impl Sandbox for AppleContainerSandbox {
                 Err(CreateError::ServiceDown) => {
                     return Err(Error::message(
                         "apple container service is not running. \
-                         Start it with `container system start` and restart moltis",
+                         Start it with `container system start` and restart antre",
                     ));
                 },
                 Err(CreateError::Other(stderr)) => {

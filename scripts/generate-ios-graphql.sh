@@ -8,7 +8,7 @@ CLI_DIR="${IOS_DIR}/.tools"
 CLI_BIN="${CLI_DIR}/apollo-ios-cli"
 CLI_ARCHIVE="${CLI_DIR}/apollo-ios-cli.tar.gz"
 APOLLO_IOS_VERSION="2.3.0"
-SCHEMA_NAMESPACE_FILE="${IOS_DIR}/Sources/GraphQL/Generated/MoltisAPI/MoltisAPI.graphql.swift"
+SCHEMA_NAMESPACE_FILE="${IOS_DIR}/Sources/GraphQL/Generated/AntreAPI/AntreAPI.graphql.swift"
 
 mkdir -p "${CLI_DIR}"
 

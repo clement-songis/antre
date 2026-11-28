@@ -191,7 +191,7 @@ pub(crate) fn load_or_create(dir: &Path, required_sans: &[ServerSan]) -> Result<
         Err(reason) => {
             warn!(
                 %reason,
-                "regenerating local CA; run `moltis trust-ca` again if you trusted the previous one"
+                "regenerating local CA; run `antre trust-ca` again if you trusted the previous one"
             );
         },
     }
@@ -267,10 +267,10 @@ fn ca_params(scope: &[PermittedName]) -> Result<CertificateParams> {
     let mut params = CertificateParams::new(Vec::<String>::new())?;
     params
         .distinguished_name
-        .push(DnType::CommonName, "Moltis Local CA");
+        .push(DnType::CommonName, "Antre Local CA");
     params
         .distinguished_name
-        .push(DnType::OrganizationName, "Moltis");
+        .push(DnType::OrganizationName, "Antre");
     params.is_ca = IsCa::Ca(BasicConstraints::Constrained(0));
     params.key_usages = vec![KeyUsagePurpose::KeyCertSign, KeyUsagePurpose::CrlSign];
     params.name_constraints = Some(NameConstraints {
@@ -382,8 +382,8 @@ mod tests {
         let scope = scope_for(&[]);
         for san in [
             dns("localhost"),
-            dns("moltis.localhost"),
-            dns("*.moltis.localhost"),
+            dns("antre.localhost"),
+            dns("*.antre.localhost"),
             dns("m4max.local"),
             ip("127.0.0.1"),
             ip("::1"),

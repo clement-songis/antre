@@ -555,4 +555,4 @@ export function clearAllSessions(): Promise<{ ok: boolean; skipped?: boolean; ca
 }
 
 // ── Re-render session list on project filter change ─────────
-document.addEventListener("moltis:render-session-list", renderSessionList);
+document.addEventListener("antre:render-session-list", renderSessionList);

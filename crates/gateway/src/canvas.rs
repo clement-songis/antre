@@ -8,11 +8,11 @@ use std::{
 };
 
 use {
-    async_trait::async_trait,
-    moltis_canvas::{
+    antre_canvas::{
         CanvasEvent, CanvasEventSink, CanvasService, CanvasServiceParts, CanvasSettings,
         CreatedShare, DesignId, ShareBackend, Visibility,
     },
+    async_trait::async_trait,
     tokio::sync::OnceCell,
     tracing::{info, warn},
 };
@@ -134,7 +134,7 @@ fn bind_ip(bind: &str) -> IpAddr {
 
 /// Address the render origin listens on.
 #[must_use]
-pub fn render_address(config: &moltis_config::MoltisConfig) -> SocketAddr {
+pub fn render_address(config: &antre_config::AntreConfig) -> SocketAddr {
     let bind = config.canvas.bind.as_deref().unwrap_or(&config.server.bind);
     SocketAddr::new(bind_ip(bind), config.canvas.port.unwrap_or(0))
 }
@@ -142,7 +142,7 @@ pub fn render_address(config: &moltis_config::MoltisConfig) -> SocketAddr {
 /// Build the canvas service and start its render origin. `None` when the
 /// canvas is disabled or fails to initialize (the rest of the gateway runs).
 pub async fn init(
-    config: &moltis_config::MoltisConfig,
+    config: &antre_config::AntreConfig,
     data_dir: &Path,
     db_pool: &sqlx::SqlitePool,
     share_store: &Arc<ShareStore>,
@@ -153,16 +153,16 @@ pub async fn init(
         info!("canvas disabled by canvas.enabled=false");
         return None;
     }
-    if let Err(error) = moltis_canvas::run_migrations(db_pool).await {
+    if let Err(error) = antre_canvas::run_migrations(db_pool).await {
         warn!(%error, "canvas migrations failed, canvas disabled");
         return None;
     }
     if config.canvas.seed_design_systems
-        && let Err(error) = moltis_canvas::design_systems::seed_starters(&data_dir.join("skills"))
+        && let Err(error) = antre_canvas::design_systems::seed_starters(&data_dir.join("skills"))
     {
         warn!(%error, "failed to seed starter design systems");
     }
-    let renderer = moltis_canvas::BrowserRenderer::new(
+    let renderer = antre_canvas::BrowserRenderer::new(
         &config.tools.browser,
         format!("{browser_container_prefix}-canvas"),
     );
@@ -183,7 +183,7 @@ pub async fn init(
         state: Arc::clone(deferred_state),
     }));
     let address = render_address(config);
-    if let Err(error) = moltis_canvas::server::spawn(Arc::clone(&service), address).await {
+    if let Err(error) = antre_canvas::server::spawn(Arc::clone(&service), address).await {
         warn!(%address, %error, "canvas render origin failed to start; previews unavailable");
     }
     Some(service)
@@ -193,13 +193,13 @@ pub async fn init(
 #[must_use]
 pub fn hooks(
     canvas: Option<&Arc<CanvasService>>,
-) -> Vec<Arc<dyn moltis_common::hooks::HookHandler>> {
+) -> Vec<Arc<dyn antre_common::hooks::HookHandler>> {
     canvas
         .map(|service| {
             vec![
-                Arc::new(moltis_canvas::hook::DesignVersionHook::new(Arc::clone(
+                Arc::new(antre_canvas::hook::DesignVersionHook::new(Arc::clone(
                     service,
-                ))) as Arc<dyn moltis_common::hooks::HookHandler>,
+                ))) as Arc<dyn antre_common::hooks::HookHandler>,
             ]
         })
         .unwrap_or_default()
@@ -207,13 +207,13 @@ pub fn hooks(
 
 /// Register `design_create`, `design_open` and `design_screenshot`.
 pub fn register_tools(
-    registry: &mut moltis_agents::tool_registry::ToolRegistry,
+    registry: &mut antre_agents::tool_registry::ToolRegistry,
     canvas: Option<&Arc<CanvasService>>,
 ) {
     let Some(service) = canvas else {
         return;
     };
-    for tool in moltis_canvas::tools::design_tools(service) {
+    for tool in antre_canvas::tools::design_tools(service) {
         registry.register(tool);
     }
 }
@@ -323,7 +323,7 @@ mod tests {
         crate::run_migrations(&pool).await.unwrap();
         let shares = Arc::new(ShareStore::new(pool.clone()));
         let state = Arc::new(OnceCell::new());
-        let mut config = moltis_config::MoltisConfig::default();
+        let mut config = antre_config::AntreConfig::default();
         config.server.bind = "127.0.0.1".into();
 
         config.canvas.enabled = false;
@@ -349,7 +349,7 @@ mod tests {
         assert_eq!(hooks(Some(&service)).len(), 1);
         assert!(hooks(None).is_empty());
 
-        let mut registry = moltis_agents::tool_registry::ToolRegistry::new();
+        let mut registry = antre_agents::tool_registry::ToolRegistry::new();
         register_tools(&mut registry, Some(&service));
         for name in ["design_create", "design_open", "design_screenshot"] {
             assert!(registry.get(name).is_some(), "{name} registered");
@@ -358,7 +358,7 @@ mod tests {
 
     #[test]
     fn render_address_defaults_to_server_bind_and_free_port() {
-        let mut config = moltis_config::MoltisConfig::default();
+        let mut config = antre_config::AntreConfig::default();
         config.server.bind = "127.0.0.1".into();
         assert_eq!(render_address(&config), "127.0.0.1:0".parse().unwrap());
         config.canvas.bind = Some("localhost".into());

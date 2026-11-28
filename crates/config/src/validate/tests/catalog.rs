@@ -18,7 +18,7 @@ refresh_interval_hours = 24
         "unexpected catalog diagnostics: {:?}",
         result.diagnostics
     );
-    let defaults = MoltisConfig::default();
+    let defaults = AntreConfig::default();
     assert!(defaults.catalog.refresh);
     assert_eq!(defaults.catalog.refresh_urls.len(), 2);
 }
@@ -78,7 +78,7 @@ fn quota_wait_section_is_known_and_validated() {
             .iter()
             .any(|d| d.path == "chat.quota_wait.max_wait_hours")
     );
-    let defaults = MoltisConfig::default();
+    let defaults = AntreConfig::default();
     assert!(defaults.chat.quota_wait.enabled);
     assert!((defaults.chat.quota_wait.max_wait_hours - 6.0).abs() < f64::EPSILON);
 }
@@ -107,7 +107,7 @@ models = [
         "unexpected diagnostics: {:?}",
         result.diagnostics
     );
-    let config: MoltisConfig = toml::from_str(
+    let config: AntreConfig = toml::from_str(
         r#"
 [providers.custom-my-vllm]
 catalog = "static"
@@ -116,7 +116,7 @@ models = ["a", { id = "b", contextWindow = 4096 }]
     )
     .unwrap();
     let entry = &config.providers.providers["custom-my-vllm"];
-    assert_eq!(entry.catalog, moltis_model_catalog::CatalogMode::Static);
+    assert_eq!(entry.catalog, antre_model_catalog::CatalogMode::Static);
     assert_eq!(entry.models[0], "a");
     assert_eq!(
         entry.models[1].spec().and_then(|s| s.context_window),
@@ -153,7 +153,7 @@ fn delivery_section_is_known_and_validated() {
             .iter()
             .any(|d| d.path == "chat.delivery.max_retry_secs")
     );
-    let defaults = MoltisConfig::default();
+    let defaults = AntreConfig::default();
     assert_eq!(defaults.chat.delivery.max_attempts, 8);
     assert!(defaults.chat.delivery.announce_background_tasks);
 }

@@ -12,7 +12,7 @@ use {
     tracing::{debug, info, warn},
 };
 
-use moltis_sessions::store::SessionStore;
+use antre_sessions::store::SessionStore;
 
 use crate::{
     agent_loop::ChannelReplyTargetKey, channel_acks::note_delivery_failed,
@@ -140,8 +140,8 @@ async fn deliver_channel_replies_inner(
                     targets,
                     session_key,
                     Some(activity_id),
-                    moltis_delivery::DeliveryKind::Reply,
-                    &moltis_delivery::DeliveryBody::Text {
+                    antre_delivery::DeliveryKind::Reply,
+                    &antre_delivery::DeliveryBody::Text {
                         text: text.to_string(),
                         suffix_html,
                     },
@@ -154,8 +154,8 @@ async fn deliver_channel_replies_inner(
                         streamed_targets,
                         session_key,
                         Some(activity_id),
-                        moltis_delivery::DeliveryKind::Logbook,
-                        &moltis_delivery::DeliveryBody::Html { html: logbook_html },
+                        antre_delivery::DeliveryKind::Logbook,
+                        &antre_delivery::DeliveryBody::Html { html: logbook_html },
                         false,
                     )
                     .await;
@@ -233,11 +233,11 @@ pub(crate) fn format_logbook_html(entries: &[String]) -> String {
 }
 
 async fn send_channel_logbook_follow_up_to_targets(
-    outbox: Option<Arc<moltis_delivery::Outbox>>,
-    outbound: Arc<dyn moltis_channels::plugin::ChannelOutbound>,
-    targets: Vec<moltis_channels::ChannelReplyTarget>,
+    outbox: Option<Arc<antre_delivery::Outbox>>,
+    outbound: Arc<dyn antre_channels::plugin::ChannelOutbound>,
+    targets: Vec<antre_channels::ChannelReplyTarget>,
     logbook_html: &str,
-    feedback: Option<Arc<moltis_channels::FeedbackService>>,
+    feedback: Option<Arc<antre_channels::FeedbackService>>,
     session_key: &str,
     trace_correlation_key: &str,
 ) {
@@ -250,8 +250,8 @@ async fn send_channel_logbook_follow_up_to_targets(
             targets,
             session_key,
             Some(trace_correlation_key),
-            moltis_delivery::DeliveryKind::Logbook,
-            &moltis_delivery::DeliveryBody::Html {
+            antre_delivery::DeliveryKind::Logbook,
+            &antre_delivery::DeliveryBody::Html {
                 html: logbook_html.to_string(),
             },
             false,
@@ -347,10 +347,10 @@ fn format_channel_compaction_notice(
     include_settings_hint: bool,
 ) -> String {
     let mode_label = match outcome.effective_mode {
-        moltis_config::CompactionMode::Deterministic => "Deterministic",
-        moltis_config::CompactionMode::RecencyPreserving => "Recency preserving",
-        moltis_config::CompactionMode::Structured => "Structured",
-        moltis_config::CompactionMode::LlmReplace => "LLM replace",
+        antre_config::CompactionMode::Deterministic => "Deterministic",
+        antre_config::CompactionMode::RecencyPreserving => "Recency preserving",
+        antre_config::CompactionMode::Structured => "Structured",
+        antre_config::CompactionMode::LlmReplace => "LLM replace",
     };
     let total = outcome.total_tokens();
     let token_line = if total == 0 {
@@ -519,8 +519,8 @@ async fn deliver_channel_error_inner(
             targets,
             session_key,
             None,
-            moltis_delivery::DeliveryKind::Error,
-            &moltis_delivery::DeliveryBody::Text {
+            antre_delivery::DeliveryKind::Error,
+            &antre_delivery::DeliveryBody::Text {
                 text: error_text,
                 suffix_html: (!logbook_html.is_empty()).then_some(logbook_html),
             },
@@ -583,8 +583,8 @@ async fn deliver_channel_error_inner(
 
 #[allow(dead_code)]
 async fn deliver_channel_replies_to_targets(
-    outbound: Arc<dyn moltis_channels::plugin::ChannelOutbound>,
-    targets: Vec<moltis_channels::ChannelReplyTarget>,
+    outbound: Arc<dyn antre_channels::plugin::ChannelOutbound>,
+    targets: Vec<antre_channels::ChannelReplyTarget>,
     activity_id: &str,
     session_key: &str,
     text: &str,
@@ -643,11 +643,11 @@ async fn deliver_channel_replies_to_targets(
 #[allow(clippy::too_many_arguments)]
 #[allow(dead_code)]
 async fn deliver_reply_to_target(
-    outbound: &dyn moltis_channels::ChannelOutbound,
+    outbound: &dyn antre_channels::ChannelOutbound,
     state: &Arc<dyn ChatRuntime>,
     activity_id: &str,
     session_key: &str,
-    target: &moltis_channels::ChannelReplyTarget,
+    target: &antre_channels::ChannelReplyTarget,
     to: &str,
     text: &str,
     logbook_html: &str,
@@ -678,7 +678,7 @@ async fn deliver_reply_to_target(
         return;
     };
 
-    if target.channel_type != moltis_channels::ChannelType::Telegram {
+    if target.channel_type != antre_channels::ChannelType::Telegram {
         send_voice_reply(outbound, state, activity_id, target, to, &payload, reply_to).await;
         return;
     }
@@ -699,7 +699,7 @@ async fn deliver_reply_to_target(
     // enabled). With the telegram feature off this is always false, so the
     // voice note is followed by the text as a separate message.
     #[cfg(feature = "telegram")]
-    let fits_in_caption = transcript.len() <= moltis_telegram::markdown::TELEGRAM_CAPTION_LIMIT;
+    let fits_in_caption = transcript.len() <= antre_telegram::markdown::TELEGRAM_CAPTION_LIMIT;
     #[cfg(not(feature = "telegram"))]
     let fits_in_caption = false;
 
@@ -737,12 +737,12 @@ async fn deliver_reply_to_target(
 /// Send a TTS voice message, reporting a delivery failure if it does not land.
 #[allow(dead_code)]
 async fn send_voice_reply(
-    outbound: &dyn moltis_channels::ChannelOutbound,
+    outbound: &dyn antre_channels::ChannelOutbound,
     state: &Arc<dyn ChatRuntime>,
     activity_id: &str,
-    target: &moltis_channels::ChannelReplyTarget,
+    target: &antre_channels::ChannelReplyTarget,
     to: &str,
-    payload: &moltis_common::types::ReplyPayload,
+    payload: &antre_common::types::ReplyPayload,
     reply_to: Option<&str>,
 ) {
     if let Err(e) = outbound
@@ -765,8 +765,8 @@ async fn send_voice_reply(
 /// not a delivery failure and must not turn the acknowledgment into ❌.
 #[allow(dead_code)]
 async fn send_logbook_follow_up(
-    outbound: &dyn moltis_channels::ChannelOutbound,
-    target: &moltis_channels::ChannelReplyTarget,
+    outbound: &dyn antre_channels::ChannelOutbound,
+    target: &antre_channels::ChannelReplyTarget,
     to: &str,
     logbook_html: &str,
 ) {
@@ -790,8 +790,8 @@ async fn send_logbook_follow_up(
 /// already streamed in place. Returns whether the user received the reply.
 #[allow(dead_code)]
 async fn deliver_text_fallback(
-    outbound: &dyn moltis_channels::ChannelOutbound,
-    target: &moltis_channels::ChannelReplyTarget,
+    outbound: &dyn antre_channels::ChannelOutbound,
+    target: &antre_channels::ChannelReplyTarget,
     to: &str,
     text: &str,
     logbook_html: &str,
@@ -843,7 +843,7 @@ pub(crate) async fn send_tool_status_to_channels(
     state
         .note_channel_activity(
             activity_id,
-            moltis_channels::ChannelActivity::Tool(tool_name.to_string()),
+            antre_channels::ChannelActivity::Tool(tool_name.to_string()),
         )
         .await;
 
@@ -1069,8 +1069,8 @@ pub(crate) async fn send_screenshot_to_channels(
 fn build_screenshot_reply_payload(
     screenshot_data: &str,
     caption: Option<&str>,
-) -> moltis_common::types::ReplyPayload {
-    use moltis_common::types::{MediaAttachment, ReplyPayload};
+) -> antre_common::types::ReplyPayload {
+    use antre_common::types::{MediaAttachment, ReplyPayload};
 
     // Extract actual MIME from "data:image/jpeg;base64,..." instead of
     // hardcoding PNG — supports JPEG, GIF, WebP from send_image tool.
@@ -1093,8 +1093,8 @@ fn build_screenshot_reply_payload(
 }
 
 async fn dispatch_screenshot_to_targets(
-    outbound: Arc<dyn moltis_channels::ChannelOutbound>,
-    targets: Vec<moltis_channels::ChannelReplyTarget>,
+    outbound: Arc<dyn antre_channels::ChannelOutbound>,
+    targets: Vec<antre_channels::ChannelReplyTarget>,
     screenshot_data: &str,
     caption: Option<&str>,
 ) -> bool {
@@ -1153,7 +1153,7 @@ pub(crate) async fn dispatch_document_to_channels(
     state: &Arc<dyn ChatRuntime>,
     activity_id: &str,
     session_key: &str,
-    payload: moltis_common::types::ReplyPayload,
+    payload: antre_common::types::ReplyPayload,
 ) {
     let targets = state.peek_channel_replies(session_key).await;
     if targets.is_empty() {
@@ -1222,8 +1222,8 @@ pub(crate) fn document_payload_from_data_uri(
     data_uri: &str,
     filename: Option<&str>,
     caption: Option<&str>,
-) -> moltis_common::types::ReplyPayload {
-    use moltis_common::types::{MediaAttachment, ReplyPayload};
+) -> antre_common::types::ReplyPayload {
+    use antre_common::types::{MediaAttachment, ReplyPayload};
 
     let mime_type = data_uri
         .strip_prefix("data:")
@@ -1252,8 +1252,8 @@ pub(crate) async fn document_payload_from_ref(
     mime_type: &str,
     filename: Option<&str>,
     caption: Option<&str>,
-) -> Option<moltis_common::types::ReplyPayload> {
-    use moltis_common::types::{MediaAttachment, ReplyPayload};
+) -> Option<antre_common::types::ReplyPayload> {
+    use antre_common::types::{MediaAttachment, ReplyPayload};
 
     let store = match session_store {
         Some(s) => s,

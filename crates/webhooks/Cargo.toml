@@ -1,32 +1,32 @@
 [package]
 edition.workspace = true
-name              = "moltis-webhooks"
+name              = "antre-webhooks"
 version.workspace = true
 
 [dependencies]
-anyhow         = { workspace = true }
-async-trait    = { workspace = true }
-axum           = { workspace = true }
-hex            = { workspace = true }
-hmac           = { workspace = true }
-moltis-common  = { workspace = true }
-moltis-config  = { workspace = true }
-moltis-metrics = { optional = true, workspace = true }
-rand           = { workspace = true }
-serde          = { workspace = true }
-serde_json     = { workspace = true }
-sha2           = { workspace = true }
-sqlx           = { workspace = true }
-subtle         = { workspace = true }
-thiserror      = { workspace = true }
-time           = { workspace = true }
-tokio          = { workspace = true }
-tracing        = { workspace = true }
-uuid           = { workspace = true }
+antre-common  = { workspace = true }
+antre-config  = { workspace = true }
+antre-metrics = { optional = true, workspace = true }
+anyhow        = { workspace = true }
+async-trait   = { workspace = true }
+axum          = { workspace = true }
+hex           = { workspace = true }
+hmac          = { workspace = true }
+rand          = { workspace = true }
+serde         = { workspace = true }
+serde_json    = { workspace = true }
+sha2          = { workspace = true }
+sqlx          = { workspace = true }
+subtle        = { workspace = true }
+thiserror     = { workspace = true }
+time          = { workspace = true }
+tokio         = { workspace = true }
+tracing       = { workspace = true }
+uuid          = { workspace = true }
 
 [features]
 default = []
-metrics = ["dep:moltis-metrics"]
+metrics = ["dep:antre-metrics"]
 tracing = []
 
 [dev-dependencies]

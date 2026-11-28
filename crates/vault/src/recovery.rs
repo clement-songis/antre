@@ -116,7 +116,7 @@ pub fn unwrap_with_recovery<C: Cipher>(
 ///
 /// New hashes use the normalized phrase, consistent with [`derive_recovery_kek`]
 /// and [`unwrap_with_recovery`]. The raw fallback preserves hashes stored by
-/// older Moltis versions from generated uppercase, dashed phrases.
+/// older Antre versions from generated uppercase, dashed phrases.
 pub fn verify_recovery_hash(phrase: &str, stored_hash: &str) -> bool {
     sha256_hex(&normalized_phrase(phrase)) == stored_hash || sha256_hex(phrase) == stored_hash
 }

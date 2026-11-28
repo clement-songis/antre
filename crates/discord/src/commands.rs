@@ -44,11 +44,11 @@ pub(crate) fn interaction_reply_target(
     channel_id: serenity::all::ChannelId,
     guild_id: Option<GuildId>,
     context: Option<InteractionContext>,
-) -> moltis_channels::plugin::ChannelReplyTarget {
-    moltis_channels::plugin::ChannelReplyTarget {
+) -> antre_channels::plugin::ChannelReplyTarget {
+    antre_channels::plugin::ChannelReplyTarget {
         direct_chat: is_bot_dm_interaction(guild_id, context),
         ack_message_id: None,
-        channel_type: moltis_channels::ChannelType::Discord,
+        channel_type: antre_channels::ChannelType::Discord,
         account_id: account_id.to_string(),
         chat_id: channel_id.to_string(),
         message_id: None,
@@ -73,11 +73,11 @@ pub(crate) fn authorize_interaction(
     context: Option<InteractionContext>,
     user_id: &str,
     username: &str,
-) -> Result<moltis_channels::plugin::ChannelReplyTarget, AccessDenied> {
+) -> Result<antre_channels::plugin::ChannelReplyTarget, AccessDenied> {
     if is_bot_dm_interaction(guild_id, context) {
         access::check_access(
             config,
-            &moltis_common::types::ChatType::Dm,
+            &antre_common::types::ChatType::Dm,
             user_id,
             Some(username),
             None,
@@ -91,9 +91,9 @@ pub(crate) fn authorize_interaction(
 
 /// Build the set of global slash commands to register.
 ///
-/// Derives from the centralized command registry in `moltis_channels::commands`.
+/// Derives from the centralized command registry in `antre_channels::commands`.
 pub fn build_commands() -> Vec<CreateCommand> {
-    moltis_channels::commands::all_commands()
+    antre_channels::commands::all_commands()
         .iter()
         .map(|c| {
             let mut cmd = CreateCommand::new(c.name).description(c.description);
@@ -410,7 +410,7 @@ mod tests {
     const OPERATOR_ID: &str = "400347514466992128";
     const STRANGER_ID: &str = "999999999";
 
-    fn dm_config(policy: moltis_channels::gating::DmPolicy) -> DiscordAccountConfig {
+    fn dm_config(policy: antre_channels::gating::DmPolicy) -> DiscordAccountConfig {
         DiscordAccountConfig {
             dm_policy: policy,
             allowlist: vec![OPERATOR_ID.into()],
@@ -425,7 +425,7 @@ mod tests {
         guild_id: Option<GuildId>,
         context: Option<InteractionContext>,
         user_id: &str,
-    ) -> Result<moltis_channels::plugin::ChannelReplyTarget, AccessDenied> {
+    ) -> Result<antre_channels::plugin::ChannelReplyTarget, AccessDenied> {
         authorize_interaction(
             "bot",
             config,
@@ -439,7 +439,7 @@ mod tests {
 
     #[test]
     fn bot_dm_interaction_is_refused_when_dms_are_disabled() {
-        let config = dm_config(moltis_channels::gating::DmPolicy::Disabled);
+        let config = dm_config(antre_channels::gating::DmPolicy::Disabled);
         // Even a user on the allowlist (e.g. an operator) is refused.
         for user in [OPERATOR_ID, STRANGER_ID] {
             assert_eq!(
@@ -451,7 +451,7 @@ mod tests {
 
     #[test]
     fn bot_dm_interaction_is_refused_for_user_off_the_allowlist() {
-        let config = dm_config(moltis_channels::gating::DmPolicy::Allowlist);
+        let config = dm_config(antre_channels::gating::DmPolicy::Allowlist);
         assert_eq!(
             authorize(&config, None, Some(InteractionContext::BotDm), STRANGER_ID).err(),
             Some(AccessDenied::NotOnAllowlist),
@@ -471,7 +471,7 @@ mod tests {
     fn bot_dm_interaction_matches_allowlist_by_username() {
         let config = DiscordAccountConfig {
             allowlist: vec!["someone".into()],
-            ..dm_config(moltis_channels::gating::DmPolicy::Allowlist)
+            ..dm_config(antre_channels::gating::DmPolicy::Allowlist)
         };
         let target = authorize(&config, None, Some(InteractionContext::BotDm), STRANGER_ID)
             .expect("allowlisted username is allowed");
@@ -481,8 +481,8 @@ mod tests {
     #[test]
     fn allowed_bot_dm_interaction_is_direct() {
         for policy in [
-            moltis_channels::gating::DmPolicy::Allowlist,
-            moltis_channels::gating::DmPolicy::Open,
+            antre_channels::gating::DmPolicy::Allowlist,
+            antre_channels::gating::DmPolicy::Open,
         ] {
             let config = dm_config(policy.clone());
             let target = authorize(&config, None, Some(InteractionContext::BotDm), OPERATOR_ID)
@@ -496,8 +496,8 @@ mod tests {
     fn dm_policy_does_not_change_interactions_outside_the_bot_dm() {
         let guild = Some(GuildId::new(9));
         for policy in [
-            moltis_channels::gating::DmPolicy::Disabled,
-            moltis_channels::gating::DmPolicy::Allowlist,
+            antre_channels::gating::DmPolicy::Disabled,
+            antre_channels::gating::DmPolicy::Allowlist,
         ] {
             let config = dm_config(policy.clone());
             for (guild_id, context) in [
@@ -522,7 +522,7 @@ mod tests {
     #[test]
     fn build_commands_matches_registry_count() {
         let commands = build_commands();
-        let registry_count = moltis_channels::commands::all_commands().len();
+        let registry_count = antre_channels::commands::all_commands().len();
         assert_eq!(
             commands.len(),
             registry_count,
@@ -584,7 +584,7 @@ mod tests {
                     .and_then(|v| v["name"].as_str().map(String::from))
             })
             .collect();
-        for cmd in moltis_channels::commands::all_commands() {
+        for cmd in antre_channels::commands::all_commands() {
             assert!(
                 names.contains(&cmd.name.to_string()),
                 "missing slash command from registry: {}",
@@ -633,7 +633,7 @@ mod tests {
     #[test]
     fn commands_with_arg_have_options() {
         let commands = build_commands();
-        let registry = moltis_channels::commands::all_commands();
+        let registry = antre_channels::commands::all_commands();
 
         for reg_cmd in registry {
             let json = commands
@@ -759,7 +759,7 @@ mod tests {
     #[test]
     fn option_descriptions_within_discord_limit() {
         // Discord enforces a 100-character limit on option descriptions too.
-        for cmd in moltis_channels::commands::all_commands() {
+        for cmd in antre_channels::commands::all_commands() {
             if let Some(arg) = &cmd.arg {
                 assert!(
                     arg.description.len() <= 100,
@@ -775,7 +775,7 @@ mod tests {
     #[test]
     fn arg_names_are_valid_discord_option_names() {
         // Discord option names: lowercase, 1-32 chars, alphanumeric + hyphens.
-        for cmd in moltis_channels::commands::all_commands() {
+        for cmd in antre_channels::commands::all_commands() {
             if let Some(arg) = &cmd.arg {
                 assert!(
                     !arg.name.is_empty() && arg.name.len() <= 32,
@@ -799,7 +799,7 @@ mod tests {
     #[test]
     fn choices_within_discord_limits() {
         // Discord allows max 25 choices, each name ≤ 100 chars, each value ≤ 100 chars.
-        for cmd in moltis_channels::commands::all_commands() {
+        for cmd in antre_channels::commands::all_commands() {
             if let Some(arg) = &cmd.arg {
                 assert!(
                     arg.choices.len() <= 25,

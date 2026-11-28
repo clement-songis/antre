@@ -12,8 +12,8 @@ pub enum DbAction {
 
 /// Returns the paths to the database files.
 fn db_paths() -> (PathBuf, PathBuf, PathBuf) {
-    let data_dir = moltis_config::data_dir();
-    let main_db = data_dir.join("moltis.db");
+    let data_dir = antre_config::data_dir();
+    let main_db = data_dir.join("antre.db");
     let memory_db = data_dir.join("memory.db");
     let connectors_db = data_dir.join("connectors.db");
     (main_db, memory_db, connectors_db)
@@ -58,7 +58,7 @@ async fn reset_databases() -> anyhow::Result<()> {
     }
 
     if deleted {
-        println!("Database files deleted. Run `moltis db migrate` to recreate them.");
+        println!("Database files deleted. Run `antre db migrate` to recreate them.");
     } else {
         println!("No database files found.");
     }
@@ -188,22 +188,22 @@ async fn run_migrations() -> anyhow::Result<()> {
     let pool = sqlx::SqlitePool::connect(&db_url).await?;
 
     // Run migrations in dependency order (same as server.rs)
-    moltis_projects::run_migrations(&pool)
+    antre_projects::run_migrations(&pool)
         .await
         .map_err(|e| anyhow::anyhow!("projects migrations failed: {e}"))?;
     println!("  - projects migrations complete");
 
-    moltis_sessions::run_migrations(&pool)
+    antre_sessions::run_migrations(&pool)
         .await
         .map_err(|e| anyhow::anyhow!("sessions migrations failed: {e}"))?;
     println!("  - sessions migrations complete");
 
-    moltis_cron::run_migrations(&pool)
+    antre_cron::run_migrations(&pool)
         .await
         .map_err(|e| anyhow::anyhow!("cron migrations failed: {e}"))?;
     println!("  - cron migrations complete");
 
-    moltis_gateway::run_migrations(&pool)
+    antre_gateway::run_migrations(&pool)
         .await
         .map_err(|e| anyhow::anyhow!("gateway migrations failed: {e}"))?;
     println!("  - gateway migrations complete");
@@ -215,7 +215,7 @@ async fn run_migrations() -> anyhow::Result<()> {
     let memory_url = format!("sqlite:{}?mode=rwc", memory_db.display());
     let memory_pool = sqlx::SqlitePool::connect(&memory_url).await?;
 
-    moltis_memory::schema::run_migrations(&memory_pool)
+    antre_memory::schema::run_migrations(&memory_pool)
         .await
         .map_err(|e| anyhow::anyhow!("memory migrations failed: {e}"))?;
     println!("  - memory migrations complete");
@@ -228,7 +228,7 @@ async fn run_migrations() -> anyhow::Result<()> {
         let connectors_url = format!("sqlite:{}?mode=rwc", connectors_db.display());
         let connectors_pool = sqlx::SqlitePool::connect(&connectors_url).await?;
         restrict_database_permissions(&connectors_db)?;
-        moltis_connectors::run_migrations(&connectors_pool)
+        antre_connectors::run_migrations(&connectors_pool)
             .await
             .map_err(|error| anyhow::anyhow!("connector migrations failed: {error}"))?;
         println!("  - connector migrations complete");
@@ -260,8 +260,8 @@ mod tests {
         // Just verify the function constructs expected paths
         let paths = db_paths();
         assert!(
-            paths.0.to_string_lossy().contains("moltis.db"),
-            "main db path should contain moltis.db"
+            paths.0.to_string_lossy().contains("antre.db"),
+            "main db path should contain antre.db"
         );
         assert!(
             paths.1.to_string_lossy().contains("memory.db"),
@@ -280,11 +280,11 @@ mod tests {
         let temp = TempDir::new().unwrap();
 
         // Create dummy database files
-        let main_db = temp.path().join("moltis.db");
+        let main_db = temp.path().join("antre.db");
         let memory_db = temp.path().join("memory.db");
         let connectors_db = temp.path().join("connectors.db");
-        let main_wal = temp.path().join("moltis.db-wal");
-        let main_shm = temp.path().join("moltis.db-shm");
+        let main_wal = temp.path().join("antre.db-wal");
+        let main_shm = temp.path().join("antre.db-shm");
         let connector_exports = temp.path().join("connectors/exports/dataset");
 
         std::fs::write(&main_db, "test").unwrap();
@@ -351,7 +351,7 @@ mod tests {
     #[tokio::test]
     async fn test_migrations_run_successfully_in_temp_dir() {
         let temp = TempDir::new().unwrap();
-        let main_db = temp.path().join("moltis.db");
+        let main_db = temp.path().join("antre.db");
         let memory_db = temp.path().join("memory.db");
 
         // Run main database migrations
@@ -359,10 +359,10 @@ mod tests {
         let pool = sqlx::SqlitePool::connect(&db_url).await.unwrap();
 
         // Run migrations in dependency order
-        moltis_projects::run_migrations(&pool).await.unwrap();
-        moltis_sessions::run_migrations(&pool).await.unwrap();
-        moltis_cron::run_migrations(&pool).await.unwrap();
-        moltis_gateway::run_migrations(&pool).await.unwrap();
+        antre_projects::run_migrations(&pool).await.unwrap();
+        antre_sessions::run_migrations(&pool).await.unwrap();
+        antre_cron::run_migrations(&pool).await.unwrap();
+        antre_gateway::run_migrations(&pool).await.unwrap();
 
         // Verify tables were created by querying them
         let _: (i64,) = sqlx::query_as("SELECT count(*) FROM projects")
@@ -388,7 +388,7 @@ mod tests {
         let memory_url = format!("sqlite:{}?mode=rwc", memory_db.display());
         let memory_pool = sqlx::SqlitePool::connect(&memory_url).await.unwrap();
 
-        moltis_memory::schema::run_migrations(&memory_pool)
+        antre_memory::schema::run_migrations(&memory_pool)
             .await
             .unwrap();
 
@@ -414,22 +414,22 @@ mod tests {
     #[tokio::test]
     async fn test_migrations_are_idempotent() {
         let temp = TempDir::new().unwrap();
-        let main_db = temp.path().join("moltis.db");
+        let main_db = temp.path().join("antre.db");
 
         let db_url = format!("sqlite:{}?mode=rwc", main_db.display());
         let pool = sqlx::SqlitePool::connect(&db_url).await.unwrap();
 
         // Run all migrations
-        moltis_projects::run_migrations(&pool).await.unwrap();
-        moltis_sessions::run_migrations(&pool).await.unwrap();
-        moltis_cron::run_migrations(&pool).await.unwrap();
-        moltis_gateway::run_migrations(&pool).await.unwrap();
+        antre_projects::run_migrations(&pool).await.unwrap();
+        antre_sessions::run_migrations(&pool).await.unwrap();
+        antre_cron::run_migrations(&pool).await.unwrap();
+        antre_gateway::run_migrations(&pool).await.unwrap();
 
         // Run again - should still work due to set_ignore_missing
-        moltis_projects::run_migrations(&pool).await.unwrap();
-        moltis_sessions::run_migrations(&pool).await.unwrap();
-        moltis_cron::run_migrations(&pool).await.unwrap();
-        moltis_gateway::run_migrations(&pool).await.unwrap();
+        antre_projects::run_migrations(&pool).await.unwrap();
+        antre_sessions::run_migrations(&pool).await.unwrap();
+        antre_cron::run_migrations(&pool).await.unwrap();
+        antre_gateway::run_migrations(&pool).await.unwrap();
 
         pool.close().await;
     }

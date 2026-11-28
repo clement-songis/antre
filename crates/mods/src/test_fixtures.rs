@@ -17,7 +17,7 @@ pub(crate) const MODIFIED_AT: u32 = 112; // "{\"x\":1}" (7 bytes)
 pub(crate) fn plugin(call: &str, handle: &str) -> Vec<u8> {
     let wat = format!(
         r#"(component
-  (import "moltis:mods/host@0.1.0" (instance $host
+  (import "antre:mods/host@0.1.0" (instance $host
     (export "kv-get" (func (param "key" string) (result (result (option string) (error string)))))
     (export "kv-set" (func (param "key" string) (param "value" string) (result (result (error string)))))
   ))
@@ -57,8 +57,8 @@ pub(crate) fn plugin(call: &str, handle: &str) -> Vec<u8> {
     (canon lift (core func $main "handle") (memory $mem "memory") (realloc (func $mem "realloc"))))
   (instance $tools (export "call" (func $call)))
   (instance $hooks (export "handle" (func $handle)))
-  (export "moltis:mods/tools@0.1.0" (instance $tools))
-  (export "moltis:mods/hooks@0.1.0" (instance $hooks))
+  (export "antre:mods/tools@0.1.0" (instance $tools))
+  (export "antre:mods/hooks@0.1.0" (instance $hooks))
 )"#
     );
     wat::parse_str(&wat).expect("fixture WAT must parse")

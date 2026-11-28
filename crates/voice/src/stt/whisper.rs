@@ -27,9 +27,9 @@ const FALLBACK_MODEL: &str = "gpt-transcribe";
 
 /// The provider's STT role from the model catalog.
 fn default_model() -> String {
-    moltis_model_catalog::global::role_id_or(
+    antre_model_catalog::global::role_id_or(
         "openai",
-        moltis_model_catalog::ModelKind::Stt,
+        antre_model_catalog::ModelKind::Stt,
         FALLBACK_MODEL,
     )
 }

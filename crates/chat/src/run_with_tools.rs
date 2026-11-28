@@ -17,7 +17,7 @@ use {
 };
 
 use {
-    moltis_agents::{
+    antre_agents::{
         AgentRunError, UserContent,
         model::{AgentToolControls, values_to_chat_messages_with_tool_result_limit},
         prompt::{
@@ -29,8 +29,8 @@ use {
         },
         tool_registry::ToolRegistry,
     },
-    moltis_config::ToolMode,
-    moltis_sessions::{PersistedMessage, store::SessionStore},
+    antre_config::ToolMode,
+    antre_sessions::{PersistedMessage, store::SessionStore},
 };
 
 use crate::{
@@ -94,7 +94,7 @@ pub(crate) async fn run_with_tools(
     state: &Arc<dyn ChatRuntime>,
     model_store: &Arc<RwLock<DisabledModelsStore>>,
     run_id: &str,
-    provider: Arc<dyn moltis_agents::model::LlmProvider>,
+    provider: Arc<dyn antre_agents::model::LlmProvider>,
     model_id: &str,
     tool_registry: &Arc<RwLock<ToolRegistry>>,
     user_content: &UserContent,
@@ -106,8 +106,8 @@ pub(crate) async fn run_with_tools(
     project_context: Option<&str>,
     runtime_context: Option<&PromptRuntimeContext>,
     user_message_index: usize,
-    skills: &[moltis_skills::types::SkillMetadata],
-    hook_registry: Option<Arc<moltis_common::hooks::HookRegistry>>,
+    skills: &[antre_skills::types::SkillMetadata],
+    hook_registry: Option<Arc<antre_common::hooks::HookRegistry>>,
     accept_language: Option<String>,
     conn_id: Option<String>,
     session_store: Option<&Arc<SessionStore>>,
@@ -175,11 +175,11 @@ pub(crate) async fn run_with_tools(
     }
     if tools_enabled {
         filtered_registry = match persona.config.tools.registry_mode {
-            moltis_config::ToolRegistryMode::Full => filtered_registry,
-            moltis_config::ToolRegistryMode::Lazy => {
-                moltis_agents::lazy_tools::wrap_registry_lazy(filtered_registry)
+            antre_config::ToolRegistryMode::Full => filtered_registry,
+            antre_config::ToolRegistryMode::Lazy => {
+                antre_agents::lazy_tools::wrap_registry_lazy(filtered_registry)
             },
-            moltis_config::ToolRegistryMode::Auto => moltis_agents::lazy_tools::defer_mcp_tools(
+            antre_config::ToolRegistryMode::Auto => antre_agents::lazy_tools::defer_mcp_tools(
                 filtered_registry,
                 persona.config.tools.lazy_mcp_threshold,
             ),
@@ -194,7 +194,7 @@ pub(crate) async fn run_with_tools(
         let query_text = match user_content {
             UserContent::Text(t) => Some(t.as_str()),
             UserContent::Multimodal(parts) => parts.iter().find_map(|p| match p {
-                moltis_agents::model::ContentPart::Text(t) => Some(t.as_str()),
+                antre_agents::model::ContentPart::Text(t) => Some(t.as_str()),
                 _ => None,
             }),
         };
@@ -337,10 +337,10 @@ pub(crate) async fn run_with_tools(
         // - absent     → remove any stale override from a previous agent
         if let Some(preset) = persona.config.agents.get_preset(agent_id) {
             match preset.sandbox.mode {
-                Some(moltis_config::schema::PresetSandboxMode::All) => {
+                Some(antre_config::schema::PresetSandboxMode::All) => {
                     router.set_agent_override(session_key, true).await
                 },
-                Some(moltis_config::schema::PresetSandboxMode::Off) => {
+                Some(antre_config::schema::PresetSandboxMode::Off) => {
                     router.set_agent_override(session_key, false).await
                 },
                 _ => router.remove_agent_override(session_key).await,
@@ -1017,7 +1017,7 @@ pub(crate) async fn run_with_tools(
     // it stays positionally stable, preserving KV cache prefix matching for
     // local LLMs (llama.cpp, Ollama, LM Studio) and prompt-cache hits for
     // cloud providers.
-    let effective_user_content = moltis_agents::prompt::prepend_datetime_to_user_content(
+    let effective_user_content = antre_agents::prompt::prepend_datetime_to_user_content(
         user_content,
         prompt_runtime_context,
     )
@@ -1046,7 +1046,7 @@ pub(crate) async fn run_with_tools(
 
     // Create a shared steer inbox that the gateway can push steering text into.
     // A background task polls the ChatRuntime and forwards any `/steer` text.
-    let steer_inbox: moltis_agents::runner::SteerInbox = Arc::new(Mutex::new(Vec::new()));
+    let steer_inbox: antre_agents::runner::SteerInbox = Arc::new(Mutex::new(Vec::new()));
     let steer_inbox_writer = steer_inbox.clone();
     let steer_state = state.clone();
     let steer_session_key = session_key.to_string();

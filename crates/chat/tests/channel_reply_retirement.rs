@@ -1,15 +1,15 @@
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use {
-    async_trait::async_trait,
-    moltis_agents::model::{
+    antre_agents::model::{
         ChatMessage, CompletionResponse, LlmProvider, StreamEvent, Usage, UserContent,
     },
-    moltis_channels::{ChannelOutbound, ChannelReplyTarget, ChannelType},
-    moltis_chat::{ChatRuntime, DisabledModelsStore, LiveChatService},
-    moltis_providers::{ModelCapabilities, ModelInfo, ProviderRegistry},
-    moltis_service_traits::{ChatService, NoopMcpService, NoopProjectService, NoopTtsService},
-    moltis_sessions::{metadata::SqliteSessionMetadata, store::SessionStore},
+    antre_channels::{ChannelOutbound, ChannelReplyTarget, ChannelType},
+    antre_chat::{ChatRuntime, DisabledModelsStore, LiveChatService},
+    antre_providers::{ModelCapabilities, ModelInfo, ProviderRegistry},
+    antre_service_traits::{ChatService, NoopMcpService, NoopProjectService, NoopTtsService},
+    antre_sessions::{metadata::SqliteSessionMetadata, store::SessionStore},
+    async_trait::async_trait,
     serde_json::{Value, json},
     std::{
         collections::HashMap,
@@ -39,7 +39,7 @@ impl ChannelOutbound for RecordingOutbound {
         _to: &str,
         text: &str,
         reply_to: Option<&str>,
-    ) -> moltis_channels::Result<()> {
+    ) -> antre_channels::Result<()> {
         self.replies
             .write()
             .await
@@ -52,9 +52,9 @@ impl ChannelOutbound for RecordingOutbound {
         &self,
         _account: &str,
         _to: &str,
-        _payload: &moltis_common::types::ReplyPayload,
+        _payload: &antre_common::types::ReplyPayload,
         _reply_to: Option<&str>,
-    ) -> moltis_channels::Result<()> {
+    ) -> antre_channels::Result<()> {
         panic!("text-only regression tests must not send media")
     }
 }
@@ -143,15 +143,15 @@ impl ChatRuntime for TestRuntime {
         "reply-target-test"
     }
 
-    fn sandbox_router(&self) -> Option<&Arc<moltis_tools::sandbox::SandboxRouter>> {
+    fn sandbox_router(&self) -> Option<&Arc<antre_tools::sandbox::SandboxRouter>> {
         None
     }
 
-    fn memory_manager(&self) -> Option<&moltis_memory::runtime::DynMemoryRuntime> {
+    fn memory_manager(&self) -> Option<&antre_memory::runtime::DynMemoryRuntime> {
         None
     }
 
-    async fn cached_location(&self) -> Option<moltis_config::GeoLocation> {
+    async fn cached_location(&self) -> Option<antre_config::GeoLocation> {
         None
     }
 
@@ -160,8 +160,8 @@ impl ChatRuntime for TestRuntime {
         _session: &str,
         _channel: &str,
     ) -> (
-        Option<moltis_chat::TtsOverride>,
-        Option<moltis_chat::TtsOverride>,
+        Option<antre_chat::TtsOverride>,
+        Option<antre_chat::TtsOverride>,
     ) {
         (None, None)
     }
@@ -170,19 +170,19 @@ impl ChatRuntime for TestRuntime {
         Some(self.outbound.clone())
     }
 
-    fn channel_stream_outbound(&self) -> Option<Arc<dyn moltis_channels::ChannelStreamOutbound>> {
+    fn channel_stream_outbound(&self) -> Option<Arc<dyn antre_channels::ChannelStreamOutbound>> {
         None
     }
 
-    fn tts_service(&self) -> &dyn moltis_service_traits::TtsService {
+    fn tts_service(&self) -> &dyn antre_service_traits::TtsService {
         &self.tts
     }
 
-    fn project_service(&self) -> &dyn moltis_service_traits::ProjectService {
+    fn project_service(&self) -> &dyn antre_service_traits::ProjectService {
         &self.project
     }
 
-    fn mcp_service(&self) -> &dyn moltis_service_traits::McpService {
+    fn mcp_service(&self) -> &dyn antre_service_traits::McpService {
         &self.mcp
     }
 
@@ -203,15 +203,15 @@ impl ChatRuntime for TestRuntime {
         _body: &str,
         _url: Option<&str>,
         _session: Option<&str>,
-    ) -> moltis_chat::error::Result<usize> {
+    ) -> antre_chat::error::Result<usize> {
         Ok(0)
     }
 
-    async fn ensure_local_model_cached(&self, _model: &str) -> moltis_chat::error::Result<bool> {
+    async fn ensure_local_model_cached(&self, _model: &str) -> antre_chat::error::Result<bool> {
         Ok(false)
     }
 
-    async fn connected_nodes(&self) -> Vec<moltis_chat::runtime::ConnectedNodeSummary> {
+    async fn connected_nodes(&self) -> Vec<antre_chat::runtime::ConnectedNodeSummary> {
         Vec::new()
     }
 }
@@ -289,8 +289,8 @@ impl Fixture {
         let mut directory = TEST_DIRECTORY.lock().await;
         let temporary = tempfile::tempdir().unwrap();
         let session_path = temporary.path().join("sessions");
-        moltis_config::set_config_dir(temporary.path().join("config"));
-        moltis_config::set_data_dir(temporary.path().join("data"));
+        antre_config::set_config_dir(temporary.path().join("config"));
+        antre_config::set_data_dir(temporary.path().join("data"));
         *directory = Some(temporary);
         let pool = sqlx::sqlite::SqlitePoolOptions::new()
             .max_connections(1)
@@ -328,7 +328,7 @@ impl Fixture {
                 Arc::new(SessionStore::new(session_path)),
                 Arc::clone(&metadata),
             )
-            .with_config(moltis_config::MoltisConfig::default()),
+            .with_config(antre_config::AntreConfig::default()),
         );
         assert!(runtime.chat.set(Arc::downgrade(&service)).is_ok());
         Self {
@@ -362,8 +362,8 @@ impl Fixture {
 
 impl Drop for Fixture {
     fn drop(&mut self) {
-        moltis_config::clear_config_dir();
-        moltis_config::clear_data_dir();
+        antre_config::clear_config_dir();
+        antre_config::clear_data_dir();
         self.directory.take();
     }
 }
@@ -714,7 +714,7 @@ async fn background_task_outcome_is_posted_once_to_the_parent_and_its_channel() 
         .set_channel_binding(SESSION, Some(serde_json::to_string(&binding).unwrap()))
         .await;
 
-    let store = moltis_tools::spawn_agent_tasks::SpawnTaskStore::default();
+    let store = antre_tools::spawn_agent_tasks::SpawnTaskStore::default();
     let (abort, _) = futures::future::AbortHandle::new_pair();
     let task = store
         .insert_running(
@@ -726,7 +726,7 @@ async fn background_task_outcome_is_posted_once_to_the_parent_and_its_channel() 
         )
         .await;
     store
-        .complete(&task.id, moltis_tools::spawn_agent_tasks::SpawnTaskUpdate {
+        .complete(&task.id, antre_tools::spawn_agent_tasks::SpawnTaskUpdate {
             text: Some("build is green".into()),
             iterations: 1,
             tool_calls_made: 0,

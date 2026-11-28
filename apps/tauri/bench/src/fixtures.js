@@ -69,8 +69,8 @@ const PY = `def summarize(rows: list[dict]) -> dict:
         totals[key]["cost"] += row["cost"]
     return dict(sorted(totals.items(), key=lambda item: -item[1]["cost"]))`;
 
-const BASH = `cargo build --release -p moltis
-./target/release/moltis --bind 127.0.0.1 --port 13131 --no-tls gateway &
+const BASH = `cargo build --release -p antre
+./target/release/antre --bind 127.0.0.1 --port 13131 --no-tls gateway &
 curl -fsS http://127.0.0.1:13131/health | jq .`;
 
 const CODE = [

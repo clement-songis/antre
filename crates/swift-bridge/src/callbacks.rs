@@ -6,7 +6,7 @@ use std::{
     sync::OnceLock,
 };
 
-use {moltis_sessions::session_events::SessionEvent, serde::Serialize};
+use {antre_sessions::session_events::SessionEvent, serde::Serialize};
 
 // ── Log callback for Swift ───────────────────────────────────────────────
 
@@ -123,12 +123,12 @@ struct BridgeNetworkAuditEvent {
 
 #[allow(unsafe_code)]
 #[cfg(feature = "trusted-network")]
-pub(crate) fn emit_network_audit(entry: &moltis_network_filter::NetworkAuditEntry) {
+pub(crate) fn emit_network_audit(entry: &antre_network_filter::NetworkAuditEntry) {
     if let Some(callback) = NETWORK_AUDIT_CALLBACK.get() {
         let source = match &entry.approval_source {
-            Some(moltis_network_filter::ApprovalSource::Config) => "config",
-            Some(moltis_network_filter::ApprovalSource::Session) => "session",
-            Some(moltis_network_filter::ApprovalSource::UserPrompt) => "user",
+            Some(antre_network_filter::ApprovalSource::Config) => "config",
+            Some(antre_network_filter::ApprovalSource::Session) => "session",
+            Some(antre_network_filter::ApprovalSource::UserPrompt) => "user",
             None => "unknown",
         };
         let payload = BridgeNetworkAuditEvent {

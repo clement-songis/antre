@@ -1,4 +1,4 @@
-//! wasmtime host for `moltis:mods/plugin` components.
+//! wasmtime host for `antre:mods/plugin` components.
 //!
 //! Each call gets a fresh store and instance (no state survives between calls
 //! except through the granted KV store), a fuel budget, a memory limit and an
@@ -17,7 +17,7 @@ use std::{
 };
 
 use {
-    moltis_tools::{
+    antre_tools::{
         wasm_component::{
             HttpError as ToolHttpError, HttpHostImpl, HttpRequest as ToolHttpRequest,
         },
@@ -43,7 +43,7 @@ mod bindings {
     });
 }
 
-use bindings::moltis::mods::{host as wit_host, http as wit_http, types as wit_types};
+use bindings::antre::mods::{host as wit_host, http as wit_http, types as wit_types};
 
 const MAX_LOG_LINE: usize = 2048;
 const MAX_LOGS_PER_CALL: usize = 100;
@@ -87,7 +87,7 @@ impl EpochTicker {
         let stop = Arc::new(AtomicBool::new(false));
         let flag = Arc::clone(&stop);
         let handle = std::thread::Builder::new()
-            .name("moltis-mods-epoch".into())
+            .name("antre-mods-epoch".into())
             .spawn(move || {
                 while !flag.load(Ordering::Relaxed) {
                     std::thread::sleep(interval);
@@ -165,14 +165,14 @@ impl ModEngine {
 fn classify_import(name: &str, requested: &CapabilitySet) -> Result<()> {
     let interface = name.split('@').next().unwrap_or(name);
     match interface {
-        "moltis:mods/types" | "moltis:mods/host" => Ok(()),
-        "moltis:mods/http" if requested.net_hosts().is_empty() => Err(Error::Denied(
-            "component imports moltis:mods/http but the manifest declares no `net` hosts".into(),
+        "antre:mods/types" | "antre:mods/host" => Ok(()),
+        "antre:mods/http" if requested.net_hosts().is_empty() => Err(Error::Denied(
+            "component imports antre:mods/http but the manifest declares no `net` hosts".into(),
         )),
-        "moltis:mods/http" => Ok(()),
+        "antre:mods/http" => Ok(()),
         _ if interface.starts_with("wasi:sockets/") || interface.starts_with("wasi:http/") => {
             Err(Error::Denied(format!(
-                "component imports `{name}`; network access goes through moltis:mods/http"
+                "component imports `{name}`; network access goes through antre:mods/http"
             )))
         },
         _ if interface.starts_with("wasi:") => Ok(()),
@@ -527,7 +527,7 @@ impl ModComponent {
     ) -> Result<std::result::Result<String, String>> {
         let (mut store, plugin) = self.instantiate()?;
         let result = plugin
-            .moltis_mods_tools()
+            .antre_mods_tools()
             .call_call(&mut store, name, params_json)
             .map_err(|error| describe_failure("tools.call", &error))?;
         match &result {
@@ -560,7 +560,7 @@ impl ModComponent {
     ) -> Result<std::result::Result<Option<String>, String>> {
         let (mut store, plugin) = self.instantiate()?;
         let result = plugin
-            .moltis_mods_hooks()
+            .antre_mods_hooks()
             .call_handle(&mut store, event, payload_json)
             .map_err(|error| describe_failure("hooks.handle", &error))?;
         match &result {

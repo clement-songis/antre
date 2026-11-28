@@ -38,7 +38,7 @@ pub use {
     store::{Design, DesignFilter, DesignStore, DesignVersion},
 };
 
-/// Run the canvas migrations on the shared `moltis.db` pool.
+/// Run the canvas migrations on the shared `antre.db` pool.
 pub async fn run_migrations(pool: &sqlx::SqlitePool) -> Result<()> {
     sqlx::migrate!("./migrations")
         .set_ignore_missing(true)

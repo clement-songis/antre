@@ -6,8 +6,8 @@ use std::{
 };
 
 use {
-    moltis_agents::model::{ChatMessage as AgentChatMessage, StreamEvent, Usage, UserContent},
-    moltis_sessions::message::PersistedMessage,
+    antre_agents::model::{ChatMessage as AgentChatMessage, StreamEvent, Usage, UserContent},
+    antre_sessions::message::PersistedMessage,
     tokio_stream::StreamExt,
 };
 
@@ -30,9 +30,9 @@ use crate::{
 /// Returns JSON array of all session entries (sorted by created_at ASC, matching web UI).
 #[allow(unsafe_code)]
 #[unsafe(no_mangle)]
-pub extern "C" fn moltis_list_sessions() -> *mut c_char {
-    record_call("moltis_list_sessions");
-    trace_call("moltis_list_sessions");
+pub extern "C" fn antre_list_sessions() -> *mut c_char {
+    record_call("antre_list_sessions");
+    trace_call("antre_list_sessions");
 
     with_ffi_boundary(|| {
         let all = BRIDGE.runtime.block_on(BRIDGE.session_metadata.list());
@@ -50,18 +50,16 @@ pub extern "C" fn moltis_list_sessions() -> *mut c_char {
 /// If the session doesn't exist yet, it will be created.
 #[allow(unsafe_code)]
 #[unsafe(no_mangle)]
-pub extern "C" fn moltis_switch_session(request_json: *const c_char) -> *mut c_char {
-    record_call("moltis_switch_session");
-    trace_call("moltis_switch_session");
+pub extern "C" fn antre_switch_session(request_json: *const c_char) -> *mut c_char {
+    record_call("antre_switch_session");
+    trace_call("antre_switch_session");
 
     with_ffi_boundary(|| {
-        let request = match parse_ffi_request::<SwitchSessionRequest>(
-            "moltis_switch_session",
-            request_json,
-        ) {
-            Ok(r) => r,
-            Err(e) => return e,
-        };
+        let request =
+            match parse_ffi_request::<SwitchSessionRequest>("antre_switch_session", request_json) {
+                Ok(r) => r,
+                Err(e) => return e,
+            };
 
         // Ensure metadata entry exists.
         if let Err(e) = BRIDGE
@@ -120,9 +118,9 @@ pub extern "C" fn moltis_switch_session(request_json: *const c_char) -> *mut c_c
 /// Creates a new session with an optional label. Returns the entry.
 #[allow(unsafe_code)]
 #[unsafe(no_mangle)]
-pub extern "C" fn moltis_create_session(request_json: *const c_char) -> *mut c_char {
-    record_call("moltis_create_session");
-    trace_call("moltis_create_session");
+pub extern "C" fn antre_create_session(request_json: *const c_char) -> *mut c_char {
+    record_call("antre_create_session");
+    trace_call("antre_create_session");
 
     with_ffi_boundary(|| {
         let request: CreateSessionRequest = if request_json.is_null() {
@@ -162,16 +160,16 @@ pub extern "C" fn moltis_create_session(request_json: *const c_char) -> *mut c_c
 ///
 /// # Safety
 ///
-/// Same requirements as `moltis_chat_stream`.
+/// Same requirements as `antre_chat_stream`.
 #[allow(unsafe_code)]
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn moltis_session_chat_stream(
+pub unsafe extern "C" fn antre_session_chat_stream(
     request_json: *const c_char,
     callback: StreamCallback,
     user_data: *mut c_void,
 ) {
-    record_call("moltis_session_chat_stream");
-    trace_call("moltis_session_chat_stream");
+    record_call("antre_session_chat_stream");
+    trace_call("antre_session_chat_stream");
 
     let send_error = |msg: String| {
         let event = BridgeStreamEvent::Error { message: msg };
@@ -368,7 +366,7 @@ mod tests {
 
     #[test]
     fn list_sessions_returns_array() {
-        let payload = json_from_ptr(moltis_list_sessions());
+        let payload = json_from_ptr(antre_list_sessions());
         assert!(
             payload.as_array().is_some(),
             "list_sessions should return a JSON array"
@@ -380,7 +378,7 @@ mod tests {
         // Create a session with a label.
         let request = r#"{"label":"Test Session"}"#;
         let c_request = CString::new(request).unwrap_or_else(|e| panic!("{e}"));
-        let payload = json_from_ptr(moltis_create_session(c_request.as_ptr()));
+        let payload = json_from_ptr(antre_create_session(c_request.as_ptr()));
 
         let key = payload
             .get("key")
@@ -398,7 +396,7 @@ mod tests {
         // Switch to the created session.
         let switch_request = serde_json::json!({"key": key}).to_string();
         let c_switch = CString::new(switch_request).unwrap_or_else(|e| panic!("{e}"));
-        let history = json_from_ptr(moltis_switch_session(c_switch.as_ptr()));
+        let history = json_from_ptr(antre_switch_session(c_switch.as_ptr()));
 
         assert!(history.get("entry").is_some(), "switch should return entry");
         assert!(
@@ -409,7 +407,7 @@ mod tests {
 
     #[test]
     fn create_session_with_null_uses_defaults() {
-        let payload = json_from_ptr(moltis_create_session(std::ptr::null()));
+        let payload = json_from_ptr(antre_create_session(std::ptr::null()));
 
         let key = payload
             .get("key")

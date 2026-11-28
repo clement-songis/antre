@@ -9,13 +9,13 @@ use {
 };
 
 use {
-    async_trait::async_trait,
-    axum::{Json, Router, body::Bytes, extract::State, http::Uri, routing::post},
-    moltis_channels::{
+    antre_channels::{
         ChannelAttachment, ChannelDocumentFile, ChannelEvent, ChannelEventSink, ChannelMessageKind,
         ChannelMessageMeta, ChannelReplyTarget, Error as ChannelError, Result, SavedChannelFile,
         gating::DmPolicy,
     },
+    async_trait::async_trait,
+    axum::{Json, Router, body::Bytes, extract::State, http::Uri, routing::post},
     secrecy::Secret,
     serde::{Deserialize, Serialize},
     serde_json::json,

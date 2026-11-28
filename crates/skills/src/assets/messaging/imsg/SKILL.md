@@ -32,7 +32,7 @@ Use `imsg` to read and send iMessage/SMS via macOS Messages.app.
 - Slack messages → use `slack` skill
 - Group chat management (adding/removing members) → not supported
 - Bulk/mass messaging → always confirm with user first
-- Replying in current conversation → just reply normally (Moltis routes automatically)
+- Replying in current conversation → just reply normally (Antre routes automatically)
 
 ## Requirements
 

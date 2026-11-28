@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use {tokio_util::sync::CancellationToken, tracing::info};
 
-use moltis_channels::{ChannelEventSink, message_log::MessageLog};
+use antre_channels::{ChannelEventSink, message_log::MessageLog};
 
 use crate::{
     config::WhatsAppAccountConfig,
@@ -11,7 +11,7 @@ use crate::{
 };
 
 /// Name asserted when neither the account nor the agent identity sets one.
-const DEFAULT_PUSH_NAME: &str = "Moltis";
+const DEFAULT_PUSH_NAME: &str = "Antre";
 
 /// Account override, then agent identity, then the default.
 ///
@@ -89,7 +89,7 @@ pub async fn start_connection(
         .skip_history_sync()
         .with_device_props(
             wacore::store::DevicePropsOverride::new()
-                .with_os("Moltis")
+                .with_os("Antre")
                 .with_platform_type(waproto::whatsapp::device_props::PlatformType::Desktop),
         )
         .with_push_name(push_name)

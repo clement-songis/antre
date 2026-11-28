@@ -11,7 +11,7 @@ use {
     tracing::{info, warn},
 };
 
-use moltis_channels::{
+use antre_channels::{
     ChannelConfigView, ChannelEventSink, Error as ChannelError, Result as ChannelResult,
     message_log::MessageLog,
     otp::OtpChallengeInfo,
@@ -132,7 +132,7 @@ impl WhatsAppPlugin {
             state.config = wa_config;
             Ok(())
         } else {
-            Err(moltis_channels::Error::unknown_account(account_id))
+            Err(antre_channels::Error::unknown_account(account_id))
         }
     }
 
@@ -188,7 +188,7 @@ impl ChannelPlugin for WhatsAppPlugin {
             self.identity_name.clone(),
         )
         .await
-        .map_err(|e| moltis_channels::Error::unavailable(format!("whatsapp start: {e}")))?;
+        .map_err(|e| antre_channels::Error::unavailable(format!("whatsapp start: {e}")))?;
 
         Ok(())
     }
@@ -409,7 +409,7 @@ mod tests {
 
     #[test]
     fn descriptor_coherence() {
-        use moltis_channels::{ChannelType, InboundMode};
+        use antre_channels::{ChannelType, InboundMode};
         let plugin = WhatsAppPlugin::new(PathBuf::from("/tmp/test"));
         let desc = ChannelType::Whatsapp.descriptor();
 

@@ -4,8 +4,8 @@
 use std::{collections::HashMap, sync::Arc};
 
 use {
-    moltis_config::{MoltisConfig, schema::ProvidersConfig},
-    moltis_providers::{PendingDiscoveries, ProviderRegistry},
+    antre_config::{AntreConfig, schema::ProvidersConfig},
+    antre_providers::{PendingDiscoveries, ProviderRegistry},
     tracing::{debug, info, warn},
 };
 
@@ -23,7 +23,7 @@ pub(super) async fn run(
     registry: &Arc<tokio::sync::RwLock<ProviderRegistry>>,
     state: &Arc<GatewayState>,
     effective_providers: &ProvidersConfig,
-    config: &MoltisConfig,
+    config: &AntreConfig,
     config_env_overrides: &HashMap<String, String>,
     #[cfg(feature = "local-llm")] local_llm_service: Option<
         &Arc<crate::local_llm_setup::LiveLocalLlmService>,
@@ -36,7 +36,7 @@ pub(super) async fn run(
         let state_for_startup_discovery = Arc::clone(state);
         let provider_config_for_startup_discovery = effective_providers.clone();
         let provider_config_for_registry_rebuild = provider_config_for_startup_discovery.clone();
-        let global_cw_overrides = moltis_providers::extract_cw_overrides(&config.models);
+        let global_cw_overrides = antre_providers::extract_cw_overrides(&config.models);
         let env_overrides_for_startup_discovery = config_env_overrides.clone();
         #[cfg(feature = "local-llm")]
         let local_llm_svc_for_discovery = local_llm_service.cloned();

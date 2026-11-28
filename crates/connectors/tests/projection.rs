@@ -1,5 +1,5 @@
 use {
-    moltis_connectors::{
+    antre_connectors::{
         AccountCreate, ConnectorItemInput, ConnectorKind, Dataset, DatasetCreate, DatasetUpdate,
         ItemQuery, ProjectionConfig, SqliteConnectorStore, cleanup_projection_artifacts,
         run_migrations, write_projection,

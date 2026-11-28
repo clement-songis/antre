@@ -67,7 +67,7 @@ prepare_web_e2e() {
 
   npm ci --prefix crates/web/ui
   ./scripts/build-web-assets.sh
-  cargo build --bin moltis
+  cargo build --bin antre
   npx --prefix crates/web/ui playwright install chromium
   web_e2e_prepared=true
 }
@@ -90,8 +90,8 @@ run_cloud_sandbox_live_e2e() {
   (
     cd crates/web/ui
     CI=true \
-      MOLTIS_E2E_ONLY_PROJECT=remote-sandbox-live \
-      MOLTIS_E2E_SKIP_DEFAULT_PROJECTS=1 \
+      ANTRE_E2E_ONLY_PROJECT=remote-sandbox-live \
+      ANTRE_E2E_SKIP_DEFAULT_PROJECTS=1 \
       npx playwright test --project=remote-sandbox-live e2e/specs/remote-sandbox-live.spec.js
   )
 }
@@ -116,8 +116,8 @@ run_ollama_qwen_live_e2e() {
   (
     cd crates/web/ui
     CI=true \
-      MOLTIS_E2E_OLLAMA_QWEN_LIVE=1 \
-      MOLTIS_E2E_OLLAMA_QWEN_MODEL="${MOLTIS_E2E_OLLAMA_QWEN_MODEL:-qwen2.5:0.5b}" \
+      ANTRE_E2E_OLLAMA_QWEN_LIVE=1 \
+      ANTRE_E2E_OLLAMA_QWEN_MODEL="${ANTRE_E2E_OLLAMA_QWEN_MODEL:-qwen2.5:0.5b}" \
       npx playwright test --project=ollama-qwen-live e2e/specs/ollama-qwen-live.spec.js
   )
 }

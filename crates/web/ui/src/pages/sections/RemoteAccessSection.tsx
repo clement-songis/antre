@@ -598,7 +598,7 @@ export function RemoteAccessSection(): VNode {
 						</div>
 
 						<div className="alert-warning-text max-w-form">
-							<span className="alert-label-warn">Warning:</span> Enabling Funnel exposes moltis to the public internet.
+							<span className="alert-label-warn">Warning:</span> Enabling Funnel exposes antre to the public internet.
 							This code has not been security-audited. Use at your own risk.
 						</div>
 						{authReady ? null : (
@@ -961,7 +961,7 @@ export function RemoteAccessSection(): VNode {
 								id="cloudflare-hostname"
 								type="text"
 								className="w-full rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--text)]"
-								placeholder="moltis.example.com"
+								placeholder="antre.example.com"
 								value={cfForm.hostname}
 								onInput={(e: Event) => setCfForm({ ...cfForm, hostname: targetValue(e) })}
 							/>
@@ -1014,7 +1014,7 @@ export function RemoteAccessSection(): VNode {
 		<div className="flex-1 flex flex-col min-w-0 p-4 gap-4 overflow-y-auto">
 			<h2 className="text-lg font-medium text-[var(--text-strong)]">Remote Access</h2>
 			<p className="text-xs text-[var(--muted)] leading-relaxed max-w-[60rem]" style={{ margin: 0 }}>
-				Choose how moltis is exposed beyond localhost. Tailscale is the safer default for tailnet access and optional
+				Choose how antre is exposed beyond localhost. Tailscale is the safer default for tailnet access and optional
 				public Funnel. NetBird provides private mesh access, while ngrok and Cloudflare Tunnel provide managed public
 				HTTPS URLs.
 			</p>

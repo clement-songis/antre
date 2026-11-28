@@ -3,7 +3,7 @@
 
 use std::sync::Once;
 
-use moltis_memory::{
+use antre_memory::{
     schema::{ChunkRow, FileRow},
     store::{MemoryStore, MergeStrategy},
 };
@@ -17,7 +17,7 @@ fn ensure_zvec_init() {
 }
 
 struct ZvecStoreGuard {
-    store: moltis_memory_zvec::ZvecMemoryStore,
+    store: antre_memory_zvec::ZvecMemoryStore,
     collection: std::sync::Arc<zvec::Collection>,
     _dir: tempfile::TempDir,
 }
@@ -37,7 +37,7 @@ impl Drop for ZvecStoreGuard {
 }
 
 impl std::ops::Deref for ZvecStoreGuard {
-    type Target = moltis_memory_zvec::ZvecMemoryStore;
+    type Target = antre_memory_zvec::ZvecMemoryStore;
 
     fn deref(&self) -> &Self::Target {
         &self.store
@@ -86,10 +86,10 @@ fn small_embedding() -> Vec<f32> {
     v
 }
 
-async fn create_sqlite_store() -> moltis_memory::store_sqlite::SqliteMemoryStore {
+async fn create_sqlite_store() -> antre_memory::store_sqlite::SqliteMemoryStore {
     let pool = sqlx::SqlitePool::connect(":memory:").await.unwrap();
-    moltis_memory::schema::run_migrations(&pool).await.unwrap();
-    moltis_memory::store_sqlite::SqliteMemoryStore::new(pool)
+    antre_memory::schema::run_migrations(&pool).await.unwrap();
+    antre_memory::store_sqlite::SqliteMemoryStore::new(pool)
 }
 
 async fn create_zvec_store() -> ZvecStoreGuard {
@@ -97,10 +97,10 @@ async fn create_zvec_store() -> ZvecStoreGuard {
     let dir = tempfile::tempdir().unwrap();
     let db_path = dir.path().join("collection");
     let cache_path = dir.path().join("cache.redb");
-    let collection = moltis_memory_zvec::open_or_create_collection(&db_path, Some(768)).unwrap();
+    let collection = antre_memory_zvec::open_or_create_collection(&db_path, Some(768)).unwrap();
     let collection = std::sync::Arc::new(collection);
-    let cache = moltis_memory_zvec::RedbCache::new(&cache_path).unwrap();
-    let store = moltis_memory_zvec::ZvecMemoryStore::with_cache_arc(
+    let cache = antre_memory_zvec::RedbCache::new(&cache_path).unwrap();
+    let store = antre_memory_zvec::ZvecMemoryStore::with_cache_arc(
         std::sync::Arc::clone(&collection),
         cache,
     );
@@ -350,15 +350,15 @@ async fn test_cache_operations(store: &dyn MemoryStore) -> anyhow::Result<()> {
     let count = store.count_cached_embeddings().await?;
     assert!(count >= initial_count, "count must not decrease after put");
 
-    let entries: Vec<moltis_memory::store::CacheEntry<'_>> = vec![
-        moltis_memory::store::CacheEntry {
+    let entries: Vec<antre_memory::store::CacheEntry<'_>> = vec![
+        antre_memory::store::CacheEntry {
             provider: "openai",
             model: "test-model",
             provider_key: "sk-test",
             hash: "batch-hash-1",
             embedding: &[1.0, 2.0],
         },
-        moltis_memory::store::CacheEntry {
+        antre_memory::store::CacheEntry {
             provider: "openai",
             model: "test-model",
             provider_key: "sk-test",

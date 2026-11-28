@@ -1,44 +1,43 @@
 [package]
-description       = "Codebase indexing for moltis — git-tracked file discovery, filtering, chunking, and project-scoped search"
+description       = "Codebase indexing for antre — git-tracked file discovery, filtering, chunking, and project-scoped search"
 edition.workspace = true
-name              = "moltis-code-index"
+name              = "antre-code-index"
 version.workspace = true
 
 [features]
-default = ["builtin", "tracing"]
-qmd = ["dep:moltis-qmd", "dep:moltis-agents"]
-builtin = ["dep:moltis-memory", "dep:moltis-agents", "dep:sqlx", "dep:tokio"]
+builtin      = ["dep:antre-agents", "dep:antre-memory", "dep:sqlx", "dep:tokio"]
+default      = ["builtin", "tracing"]
 file-watcher = ["dep:notify-debouncer-full", "dep:tokio", "dep:tokio-util"]
-tracing = ["dep:tracing"]
-metrics = ["dep:metrics"]
+metrics      = ["dep:metrics"]
+qmd          = ["dep:antre-agents", "dep:antre-qmd"]
+tracing      = ["dep:tracing"]
 
 [dependencies]
-anyhow           = { workspace = true }
-async-trait      = { workspace = true }
-gix              = { workspace = true }
-moltis-agents    = { optional = true, workspace = true }
-moltis-memory    = { optional = true, workspace = true }
-moltis-qmd       = { optional = true, workspace = true }
-moltis-config    = { workspace = true }
-moltis-splitter  = { workspace = true }
-moltis-tools     = { workspace = true }
+antre-agents          = { optional = true, workspace = true }
+antre-config          = { workspace = true }
+antre-memory          = { optional = true, workspace = true }
+antre-qmd             = { optional = true, workspace = true }
+antre-splitter        = { workspace = true }
+antre-tools           = { workspace = true }
+anyhow                = { workspace = true }
+async-trait           = { workspace = true }
+gix                   = { workspace = true }
+metrics               = { optional = true, workspace = true }
 notify-debouncer-full = { optional = true, workspace = true }
-serde            = { workspace = true }
-serde_json       = { workspace = true }
-sha2             = { workspace = true }
-sqlx             = { optional = true, workspace = true }
-tempfile         = { workspace = true }
-thiserror        = { workspace = true }
-time             = { workspace = true }
-tokio            = { workspace = true, features = ["sync"], optional = true }
-tokio-util       = { workspace = true, optional = true }
-tracing          = { workspace = true, optional = true }
-metrics          = { workspace = true, optional = true }
-
+serde                 = { workspace = true }
+serde_json            = { workspace = true }
+sha2                  = { workspace = true }
+sqlx                  = { optional = true, workspace = true }
+tempfile              = { workspace = true }
+thiserror             = { workspace = true }
+time                  = { workspace = true }
+tokio                 = { features = ["sync"], optional = true, workspace = true }
+tokio-util            = { optional = true, workspace = true }
+tracing               = { optional = true, workspace = true }
 
 [dev-dependencies]
 serde_json = { workspace = true }
-tokio = { workspace = true, features = ["macros", "rt"] }
+tokio      = { features = ["macros", "rt"], workspace = true }
 
 [lints]
 workspace = true

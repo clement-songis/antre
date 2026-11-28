@@ -139,16 +139,16 @@ test.describe("Local provider setup instructions", () => {
 // These tests require real API keys passed via environment variables.
 // They skip gracefully when the key is not set.
 
-const OPENAI_KEY = process.env.MOLTIS_E2E_OPENAI_API_KEY || "";
-const GROQ_KEY = process.env.MOLTIS_E2E_GROQ_API_KEY || "";
-const DEEPGRAM_KEY = process.env.MOLTIS_E2E_DEEPGRAM_API_KEY || "";
-const GOOGLE_KEY = process.env.MOLTIS_E2E_GOOGLE_API_KEY || "";
-const MISTRAL_KEY = process.env.MOLTIS_E2E_MISTRAL_API_KEY || "";
-const ELEVENLABS_KEY = process.env.MOLTIS_E2E_ELEVENLABS_API_KEY || "";
+const OPENAI_KEY = process.env.ANTRE_E2E_OPENAI_API_KEY || "";
+const GROQ_KEY = process.env.ANTRE_E2E_GROQ_API_KEY || "";
+const DEEPGRAM_KEY = process.env.ANTRE_E2E_DEEPGRAM_API_KEY || "";
+const GOOGLE_KEY = process.env.ANTRE_E2E_GOOGLE_API_KEY || "";
+const MISTRAL_KEY = process.env.ANTRE_E2E_MISTRAL_API_KEY || "";
+const ELEVENLABS_KEY = process.env.ANTRE_E2E_ELEVENLABS_API_KEY || "";
 
 test.describe("Cloud STT provider configuration", () => {
 	test("configure OpenAI Whisper with API key", async ({ page }) => {
-		test.skip(!OPENAI_KEY, "requires MOLTIS_E2E_OPENAI_API_KEY");
+		test.skip(!OPENAI_KEY, "requires ANTRE_E2E_OPENAI_API_KEY");
 		const pageErrors = watchPageErrors(page);
 		await openVoicePage(page);
 		await waitForProviderCards(page);
@@ -163,7 +163,7 @@ test.describe("Cloud STT provider configuration", () => {
 	});
 
 	test("configure Groq with API key", async ({ page }) => {
-		test.skip(!GROQ_KEY, "requires MOLTIS_E2E_GROQ_API_KEY");
+		test.skip(!GROQ_KEY, "requires ANTRE_E2E_GROQ_API_KEY");
 		const pageErrors = watchPageErrors(page);
 		await openVoicePage(page);
 		await waitForProviderCards(page);
@@ -177,7 +177,7 @@ test.describe("Cloud STT provider configuration", () => {
 	});
 
 	test("configure Deepgram with API key", async ({ page }) => {
-		test.skip(!DEEPGRAM_KEY, "requires MOLTIS_E2E_DEEPGRAM_API_KEY");
+		test.skip(!DEEPGRAM_KEY, "requires ANTRE_E2E_DEEPGRAM_API_KEY");
 		const pageErrors = watchPageErrors(page);
 		await openVoicePage(page);
 		await waitForProviderCards(page);
@@ -191,7 +191,7 @@ test.describe("Cloud STT provider configuration", () => {
 	});
 
 	test("configure Google Cloud STT with API key", async ({ page }) => {
-		test.skip(!GOOGLE_KEY, "requires MOLTIS_E2E_GOOGLE_API_KEY");
+		test.skip(!GOOGLE_KEY, "requires ANTRE_E2E_GOOGLE_API_KEY");
 		const pageErrors = watchPageErrors(page);
 		await openVoicePage(page);
 		await waitForProviderCards(page);
@@ -205,7 +205,7 @@ test.describe("Cloud STT provider configuration", () => {
 	});
 
 	test("configure Mistral (Voxtral) with API key", async ({ page }) => {
-		test.skip(!MISTRAL_KEY, "requires MOLTIS_E2E_MISTRAL_API_KEY");
+		test.skip(!MISTRAL_KEY, "requires ANTRE_E2E_MISTRAL_API_KEY");
 		const pageErrors = watchPageErrors(page);
 		await openVoicePage(page);
 		await waitForProviderCards(page);
@@ -219,7 +219,7 @@ test.describe("Cloud STT provider configuration", () => {
 	});
 
 	test("configure ElevenLabs Scribe with API key", async ({ page }) => {
-		test.skip(!ELEVENLABS_KEY, "requires MOLTIS_E2E_ELEVENLABS_API_KEY");
+		test.skip(!ELEVENLABS_KEY, "requires ANTRE_E2E_ELEVENLABS_API_KEY");
 		const pageErrors = watchPageErrors(page);
 		await openVoicePage(page);
 		await waitForProviderCards(page);
@@ -237,7 +237,7 @@ test.describe("Cloud STT provider configuration", () => {
 
 test.describe("Cloud TTS provider configuration", () => {
 	test("configure OpenAI TTS with API key", async ({ page }) => {
-		test.skip(!OPENAI_KEY, "requires MOLTIS_E2E_OPENAI_API_KEY");
+		test.skip(!OPENAI_KEY, "requires ANTRE_E2E_OPENAI_API_KEY");
 		const pageErrors = watchPageErrors(page);
 		await openVoicePage(page);
 		await waitForProviderCards(page);
@@ -252,7 +252,7 @@ test.describe("Cloud TTS provider configuration", () => {
 	});
 
 	test("configure ElevenLabs TTS with API key", async ({ page }) => {
-		test.skip(!ELEVENLABS_KEY, "requires MOLTIS_E2E_ELEVENLABS_API_KEY");
+		test.skip(!ELEVENLABS_KEY, "requires ANTRE_E2E_ELEVENLABS_API_KEY");
 		const pageErrors = watchPageErrors(page);
 		await openVoicePage(page);
 		await waitForProviderCards(page);
@@ -267,7 +267,7 @@ test.describe("Cloud TTS provider configuration", () => {
 	});
 
 	test("configure Google Cloud TTS with API key", async ({ page }) => {
-		test.skip(!GOOGLE_KEY, "requires MOLTIS_E2E_GOOGLE_API_KEY");
+		test.skip(!GOOGLE_KEY, "requires ANTRE_E2E_GOOGLE_API_KEY");
 		const pageErrors = watchPageErrors(page);
 		await openVoicePage(page);
 		await waitForProviderCards(page);
@@ -286,7 +286,7 @@ test.describe("Cloud TTS provider configuration", () => {
 
 test.describe("Voice provider toggle", () => {
 	test("toggle OpenAI Whisper on and off via RPC", async ({ page }) => {
-		test.skip(!OPENAI_KEY, "requires MOLTIS_E2E_OPENAI_API_KEY");
+		test.skip(!OPENAI_KEY, "requires ANTRE_E2E_OPENAI_API_KEY");
 		const pageErrors = watchPageErrors(page);
 		await openVoicePage(page);
 		await waitForProviderCards(page);
@@ -315,7 +315,7 @@ test.describe("Voice provider toggle", () => {
 	});
 
 	test("toggle ElevenLabs TTS on and off via RPC", async ({ page }) => {
-		test.skip(!ELEVENLABS_KEY, "requires MOLTIS_E2E_ELEVENLABS_API_KEY");
+		test.skip(!ELEVENLABS_KEY, "requires ANTRE_E2E_ELEVENLABS_API_KEY");
 		const pageErrors = watchPageErrors(page);
 		await openVoicePage(page);
 		await waitForProviderCards(page);

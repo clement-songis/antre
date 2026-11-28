@@ -3,12 +3,12 @@
 use std::{path::Path, sync::OnceLock};
 
 use {
-    divan::Bencher,
-    moltis_memory::{
+    antre_memory::{
         schema::ChunkRow,
         store::{MemoryStore, MergeStrategy},
         store_sqlite::SqliteMemoryStore,
     },
+    divan::Bencher,
     rand::{RngExt, SeedableRng, rngs::StdRng},
 };
 
@@ -61,8 +61,8 @@ fn random_embedding(rng: &mut StdRng, dim: usize) -> Vec<f32> {
     v
 }
 
-fn bench_file() -> moltis_memory::schema::FileRow {
-    moltis_memory::schema::FileRow {
+fn bench_file() -> antre_memory::schema::FileRow {
+    antre_memory::schema::FileRow {
         path: "bench/memory.md".into(),
         source: "bench".into(),
         hash: "bench-file-hash".into(),
@@ -128,13 +128,13 @@ async fn create_sqlite_disk(db_path: &Path) -> SqliteMemoryStore {
         .filename(db_path)
         .create_if_missing(true);
     let pool = sqlx::SqlitePool::connect_with(options).await.unwrap();
-    moltis_memory::run_migrations(&pool).await.unwrap();
+    antre_memory::run_migrations(&pool).await.unwrap();
     SqliteMemoryStore::new(pool)
 }
 
 async fn create_sqlite_in_memory() -> SqliteMemoryStore {
     let pool = sqlx::SqlitePool::connect("sqlite::memory:").await.unwrap();
-    moltis_memory::run_migrations(&pool).await.unwrap();
+    antre_memory::run_migrations(&pool).await.unwrap();
     SqliteMemoryStore::new(pool)
 }
 
@@ -144,31 +144,31 @@ async fn create_sqlite_in_memory() -> SqliteMemoryStore {
 static ZVEC_LIB_INIT: OnceLock<()> = OnceLock::new();
 
 /// Ensure zvec global library is initialized exactly once.
-/// Uses `moltis_memory_zvec::initialize()` which bootstraps both the
+/// Uses `antre_memory_zvec::initialize()` which bootstraps both the
 /// zvec C library and a temporary collection (immediately dropped).
 #[cfg(feature = "zvec")]
 fn ensure_zvec_init() {
     ZVEC_LIB_INIT.get_or_init(|| {
         let dir = tempfile::tempdir().unwrap();
         let collection =
-            moltis_memory_zvec::initialize(dir.path(), Some(VECTOR_DIM as u32)).unwrap();
+            antre_memory_zvec::initialize(dir.path(), Some(VECTOR_DIM as u32)).unwrap();
         drop(collection);
         eprintln!("[zvec] global library initialized");
     });
 }
 
 #[cfg(feature = "zvec")]
-fn create_zvec_store(db_path: &Path) -> moltis_memory_zvec::ZvecMemoryStore {
+fn create_zvec_store(db_path: &Path) -> antre_memory_zvec::ZvecMemoryStore {
     ensure_zvec_init();
     let collection =
-        moltis_memory_zvec::open_or_create_collection(db_path, Some(VECTOR_DIM as u32)).unwrap();
+        antre_memory_zvec::open_or_create_collection(db_path, Some(VECTOR_DIM as u32)).unwrap();
     let cache_path = {
         let mut p = db_path.to_path_buf();
         p.as_mut_os_string().push(".cache");
         p
     };
-    let cache = moltis_memory_zvec::RedbCache::new(&cache_path).unwrap();
-    moltis_memory_zvec::ZvecMemoryStore::new(collection, cache)
+    let cache = antre_memory_zvec::RedbCache::new(&cache_path).unwrap();
+    antre_memory_zvec::ZvecMemoryStore::new(collection, cache)
 }
 
 /// Batch-insert chunks for zvec, which has a per-call limit.
@@ -176,8 +176,8 @@ fn create_zvec_store(db_path: &Path) -> moltis_memory_zvec::ZvecMemoryStore {
 const ZVEC_UPSERT_BATCH: usize = 500;
 
 #[cfg(feature = "zvec")]
-async fn zvec_batched_upsert(store: &moltis_memory_zvec::ZvecMemoryStore, chunks: &[ChunkRow]) {
-    use moltis_memory::store::MemoryStore;
+async fn zvec_batched_upsert(store: &antre_memory_zvec::ZvecMemoryStore, chunks: &[ChunkRow]) {
+    use antre_memory::store::MemoryStore;
     store.upsert_file(&bench_file()).await.unwrap();
     for batch in chunks.chunks(ZVEC_UPSERT_BATCH) {
         store.upsert_chunks(batch).await.unwrap();
@@ -215,7 +215,7 @@ fn search_fixture_sqlite() -> &'static SearchFixtureSqlite {
 
 #[cfg(feature = "zvec")]
 struct SearchFixtureZvec {
-    store: moltis_memory_zvec::ZvecMemoryStore,
+    store: antre_memory_zvec::ZvecMemoryStore,
     _db_dir: tempfile::TempDir,
 }
 
@@ -233,7 +233,7 @@ fn search_fixture_zvec() -> &'static SearchFixtureZvec {
             let chunks = make_chunks(SEARCH_COUNT, VECTOR_DIM);
             zvec_batched_upsert(&store, &chunks).await;
             let coll = store.collection_arc();
-            moltis_memory_zvec::flush_collection(&coll).unwrap();
+            antre_memory_zvec::flush_collection(&coll).unwrap();
             SearchFixtureZvec {
                 store,
                 _db_dir: dir,
@@ -416,9 +416,9 @@ fn sqlite_cache_lookup(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(RNG_SEED);
     let emb = random_embedding(&mut rng, 4);
     let hashes: Vec<String> = (0..CACHE_COUNT).map(|i| format!("hash-{i}")).collect();
-    let entries: Vec<moltis_memory::store::CacheEntry<'_>> = hashes
+    let entries: Vec<antre_memory::store::CacheEntry<'_>> = hashes
         .iter()
-        .map(|h| moltis_memory::store::CacheEntry {
+        .map(|h| antre_memory::store::CacheEntry {
             provider: "bench",
             model: "model",
             provider_key: "key",
@@ -457,16 +457,16 @@ fn zvec_cache_lookup(bencher: Bencher) {
 
     ensure_zvec_init();
     let collection =
-        moltis_memory_zvec::open_or_create_collection(&db_path, Some(VECTOR_DIM as u32)).unwrap();
-    let cache = moltis_memory_zvec::RedbCache::new(&cache_path).unwrap();
-    let store = moltis_memory_zvec::ZvecMemoryStore::with_cache(collection, cache);
+        antre_memory_zvec::open_or_create_collection(&db_path, Some(VECTOR_DIM as u32)).unwrap();
+    let cache = antre_memory_zvec::RedbCache::new(&cache_path).unwrap();
+    let store = antre_memory_zvec::ZvecMemoryStore::with_cache(collection, cache);
 
     let mut rng = StdRng::seed_from_u64(RNG_SEED);
     let emb = random_embedding(&mut rng, 4);
     let hashes: Vec<String> = (0..CACHE_COUNT).map(|i| format!("hash-{i}")).collect();
-    let entries: Vec<moltis_memory::store::CacheEntry<'_>> = hashes
+    let entries: Vec<antre_memory::store::CacheEntry<'_>> = hashes
         .iter()
-        .map(|h| moltis_memory::store::CacheEntry {
+        .map(|h| antre_memory::store::CacheEntry {
             provider: "bench",
             model: "model",
             provider_key: "key",

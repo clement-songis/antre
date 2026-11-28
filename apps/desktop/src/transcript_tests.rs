@@ -1,7 +1,7 @@
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use {
-    moltis_protocol::chat_event::{ChatErrorInfo, ChatFinal, PartialMessage},
+    antre_protocol::chat_event::{ChatErrorInfo, ChatFinal, PartialMessage},
     serde_json::json,
 };
 

@@ -1,4 +1,4 @@
-"Moltis" = "Moltis";
+"Antre" = "Antre";
 "Settings" = "設定";
 "Settings..." = "設定…";
 
@@ -170,7 +170,7 @@
 "Local" = "本機";
 "Enable voice" = "啟用語音";
 
-"The HTTP server runs the full Moltis gateway — web UI, REST API, and WebSocket — on your local machine. Open the address in a browser to use the web interface." = "HTTP 伺服器在本機上執行完整的 Moltis 閘道 — Web UI、REST API 和 WebSocket。請在瀏覽器中開啟此位址以使用網頁介面。";
+"The HTTP server runs the full Antre gateway — web UI, REST API, and WebSocket — on your local machine. Open the address in a browser to use the web interface." = "HTTP 伺服器在本機上執行完整的 Antre 閘道 — Web UI、REST API 和 WebSocket。請在瀏覽器中開啟此位址以使用網頁介面。";
 "Enable HTTP server" = "啟用 HTTP 伺服器";
 "Bind address" = "繫結位址";
 "Loopback (127.0.0.1)" = "本機迴路（127.0.0.1）";

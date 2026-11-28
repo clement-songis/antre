@@ -58,24 +58,24 @@ impl SignalClient {
         }
     }
 
-    pub async fn check(&self, base_url: &str) -> moltis_channels::Result<Value> {
+    pub async fn check(&self, base_url: &str) -> antre_channels::Result<Value> {
         let url = format!("{}/api/v1/check", base_url.trim_end_matches('/'));
         let res = self
             .http
             .get(url)
             .send()
             .await
-            .map_err(|e| moltis_channels::Error::external("signal-cli check", e))?;
+            .map_err(|e| antre_channels::Error::external("signal-cli check", e))?;
         let status = res.status();
         if !status.is_success() {
-            return Err(moltis_channels::Error::unavailable(format!(
+            return Err(antre_channels::Error::unavailable(format!(
                 "signal-cli check failed with HTTP {status}"
             )));
         }
         let body = res
             .bytes()
             .await
-            .map_err(|e| moltis_channels::Error::external("signal-cli check body", e))?;
+            .map_err(|e| antre_channels::Error::external("signal-cli check body", e))?;
         parse_check_body(&body)
     }
 
@@ -83,10 +83,10 @@ impl SignalClient {
         &self,
         base_url: &str,
         account: Option<&str>,
-    ) -> moltis_channels::Result<Response> {
+    ) -> antre_channels::Result<Response> {
         let mut url = url::Url::parse(&format!("{}/api/v1/events", base_url.trim_end_matches('/')))
             .map_err(|e| {
-                moltis_channels::Error::invalid_input(format!("invalid Signal daemon URL: {e}"))
+                antre_channels::Error::invalid_input(format!("invalid Signal daemon URL: {e}"))
             })?;
         if let Some(account) = account {
             url.query_pairs_mut().append_pair("account", account);
@@ -96,7 +96,7 @@ impl SignalClient {
             .header(reqwest::header::ACCEPT, "text/event-stream")
             .send()
             .await
-            .map_err(|e| moltis_channels::Error::external("signal-cli events", e))
+            .map_err(|e| antre_channels::Error::external("signal-cli events", e))
     }
 
     pub async fn rpc_value(
@@ -104,7 +104,7 @@ impl SignalClient {
         base_url: &str,
         method: &str,
         params: Value,
-    ) -> moltis_channels::Result<Value> {
+    ) -> antre_channels::Result<Value> {
         self.rpc(base_url, method, params).await
     }
 
@@ -119,7 +119,7 @@ impl SignalClient {
         attachment_id: &str,
         chat_id: &str,
         max_bytes: usize,
-    ) -> moltis_channels::Result<Vec<u8>> {
+    ) -> antre_channels::Result<Vec<u8>> {
         let mut params = json!({ "id": attachment_id });
         if let Some(obj) = params.as_object_mut() {
             match chat_id.strip_prefix("group:") {
@@ -139,7 +139,7 @@ impl SignalClient {
         base_url: &str,
         method: &str,
         params: Value,
-    ) -> moltis_channels::Result<T>
+    ) -> antre_channels::Result<T>
     where
         T: DeserializeOwned,
     {
@@ -157,10 +157,10 @@ impl SignalClient {
             .json(&body)
             .send()
             .await
-            .map_err(|e| moltis_channels::Error::external("signal-cli rpc", e))?;
+            .map_err(|e| antre_channels::Error::external("signal-cli rpc", e))?;
         let status = res.status();
         if !status.is_success() {
-            return Err(moltis_channels::Error::unavailable(format!(
+            return Err(antre_channels::Error::unavailable(format!(
                 "signal-cli RPC {method} failed with HTTP {status}"
             )));
         }
@@ -168,15 +168,14 @@ impl SignalClient {
         let text = res
             .text()
             .await
-            .map_err(|e| moltis_channels::Error::external("signal-cli rpc body", e))?;
+            .map_err(|e| antre_channels::Error::external("signal-cli rpc body", e))?;
         if text.trim().is_empty() {
             return serde_json::from_value(json!({}))
-                .map_err(|e| moltis_channels::Error::external("signal-cli empty rpc response", e));
+                .map_err(|e| antre_channels::Error::external("signal-cli empty rpc response", e));
         }
 
-        let parsed: RpcResponse<T> = serde_json::from_str(&text).map_err(|e| {
-            moltis_channels::Error::external("signal-cli malformed rpc response", e)
-        })?;
+        let parsed: RpcResponse<T> = serde_json::from_str(&text)
+            .map_err(|e| antre_channels::Error::external("signal-cli malformed rpc response", e))?;
         if let Some(error) = parsed.error {
             let code = error
                 .code
@@ -184,12 +183,12 @@ impl SignalClient {
             let message = error
                 .message
                 .unwrap_or_else(|| "Signal RPC error".to_string());
-            return Err(moltis_channels::Error::unavailable(format!(
+            return Err(antre_channels::Error::unavailable(format!(
                 "signal-cli RPC {method} error {code}: {message}"
             )));
         }
         parsed.result.ok_or_else(|| {
-            moltis_channels::Error::unavailable(format!(
+            antre_channels::Error::unavailable(format!(
                 "signal-cli RPC {method} returned no result"
             ))
         })
@@ -201,25 +200,25 @@ impl SignalClient {
 pub(crate) fn decode_attachment_payload(
     result: &Value,
     max_bytes: usize,
-) -> moltis_channels::Result<Vec<u8>> {
+) -> antre_channels::Result<Vec<u8>> {
     let encoded = result
         .get("data")
         .and_then(Value::as_str)
         .or_else(|| result.as_str())
         .ok_or_else(|| {
-            moltis_channels::Error::invalid_input("signal-cli getAttachment returned no data")
+            antre_channels::Error::invalid_input("signal-cli getAttachment returned no data")
         })?;
     // Reject before decoding: base64 inflates the payload by 4/3.
     if encoded.len() / 4 * 3 > max_bytes.saturating_add(3) {
-        return Err(moltis_channels::Error::invalid_input(format!(
+        return Err(antre_channels::Error::invalid_input(format!(
             "Signal attachment exceeds {max_bytes} bytes"
         )));
     }
     let bytes = BASE64
         .decode(encoded.trim())
-        .map_err(|e| moltis_channels::Error::external("signal-cli attachment base64", e))?;
+        .map_err(|e| antre_channels::Error::external("signal-cli attachment base64", e))?;
     if bytes.len() > max_bytes {
-        return Err(moltis_channels::Error::invalid_input(format!(
+        return Err(antre_channels::Error::invalid_input(format!(
             "Signal attachment exceeds {max_bytes} bytes"
         )));
     }
@@ -228,12 +227,12 @@ pub(crate) fn decode_attachment_payload(
 
 /// signal-cli's `/api/v1/check` answers 200 with an empty body, so only a
 /// non-empty body is decoded.
-fn parse_check_body(body: &[u8]) -> moltis_channels::Result<Value> {
+fn parse_check_body(body: &[u8]) -> antre_channels::Result<Value> {
     if body.iter().all(u8::is_ascii_whitespace) {
         return Ok(Value::Null);
     }
     serde_json::from_slice(body)
-        .map_err(|e| moltis_channels::Error::external("signal-cli check json", e))
+        .map_err(|e| antre_channels::Error::external("signal-cli check json", e))
 }
 
 #[cfg(test)]

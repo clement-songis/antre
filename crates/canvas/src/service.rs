@@ -7,7 +7,7 @@ use std::{
 };
 
 use {
-    moltis_browser::{RenderFormat, RenderRequest},
+    antre_browser::{RenderFormat, RenderRequest},
     serde::Serialize,
     tracing::{debug, info, warn},
 };
@@ -39,19 +39,19 @@ pub struct CanvasSettings {
     pub render_timeout_secs: u64,
 }
 
-impl From<&moltis_config::schema::CanvasConfig> for CanvasSettings {
-    fn from(config: &moltis_config::schema::CanvasConfig) -> Self {
+impl From<&antre_config::schema::CanvasConfig> for CanvasSettings {
+    fn from(config: &antre_config::schema::CanvasConfig) -> Self {
         Self {
             token_ttl_secs: config.token_ttl_secs.clamp(60, 7 * 24 * 3600),
             public_url: config
                 .public_url
                 .as_deref()
-                .filter(|url| moltis_config::schema::is_http_origin(url))
+                .filter(|url| antre_config::schema::is_http_origin(url))
                 .map(|url| url.trim_end_matches('/').to_string()),
             script_sources: config
                 .script_sources
                 .iter()
-                .filter(|source| moltis_config::schema::is_https_origin(source))
+                .filter(|source| antre_config::schema::is_https_origin(source))
                 .cloned()
                 .collect(),
             allow_eval: config.allow_eval,
@@ -64,7 +64,7 @@ impl From<&moltis_config::schema::CanvasConfig> for CanvasSettings {
 
 impl Default for CanvasSettings {
     fn default() -> Self {
-        Self::from(&moltis_config::schema::CanvasConfig::default())
+        Self::from(&antre_config::schema::CanvasConfig::default())
     }
 }
 
@@ -431,7 +431,7 @@ impl CanvasService {
             self.touch(session_key, request.run_id.as_deref(), &id);
         }
         #[cfg(feature = "metrics")]
-        moltis_metrics::counter!(moltis_metrics::canvas::DESIGNS_CREATED_TOTAL).increment(1);
+        antre_metrics::counter!(antre_metrics::canvas::DESIGNS_CREATED_TOTAL).increment(1);
         info!(design_id = %id, "design created");
         self.emit(CanvasEvent::DesignCreated {
             design: design.clone(),
@@ -575,7 +575,7 @@ impl CanvasService {
             .await?;
         latest_hashes.insert(id.clone(), hash);
         #[cfg(feature = "metrics")]
-        moltis_metrics::counter!(moltis_metrics::canvas::VERSIONS_CREATED_TOTAL).increment(1);
+        antre_metrics::counter!(antre_metrics::canvas::VERSIONS_CREATED_TOTAL).increment(1);
         info!(design_id = %id, version = version.version, reason = %version.reason, "design version recorded");
         Ok(Some(version))
     }
@@ -780,7 +780,7 @@ impl CanvasService {
             },
         };
         #[cfg(feature = "metrics")]
-        moltis_metrics::counter!(moltis_metrics::canvas::EXPORTS_TOTAL, "format" => format.label())
+        antre_metrics::counter!(antre_metrics::canvas::EXPORTS_TOTAL, "format" => format.label())
             .increment(1);
         Ok(export)
     }

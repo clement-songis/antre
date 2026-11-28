@@ -10,7 +10,7 @@ use {
     tracing::{info, instrument, warn},
 };
 
-use moltis_channels::{
+use antre_channels::{
     ChannelConfigView, Error as ChannelError, Result as ChannelResult,
     message_log::MessageLog,
     otp::{OtpChallengeInfo, OtpState},
@@ -47,7 +47,7 @@ fn recovery_state_label(state: RecoveryState) -> &'static str {
 fn ownership_mode_label(mode: MatrixOwnershipMode) -> &'static str {
     match mode {
         MatrixOwnershipMode::UserManaged => "user_managed",
-        MatrixOwnershipMode::MoltisOwned => "moltis_owned",
+        MatrixOwnershipMode::AntreOwned => "antre_owned",
     }
 }
 
@@ -142,7 +142,7 @@ async fn matrix_status_extra(snapshot: MatrixStatusSnapshot) -> serde_json::Valu
     })
 }
 
-/// Matrix/Element channel plugin for Moltis.
+/// Matrix/Element channel plugin for Antre.
 pub struct MatrixPlugin {
     accounts: AccountStateMap,
     outbound: MatrixOutbound,
@@ -222,7 +222,7 @@ fn has_explicit_secret(update: &serde_json::Map<String, serde_json::Value>, fiel
         .get(field)
         .and_then(serde_json::Value::as_str)
         .is_some_and(|value| {
-            !value.trim().is_empty() && value != moltis_common::secret_serde::REDACTED
+            !value.trim().is_empty() && value != antre_common::secret_serde::REDACTED
         })
 }
 
@@ -235,7 +235,7 @@ fn sanitize_secret_update_fields(update: &mut serde_json::Map<String, serde_json
         .and_then(serde_json::Value::as_str)
         .is_some_and(|value| {
             value.trim().is_empty() && !switching_to_password
-                || value == moltis_common::secret_serde::REDACTED
+                || value == antre_common::secret_serde::REDACTED
         })
     {
         update.remove("access_token");
@@ -246,7 +246,7 @@ fn sanitize_secret_update_fields(update: &mut serde_json::Map<String, serde_json
         .and_then(serde_json::Value::as_str)
         .is_some_and(|value| {
             value.trim().is_empty() && !switching_to_access_token
-                || value == moltis_common::secret_serde::REDACTED
+                || value == antre_common::secret_serde::REDACTED
         })
     {
         update.remove("password");
@@ -701,8 +701,8 @@ mod tests {
             plugin::effective_recovery_state,
             state::{AccountState, VerificationPrompt},
         },
+        antre_channels::{ChannelPlugin, ChannelStatus, ChannelType, InboundMode, otp::OtpState},
         matrix_sdk::encryption::recovery::RecoveryState,
-        moltis_channels::{ChannelPlugin, ChannelStatus, ChannelType, InboundMode, otp::OtpState},
         secrecy::{ExposeSecret, Secret},
         std::sync::{Mutex, atomic::AtomicBool},
         tokio_util::sync::CancellationToken,
@@ -719,7 +719,7 @@ mod tests {
             config: MatrixAccountConfig {
                 homeserver: "https://matrix.example.com".into(),
                 access_token: Secret::new("test_token".into()),
-                user_id: Some("@moltis:example.com".into()),
+                user_id: Some("@antre:example.com".into()),
                 ..Default::default()
             },
             client: matrix_sdk::Client::builder()
@@ -730,7 +730,7 @@ mod tests {
             message_log: None,
             event_sink: None,
             cancel,
-            bot_user_id: "@moltis:example.com".into(),
+            bot_user_id: "@antre:example.com".into(),
             ownership_startup_error: None,
             initial_sync_complete: AtomicBool::new(true),
             pending_identity_reset: Mutex::new(None),
@@ -808,11 +808,11 @@ mod tests {
         let plugin = MatrixPlugin::new();
         let cancel = CancellationToken::new();
         let mut state = test_account_state(cancel).await;
-        state.config.ownership_mode = crate::config::MatrixOwnershipMode::MoltisOwned;
+        state.config.ownership_mode = crate::config::MatrixOwnershipMode::AntreOwned;
         state.config.password = Some(Secret::new("wordpass".into()));
         state.config.access_token = Secret::new(String::new());
-        state.config.device_id = Some("MOLTISBOT".into());
-        state.config.device_display_name = Some("Moltis Matrix Bot".into());
+        state.config.device_id = Some("ANTREBOT".into());
+        state.config.device_display_name = Some("Antre Matrix Bot".into());
         state.ownership_startup_error = Some("ownership setup failed".into());
         {
             let mut map = plugin.accounts.write().unwrap_or_else(|e| e.into_inner());
@@ -828,11 +828,11 @@ mod tests {
         let extra = snapshot
             .extra
             .unwrap_or_else(|| panic!("matrix probe should include extra status"));
-        assert_eq!(extra["matrix"]["ownership_mode"], "moltis_owned");
+        assert_eq!(extra["matrix"]["ownership_mode"], "antre_owned");
         assert_eq!(extra["matrix"]["auth_mode"], "password");
-        assert_eq!(extra["matrix"]["user_id"], "@moltis:example.com");
-        assert_eq!(extra["matrix"]["device_id"], "MOLTISBOT");
-        assert_eq!(extra["matrix"]["device_display_name"], "Moltis Matrix Bot");
+        assert_eq!(extra["matrix"]["user_id"], "@antre:example.com");
+        assert_eq!(extra["matrix"]["device_id"], "ANTREBOT");
+        assert_eq!(extra["matrix"]["device_display_name"], "Antre Matrix Bot");
         assert_eq!(extra["matrix"]["ownership_error"], "ownership setup failed");
     }
 
@@ -889,7 +889,7 @@ mod tests {
                 serde_json::json!({
                     "homeserver": "https://matrix.example.com",
                     "access_token": "test_token",
-                    "user_id": "@moltis:example.com",
+                    "user_id": "@antre:example.com",
                     "allowlist": ["alice"],
                     "otp_cooldown_secs": 1,
                 }),
@@ -918,19 +918,19 @@ mod tests {
             let mut otp = state.otp.lock().unwrap_or_else(|e| e.into_inner());
             assert_eq!(
                 otp.verify("alice", "000000"),
-                moltis_channels::otp::OtpVerifyResult::WrongCode { attempts_left: 2 }
+                antre_channels::otp::OtpVerifyResult::WrongCode { attempts_left: 2 }
             );
             assert_eq!(
                 otp.verify("alice", "000001"),
-                moltis_channels::otp::OtpVerifyResult::WrongCode { attempts_left: 1 }
+                antre_channels::otp::OtpVerifyResult::WrongCode { attempts_left: 1 }
             );
             assert_eq!(
                 otp.verify("alice", "000002"),
-                moltis_channels::otp::OtpVerifyResult::LockedOut
+                antre_channels::otp::OtpVerifyResult::LockedOut
             );
             assert_eq!(
                 otp.initiate("alice", Some("alice".into()), None),
-                moltis_channels::otp::OtpInitResult::LockedOut
+                antre_channels::otp::OtpInitResult::LockedOut
             );
         }
 
@@ -944,7 +944,7 @@ mod tests {
             let mut otp = state.otp.lock().unwrap_or_else(|e| e.into_inner());
             assert!(matches!(
                 otp.initiate("alice", Some("alice".into()), None),
-                moltis_channels::otp::OtpInitResult::Created(_)
+                antre_channels::otp::OtpInitResult::Created(_)
             ));
         }
     }
@@ -977,11 +977,11 @@ mod tests {
             panic!("test account inserted");
         };
         assert_eq!(state.config.homeserver, "https://matrix.example.com");
-        assert_eq!(state.config.user_id.as_deref(), Some("@moltis:example.com"));
+        assert_eq!(state.config.user_id.as_deref(), Some("@antre:example.com"));
         assert_eq!(state.config.access_token.expose_secret(), "test_token");
         assert_eq!(
             state.config.dm_policy,
-            moltis_channels::gating::DmPolicy::Open
+            antre_channels::gating::DmPolicy::Open
         );
     }
 
@@ -990,7 +990,7 @@ mod tests {
         let plugin = MatrixPlugin::new();
         let cancel = CancellationToken::new();
         let mut state = test_account_state(cancel).await;
-        state.config.mention_mode = moltis_channels::gating::MentionMode::Always;
+        state.config.mention_mode = antre_channels::gating::MentionMode::Always;
         state.config.reply_to_message = false;
         state.config.auto_join = AutoJoinPolicy::Allowlist;
         {
@@ -1016,13 +1016,13 @@ mod tests {
         };
         assert_eq!(
             state.config.mention_mode,
-            moltis_channels::gating::MentionMode::Always
+            antre_channels::gating::MentionMode::Always
         );
         assert!(!state.config.reply_to_message);
         assert_eq!(state.config.auto_join, AutoJoinPolicy::Allowlist);
         assert_eq!(
             state.config.dm_policy,
-            moltis_channels::gating::DmPolicy::Open
+            antre_channels::gating::DmPolicy::Open
         );
     }
 
@@ -1042,7 +1042,7 @@ mod tests {
                 serde_json::json!({
                     "access_token": "",
                     "password": "wordpass",
-                    "user_id": "@moltis:example.com",
+                    "user_id": "@antre:example.com",
                 }),
             )
             .await
@@ -1108,7 +1108,7 @@ mod tests {
         );
         assert_eq!(
             state.config.room_policy,
-            moltis_channels::gating::GroupPolicy::Open
+            antre_channels::gating::GroupPolicy::Open
         );
     }
 

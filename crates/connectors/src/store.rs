@@ -1030,7 +1030,7 @@ fn usize_to_u64(value: usize) -> Result<u64> {
 
 #[cfg(feature = "metrics")]
 fn record_write(operation: &'static str) {
-    metrics::counter!("moltis_connector_store_writes_total", "operation" => operation).increment(1);
+    metrics::counter!("antre_connector_store_writes_total", "operation" => operation).increment(1);
 }
 
 #[cfg(not(feature = "metrics"))]
@@ -1038,9 +1038,9 @@ fn record_write(_operation: &'static str) {}
 
 #[cfg(feature = "metrics")]
 fn record_snapshot(result: SnapshotResult) {
-    metrics::counter!("moltis_connector_snapshot_items_total", "action" => "upserted")
+    metrics::counter!("antre_connector_snapshot_items_total", "action" => "upserted")
         .increment(result.upserted);
-    metrics::counter!("moltis_connector_snapshot_items_total", "action" => "deleted")
+    metrics::counter!("antre_connector_snapshot_items_total", "action" => "deleted")
         .increment(result.deleted);
 }
 

@@ -2,7 +2,7 @@
 
 use {
     super::*,
-    moltis_connectors::ProjectionConfig,
+    antre_connectors::ProjectionConfig,
     secrecy::{ExposeSecret, Secret},
     uuid::Uuid,
 };
@@ -16,16 +16,16 @@ fn configured_caldav(
     url: Option<&str>,
     username: &str,
     password: &str,
-) -> moltis_config::CalDavConfig {
+) -> antre_config::CalDavConfig {
     let mut accounts = std::collections::HashMap::new();
-    accounts.insert(name.to_owned(), moltis_config::CalDavAccountConfig {
+    accounts.insert(name.to_owned(), antre_config::CalDavAccountConfig {
         url: url.map(str::to_owned),
         username: Some(username.to_owned()),
         password: Some(Secret::new(password.to_owned())),
         provider: provider.map(str::to_owned),
         timeout_seconds: 45,
     });
-    moltis_config::CalDavConfig {
+    antre_config::CalDavConfig {
         enabled: true,
         default_account: Some(name.to_owned()),
         accounts,
@@ -69,8 +69,8 @@ fn create_request() -> AccountCreateRequest {
     }
 }
 
-fn item(remote_id: &str, search_text: &str) -> moltis_connectors::ConnectorItemInput {
-    moltis_connectors::ConnectorItemInput {
+fn item(remote_id: &str, search_text: &str) -> antre_connectors::ConnectorItemInput {
+    antre_connectors::ConnectorItemInput {
         remote_id: remote_id.to_owned(),
         kind: "event".to_owned(),
         remote_version: Some("etag-1".to_owned()),
@@ -84,14 +84,14 @@ fn item(remote_id: &str, search_text: &str) -> moltis_connectors::ConnectorItemI
 
 fn observation(
     remote_id: &str,
-    disposition: moltis_connectors::SourceDisposition,
+    disposition: antre_connectors::SourceDisposition,
     plan_revision: u64,
-) -> moltis_connectors::SourceObservation {
-    moltis_connectors::SourceObservation {
+) -> antre_connectors::SourceObservation {
+    antre_connectors::SourceObservation {
         remote_id: remote_id.to_owned(),
         remote_version: Some("etag-1".to_owned()),
         disposition,
-        filter_reason: (disposition == moltis_connectors::SourceDisposition::Filtered)
+        filter_reason: (disposition == antre_connectors::SourceDisposition::Filtered)
             .then(|| "outside filter".to_owned()),
         evaluated_plan_revision: plan_revision,
     }
@@ -408,7 +408,7 @@ async fn invalid_configured_caldav_account_does_not_block_valid_imports() {
     );
     config.accounts.insert(
         "invalid".to_owned(),
-        moltis_config::CalDavAccountConfig::default(),
+        antre_config::CalDavAccountConfig::default(),
     );
 
     let report = manager
@@ -597,7 +597,7 @@ async fn email_accounts_and_datasets_keep_provider_owned_configs() {
             channel_type: None,
             channel_account_id: None,
             himalaya_account_name: Some("archive".to_owned()),
-            himalaya_backend: Some(moltis_connector_himalaya::HimalayaBackend::Jmap),
+            himalaya_backend: Some(antre_connector_himalaya::HimalayaBackend::Jmap),
             timeout_seconds: 30,
             allow_insecure_http: false,
             allow_private_network: false,
@@ -773,8 +773,7 @@ async fn mutations_remove_obsolete_projection_directories() {
         .await
         .unwrap();
     let renamed_path =
-        moltis_connectors::projection_directory(&export_root, "Before rename", &renamed.id)
-            .unwrap();
+        antre_connectors::projection_directory(&export_root, "Before rename", &renamed.id).unwrap();
     tokio::fs::create_dir_all(&renamed_path).await.unwrap();
     tokio::fs::write(renamed_path.join("items.jsonl"), "sensitive")
         .await
@@ -805,7 +804,7 @@ async fn mutations_remove_obsolete_projection_directories() {
         .await
         .unwrap();
     let removed_path =
-        moltis_connectors::projection_directory(&export_root, &removed.name, &removed.id).unwrap();
+        antre_connectors::projection_directory(&export_root, &removed.name, &removed.id).unwrap();
     tokio::fs::create_dir_all(&removed_path).await.unwrap();
     manager.remove_dataset(&removed.id).await.unwrap();
     assert!(!removed_path.exists());
@@ -823,8 +822,7 @@ async fn mutations_remove_obsolete_projection_directories() {
         .await
         .unwrap();
     let cascaded_path =
-        moltis_connectors::projection_directory(&export_root, &cascaded.name, &cascaded.id)
-            .unwrap();
+        antre_connectors::projection_directory(&export_root, &cascaded.name, &cascaded.id).unwrap();
     tokio::fs::create_dir_all(&cascaded_path).await.unwrap();
     manager.remove_account(&account.id).await.unwrap();
     assert!(!cascaded_path.exists());
@@ -1037,7 +1035,7 @@ async fn reconciliation_rebuilds_a_projection_missing_after_successful_sync() {
         .commit_sync_snapshot(
             &run.id,
             &dataset.id,
-            &[moltis_connectors::ConnectorItemInput {
+            &[antre_connectors::ConnectorItemInput {
                 remote_id: "event-1".to_owned(),
                 kind: "event".to_owned(),
                 remote_version: Some("etag-1".to_owned()),
@@ -1047,10 +1045,10 @@ async fn reconciliation_rebuilds_a_projection_missing_after_successful_sync() {
                 search_text: "Recovered".to_owned(),
                 content_hash: "hash-1".to_owned(),
             }],
-            &[moltis_connectors::SourceObservation {
+            &[antre_connectors::SourceObservation {
                 remote_id: "event-1".to_owned(),
                 remote_version: Some("etag-1".to_owned()),
-                disposition: moltis_connectors::SourceDisposition::Included,
+                disposition: antre_connectors::SourceDisposition::Included,
                 filter_reason: None,
                 evaluated_plan_revision: 1,
             }],
@@ -1058,7 +1056,7 @@ async fn reconciliation_rebuilds_a_projection_missing_after_successful_sync() {
         )
         .await
         .unwrap();
-    let projection_path = moltis_connectors::projection_directory(
+    let projection_path = antre_connectors::projection_directory(
         &temp.path().join("connectors").join("exports"),
         &dataset.name,
         &dataset.id,
@@ -1152,12 +1150,8 @@ async fn search_get_and_sync_revisions_remain_dataset_scoped() {
                 item("lunch", "Team Lunch"),
             ],
             &[
-                observation(
-                    "planning",
-                    moltis_connectors::SourceDisposition::Included,
-                    1,
-                ),
-                observation("lunch", moltis_connectors::SourceDisposition::Included, 1),
+                observation("planning", antre_connectors::SourceDisposition::Included, 1),
+                observation("lunch", antre_connectors::SourceDisposition::Included, 1),
             ],
             None,
         )
@@ -1239,12 +1233,8 @@ async fn search_get_and_sync_revisions_remain_dataset_scoped() {
             &dataset.id,
             &[item("planning", "Quarterly Planning Needle")],
             &[
-                observation(
-                    "planning",
-                    moltis_connectors::SourceDisposition::Included,
-                    2,
-                ),
-                observation("lunch", moltis_connectors::SourceDisposition::Filtered, 2),
+                observation("planning", antre_connectors::SourceDisposition::Included, 2),
+                observation("lunch", antre_connectors::SourceDisposition::Filtered, 2),
             ],
             None,
         )
@@ -1254,7 +1244,7 @@ async fn search_get_and_sync_revisions_remain_dataset_scoped() {
     assert_eq!(states["planning"].evaluated_plan_revision, 2);
     assert_eq!(
         states["lunch"].disposition,
-        moltis_connectors::SourceDisposition::Filtered
+        antre_connectors::SourceDisposition::Filtered
     );
     assert!(matches!(
         manager.get_item(&dataset.id, &lunch.id, false).await,
@@ -1298,8 +1288,8 @@ async fn enabled_vault_without_an_instance_never_stores_plaintext_passwords() {
 async fn sealed_vault_preserves_encrypted_password_on_redacted_update() {
     crate::vault_lifecycle::set_vault_encryption_runtime_enabled(true);
     let vault_pool = sqlx::SqlitePool::connect("sqlite::memory:").await.unwrap();
-    moltis_vault::run_migrations(&vault_pool).await.unwrap();
-    let vault = Arc::new(moltis_vault::Vault::new(vault_pool).await.unwrap());
+    antre_vault::run_migrations(&vault_pool).await.unwrap();
+    let vault = Arc::new(antre_vault::Vault::new(vault_pool).await.unwrap());
     let vault_password = test_password();
     vault.initialize(&vault_password).await.unwrap();
 

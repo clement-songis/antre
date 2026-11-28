@@ -12,7 +12,7 @@ function entry(name, kind, options = {}) {
 }
 
 function filePathHeader(request) {
-	const value = request.headers()["x-moltis-file-path"] || "base64url:";
+	const value = request.headers()["x-antre-file-path"] || "base64url:";
 	if (!value.startsWith("base64url:")) throw new Error(`Unexpected Files path header: ${value}`);
 	return Buffer.from(value.slice("base64url:".length), "base64url").toString("utf8");
 }
@@ -214,7 +214,7 @@ test.describe("Settings > Files", () => {
 		expect(uploadHeaders).toHaveLength(1);
 		await dialog.getByRole("button", { name: "Overwrite", exact: true }).click();
 		await expect.poll(() => uploadHeaders.length).toBe(2);
-		expect(uploadHeaders[1]["x-moltis-overwrite"]).toBe("true");
+		expect(uploadHeaders[1]["x-antre-overwrite"]).toBe("true");
 		await expect(page.getByRole("status")).toContainText("1 file uploaded");
 		expect(pageErrors).toEqual([]);
 	});
@@ -370,7 +370,7 @@ test.describe("Settings > Files", () => {
 		await expect(
 			page.getByText("This folder is empty. Upload files or drop them here.", { exact: true }),
 		).toBeVisible();
-		await expect(page.getByText("MOLTIS_FILES_DIR", { exact: true })).toBeVisible();
+		await expect(page.getByText("ANTRE_FILES_DIR", { exact: true })).toBeVisible();
 		await expect(page.getByText("/home/sandbox/files", { exact: true })).toBeVisible();
 		expect(pageErrors).toEqual([]);
 	});

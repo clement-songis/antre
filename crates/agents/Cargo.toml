@@ -1,38 +1,38 @@
 [package]
 edition.workspace = true
-name              = "moltis-agents"
+name              = "antre-agents"
 version.workspace = true
 
 [features]
 default = ["metrics"]
-metrics = ["dep:moltis-metrics"]
+metrics = ["dep:antre-metrics"]
 
 [dependencies]
-anyhow          = { workspace = true }
-async-stream    = { workspace = true }
-async-trait     = { workspace = true }
-base64          = { workspace = true }
-futures         = { workspace = true }
-image           = { workspace = true }
-include_dir     = { workspace = true }
-moltis-common        = { workspace = true }
-moltis-observability = { workspace = true }
-moltis-config   = { workspace = true }
-moltis-sessions = { workspace = true }
-moltis-skills   = { workspace = true }
-reqwest         = { workspace = true }
-secrecy         = { workspace = true }
-serde           = { workspace = true }
-serde_json      = { workspace = true }
-thiserror       = { workspace = true }
-time            = { features = ["macros"], workspace = true }
-tokio           = { workspace = true }
-tokio-stream    = { workspace = true }
-tracing         = { workspace = true }
-uuid            = { workspace = true }
+antre-common        = { workspace = true }
+antre-config        = { workspace = true }
+antre-observability = { workspace = true }
+antre-sessions      = { workspace = true }
+antre-skills        = { workspace = true }
+anyhow              = { workspace = true }
+async-stream        = { workspace = true }
+async-trait         = { workspace = true }
+base64              = { workspace = true }
+futures             = { workspace = true }
+image               = { workspace = true }
+include_dir         = { workspace = true }
+reqwest             = { workspace = true }
+secrecy             = { workspace = true }
+serde               = { workspace = true }
+serde_json          = { workspace = true }
+thiserror           = { workspace = true }
+time                = { features = ["macros"], workspace = true }
+tokio               = { workspace = true }
+tokio-stream        = { workspace = true }
+tracing             = { workspace = true }
+uuid                = { workspace = true }
 
 # Optional
-moltis-metrics = { optional = true, workspace = true }
+antre-metrics = { optional = true, workspace = true }
 
 [dev-dependencies]
 axum     = { workspace = true }

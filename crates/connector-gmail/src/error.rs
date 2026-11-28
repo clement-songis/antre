@@ -15,7 +15,7 @@ pub enum GmailConnectorError {
     #[error("failed to parse Google authorized-user credential")]
     CredentialJson(#[source] serde_json::Error),
     #[error("Google OAuth token refresh failed")]
-    OAuth(#[source] moltis_oauth::Error),
+    OAuth(#[source] antre_oauth::Error),
     #[error("Gmail HTTP request failed")]
     Http(#[source] reqwest::Error),
     #[error("Gmail request timed out")]

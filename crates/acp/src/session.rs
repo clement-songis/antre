@@ -1,8 +1,8 @@
-//! Mapping between ACP session ids and Moltis session keys.
+//! Mapping between ACP session ids and Antre session keys.
 //!
-//! The two are the same string. Moltis session keys created for ACP live under
+//! The two are the same string. Antre session keys created for ACP live under
 //! a dedicated `acp:` namespace (see [`SessionKey::namespaced`]), which keeps
-//! `moltis acp` runs from colliding with Web UI sessions while still letting a
+//! `antre acp` runs from colliding with Web UI sessions while still letting a
 //! client hand a `SessionId` straight back to `session/load`.
 
 use std::{
@@ -13,7 +13,7 @@ use std::{
 
 use agent_client_protocol as acp;
 
-/// Prefix marking a Moltis session as owned by the ACP surface.
+/// Prefix marking a Antre session as owned by the ACP surface.
 pub const ACP_SESSION_NAMESPACE: &str = "acp";
 
 /// Maximum sessions one stdio connection may retain.
@@ -24,7 +24,7 @@ pub const MAX_CONCURRENT_OPERATIONS: usize = 4;
 
 const MAX_SESSION_ID_SUFFIX_BYTES: usize = 128;
 
-/// A Moltis session key.
+/// A Antre session key.
 #[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct SessionKey(String);
 

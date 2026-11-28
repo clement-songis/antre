@@ -11,11 +11,11 @@ use std::{
 };
 
 use {
-    futures::{SinkExt, StreamExt},
-    moltis_protocol::{
+    antre_protocol::{
         ErrorShape, EventFrame, Extensions, Features, HelloOk, Policy, RequestFrame, ResponseFrame,
         ServerInfo, error_codes,
     },
+    futures::{SinkExt, StreamExt},
     serde_json::{Value, json},
     tokio::net::TcpListener,
     tokio_tungstenite::tungstenite::{

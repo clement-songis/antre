@@ -1,10 +1,10 @@
 use {
     super::*,
-    crate::schema::{MemoryReranker, MoltisConfig},
+    crate::schema::{AntreConfig, MemoryReranker},
 };
 
 /// Voice fallback chains and memory reranker settings.
-pub(super) fn check_media_settings(config: &MoltisConfig, diagnostics: &mut Vec<Diagnostic>) {
+pub(super) fn check_media_settings(config: &AntreConfig, diagnostics: &mut Vec<Diagnostic>) {
     if config.memory.reranker == Some(MemoryReranker::Custom)
         && config.memory.rerank_base_url.is_none()
     {

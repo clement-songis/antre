@@ -3,16 +3,16 @@
 use std::{collections::HashMap, sync::Arc};
 
 use {
-    async_trait::async_trait,
-    moltis_agents::model::ChatMessage,
-    moltis_config::{MemoryReranker, schema::MemoryEmbeddingConfig},
-    moltis_memory::{
+    antre_agents::model::ChatMessage,
+    antre_config::{MemoryReranker, schema::MemoryEmbeddingConfig},
+    antre_memory::{
         error::{Error as MemoryError, Result as MemoryResult},
         reranking::{LlmClient, LlmReranker, RerankerProvider},
         reranking_api::ApiReranker,
     },
-    moltis_model_catalog::{ModelKind, global},
-    moltis_providers::ProviderRegistry,
+    antre_model_catalog::{ModelKind, global},
+    antre_providers::ProviderRegistry,
+    async_trait::async_trait,
     secrecy::Secret,
     tokio::sync::RwLock,
     tracing::{info, warn},
@@ -73,7 +73,7 @@ pub(crate) fn build_reranker(
     };
     let api_key = config.rerank_api_key.clone().or_else(|| {
         kind.env_key()
-            .and_then(|key| moltis_config::env_value_with_overrides(env_overrides, key))
+            .and_then(|key| antre_config::env_value_with_overrides(env_overrides, key))
             .map(Secret::new)
     });
     if api_key.is_none() && kind != MemoryReranker::Custom {

@@ -1,4 +1,4 @@
-//! Import data from a Hermes installation into Moltis.
+//! Import data from a Hermes installation into Antre.
 //!
 //! Supports detection, scanning, and selective import of:
 //! - Credentials from `.env` (API keys mapped to providers)

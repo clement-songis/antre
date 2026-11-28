@@ -8,6 +8,7 @@ use std::{
 };
 
 use {
+    antre_auth::locality::is_local_connection,
     axum::{
         extract::{ConnectInfo, State},
         http::{HeaderMap, Method, StatusCode},
@@ -15,7 +16,6 @@ use {
         response::{IntoResponse, Json, Response},
     },
     dashmap::{DashMap, mapref::entry::Entry},
-    moltis_auth::locality::is_local_connection,
 };
 
 use crate::server::AppState;
@@ -534,8 +534,8 @@ mod tests {
             throttle.limits.callback_preauth.max_requests > 3 * (600 + 200),
             "preauth must allow one account's three endpoint bursts"
         );
-        let verified = moltis_gateway::channel_webhook_rate_limit::ChannelWebhookRateLimiter::new();
-        let policy = moltis_channels::ChannelWebhookRatePolicy {
+        let verified = antre_gateway::channel_webhook_rate_limit::ChannelWebhookRateLimiter::new();
+        let policy = antre_channels::ChannelWebhookRatePolicy {
             max_requests_per_minute: 600,
             burst: 200,
         };

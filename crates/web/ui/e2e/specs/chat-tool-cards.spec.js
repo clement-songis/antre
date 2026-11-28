@@ -15,7 +15,7 @@ async function chatEvent(page, payload) {
 async function mockNextRpc(page, method, payload) {
 	await page.evaluate(
 		({ targetMethod, responsePayload }) => {
-			const state = window.__moltis_modules.state;
+			const state = window.__antre_modules.state;
 			const ws = state.ws;
 			const originalSend = ws.send.bind(ws);
 			ws.send = (raw) => {
@@ -202,7 +202,7 @@ test.describe("Tool call cards", () => {
 
 	test("reloaded history renders tool calls with the same renderers", async ({ page }) => {
 		const pageErrors = watchPageErrors(page);
-		await page.evaluate(() => window.__moltis_modules["stores/session-history-cache"]?.clearSessionHistory?.("main"));
+		await page.evaluate(() => window.__antre_modules["stores/session-history-cache"]?.clearSessionHistory?.("main"));
 		await mockNextRpc(page, "sessions.switch", {
 			entry: { key: "main", label: "Main", messageCount: 3 },
 			history: [
@@ -221,7 +221,7 @@ test.describe("Tool call cards", () => {
 			],
 			replying: false,
 		});
-		await page.evaluate(() => window.__moltis_modules.sessions.switchSession("main"));
+		await page.evaluate(() => window.__antre_modules.sessions.switchSession("main"));
 		const card = page.locator('#messages .tool-card[data-tool-name="Edit"]');
 		await expect(card.locator(".tool-card-verb")).toHaveText("Edited");
 		await expect(card.locator(".tool-diff-badge")).toHaveText("+1 \u22121");

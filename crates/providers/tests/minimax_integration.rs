@@ -19,10 +19,10 @@ use std::{
 };
 
 use {
+    antre_agents::model::{ChatMessage, LlmProvider, StreamEvent, ToolCall},
+    antre_config::schema::{ProviderEntry, ProvidersConfig},
+    antre_providers::ProviderRegistry,
     futures::StreamExt,
-    moltis_agents::model::{ChatMessage, LlmProvider, StreamEvent, ToolCall},
-    moltis_config::schema::{ProviderEntry, ProvidersConfig},
-    moltis_providers::ProviderRegistry,
     secrecy::{ExposeSecret, Secret},
 };
 
@@ -73,7 +73,7 @@ fn known_models_match_production_catalog() {
     assert_eq!(ids, KNOWN_MODELS.iter().copied().collect());
 }
 
-/// Tool schema in moltis-internal flat format (name, description, parameters).
+/// Tool schema in antre-internal flat format (name, description, parameters).
 /// `to_openai_tools()` wraps this into the nested OpenAI format before sending.
 fn weather_tool() -> serde_json::Value {
     serde_json::json!({

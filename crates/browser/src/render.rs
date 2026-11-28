@@ -159,7 +159,7 @@ impl BrowserManager {
         };
 
         #[cfg(feature = "metrics")]
-        moltis_metrics::counter!(moltis_metrics::browser::SCREENSHOTS_TOTAL).increment(1);
+        antre_metrics::counter!(antre_metrics::browser::SCREENSHOTS_TOTAL).increment(1);
 
         info!(
             session_id,

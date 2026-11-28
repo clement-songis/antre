@@ -2,7 +2,7 @@
 
 use std::sync::Mutex as StdMutex;
 
-use {async_trait::async_trait, moltis_config::LearningConfig};
+use {antre_config::LearningConfig, async_trait::async_trait};
 
 use super::*;
 

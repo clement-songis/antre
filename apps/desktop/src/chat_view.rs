@@ -26,7 +26,7 @@ use crate::{
     ui::{ButtonKind, button},
 };
 
-use moltis_client::protocol::client_api::ApprovalDecision;
+use antre_client::protocol::client_api::ApprovalDecision;
 
 pub struct ChatView {
     daemon: Entity<Daemon>,
@@ -317,7 +317,7 @@ impl ChatView {
                     .bg(theme.brand.opacity(0.12))
                     .text_sm()
                     .child(format!(
-                        "This app includes moltis {bundled}; the running daemon is {running}."
+                        "This app includes antre {bundled}; the running daemon is {running}."
                     ))
                     .child(
                         button("restart-daemon", "Restart daemon", ButtonKind::Ghost, cx).on_click(
@@ -698,8 +698,8 @@ mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used)]
 
     use {
+        antre_client::{Endpoint, TlsTrust},
         gpui::{AppContext, TestAppContext},
-        moltis_client::{Endpoint, TlsTrust},
     };
 
     use super::*;

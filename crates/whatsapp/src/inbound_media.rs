@@ -1,8 +1,6 @@
 use {
+    antre_channels::{ChannelDocumentFile, ChannelEventSink, ChannelReplyTarget, SavedChannelFile},
     base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD},
-    moltis_channels::{
-        ChannelDocumentFile, ChannelEventSink, ChannelReplyTarget, SavedChannelFile,
-    },
     std::{
         io::{Cursor, Error as IoError, ErrorKind, Seek, SeekFrom, Write},
         sync::{
@@ -190,7 +188,7 @@ fn sanitize_filename(name: &str) -> String {
 }
 
 fn saved_filename(display_name: Option<&str>, mime: &str, file_sha256: Option<&[u8]>) -> String {
-    let extension = moltis_media::mime::extension_for_mime(mime);
+    let extension = antre_media::mime::extension_for_mime(mime);
     let base = display_name
         .map(str::trim)
         .filter(|name| !name.is_empty())
@@ -364,13 +362,13 @@ mod tests {
 
         #[async_trait::async_trait]
         impl ChannelEventSink for CapturingSink {
-            async fn emit(&self, _event: moltis_channels::ChannelEvent) {}
+            async fn emit(&self, _event: antre_channels::ChannelEvent) {}
 
             async fn dispatch_to_chat(
                 &self,
                 _text: &str,
                 _reply_to: ChannelReplyTarget,
-                _meta: moltis_channels::ChannelMessageMeta,
+                _meta: antre_channels::ChannelMessageMeta,
             ) {
             }
 
@@ -379,7 +377,7 @@ mod tests {
                 _command: &str,
                 _reply_to: ChannelReplyTarget,
                 _sender_id: Option<&str>,
-            ) -> moltis_channels::Result<String> {
+            ) -> antre_channels::Result<String> {
                 Ok(String::new())
             }
 
@@ -409,7 +407,7 @@ mod tests {
         let sink = Arc::new(CapturingSink(std::sync::Mutex::new(None)));
         let reply_to = ChannelReplyTarget {
             direct_chat: false,
-            channel_type: moltis_channels::ChannelType::Whatsapp,
+            channel_type: antre_channels::ChannelType::Whatsapp,
             account_id: "test".to_string(),
             chat_id: "test-chat".to_string(),
             message_id: None,

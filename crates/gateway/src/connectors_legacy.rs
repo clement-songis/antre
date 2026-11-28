@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use {
-    moltis_connectors::{Account, AccountUpdate, ConnectorKind},
+    antre_connectors::{Account, AccountUpdate, ConnectorKind},
     secrecy::{ExposeSecret, Secret},
     serde_json::{Value, from_value},
     url::Url,
@@ -41,7 +41,7 @@ struct DesiredAccount {
 impl ConnectorManager {
     pub async fn reconcile_configured_caldav_accounts(
         &self,
-        config: &moltis_config::CalDavConfig,
+        config: &antre_config::CalDavConfig,
     ) -> Result<ConfiguredCalDavReconciliation> {
         let mut report = ConfiguredCalDavReconciliation::default();
         let mut entries = config.accounts.iter().collect::<Vec<_>>();
@@ -276,7 +276,7 @@ impl DesiredAccount {
 
 fn desired_account(
     name: &str,
-    account: &moltis_config::CalDavAccountConfig,
+    account: &antre_config::CalDavAccountConfig,
     enabled: bool,
 ) -> Result<DesiredAccount> {
     if name.trim().is_empty() {
@@ -290,7 +290,7 @@ fn desired_account(
             "configured CalDAV account name is too long".to_owned(),
         ));
     }
-    let server_url = moltis_caldav::discovery::resolve_base_url(
+    let server_url = antre_caldav::discovery::resolve_base_url(
         account.provider.as_deref(),
         account.url.as_deref(),
     )

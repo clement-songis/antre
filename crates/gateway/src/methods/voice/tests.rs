@@ -77,7 +77,7 @@ fn filter_listed_voice_providers_filters_tts_ids() {
 
 #[tokio::test]
 async fn detect_voice_providers_marks_selected_stt_provider_when_some() {
-    let mut config = moltis_config::MoltisConfig::default();
+    let mut config = antre_config::AntreConfig::default();
     config.voice.stt.enabled = true;
     config.voice.stt.provider = Some(VoiceSttProvider::Whisper);
     config.voice.stt.whisper.api_key = Some(Secret::new("test-whisper-key".to_string()));
@@ -95,7 +95,7 @@ async fn detect_voice_providers_marks_selected_stt_provider_when_some() {
 
 #[tokio::test]
 async fn detect_voice_providers_does_not_mark_stt_preferred_when_none() {
-    let mut config = moltis_config::MoltisConfig::default();
+    let mut config = antre_config::AntreConfig::default();
     config.voice.stt.enabled = true;
     config.voice.stt.provider = None;
     config.voice.stt.whisper.api_key = Some(Secret::new("test-whisper-key".to_string()));
@@ -114,7 +114,7 @@ async fn detect_voice_providers_does_not_mark_stt_preferred_when_none() {
 
 #[test]
 fn apply_voice_provider_settings_stores_base_urls() {
-    let mut config = moltis_config::MoltisConfig::default();
+    let mut config = antre_config::AntreConfig::default();
 
     apply_voice_provider_settings(
         &mut config,
@@ -155,7 +155,7 @@ fn apply_voice_provider_settings_stores_base_urls() {
 
 #[test]
 fn apply_voice_provider_settings_clears_base_urls_when_requested() {
-    let mut config = moltis_config::MoltisConfig::default();
+    let mut config = antre_config::AntreConfig::default();
     config.voice.tts.openai.base_url = Some("http://127.0.0.1:8003/v1".to_string());
     config.voice.stt.whisper.base_url = Some("http://127.0.0.1:8001/v1".to_string());
     config.voice.stt.whisper.model = Some("gpt-4o-mini-transcribe".to_string());
@@ -183,7 +183,7 @@ fn apply_voice_provider_settings_clears_base_urls_when_requested() {
 
 #[tokio::test]
 async fn detect_voice_providers_marks_whisper_available_when_base_url_configured() {
-    let mut config = moltis_config::MoltisConfig::default();
+    let mut config = antre_config::AntreConfig::default();
     config.voice.stt.whisper.base_url = Some("http://127.0.0.1:8001/v1".to_string());
 
     let detected = detect_voice_providers(&config).await;
@@ -213,7 +213,7 @@ async fn detect_voice_providers_marks_whisper_available_when_base_url_configured
 
 #[test]
 fn apply_voice_provider_settings_stores_gemini_models() {
-    let mut config = moltis_config::MoltisConfig::default();
+    let mut config = antre_config::AntreConfig::default();
     apply_voice_provider_settings(
         &mut config,
         "gemini",

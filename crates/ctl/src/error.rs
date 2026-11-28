@@ -1,4 +1,4 @@
-//! Error types for `moltis-ctl`.
+//! Error types for `antre-ctl`.
 
 #[derive(Debug, thiserror::Error)]
 pub enum CtlError {
@@ -21,9 +21,9 @@ pub enum CtlError {
     Other(String),
 }
 
-impl From<moltis_client::Error> for CtlError {
-    fn from(error: moltis_client::Error) -> Self {
-        use moltis_client::Error;
+impl From<antre_client::Error> for CtlError {
+    fn from(error: antre_client::Error) -> Self {
+        use antre_client::Error;
         match error {
             Error::InvalidUrl(_) | Error::Connect(_) | Error::Tls(_) | Error::Http { .. } => {
                 Self::Connect(error.to_string())
@@ -52,22 +52,22 @@ mod tests {
     #[test]
     fn maps_client_errors() {
         assert!(matches!(
-            CtlError::from(moltis_client::Error::Timeout),
+            CtlError::from(antre_client::Error::Timeout),
             CtlError::Timeout
         ));
         assert!(matches!(
-            CtlError::from(moltis_client::Error::Rpc {
+            CtlError::from(antre_client::Error::Rpc {
                 code: "NOT_FOUND".into(),
                 message: "x".into()
             }),
             CtlError::Rpc { ref code, .. } if code == "NOT_FOUND"
         ));
         assert!(matches!(
-            CtlError::from(moltis_client::Error::Unauthorized("no".into())),
+            CtlError::from(antre_client::Error::Unauthorized("no".into())),
             CtlError::Handshake(_)
         ));
         assert!(matches!(
-            CtlError::from(moltis_client::Error::InvalidUrl("bad".into())),
+            CtlError::from(antre_client::Error::InvalidUrl("bad".into())),
             CtlError::Connect(_)
         ));
     }

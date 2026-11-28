@@ -12,8 +12,8 @@ use {
         exec::{ApprovalBroadcaster, ExecOpts, ExecResult},
         sandbox::{Sandbox, SandboxConfig, SandboxId, SandboxRouter, types::BuildImageResult},
     },
+    antre_agents::tool_registry::ToolRegistry,
     async_trait::async_trait,
-    moltis_agents::tool_registry::ToolRegistry,
     serde_json::json,
     std::{
         path::PathBuf,
@@ -947,7 +947,7 @@ async fn sandbox_read_and_write_workspace_paths_via_registry_use_bridge() {
         std::sync::Arc,
     };
 
-    let workspace_file = moltis_config::data_dir().join("notes/workspace_probe.txt");
+    let workspace_file = antre_config::data_dir().join("notes/workspace_probe.txt");
     let workspace_file = workspace_file.display().to_string();
     let mock = MockSandbox::new(vec![
         ExecResult {

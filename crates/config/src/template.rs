@@ -1,7 +1,7 @@
 //! Default configuration template with all options documented.
 //!
 //! This template is used when creating a new config file. It contains only
-//! user overrides — built-in defaults live in `defaults.toml` (Moltis-managed)
+//! user overrides — built-in defaults live in `defaults.toml` (Antre-managed)
 //! and should not be duplicated here.
 //!
 //! Uncommenting a built-in default here creates a local override that shadows
@@ -16,10 +16,10 @@
 /// freezing defaults.
 pub fn default_config_template(port: u16) -> String {
     format!(
-        r##"# Moltis User Configuration
+        r##"# Antre User Configuration
 # =========================
 # This file contains YOUR overrides only. Built-in defaults are in
-# defaults.toml (Moltis-managed, regenerated on every startup).
+# defaults.toml (Antre-managed, regenerated on every startup).
 #
 # Uncomment and modify settings to override the built-in defaults.
 # Changes require a restart to take effect.
@@ -44,12 +44,12 @@ port = {port}                           # Port number (auto-generated for this i
 # terminal_enabled = true                # Enable interactive host terminal in Settings > Terminal
                                          # Set to false to disable the unsandboxed shell in the web UI.
                                          # NOTE: this can be re-enabled via the web UI config editor.
-                                         # For hard lockdown, set MOLTIS_TERMINAL_DISABLED=1 (env var
+                                         # For hard lockdown, set ANTRE_TERMINAL_DISABLED=1 (env var
                                          # takes precedence and cannot be changed from the web UI).
 # update_releases_url = "https://www.moltis.org/releases.json"  # Override releases manifest URL
-# external_url = "https://moltis.example.com"  # Public URL when behind a reverse proxy.
+# external_url = "https://antre.example.com"  # Public URL when behind a reverse proxy.
                                                  # Used for WebAuthn passkey origins.
-                                                 # Env var MOLTIS_EXTERNAL_URL takes precedence.
+                                                 # Env var ANTRE_EXTERNAL_URL takes precedence.
 # open_browser = "first-run"             # Open the web UI on start: "first-run" | "always" | "never"
                                          # Interactive desktop sessions only (never over SSH/containers/CI).
 
@@ -69,7 +69,7 @@ port = {port}                           # Port number (auto-generated for this i
 
 # [auth]
 # disabled = false                  # true = disable auth entirely (DANGEROUS if exposed)
-                                    # When disabled, anyone with network access can use moltis
+                                    # When disabled, anyone with network access can use antre
 # vault_enabled = true              # true = encrypt stored secrets at rest using the password vault
 #                                   # Set false to keep password auth without requiring vault unlocks after restart.
 
@@ -103,7 +103,7 @@ loopback_http = true                # Plain HTTP on loopback binds: http://local
 # Customize your agent's personality. These are typically set during onboarding.
 
 # [identity]
-# name = "moltis"                   # Agent's display name
+# name = "antre"                   # Agent's display name
 # emoji = "🦊"                      # Agent's emoji/avatar
 # theme = "wise owl"                # Theme for agent personality (e.g. wise owl, chill fox)
 # soul = ""                         # Freeform personality text injected into system prompt
@@ -143,7 +143,7 @@ loopback_http = true                # Plain HTTP on loopback binds: http://local
                                     # Enabled providers and those shown in onboarding/picker UI ([] = enable/show all)
 # show_legacy_models = true         # Show models older than 1 year in the chat model selector (they always appear in Settings)
 # allow_claude_subscription_tokens = false # Accept `claude setup-token` credentials (Anthropic ToS risk)
-# external_credentials = ["codex-cli"]  # Let Moltis read other tools' credentials live (~/.codex/auth.json); default: never, even when detected
+# external_credentials = ["codex-cli"]  # Let Antre read other tools' credentials live (~/.codex/auth.json); default: never, even when detected
 # All available providers (canonical list in schema/providers.rs):
 #   "anthropic", "openai", "gemini", "groq", "xai", "deepinfra",
 #   "deepseek", "fireworks", "mistral", "openrouter", "cerebras", "minimax",
@@ -341,7 +341,7 @@ loopback_http = true                # Plain HTTP on loopback binds: http://local
 # refresh = true                     # false = keep the bundled snapshot (offline)
 # refresh_urls = [                   # Tried in order until one is valid
 #   "https://models.dev/api.json",
-#   "https://raw.githubusercontent.com/clement-songis/moltis/main/crates/model-catalog/data/models-dev.json.gz",
+#   "https://raw.githubusercontent.com/clement-songis/antre/main/crates/model-catalog/data/models-dev.json.gz",
 # ]
 # refresh_interval_hours = 12        # Minimum hours between downloads
 
@@ -582,7 +582,7 @@ loopback_http = true                # Plain HTTP on loopback binds: http://local
 # proxy_port = 18791                # Trusted-network egress proxy port (default: ephemeral, picked at startup)
 # image = "custom-image:tag"        # Custom Docker image (default: auto-built)
 # packages = [...]                  # Packages installed in sandbox containers
-# host_data_dir = "/host/moltis-data" # Host path for Moltis data when running Moltis inside Docker
+# host_data_dir = "/host/antre-data" # Host path for Antre data when running Antre inside Docker
 # gpus = "all"                      # GPU passthrough: "all", "device=0", "device=0,1"
                                     # (Docker/Podman only, ignored for other backends)
 # allow_host_podman = false         # DANGEROUS, Linux only: host API removes sandbox boundary
@@ -766,7 +766,7 @@ loopback_http = true                # Plain HTTP on loopback binds: http://local
 # enabled = false
 # host = "https://cloud.langfuse.com"   # Or a self-hosted URL
 # public_key = "pk-lf-..."
-# Prefer MOLTIS_INSTRUMENTATION__LANGFUSE__SECRET_KEY in the process environment.
+# Prefer ANTRE_INSTRUMENTATION__LANGFUSE__SECRET_KEY in the process environment.
 # A secret_key config value is also accepted.
 # capture_input = true              # Turn and LLM inputs
 # capture_output = true             # Turn and LLM outputs
@@ -783,7 +783,7 @@ loopback_http = true                # Plain HTTP on loopback binds: http://local
 # [instrumentation.datadog]         # Via the Datadog Agent's OTLP intake
 # enabled = false
 # endpoint = "http://localhost:4318/v1/traces"
-# service = "moltis"
+# service = "antre"
 # content = "metadata_only"
 # timeout_secs = 10                 # Must be nonzero
 
@@ -890,7 +890,7 @@ loopback_http = true                # Plain HTTP on loopback binds: http://local
 # [cloudflare_tunnel]
 # enabled = false
 # token = "${{CLOUDFLARE_TUNNEL_TOKEN}}"
-# hostname = "moltis.example.com"       # Optional public hostname for display/passkeys
+# hostname = "antre.example.com"       # Optional public hostname for display/passkeys
 
 # ══════════════════════════════════════════════════════════════════════════════
 # TAILSCALE
@@ -949,7 +949,7 @@ loopback_http = true                # Plain HTTP on loopback binds: http://local
 # ══════════════════════════════════════════════════════════════════════════════
 # MODS
 # ══════════════════════════════════════════════════════════════════════════════
-# Mods are WASM components with a moltis-mod.toml manifest. Installs never
+# Mods are WASM components with a antre-mod.toml manifest. Installs never
 # grant capabilities: a person approves each capability set (consent hash),
 # and an update that asks for more waits for approval. Installed mods live in
 # <data_dir>/mods/. See docs/src/mods.md.
@@ -966,16 +966,16 @@ loopback_http = true                # Plain HTTP on loopback binds: http://local
 # ══════════════════════════════════════════════════════════════════════════════
 # EXTERNAL AGENTS
 # ══════════════════════════════════════════════════════════════════════════════
-# Connect Moltis chat sessions to external CLI coding agents.
+# Connect Antre chat sessions to external CLI coding agents.
 # Codex and ACP use persistent JSON-RPC sessions; Claude Code uses print-mode
 # resume when the CLI returns a session_id.
-# Moltis acts as orchestrator; the CLI agent owns its own context window.
+# Antre acts as orchestrator; the CLI agent owns its own context window.
 
 [external_agents]
 # enabled = true                    # Auto-detect installed external agents for chat session selection
 # Set enabled = false to opt out of all external-agent discovery.
-# Default detection trusts Moltis' PATH. Use absolute binary paths below when
-# you want to pin which executable Moltis may launch after a user selects it.
+# Default detection trusts Antre' PATH. Use absolute binary paths below when
+# you want to pin which executable Antre may launch after a user selects it.
 
 # Per-agent configuration (key = agent kind)
 # [external_agents.agents.claude-code]
@@ -996,7 +996,7 @@ loopback_http = true                # Plain HTTP on loopback binds: http://local
 # efforts = ["medium", "high", "xhigh", "max"]
 
 # Generic manual ACP server for advanced/custom CLIs not listed below.
-# If Moltis is missing a named default for an ACP agent, check the official
+# If Antre is missing a named default for an ACP agent, check the official
 # catalog for the agent's current launch command and configure it here:
 # https://agentclientprotocol.com/get-started/agents
 # [external_agents.agents.acp]
@@ -1078,7 +1078,7 @@ loopback_http = true                # Plain HTTP on loopback binds: http://local
 # CHANNELS
 # ══════════════════════════════════════════════════════════════════════════════
 # External messaging integrations.
-# Note: channels added in the web UI are stored in data_dir()/moltis.db,
+# Note: channels added in the web UI are stored in data_dir()/antre.db,
 # not in this file. Keep channel config here only for manual TOML management.
 
 # [channels]
@@ -1098,7 +1098,7 @@ loopback_http = true                # Plain HTTP on loopback binds: http://local
 
 # Example WhatsApp account. Pair the account by scanning the QR code after startup.
 # [channels.whatsapp.my-bot]
-# push_name = "Moltis"        # Falls back to [identity] name, then "Moltis".
+# push_name = "Antre"        # Falls back to [identity] name, then "Antre".
 # dm_policy = "allowlist"
 # allowlist = []
 
@@ -1165,7 +1165,7 @@ loopback_http = true                # Plain HTTP on loopback binds: http://local
 # ══════════════════════════════════════════════════════════════════════════════
 # ENVIRONMENT VARIABLES
 # ══════════════════════════════════════════════════════════════════════════════
-# Variables injected into the Moltis process at startup.
+# Variables injected into the Antre process at startup.
 
 # [env]
 # BRAVE_API_KEY = "..."

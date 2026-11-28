@@ -101,13 +101,13 @@ impl LiveSessionService {
             && let Ok(Some(project)) = project_store.get(project_id).await
         {
             let project_dir = &project.directory;
-            let wt_dir = project_dir.join(".moltis-worktrees").join(key);
+            let wt_dir = project_dir.join(".antre-worktrees").join(key);
 
             // Safety checks unless force is set.
             if !force
                 && wt_dir.exists()
                 && let Ok(true) =
-                    moltis_projects::WorktreeManager::has_uncommitted_changes(&wt_dir).await
+                    antre_projects::WorktreeManager::has_uncommitted_changes(&wt_dir).await
             {
                 return Err(
                     "worktree has uncommitted changes; use force: true to delete anyway".into(),
@@ -118,13 +118,13 @@ impl LiveSessionService {
             if let Some(ref cmd) = project.teardown_command
                 && wt_dir.exists()
                 && let Err(e) =
-                    moltis_projects::WorktreeManager::run_teardown(&wt_dir, cmd, project_dir, key)
+                    antre_projects::WorktreeManager::run_teardown(&wt_dir, cmd, project_dir, key)
                         .await
             {
                 tracing::warn!("worktree teardown failed: {e}");
             }
 
-            if let Err(e) = moltis_projects::WorktreeManager::cleanup(project_dir, key).await {
+            if let Err(e) = antre_projects::WorktreeManager::cleanup(project_dir, key).await {
                 tracing::warn!("worktree cleanup failed: {e}");
             }
         }
@@ -157,7 +157,7 @@ impl LiveSessionService {
 
         // Dispatch SessionEnd hook (read-only).
         if let Some(ref hooks) = self.hook_registry {
-            let payload = moltis_common::hooks::HookPayload::SessionEnd {
+            let payload = antre_common::hooks::HookPayload::SessionEnd {
                 session_key: key.to_string(),
             };
             if let Err(e) = hooks.dispatch(&payload).await {

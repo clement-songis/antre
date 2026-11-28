@@ -11,9 +11,9 @@
 use std::collections::HashSet;
 
 use {
+    antre_agents::model::{ChatMessage, LlmProvider, StreamEvent, ToolCall},
+    antre_providers::anthropic::AnthropicProvider,
     futures::StreamExt,
-    moltis_agents::model::{ChatMessage, LlmProvider, StreamEvent, ToolCall},
-    moltis_providers::anthropic::AnthropicProvider,
     secrecy::{ExposeSecret, Secret},
 };
 

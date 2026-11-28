@@ -897,8 +897,8 @@ async fn test_write_skill_files_rollback_on_error() {
 
 // ── SKILL.md frontmatter round-trip (#1292) ─────────────────
 
-fn parse_back(content: &str) -> moltis_skills::types::SkillMetadata {
-    moltis_skills::parse::parse_metadata(content, Path::new("/tmp/skills/x"))
+fn parse_back(content: &str) -> antre_skills::types::SkillMetadata {
+    antre_skills::parse::parse_metadata(content, Path::new("/tmp/skills/x"))
         .unwrap_or_else(|e| panic!("discovery could not parse:\n{content}\nerror: {e}"))
 }
 

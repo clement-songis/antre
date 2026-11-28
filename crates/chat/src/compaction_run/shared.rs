@@ -5,8 +5,8 @@
 //! shared code gets its own focused tests.
 
 use {
-    moltis_config::CompactionConfig,
-    moltis_sessions::{MessageContent, PersistedMessage},
+    antre_config::CompactionConfig,
+    antre_sessions::{MessageContent, PersistedMessage},
     serde_json::Value,
 };
 

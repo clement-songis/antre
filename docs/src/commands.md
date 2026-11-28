@@ -43,7 +43,7 @@ Available in web UI, all channels, and via the `sessions.fork` RPC. See
 | `/sh [on\|off]` | Enter command mode (passthrough to shell) — **operator DMs only on channels** |
 | `/stop` | Abort the current running agent |
 | `/peek` | Show current thinking/tool status — **operator DMs only on channels** |
-| `/update [version]` | Update moltis — **operator DMs only on channels** |
+| `/update [version]` | Update antre — **operator DMs only on channels** |
 
 ```admonish warning title="Some commands are restricted on channels"
 Commands scoped to the current conversation — `/help`, `/new`, `/clear`,

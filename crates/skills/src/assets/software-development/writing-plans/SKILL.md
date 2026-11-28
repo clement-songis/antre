@@ -137,7 +137,7 @@ Read and understand:
 
 ### Step 2: Explore the Codebase
 
-Use Moltis tools to understand the project:
+Use Antre tools to understand the project:
 
 ```python
 # Understand project structure

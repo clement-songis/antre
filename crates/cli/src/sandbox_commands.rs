@@ -1,6 +1,6 @@
 use {anyhow::Result, clap::Subcommand};
 
-use moltis_tools::sandbox;
+use antre_tools::sandbox;
 
 fn sanitize_instance_slug(name: &str) -> String {
     let base = name.to_lowercase();
@@ -24,21 +24,21 @@ fn sanitize_instance_slug(name: &str) -> String {
     }
     let out = out.trim_matches('-').to_string();
     if out.is_empty() {
-        "moltis".to_string()
+        "antre".to_string()
     } else {
         out
     }
 }
 
-fn instance_sandbox_prefix(config: &moltis_config::MoltisConfig) -> String {
+fn instance_sandbox_prefix(config: &antre_config::AntreConfig) -> String {
     let mut identity_name = config.identity.name.clone();
-    if let Some(file_identity) = moltis_config::load_identity_for_agent("main")
+    if let Some(file_identity) = antre_config::load_identity_for_agent("main")
         && file_identity.name.is_some()
     {
         identity_name = file_identity.name;
     }
-    let slug = sanitize_instance_slug(identity_name.as_deref().unwrap_or("moltis"));
-    format!("moltis-{slug}-sandbox")
+    let slug = sanitize_instance_slug(identity_name.as_deref().unwrap_or("antre"));
+    format!("antre-{slug}-sandbox")
 }
 
 #[derive(Subcommand)]
@@ -49,7 +49,7 @@ pub enum SandboxAction {
     Build,
     /// Remove a specific sandbox image by tag.
     Remove {
-        /// Image tag (e.g. moltis-main-sandbox:abc123).
+        /// Image tag (e.g. antre-main-sandbox:abc123).
         tag: String,
     },
     /// Remove all pre-built sandbox images.
@@ -97,7 +97,7 @@ async fn list() -> Result<()> {
 }
 
 async fn build() -> Result<()> {
-    let config = moltis_config::discover_and_load();
+    let config = antre_config::discover_and_load();
     let mut sandbox_config = sandbox::SandboxConfig::from(&config.tools.exec.sandbox);
     sandbox_config.container_prefix = Some(instance_sandbox_prefix(&config));
 
@@ -121,7 +121,7 @@ async fn build() -> Result<()> {
     let repo = sandbox_config
         .container_prefix
         .clone()
-        .unwrap_or_else(|| "moltis-sandbox".to_string());
+        .unwrap_or_else(|| "antre-sandbox".to_string());
     let tag = sandbox::sandbox_image_tag(&repo, &base, &packages);
     println!("Base:     {base}");
     println!("Packages: {}", packages.join(", "));
@@ -220,9 +220,9 @@ mod tests {
     }
 
     #[test]
-    fn slug_empty_falls_back_to_moltis() {
-        assert_eq!(sanitize_instance_slug(""), "moltis");
-        assert_eq!(sanitize_instance_slug("---"), "moltis");
+    fn slug_empty_falls_back_to_antre() {
+        assert_eq!(sanitize_instance_slug(""), "antre");
+        assert_eq!(sanitize_instance_slug("---"), "antre");
     }
 
     #[test]

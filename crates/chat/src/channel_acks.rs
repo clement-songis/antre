@@ -48,7 +48,7 @@ pub(crate) async fn note_delivery_failed(state: &Arc<dyn ChatRuntime>, activity_
     state
         .note_channel_activity(
             activity_id,
-            moltis_channels::ChannelActivity::Finished(moltis_channels::ChannelAckOutcome::Failure),
+            antre_channels::ChannelActivity::Finished(antre_channels::ChannelAckOutcome::Failure),
         )
         .await;
 }
@@ -60,14 +60,14 @@ pub(crate) async fn note_turn_finished(
     succeeded: bool,
 ) {
     let outcome = if succeeded {
-        moltis_channels::ChannelAckOutcome::Success
+        antre_channels::ChannelAckOutcome::Success
     } else {
-        moltis_channels::ChannelAckOutcome::Failure
+        antre_channels::ChannelAckOutcome::Failure
     };
     state
         .note_channel_activity(
             activity_id,
-            moltis_channels::ChannelActivity::Finished(outcome),
+            antre_channels::ChannelActivity::Finished(outcome),
         )
         .await;
 }

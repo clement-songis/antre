@@ -6,7 +6,7 @@ use std::{
 };
 
 use {
-    moltis_config::LearningReviewConfig,
+    antre_config::LearningReviewConfig,
     serde::{Deserialize, Serialize},
     time::OffsetDateTime,
 };
@@ -98,7 +98,7 @@ pub fn personal_skills(paths: &LearningPaths) -> Vec<PersonalSkill> {
             let dir = entry.path();
             let name = dir.file_name()?.to_string_lossy().into_owned();
             let skill_md = std::fs::read_to_string(dir.join(SKILL_FILE)).ok()?;
-            let meta = moltis_skills::parse::parse_metadata(&skill_md, &dir).ok()?;
+            let meta = antre_skills::parse::parse_metadata(&skill_md, &dir).ok()?;
             (meta.name == name).then_some(PersonalSkill {
                 name,
                 description: meta.description,

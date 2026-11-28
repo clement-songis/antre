@@ -4,10 +4,10 @@ use super::*;
 
 #[cfg(test)]
 fn should_prebuild_sandbox_image(
-    mode: &moltis_tools::sandbox::SandboxMode,
+    mode: &antre_tools::sandbox::SandboxMode,
     packages: &[String],
 ) -> bool {
-    !matches!(mode, moltis_tools::sandbox::SandboxMode::Off) && !packages.is_empty()
+    !matches!(mode, antre_tools::sandbox::SandboxMode::Off) && !packages.is_empty()
 }
 
 pub(super) async fn health_handler(State(state): State<AppState>) -> impl IntoResponse {
@@ -15,7 +15,7 @@ pub(super) async fn health_handler(State(state): State<AppState>) -> impl IntoRe
     Json(serde_json::json!({
         "status": "ok",
         "version": state.gateway.version,
-        "protocol": moltis_protocol::PROTOCOL_VERSION,
+        "protocol": antre_protocol::PROTOCOL_VERSION,
         "connections": count,
     }))
 }
@@ -42,23 +42,23 @@ pub(super) async fn rpc_handler(
         })
         .unwrap_or_else(|| {
             vec![
-                moltis_protocol::scopes::ADMIN.into(),
-                moltis_protocol::scopes::READ.into(),
-                moltis_protocol::scopes::WRITE.into(),
-                moltis_protocol::scopes::APPROVALS.into(),
-                moltis_protocol::scopes::PAIRING.into(),
+                antre_protocol::scopes::ADMIN.into(),
+                antre_protocol::scopes::READ.into(),
+                antre_protocol::scopes::WRITE.into(),
+                antre_protocol::scopes::APPROVALS.into(),
+                antre_protocol::scopes::PAIRING.into(),
             ]
         });
 
     let request_id = request.id.unwrap_or_else(|| "http-rpc".to_string());
     let response = state
         .methods
-        .dispatch(moltis_gateway::methods::MethodContext {
+        .dispatch(antre_gateway::methods::MethodContext {
             request_id,
             method: request.method,
             params: request.params,
             client_conn_id: "http-rpc".to_string(),
-            client_role: moltis_protocol::roles::OPERATOR.to_string(),
+            client_role: antre_protocol::roles::OPERATOR.to_string(),
             client_scopes: scopes,
             state: Arc::clone(&state.gateway),
             channel: None,
@@ -222,7 +222,7 @@ pub(super) fn is_public_ip(ip: &str) -> bool {
     }
 }
 
-pub(crate) use moltis_auth::locality::is_local_connection;
+pub(crate) use antre_auth::locality::is_local_connection;
 
 pub(super) async fn websocket_header_authenticate(
     headers: &axum::http::HeaderMap,
@@ -255,7 +255,7 @@ pub(super) fn resolve_outbound_ip(ipv6: bool) -> Option<std::net::IpAddr> {
 }
 
 #[cfg(feature = "tls")]
-pub(super) fn tls_runtime_sans(bind: &str) -> Vec<moltis_tls::ServerSan> {
+pub(super) fn tls_runtime_sans(bind: &str) -> Vec<antre_tls::ServerSan> {
     let normalized = bind.trim().trim_end_matches('.');
     if normalized.is_empty() {
         return Vec::new();
@@ -268,13 +268,13 @@ pub(super) fn tls_runtime_sans(bind: &str) -> Vec<moltis_tls::ServerSan> {
             // case but still cannot cover every interface on multi-homed hosts.
             return resolve_outbound_ip(ip.is_ipv6())
                 .filter(|resolved| !resolved.is_loopback() && !resolved.is_unspecified())
-                .map(moltis_tls::ServerSan::Ip)
+                .map(antre_tls::ServerSan::Ip)
                 .into_iter()
                 .collect();
         }
 
         if !ip.is_loopback() {
-            return vec![moltis_tls::ServerSan::Ip(ip)];
+            return vec![antre_tls::ServerSan::Ip(ip)];
         }
 
         return Vec::new();
@@ -283,18 +283,18 @@ pub(super) fn tls_runtime_sans(bind: &str) -> Vec<moltis_tls::ServerSan> {
     if matches!(normalized, "localhost") || normalized.ends_with(".localhost") {
         Vec::new()
     } else {
-        vec![moltis_tls::ServerSan::Dns(normalized.to_ascii_lowercase())]
+        vec![antre_tls::ServerSan::Dns(normalized.to_ascii_lowercase())]
     }
 }
 
 #[cfg(feature = "tls")]
 pub(super) fn tls_configured_sans(
     public_ip: Option<&str>,
-) -> Result<Vec<moltis_tls::ServerSan>, std::net::AddrParseError> {
+) -> Result<Vec<antre_tls::ServerSan>, std::net::AddrParseError> {
     public_ip
         .map(str::parse)
         .transpose()
-        .map(|ip| ip.map(moltis_tls::ServerSan::Ip).into_iter().collect())
+        .map(|ip| ip.map(antre_tls::ServerSan::Ip).into_iter().collect())
 }
 
 pub(super) fn startup_bind_line(addr: SocketAddr) -> String {
@@ -372,7 +372,7 @@ pub fn is_same_origin(origin: &str, host: &str) -> bool {
     let hh = strip_port(host);
 
     // Normalise loopback variants so 127.0.0.1 == localhost == ::1.
-    // Subdomains of .localhost (e.g. moltis.localhost) are also loopback per RFC 6761.
+    // Subdomains of .localhost (e.g. antre.localhost) are also loopback per RFC 6761.
     let is_loopback =
         |h: &str| matches!(h, "localhost" | "127.0.0.1" | "::1") || h.ends_with(".localhost");
 
@@ -444,23 +444,23 @@ mod tests {
     // share_template, map_share_message_views tests moved to share_render::tests
 
     #[test]
-    fn same_origin_moltis_localhost() {
-        // moltis.localhost ↔ localhost loopback variants
+    fn same_origin_antre_localhost() {
+        // antre.localhost ↔ localhost loopback variants
         assert!(is_same_origin(
-            "https://moltis.localhost:8080",
+            "https://antre.localhost:8080",
             "localhost:8080"
         ));
         assert!(is_same_origin(
-            "https://moltis.localhost:8080",
+            "https://antre.localhost:8080",
             "127.0.0.1:8080"
         ));
         assert!(is_same_origin(
             "http://localhost:8080",
-            "moltis.localhost:8080"
+            "antre.localhost:8080"
         ));
         // Any .localhost subdomain is treated as loopback (RFC 6761).
         assert!(is_same_origin(
-            "https://app.moltis.localhost:8080",
+            "https://app.antre.localhost:8080",
             "localhost:8080"
         ));
     }
@@ -494,19 +494,19 @@ mod tests {
     fn prebuild_runs_only_when_mode_enabled_and_packages_present() {
         let packages = vec!["curl".to_string()];
         assert!(should_prebuild_sandbox_image(
-            &moltis_tools::sandbox::SandboxMode::All,
+            &antre_tools::sandbox::SandboxMode::All,
             &packages
         ));
         assert!(should_prebuild_sandbox_image(
-            &moltis_tools::sandbox::SandboxMode::NonMain,
+            &antre_tools::sandbox::SandboxMode::NonMain,
             &packages
         ));
         assert!(!should_prebuild_sandbox_image(
-            &moltis_tools::sandbox::SandboxMode::Off,
+            &antre_tools::sandbox::SandboxMode::Off,
             &packages
         ));
         assert!(!should_prebuild_sandbox_image(
-            &moltis_tools::sandbox::SandboxMode::All,
+            &antre_tools::sandbox::SandboxMode::All,
             &[]
         ));
     }
@@ -536,7 +536,7 @@ mod tests {
     #[test]
     fn tls_runtime_sans_uses_dns_for_non_localhost_names() {
         assert_eq!(tls_runtime_sans("gateway.local"), vec![
-            moltis_tls::ServerSan::Dns("gateway.local".to_string())
+            antre_tls::ServerSan::Dns("gateway.local".to_string())
         ]);
     }
 
@@ -544,7 +544,7 @@ mod tests {
     #[test]
     fn tls_runtime_sans_uses_ip_for_concrete_non_loopback_bind() {
         assert_eq!(tls_runtime_sans("192.168.1.9"), vec![
-            moltis_tls::ServerSan::Ip("192.168.1.9".parse().unwrap())
+            antre_tls::ServerSan::Ip("192.168.1.9".parse().unwrap())
         ]);
     }
 
@@ -552,7 +552,7 @@ mod tests {
     #[test]
     fn tls_configured_sans_uses_public_ip() {
         assert_eq!(tls_configured_sans(Some("203.0.113.10")).unwrap(), vec![
-            moltis_tls::ServerSan::Ip("203.0.113.10".parse().unwrap())
+            antre_tls::ServerSan::Ip("203.0.113.10".parse().unwrap())
         ]);
     }
 
@@ -566,7 +566,7 @@ mod tests {
     #[test]
     fn tls_runtime_sans_uses_ip_for_concrete_non_loopback_ipv6_bind() {
         assert_eq!(tls_runtime_sans("2001:db8::42"), vec![
-            moltis_tls::ServerSan::Ip("2001:db8::42".parse().unwrap())
+            antre_tls::ServerSan::Ip("2001:db8::42".parse().unwrap())
         ]);
     }
 
@@ -576,7 +576,7 @@ mod tests {
         assert!(tls_runtime_sans("127.0.0.1").is_empty());
         assert!(tls_runtime_sans("::1").is_empty());
         assert!(tls_runtime_sans("localhost").is_empty());
-        assert!(tls_runtime_sans("moltis.localhost").is_empty());
+        assert!(tls_runtime_sans("antre.localhost").is_empty());
     }
 
     #[cfg(feature = "tls")]
@@ -586,7 +586,7 @@ mod tests {
         if let Some(ip) =
             resolve_outbound_ip(false).filter(|ip| !ip.is_loopback() && !ip.is_unspecified())
         {
-            assert_eq!(sans, vec![moltis_tls::ServerSan::Ip(ip)]);
+            assert_eq!(sans, vec![antre_tls::ServerSan::Ip(ip)]);
         } else {
             assert!(sans.is_empty());
         }
@@ -599,7 +599,7 @@ mod tests {
         if let Some(ip) =
             resolve_outbound_ip(true).filter(|ip| !ip.is_loopback() && !ip.is_unspecified())
         {
-            assert_eq!(sans, vec![moltis_tls::ServerSan::Ip(ip)]);
+            assert_eq!(sans, vec![antre_tls::ServerSan::Ip(ip)]);
         } else {
             assert!(sans.is_empty());
         }
@@ -684,7 +684,7 @@ mod tests {
     fn public_build_gateway_base_keeps_ngrok_controller_alive() {
         let state = GatewayState::new(
             auth::resolve_auth(None, None),
-            moltis_gateway::services::GatewayServices::noop(),
+            antre_gateway::services::GatewayServices::noop(),
         );
         let methods = Arc::new(MethodRegistry::new());
         #[cfg(feature = "push-notifications")]
@@ -701,7 +701,7 @@ mod tests {
     fn attaching_owner_keeps_internal_ngrok_controller_alive_after_local_arc_drop() {
         let state = GatewayState::new(
             auth::resolve_auth(None, None),
-            moltis_gateway::services::GatewayServices::noop(),
+            antre_gateway::services::GatewayServices::noop(),
         );
         let methods = Arc::new(MethodRegistry::new());
         #[cfg(feature = "push-notifications")]
@@ -721,7 +721,7 @@ mod tests {
         let (_router, mut app_state, ngrok_controller) = build_gateway_base_internal(
             GatewayState::new(
                 auth::resolve_auth(None, None),
-                moltis_gateway::services::GatewayServices::noop(),
+                antre_gateway::services::GatewayServices::noop(),
             ),
             Arc::new(MethodRegistry::new()),
             None,
@@ -731,7 +731,7 @@ mod tests {
         let (_router, mut app_state, ngrok_controller) = build_gateway_base_internal(
             GatewayState::new(
                 auth::resolve_auth(None, None),
-                moltis_gateway::services::GatewayServices::noop(),
+                antre_gateway::services::GatewayServices::noop(),
             ),
             Arc::new(MethodRegistry::new()),
             None,

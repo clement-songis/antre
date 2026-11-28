@@ -28,22 +28,22 @@ pub struct PreparedGatewayCore {
     /// Shared gateway state (sessions, services, config, etc.).
     pub state: Arc<GatewayState>,
     /// Concrete chat service used by non-HTTP surfaces with session-local tools.
-    pub live_chat: Arc<moltis_chat::LiveChatService>,
+    pub live_chat: Arc<antre_chat::LiveChatService>,
     /// Configured MCP manager retained for readiness and graceful shutdown.
-    pub mcp_manager: Arc<moltis_mcp::McpManager>,
+    pub mcp_manager: Arc<antre_mcp::McpManager>,
     /// RPC method registry.
     pub methods: Arc<MethodRegistry>,
     /// WebAuthn registry for passkey auth.
     pub webauthn_registry: Option<SharedWebAuthnRegistry>,
     /// MS Teams webhook plugin.
     #[cfg(feature = "msteams")]
-    pub msteams_webhook_plugin: Arc<tokio::sync::RwLock<moltis_msteams::MsTeamsPlugin>>,
+    pub msteams_webhook_plugin: Arc<tokio::sync::RwLock<antre_msteams::MsTeamsPlugin>>,
     /// Slack webhook plugin.
     #[cfg(feature = "slack")]
-    pub slack_webhook_plugin: Arc<tokio::sync::RwLock<moltis_slack::SlackPlugin>>,
+    pub slack_webhook_plugin: Arc<tokio::sync::RwLock<antre_slack::SlackPlugin>>,
     /// Telephony webhook plugin.
     #[cfg(feature = "telephony")]
-    pub telephony_webhook_plugin: Arc<tokio::sync::RwLock<moltis_telephony::TelephonyPlugin>>,
+    pub telephony_webhook_plugin: Arc<tokio::sync::RwLock<antre_telephony::TelephonyPlugin>>,
     /// Push notification service.
     #[cfg(feature = "push-notifications")]
     pub push_service: Option<Arc<crate::push::PushService>>,
@@ -51,19 +51,19 @@ pub struct PreparedGatewayCore {
     #[cfg(feature = "trusted-network")]
     pub audit_buffer: Option<crate::network_audit::NetworkAuditBuffer>,
     /// Sandbox router for container backends.
-    pub sandbox_router: Arc<moltis_tools::sandbox::SandboxRouter>,
+    pub sandbox_router: Arc<antre_tools::sandbox::SandboxRouter>,
     /// Browser service for lifecycle management.
     pub browser_for_lifecycle: Arc<dyn crate::services::BrowserService>,
     /// Cron scheduler service. **Callers must invoke
     /// [`CronService::start()`] to activate the scheduler**; without it,
     /// scheduled jobs will not execute.
-    pub cron_service: Arc<moltis_cron::service::CronService>,
+    pub cron_service: Arc<antre_cron::service::CronService>,
     /// Log buffer for real-time log streaming.
     pub log_buffer: Option<crate::logs::LogBuffer>,
     /// Browser tool for warmup after listener is ready.
-    pub browser_tool_for_warmup: Option<Arc<dyn moltis_agents::tool_registry::AgentTool>>,
+    pub browser_tool_for_warmup: Option<Arc<dyn antre_agents::tool_registry::AgentTool>>,
     /// Loaded configuration snapshot.
-    pub config: moltis_config::schema::MoltisConfig,
+    pub config: antre_config::schema::AntreConfig,
     /// Resolved data directory.
     pub data_dir: PathBuf,
     /// Human-readable provider summary for the startup banner.

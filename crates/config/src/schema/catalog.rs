@@ -21,7 +21,7 @@ impl Default for CatalogConfig {
     fn default() -> Self {
         Self {
             refresh: true,
-            refresh_urls: moltis_model_catalog::refresh::DEFAULT_REFRESH_URLS
+            refresh_urls: antre_model_catalog::refresh::DEFAULT_REFRESH_URLS
                 .iter()
                 .map(|url| (*url).to_string())
                 .collect(),

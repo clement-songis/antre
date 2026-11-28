@@ -1,4 +1,4 @@
-//! C ABI bridge for embedding Moltis Rust functionality into native Swift apps.
+//! C ABI bridge for embedding Antre Rust functionality into native Swift apps.
 //!
 //! This crate is split into domain modules:
 //! - [`types`]: Request/response structs, error types, and constants

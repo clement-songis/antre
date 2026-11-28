@@ -9,17 +9,17 @@ pub enum CalDavConnectorError {
     #[error("invalid CalDAV dataset configuration: {0}")]
     DatasetConfig(&'static str),
     #[error("CalDAV server failed network safety validation")]
-    NetworkSafety(#[source] moltis_common::Error),
+    NetworkSafety(#[source] antre_common::Error),
     #[error("CalDAV operation failed")]
-    Client(#[source] moltis_caldav::Error),
+    Client(#[source] antre_caldav::Error),
     #[error("invalid CalDAV server response: {0}")]
     ServerResponse(String),
     #[error("failed to encode connector item")]
     Serialization(#[source] serde_json::Error),
 }
 
-impl From<moltis_caldav::Error> for CalDavConnectorError {
-    fn from(error: moltis_caldav::Error) -> Self {
+impl From<antre_caldav::Error> for CalDavConnectorError {
+    fn from(error: antre_caldav::Error) -> Self {
         Self::Client(error)
     }
 }

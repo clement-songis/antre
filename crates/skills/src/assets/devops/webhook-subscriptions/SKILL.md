@@ -9,16 +9,16 @@ origin:
 
 # Webhook Subscriptions
 
-Create webhook subscriptions so external services can trigger agent runs by POSTing events to Moltis.
+Create webhook subscriptions so external services can trigger agent runs by POSTing events to Antre.
 
-Webhooks are available as soon as the Moltis gateway is running — no extra setup needed.
+Webhooks are available as soon as the Antre gateway is running — no extra setup needed.
 
 ## Ingress Endpoint
 
 Each webhook gets a unique URL:
 
 ```
-POST https://<moltis-host>/api/webhooks/ingest/{public_id}
+POST https://<antre-host>/api/webhooks/ingest/{public_id}
 ```
 
 The `public_id` is a high-entropy identifier like `wh_a1b2c3d4...` assigned at creation.
@@ -198,7 +198,7 @@ For GitHub, use their published webhook IP ranges. CIDR check runs before auth v
 ```
 
 Then in GitHub repo → Settings → Webhooks → Add webhook:
-- **Payload URL:** `https://<moltis-host>/api/webhooks/ingest/<public_id>`
+- **Payload URL:** `https://<antre-host>/api/webhooks/ingest/<public_id>`
 - **Content type:** `application/json`
 - **Secret:** same as `auth_config.secret`
 - **Events:** Select "Issues"
@@ -315,7 +315,7 @@ The agent uses the `webhook` tool with actions: `list`, `create`, `get`, `update
 
 ## Rate Limiting
 
-Global config in `moltis.toml`:
+Global config in `antre.toml`:
 
 ```toml
 [webhooks.rate_limit]
@@ -330,12 +330,12 @@ Exceeded limits return `429 Too Many Requests`.
 
 ## Built-in Deduplication
 
-If a service retries a delivery, Moltis automatically deduplicates based on the delivery key (e.g. `x-github-delivery` header). Duplicate POSTs return `200 OK` with `status: deduplicated` — no double processing.
+If a service retries a delivery, Antre automatically deduplicates based on the delivery key (e.g. `x-github-delivery` header). Duplicate POSTs return `200 OK` with `status: deduplicated` — no double processing.
 
 ## How It Works
 
 1. External service POSTs to `/api/webhooks/ingest/{public_id}`
-2. Moltis verifies auth, checks CIDR allowlist, enforces rate limits
+2. Antre verifies auth, checks CIDR allowlist, enforces rate limits
 3. Source profile parses event type and delivery key from headers/body
 4. Event filter decides whether to process or skip
 5. Deduplication check prevents duplicate processing
@@ -346,10 +346,10 @@ If a service retries a delivery, Moltis automatically deduplicates based on the 
 
 ## Troubleshooting
 
-1. **Is Moltis running?** `curl http://localhost:<port>/api/gon` should return JSON.
+1. **Is Antre running?** `curl http://localhost:<port>/api/gon` should return JSON.
 2. **Auth failure (401)?** Verify the secret in your service matches `auth_config`. GitHub sends `X-Hub-Signature-256`, GitLab sends `X-Gitlab-Token`, Stripe uses `Stripe-Signature`.
 3. **IP blocked (403)?** Check `allowed_cidrs` matches the sender's IP range.
 4. **Rate limited (429)?** Check per-webhook and global rate limits.
 5. **Events filtered?** Verify `event_filter.allow` includes the event type the service sends. Check delivery history for `status: filtered`.
-6. **Firewall/NAT?** The webhook URL must be reachable from the sending service. For local development, use a tunnel (ngrok, cloudflared, or Moltis's built-in Tailscale/ngrok support).
+6. **Firewall/NAT?** The webhook URL must be reachable from the sending service. For local development, use a tunnel (ngrok, cloudflared, or Antre's built-in Tailscale/ngrok support).
 7. **Check delivery history:** Use `webhooks.deliveries` RPC to inspect status, rejection reasons, and timing.

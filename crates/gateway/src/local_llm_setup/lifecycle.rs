@@ -9,7 +9,7 @@ use {
     tracing::{debug, info},
 };
 
-use moltis_providers::local_llm::{self, backend::loaded_llama_model_bytes};
+use antre_providers::local_llm::{self, backend::loaded_llama_model_bytes};
 
 use crate::{
     broadcast::{BroadcastOpts, broadcast},

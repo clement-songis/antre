@@ -4,11 +4,11 @@
 use std::sync::Once;
 
 use {
-    moltis_memory::{
+    antre_memory::{
         schema::{ChunkRow, FileRow},
         store::{CacheEntry, MemoryStore, MergeStrategy},
     },
-    moltis_memory_zvec::ZvecMemoryStore,
+    antre_memory_zvec::ZvecMemoryStore,
 };
 
 static ZVEC_INIT: Once = Once::new();
@@ -50,8 +50,8 @@ async fn test_full_pipeline() {
     let db_path = dir.path().join("collection");
     let cache_path = dir.path().join("cache.redb");
 
-    let collection = moltis_memory_zvec::open_or_create_collection(&db_path, Some(768)).unwrap();
-    let cache = moltis_memory_zvec::RedbCache::new(&cache_path).unwrap();
+    let collection = antre_memory_zvec::open_or_create_collection(&db_path, Some(768)).unwrap();
+    let cache = antre_memory_zvec::RedbCache::new(&cache_path).unwrap();
     let store = ZvecMemoryStore::with_cache(collection, cache);
 
     // ── 1. Upsert file ──
@@ -270,7 +270,7 @@ async fn test_full_pipeline() {
 /// the data survived.
 #[tokio::test]
 async fn test_store_survives_restart() {
-    use moltis_memory::store::MemoryStore;
+    use antre_memory::store::MemoryStore;
 
     ensure_zvec_init();
 
@@ -295,9 +295,8 @@ async fn test_store_survives_restart() {
 
     // Phase 1: write, then fully drop the store (closes collection + redb).
     {
-        let collection =
-            moltis_memory_zvec::open_or_create_collection(&db_path, Some(768)).unwrap();
-        let cache = moltis_memory_zvec::RedbCache::new(&cache_path).unwrap();
+        let collection = antre_memory_zvec::open_or_create_collection(&db_path, Some(768)).unwrap();
+        let cache = antre_memory_zvec::RedbCache::new(&cache_path).unwrap();
         let store = ZvecMemoryStore::with_cache(collection, cache);
         store.upsert_file(&file).await.unwrap();
         store
@@ -309,9 +308,8 @@ async fn test_store_survives_restart() {
 
     // Phase 2: reopen at the same paths — data must persist.
     {
-        let collection =
-            moltis_memory_zvec::open_or_create_collection(&db_path, Some(768)).unwrap();
-        let cache = moltis_memory_zvec::RedbCache::new(&cache_path).unwrap();
+        let collection = antre_memory_zvec::open_or_create_collection(&db_path, Some(768)).unwrap();
+        let cache = antre_memory_zvec::RedbCache::new(&cache_path).unwrap();
         let store = ZvecMemoryStore::with_cache(collection, cache);
 
         let files = store.list_files().await.unwrap();

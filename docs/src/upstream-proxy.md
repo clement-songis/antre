@@ -1,12 +1,12 @@
 # Upstream Proxy
 
-Moltis can route all outbound HTTP traffic through an upstream proxy. This is
+Antre can route all outbound HTTP traffic through an upstream proxy. This is
 useful when running behind a corporate firewall, in a restricted network, or
 when you need to audit/filter outbound connections.
 
 ## Configuration
 
-Add `upstream_proxy` to the top level of your `moltis.toml`:
+Add `upstream_proxy` to the top level of your `antre.toml`:
 
 ```toml
 upstream_proxy = "http://proxy.corp.example.com:8080"
@@ -61,10 +61,10 @@ to Telegram traffic directly. To proxy Telegram, set the standard
 
 ```bash
 export HTTPS_PROXY=http://proxy.corp.example.com:8080
-moltis
+antre
 ```
 
-Or use the `env` section in `moltis.toml`:
+Or use the `env` section in `antre.toml`:
 
 ```toml
 [env]
@@ -73,7 +73,7 @@ HTTPS_PROXY = "http://proxy.corp.example.com:8080"
 
 ## Environment variable fallback
 
-When `upstream_proxy` is **not** set in `moltis.toml`, reqwest automatically
+When `upstream_proxy` is **not** set in `antre.toml`, reqwest automatically
 honours the standard proxy environment variables:
 
 - `HTTP_PROXY` / `http_proxy`

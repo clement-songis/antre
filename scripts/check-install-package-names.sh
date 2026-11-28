@@ -7,19 +7,19 @@
 #
 # Expected filename patterns (from .github/workflows/release.yml):
 #
-#   deb:     moltis_${VERSION}_${ARCH}.deb
+#   deb:     antre_${VERSION}_${ARCH}.deb
 #            (cargo deb --deb-version "$VERSION" — no revision suffix)
 #
-#   rpm:     moltis-${VERSION}-1.${ARCH}.rpm
+#   rpm:     antre-${VERSION}-1.${ARCH}.rpm
 #            (cargo generate-rpm adds -1 release)
 #
-#   arch:    moltis-${VERSION}-1-${ARCH}.pkg.tar.zst
+#   arch:    antre-${VERSION}-1-${ARCH}.pkg.tar.zst
 #            (manual tar with pkgver = ${VERSION}-1)
 #
-#   appimage: moltis-${VERSION}-${ARCH}.AppImage
+#   appimage: antre-${VERSION}-${ARCH}.AppImage
 #             (release workflow packages AppImage without a revision suffix)
 #
-#   binary:  moltis-${VERSION}-${TARGET}.tar.gz
+#   binary:  antre-${VERSION}-${TARGET}.tar.gz
 #            (manual tar)
 
 set -euo pipefail
@@ -49,10 +49,10 @@ pass() {
 # ---------------------------------------------------------------------------
 # Check 1: .deb filename must NOT have a revision suffix
 #
-# Release workflow: cargo deb --deb-version "$MOLTIS_VERSION"
-#   → produces moltis_${VERSION}_${ARCH}.deb (no -1)
+# Release workflow: cargo deb --deb-version "$ANTRE_VERSION"
+#   → produces antre_${VERSION}_${ARCH}.deb (no -1)
 #
-# install.sh must use: moltis_${version}_${deb_arch}.deb
+# install.sh must use: antre_${version}_${deb_arch}.deb
 # ---------------------------------------------------------------------------
 
 echo "Checking .deb filename pattern..."
@@ -71,7 +71,7 @@ fi
 # Check 2: .rpm filename must have -1 revision
 #
 # Release workflow: cargo generate-rpm --set-metadata="version=\"$VERSION\""
-#   → produces moltis-${VERSION}-1.${ARCH}.rpm
+#   → produces antre-${VERSION}-1.${ARCH}.rpm
 # ---------------------------------------------------------------------------
 
 echo "Checking .rpm filename pattern..."
@@ -81,13 +81,13 @@ rpm_line=$(grep 'rpm_file=' "$INSTALL_SH" | head -1)
 if echo "$rpm_line" | grep -q '\-${version}-1\.${rpm_arch}\.rpm'; then
   pass ".rpm filename: has -1 revision (matches cargo-generate-rpm output)"
 else
-  fail ".rpm filename pattern does not match expected 'moltis-\${version}-1.\${rpm_arch}.rpm'. Line: $rpm_line"
+  fail ".rpm filename pattern does not match expected 'antre-\${version}-1.\${rpm_arch}.rpm'. Line: $rpm_line"
 fi
 
 # ---------------------------------------------------------------------------
 # Check 3: .pkg.tar.zst (Arch) filename must have -1 revision
 #
-# Release workflow: tar ... "moltis-${VERSION}-1-${MATRIX_ARCH}.pkg.tar.zst"
+# Release workflow: tar ... "antre-${VERSION}-1-${MATRIX_ARCH}.pkg.tar.zst"
 # ---------------------------------------------------------------------------
 
 echo "Checking .pkg.tar.zst (Arch) filename pattern..."
@@ -97,13 +97,13 @@ arch_line=$(grep 'pkg_file=' "$INSTALL_SH" | head -1)
 if echo "$arch_line" | grep -q '\-${version}-1-${arch}\.pkg\.tar\.zst'; then
   pass ".pkg.tar.zst filename: has -1 revision (matches release workflow)"
 else
-  fail ".pkg.tar.zst filename does not match expected 'moltis-\${version}-1-\${arch}.pkg.tar.zst'. Line: $arch_line"
+  fail ".pkg.tar.zst filename does not match expected 'antre-\${version}-1-\${arch}.pkg.tar.zst'. Line: $arch_line"
 fi
 
 # ---------------------------------------------------------------------------
 # Check 4: AppImage filename
 #
-# Release workflow: appimagetool ... "moltis-${VERSION}-${MATRIX_ARCH}.AppImage"
+# Release workflow: appimagetool ... "antre-${VERSION}-${MATRIX_ARCH}.AppImage"
 # ---------------------------------------------------------------------------
 
 echo "Checking AppImage filename pattern..."
@@ -113,13 +113,13 @@ appimage_line=$(grep 'appimage_file=' "$INSTALL_SH" | head -1)
 if echo "$appimage_line" | grep -q '\-${version}-${arch}\.AppImage'; then
   pass "AppImage filename: matches release workflow pattern"
 else
-  fail "AppImage filename does not match expected 'moltis-\${version}-\${arch}.AppImage'. Line: $appimage_line"
+  fail "AppImage filename does not match expected 'antre-\${version}-\${arch}.AppImage'. Line: $appimage_line"
 fi
 
 # ---------------------------------------------------------------------------
 # Check 5: binary tarball filename
 #
-# Release workflow: tar ... "moltis-${VERSION}-${BUILD_TARGET}.tar.gz"
+# Release workflow: tar ... "antre-${VERSION}-${BUILD_TARGET}.tar.gz"
 # ---------------------------------------------------------------------------
 
 echo "Checking binary tarball filename pattern..."
@@ -200,7 +200,7 @@ if [[ -f "$RELEASE_YML" ]]; then
     fail "release.yml: --deb-version not found — .deb naming may have changed"
   fi
 
-  if grep -q "\"moltis-\${VERSION}-\${MATRIX_ARCH}.AppImage\"" "$RELEASE_YML"; then
+  if grep -q "\"antre-\${VERSION}-\${MATRIX_ARCH}.AppImage\"" "$RELEASE_YML"; then
     pass "release.yml: AppImage naming matches install.sh"
   else
     fail "release.yml: AppImage naming pattern changed — install.sh may be stale"

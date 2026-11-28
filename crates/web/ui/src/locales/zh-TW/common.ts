@@ -51,7 +51,7 @@ export default {
 		runningOn: "執行於：",
 	},
 	header: {
-		memoryTooltip: "Moltis 使用的記憶體 · 系統可用記憶體",
+		memoryTooltip: "Antre 使用的記憶體 · 系統可用記憶體",
 		settings: "設定",
 		changelog: "更新日誌",
 		reportIssue: "回報問題",
@@ -66,7 +66,7 @@ export default {
 		search: "搜尋",
 	},
 	banners: {
-		authDisabled: "身分驗證已停用。任何能連到 Moltis 的人，都能控制 Moltis 和這台電腦。",
+		authDisabled: "身分驗證已停用。任何能連到 Antre 的人，都能控制 Antre 和這台電腦。",
 		setupAuthentication: "設定身分驗證",
 		updateAvailable: "有新版本",
 		viewRelease: "檢視版本",

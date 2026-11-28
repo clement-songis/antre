@@ -8,9 +8,9 @@
 use std::collections::HashSet;
 
 use {
+    antre_agents::model::{ChatMessage, LlmProvider, StreamEvent, ToolCall},
+    antre_providers::openai::OpenAiProvider,
     futures::StreamExt,
-    moltis_agents::model::{ChatMessage, LlmProvider, StreamEvent, ToolCall},
-    moltis_providers::openai::OpenAiProvider,
     secrecy::{ExposeSecret, Secret},
 };
 

@@ -1,30 +1,30 @@
 [package]
-description       = "Zvec vector database backend for moltis memory"
+description       = "Zvec vector database backend for antre memory"
 edition.workspace = true
-name              = "moltis-memory-zvec"
+name              = "antre-memory-zvec"
 version.workspace = true
 
 [dependencies]
-anyhow         = { workspace = true }
-async-trait    = { workspace = true }
-futures        = { workspace = true }
-half           = { workspace = true }
-hex            = { workspace = true }
-moltis-memory  = { path = "../memory" }
-moltis-metrics = { optional = true, workspace = true }
-redb           = { workspace = true }
-serde          = { workspace = true }
-serde_json     = { workspace = true }
-sha2           = { workspace = true }
-thiserror      = { workspace = true }
-tokio          = { workspace = true }
-tracing        = { workspace = true }
-zvec           = { workspace = true }
-zvec-sys       = { workspace = true }
+antre-memory  = { path = "../memory" }
+antre-metrics = { optional = true, workspace = true }
+anyhow        = { workspace = true }
+async-trait   = { workspace = true }
+futures       = { workspace = true }
+half          = { workspace = true }
+hex           = { workspace = true }
+redb          = { workspace = true }
+serde         = { workspace = true }
+serde_json    = { workspace = true }
+sha2          = { workspace = true }
+thiserror     = { workspace = true }
+tokio         = { workspace = true }
+tracing       = { workspace = true }
+zvec          = { workspace = true }
+zvec-sys      = { workspace = true }
 
 [features]
 default = ["tracing"]
-metrics = ["dep:moltis-metrics"]
+metrics = ["dep:antre-metrics"]
 tracing = []
 
 [lints]

@@ -1,6 +1,6 @@
-//! Mapping between Moltis provider ids and models.dev provider ids.
+//! Mapping between Antre provider ids and models.dev provider ids.
 
-/// models.dev provider ids holding metadata for a Moltis provider, most
+/// models.dev provider ids holding metadata for a Antre provider, most
 /// specific first.
 #[must_use]
 pub fn models_dev_ids(provider: &str) -> &'static [&'static str] {

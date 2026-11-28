@@ -4,13 +4,13 @@
 use std::sync::Arc;
 
 use {
-    async_trait::async_trait,
-    moltis_agents::model::{ChatMessage, LlmProvider},
-    moltis_learning::{ReviewModel, ReviewRequest},
-    moltis_providers::{
+    antre_agents::model::{ChatMessage, LlmProvider},
+    antre_learning::{ReviewModel, ReviewRequest},
+    antre_providers::{
         ModelInfo,
         model_id::{namespaced_model_id, raw_model_id},
     },
+    async_trait::async_trait,
 };
 
 use crate::state::GatewayState;
@@ -56,7 +56,7 @@ pub(crate) fn utility_model_id(models: &[ModelInfo], session_model: &str) -> Opt
         .find(|model| model.id == session_model || raw_model_id(&model.id) == raw)?
         .provider
         .clone();
-    let pick = moltis_model_catalog::global::pick_utility_chat(&provider)?;
+    let pick = antre_model_catalog::global::pick_utility_chat(&provider)?;
     let id = namespaced_model_id(&provider, &pick.spec.id);
     models.iter().any(|model| model.id == id).then_some(id)
 }
@@ -100,7 +100,7 @@ pub(crate) async fn resolve_model(
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
-    use {super::*, moltis_providers::ModelCapabilities};
+    use {super::*, antre_providers::ModelCapabilities};
 
     fn info(provider: &str, model: &str) -> ModelInfo {
         ModelInfo {

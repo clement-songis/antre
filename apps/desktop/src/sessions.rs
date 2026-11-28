@@ -1,6 +1,6 @@
 //! The session list shown in the sidebar. Pure state, no UI.
 
-use moltis_protocol::{
+use antre_protocol::{
     chat_event::{ChatEvent, ChatEventKind},
     client_api::{SessionEntry, SessionEvent, SessionEventKind},
 };
@@ -171,7 +171,7 @@ pub fn new_session_key() -> String {
 mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used)]
 
-    use {super::*, moltis_protocol::chat_event::ChatFinal};
+    use {super::*, antre_protocol::chat_event::ChatFinal};
 
     #[test]
     fn recency_splits_at_midnight() {

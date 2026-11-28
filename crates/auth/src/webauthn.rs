@@ -76,7 +76,7 @@ pub struct WebAuthnState {
 impl WebAuthnState {
     /// Create a new WebAuthn state.
     ///
-    /// `rp_id` is typically the hostname (e.g. "localhost" or "moltis.example.com").
+    /// `rp_id` is typically the hostname (e.g. "localhost" or "antre.example.com").
     /// `rp_origin` is the full origin URL (e.g. "https://localhost:18080").
     /// `extra_origins` are additional origins accepted during verification (e.g.
     /// `http://m4max.local:18080` when accessing via mDNS hostname).
@@ -87,7 +87,7 @@ impl WebAuthnState {
             builder = builder.append_allowed_origin(origin);
         }
         let webauthn = builder
-            .rp_name("moltis")
+            .rp_name("antre")
             .build()
             .map_err(|e| Error::WebAuthn(format!("webauthn build error: {e}")))?;
 
@@ -330,20 +330,20 @@ mod tests {
     #[test]
     fn normalize_host_strips_port_and_lowercases() {
         assert_eq!(normalize_host("Example.COM:443"), "example.com");
-        assert_eq!(normalize_host("moltis.local"), "moltis.local");
+        assert_eq!(normalize_host("antre.local"), "antre.local");
         assert_eq!(normalize_host("[::1]:8443"), "::1");
     }
 
     #[test]
     fn registry_matches_extra_origin_host() {
         let rp_origin = Url::parse("https://localhost:18080").unwrap();
-        let extra = vec![Url::parse("https://moltis.localhost:18080").unwrap()];
+        let extra = vec![Url::parse("https://antre.localhost:18080").unwrap()];
         let state = WebAuthnState::new("localhost", &rp_origin, &extra).unwrap();
 
         let mut registry = WebAuthnRegistry::new();
         registry.add("localhost".to_string(), state);
 
-        assert!(registry.get_for_host("moltis.localhost:18080").is_some());
-        assert!(registry.contains_host("moltis.localhost"));
+        assert!(registry.get_for_host("antre.localhost:18080").is_some());
+        assert!(registry.contains_host("antre.localhost"));
     }
 }

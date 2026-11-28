@@ -9,8 +9,8 @@
 use std::pin::Pin;
 
 use {
+    antre_agents::model::{ChatMessage, CompletionResponse, LlmProvider, StreamEvent, Usage},
     async_trait::async_trait,
-    moltis_agents::model::{ChatMessage, CompletionResponse, LlmProvider, StreamEvent, Usage},
     tokio_stream::{Stream, StreamExt},
 };
 

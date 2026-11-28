@@ -9,7 +9,7 @@ use std::{collections::HashSet, sync::Arc};
 
 use tracing::warn;
 
-use moltis_delivery::{DeliveryBody, DeliveryKind, NewDelivery, Outbox};
+use antre_delivery::{DeliveryBody, DeliveryKind, NewDelivery, Outbox};
 
 use crate::{
     agent_loop::ChannelReplyTargetKey,
@@ -19,7 +19,7 @@ use crate::{
 };
 
 fn new_delivery(
-    target: &moltis_channels::ChannelReplyTarget,
+    target: &antre_channels::ChannelReplyTarget,
     session_key: &str,
     run_id: &str,
     kind: DeliveryKind,
@@ -48,9 +48,9 @@ fn new_delivery(
 /// A no-op when there is no logbook, so callers need no emptiness check.
 async fn deliver_logbook_follow_up(
     outbox: Option<&Arc<Outbox>>,
-    outbound: &Arc<dyn moltis_channels::plugin::ChannelOutbound>,
-    feedback: Option<&moltis_channels::FeedbackService>,
-    target: &moltis_channels::ChannelReplyTarget,
+    outbound: &Arc<dyn antre_channels::plugin::ChannelOutbound>,
+    feedback: Option<&antre_channels::FeedbackService>,
+    target: &antre_channels::ChannelReplyTarget,
     to: &str,
     logbook_html: &str,
     session_key: &str,
@@ -109,9 +109,9 @@ async fn deliver_logbook_follow_up(
 #[allow(clippy::too_many_arguments)]
 pub(crate) async fn deliver_text_reply(
     outbox: Option<&Arc<Outbox>>,
-    outbound: &Arc<dyn moltis_channels::plugin::ChannelOutbound>,
-    feedback: Option<&moltis_channels::FeedbackService>,
-    target: &moltis_channels::ChannelReplyTarget,
+    outbound: &Arc<dyn antre_channels::plugin::ChannelOutbound>,
+    feedback: Option<&antre_channels::FeedbackService>,
+    target: &antre_channels::ChannelReplyTarget,
     to: &str,
     text: &str,
     logbook_html: &str,
@@ -175,11 +175,11 @@ pub(crate) async fn deliver_text_reply(
 #[allow(clippy::too_many_arguments)]
 async fn deliver_media_reply(
     outbox: Option<&Arc<Outbox>>,
-    outbound: &Arc<dyn moltis_channels::plugin::ChannelOutbound>,
-    feedback: Option<&moltis_channels::FeedbackService>,
-    target: &moltis_channels::ChannelReplyTarget,
+    outbound: &Arc<dyn antre_channels::plugin::ChannelOutbound>,
+    feedback: Option<&antre_channels::FeedbackService>,
+    target: &antre_channels::ChannelReplyTarget,
     to: &str,
-    payload: &moltis_common::types::ReplyPayload,
+    payload: &antre_common::types::ReplyPayload,
     reply_to: Option<&str>,
     session_key: &str,
     trace_correlation_key: &str,
@@ -226,8 +226,8 @@ async fn deliver_media_reply(
 }
 
 pub(crate) async fn deliver_channel_replies_to_targets(
-    outbound: Arc<dyn moltis_channels::plugin::ChannelOutbound>,
-    targets: Vec<moltis_channels::ChannelReplyTarget>,
+    outbound: Arc<dyn antre_channels::plugin::ChannelOutbound>,
+    targets: Vec<antre_channels::ChannelReplyTarget>,
     session_key: &str,
     trace_correlation_key: &str,
     text: &str,
@@ -265,7 +265,7 @@ pub(crate) async fn deliver_channel_replies_to_targets(
             };
             let reply_to = target.message_id.as_deref();
             match target.channel_type {
-                moltis_channels::ChannelType::Telegram => match tts_payload {
+                antre_channels::ChannelType::Telegram => match tts_payload {
                     Some(mut payload) => {
                         let transcript = std::mem::take(&mut payload.text);
 
@@ -302,7 +302,7 @@ pub(crate) async fn deliver_channel_replies_to_targets(
                             // send voice + follow-up text.
                             #[cfg(feature = "telegram")]
                             let fits_in_caption = transcript.len()
-                                <= moltis_telegram::markdown::TELEGRAM_CAPTION_LIMIT;
+                                <= antre_telegram::markdown::TELEGRAM_CAPTION_LIMIT;
                             #[cfg(not(feature = "telegram"))]
                             let fits_in_caption = false;
 
@@ -461,9 +461,9 @@ pub(crate) async fn deliver_channel_replies_to_targets(
 mod tests {
     use {
         super::*,
+        antre_channels::{ChannelReplyTarget, ChannelType},
+        antre_common::types::ReplyPayload,
         async_trait::async_trait,
-        moltis_channels::{ChannelReplyTarget, ChannelType},
-        moltis_common::types::ReplyPayload,
         std::sync::Mutex,
     };
 
@@ -475,14 +475,14 @@ mod tests {
     }
 
     #[async_trait]
-    impl moltis_channels::ChannelOutbound for ReportingOutbound {
+    impl antre_channels::ChannelOutbound for ReportingOutbound {
         async fn send_text(
             &self,
             _account_id: &str,
             _to: &str,
             _text: &str,
             _reply_to: Option<&str>,
-        ) -> moltis_channels::Result<()> {
+        ) -> antre_channels::Result<()> {
             self.calls
                 .lock()
                 .unwrap_or_else(|e| e.into_inner())
@@ -496,7 +496,7 @@ mod tests {
             _to: &str,
             _payload: &ReplyPayload,
             _reply_to: Option<&str>,
-        ) -> moltis_channels::Result<()> {
+        ) -> antre_channels::Result<()> {
             self.calls
                 .lock()
                 .unwrap_or_else(|e| e.into_inner())
@@ -510,7 +510,7 @@ mod tests {
             _to: &str,
             _payload: &ReplyPayload,
             _reply_to: Option<&str>,
-        ) -> moltis_channels::Result<Vec<String>> {
+        ) -> antre_channels::Result<Vec<String>> {
             self.calls
                 .lock()
                 .unwrap_or_else(|e| e.into_inner())
@@ -524,7 +524,7 @@ mod tests {
             _to: &str,
             _text: &str,
             _reply_to: Option<&str>,
-        ) -> moltis_channels::Result<Vec<String>> {
+        ) -> antre_channels::Result<Vec<String>> {
             self.calls
                 .lock()
                 .unwrap_or_else(|e| e.into_inner())
@@ -539,7 +539,7 @@ mod tests {
             _text: &str,
             _suffix_html: &str,
             _reply_to: Option<&str>,
-        ) -> moltis_channels::Result<()> {
+        ) -> antre_channels::Result<()> {
             self.calls
                 .lock()
                 .unwrap_or_else(|e| e.into_inner())
@@ -554,7 +554,7 @@ mod tests {
             _text: &str,
             _suffix_html: &str,
             _reply_to: Option<&str>,
-        ) -> moltis_channels::Result<Vec<String>> {
+        ) -> antre_channels::Result<Vec<String>> {
             self.calls
                 .lock()
                 .unwrap_or_else(|e| e.into_inner())
@@ -568,7 +568,7 @@ mod tests {
             _to: &str,
             _html: &str,
             _reply_to: Option<&str>,
-        ) -> moltis_channels::Result<()> {
+        ) -> antre_channels::Result<()> {
             self.calls
                 .lock()
                 .unwrap_or_else(|e| e.into_inner())
@@ -582,7 +582,7 @@ mod tests {
             _to: &str,
             _html: &str,
             _reply_to: Option<&str>,
-        ) -> moltis_channels::Result<Vec<String>> {
+        ) -> antre_channels::Result<Vec<String>> {
             self.calls
                 .lock()
                 .unwrap_or_else(|e| e.into_inner())
@@ -612,7 +612,7 @@ mod tests {
     #[tokio::test]
     async fn a_logbook_follow_up_uses_the_id_reporting_html_send() {
         let recorder = Arc::new(ReportingOutbound::default());
-        let outbound: Arc<dyn moltis_channels::plugin::ChannelOutbound> = recorder.clone();
+        let outbound: Arc<dyn antre_channels::plugin::ChannelOutbound> = recorder.clone();
 
         deliver_logbook_follow_up(
             None,
@@ -633,7 +633,7 @@ mod tests {
     #[tokio::test]
     async fn an_absent_logbook_sends_nothing() {
         let recorder = Arc::new(ReportingOutbound::default());
-        let outbound: Arc<dyn moltis_channels::plugin::ChannelOutbound> = recorder.clone();
+        let outbound: Arc<dyn antre_channels::plugin::ChannelOutbound> = recorder.clone();
 
         deliver_logbook_follow_up(
             None,
@@ -681,7 +681,7 @@ mod tests {
     #[tokio::test]
     async fn a_media_reply_uses_the_id_reporting_media_send() {
         let recorder = Arc::new(ReportingOutbound::default());
-        let outbound: Arc<dyn moltis_channels::plugin::ChannelOutbound> = recorder.clone();
+        let outbound: Arc<dyn antre_channels::plugin::ChannelOutbound> = recorder.clone();
 
         deliver_media_reply(
             None,
@@ -708,7 +708,7 @@ mod tests {
     #[tokio::test]
     async fn a_logbook_reply_uses_the_id_reporting_suffix_send() {
         let recorder = Arc::new(ReportingOutbound::default());
-        let outbound: Arc<dyn moltis_channels::plugin::ChannelOutbound> = recorder.clone();
+        let outbound: Arc<dyn antre_channels::plugin::ChannelOutbound> = recorder.clone();
 
         deliver_text_reply(
             None,
@@ -731,7 +731,7 @@ mod tests {
     #[tokio::test]
     async fn a_plain_reply_uses_the_id_reporting_text_send() {
         let recorder = Arc::new(ReportingOutbound::default());
-        let outbound: Arc<dyn moltis_channels::plugin::ChannelOutbound> = recorder.clone();
+        let outbound: Arc<dyn antre_channels::plugin::ChannelOutbound> = recorder.clone();
 
         deliver_text_reply(
             None,

@@ -10,8 +10,7 @@ use std::{
 };
 
 use {
-    async_trait::async_trait,
-    moltis_mcp::{
+    antre_mcp::{
         ClientSetup, ElicitationRequest, HostContext, McpClient, McpClientTrait, McpHost,
         SamplingRequest, SamplingResponse, ServerPolicy, TrustTier,
         protocol::{CreateMessageResult, ElicitResult, Root, ServerNotification, UiResource},
@@ -19,6 +18,7 @@ use {
         transport::StdioTransport,
         types::ToolContent,
     },
+    async_trait::async_trait,
     serde_json::{Value, json},
     tokio::{
         io::{AsyncBufReadExt, AsyncWriteExt, BufReader, DuplexStream},
@@ -205,7 +205,7 @@ impl McpHost for TestHost {
     async fn create_message(
         &self,
         request: SamplingRequest,
-    ) -> moltis_mcp::Result<SamplingResponse> {
+    ) -> antre_mcp::Result<SamplingResponse> {
         let max = request.params.max_tokens;
         self.sampling.lock().unwrap().push(request);
         Ok(SamplingResponse {
@@ -214,7 +214,7 @@ impl McpHost for TestHost {
         })
     }
 
-    async fn elicit(&self, request: ElicitationRequest) -> moltis_mcp::Result<ElicitResult> {
+    async fn elicit(&self, request: ElicitationRequest) -> antre_mcp::Result<ElicitResult> {
         self.elicitations.lock().unwrap().push(request);
         // Answer after the request timeout would have fired.
         tokio::time::sleep(Duration::from_millis(400)).await;

@@ -1,11 +1,11 @@
 #![allow(clippy::unwrap_used, clippy::expect_used)]
-//! The native client crate (`moltis-client`) against a real gateway: the
+//! The native client crate (`antre-client`) against a real gateway: the
 //! handshake, subscriptions and typed event payloads must stay compatible.
 
 use std::{net::SocketAddr, sync::Arc, time::Duration};
 
 use {
-    moltis_client::{
+    antre_client::{
         ClientIdentity, ClientUpdate, ConnectOptions, Connection, Endpoint, ManagedClient,
         TlsTrust,
         api::Rpc,
@@ -14,14 +14,14 @@ use {
             client_api::{events, methods},
         },
     },
-    moltis_gateway::{
+    antre_gateway::{
         auth,
         broadcast::{BroadcastOpts, broadcast},
         methods::MethodRegistry,
         services::GatewayServices,
         state::GatewayState,
     },
-    moltis_httpd::server::{build_gateway_base, finalize_gateway_app},
+    antre_httpd::server::{build_gateway_base, finalize_gateway_app},
     serde_json::json,
     tokio::net::TcpListener,
 };
@@ -36,8 +36,8 @@ struct TestServer {
 async fn start_test_server() -> TestServer {
     let config_dir = tempfile::tempdir().unwrap();
     let data_dir = tempfile::tempdir().unwrap();
-    moltis_config::set_config_dir(config_dir.path().to_path_buf());
-    moltis_config::set_data_dir(data_dir.path().to_path_buf());
+    antre_config::set_config_dir(config_dir.path().to_path_buf());
+    antre_config::set_data_dir(data_dir.path().to_path_buf());
 
     let state = GatewayState::new(auth::resolve_auth(None, None), GatewayServices::noop());
     let methods = Arc::new(MethodRegistry::new());
@@ -67,10 +67,7 @@ async fn start_test_server() -> TestServer {
 
 fn options(server: &TestServer) -> ConnectOptions {
     let endpoint = Endpoint::parse(&format!("http://{}", server.addr), TlsTrust::System).unwrap();
-    ConnectOptions::new(
-        endpoint,
-        ClientIdentity::new("moltis-desktop-test", "0.0.0"),
-    )
+    ConnectOptions::new(endpoint, ClientIdentity::new("antre-desktop-test", "0.0.0"))
 }
 
 #[tokio::test]

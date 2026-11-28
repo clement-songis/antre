@@ -1,6 +1,6 @@
 [package]
 edition.workspace = true
-name              = "moltis-wasm-calc"
+name              = "antre-wasm-calc"
 version.workspace = true
 
 [lib]

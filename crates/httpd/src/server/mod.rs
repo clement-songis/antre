@@ -1,8 +1,8 @@
 //! HTTP server entry points, middleware stack, and router construction.
 //!
-//! This module contains the HTTP-specific layer of the moltis gateway:
+//! This module contains the HTTP-specific layer of the antre gateway:
 //! `AppState`, router building, middleware, handlers, and server startup.
-//! Core business logic lives in `moltis-gateway`; this crate depends on it
+//! Core business logic lives in `antre-gateway`; this crate depends on it
 //! but never the reverse.
 
 use std::{net::SocketAddr, path::PathBuf, sync::Arc};
@@ -17,9 +17,9 @@ use {
     tracing::{info, warn},
 };
 
-use moltis_protocol::TICK_INTERVAL_MS;
+use antre_protocol::TICK_INTERVAL_MS;
 
-use moltis_sessions::session_events::{SessionEvent, SessionEventBus};
+use antre_sessions::session_events::{SessionEvent, SessionEventBus};
 
 #[cfg(feature = "ngrok")]
 use secrecy::ExposeSecret;
@@ -27,7 +27,7 @@ use secrecy::ExposeSecret;
 #[cfg(feature = "ngrok")]
 use tokio_util::sync::CancellationToken;
 
-use moltis_gateway::{
+use antre_gateway::{
     auth,
     auth_webauthn::SharedWebAuthnRegistry,
     broadcast::{BroadcastOpts, broadcast, broadcast_tick},
@@ -37,15 +37,15 @@ use moltis_gateway::{
 
 #[cfg(feature = "ngrok")]
 #[cfg(test)]
-use moltis_gateway::methods::MethodRegistry;
+use antre_gateway::methods::MethodRegistry;
 
 use crate::ws::handle_connection;
 
 #[cfg(feature = "tailscale")]
-use moltis_gateway::tailscale::{CliTailscaleManager, TailscaleManager, TailscaleMode};
+use antre_gateway::tailscale::{CliTailscaleManager, TailscaleManager, TailscaleMode};
 
 #[cfg(feature = "tls")]
-use moltis_tls::CertManager;
+use antre_tls::CertManager;
 
 // ── Submodules ───────────────────────────────────────────────────────────────
 

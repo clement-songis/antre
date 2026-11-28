@@ -5,10 +5,10 @@ use gpui::{
     div, prelude::*, px,
 };
 
-use moltis_client::{Endpoint, TlsTrust};
+use antre_client::{Endpoint, TlsTrust};
 
 #[cfg(feature = "ssh")]
-use {crate::servers::ServerKind, moltis_client::ssh::SshTarget};
+use {crate::servers::ServerKind, antre_client::ssh::SshTarget};
 
 use crate::{
     input::TextInput,
@@ -46,7 +46,7 @@ pub struct ServersView {
     remote_port: Entity<TextInput>,
     error: Option<String>,
     #[cfg(feature = "mdns")]
-    nearby: Vec<moltis_client::mdns::DiscoveredDaemon>,
+    nearby: Vec<antre_client::mdns::DiscoveredDaemon>,
     #[cfg(feature = "mdns")]
     browsing: Option<gpui::Task<()>>,
 }
@@ -74,7 +74,7 @@ impl ServersView {
     #[cfg(feature = "mdns")]
     pub fn browse(&mut self, cx: &mut Context<Self>) {
         let found = crate::runtime::spawn(cx, async {
-            moltis_client::mdns::browse(std::time::Duration::from_secs(3)).await
+            antre_client::mdns::browse(std::time::Duration::from_secs(3)).await
         });
         self.browsing = Some(cx.spawn(async move |this, cx| {
             let result = found.await;
@@ -93,7 +93,7 @@ impl ServersView {
 
     /// Discovered daemons not already saved.
     #[cfg(feature = "mdns")]
-    fn unsaved_nearby(&self) -> Vec<(moltis_client::mdns::DiscoveredDaemon, Endpoint)> {
+    fn unsaved_nearby(&self) -> Vec<(antre_client::mdns::DiscoveredDaemon, Endpoint)> {
         self.nearby
             .iter()
             .filter_map(|daemon| Some((daemon.clone(), daemon.endpoint()?)))
@@ -184,7 +184,7 @@ impl ServersView {
             .child(header)
             .children(rows)
             .when(empty, |this| {
-                this.child(muted("No other moltis daemons found on this network.", cx))
+                this.child(muted("No other antre daemons found on this network.", cx))
             })
             .into_any_element()
     }
@@ -466,7 +466,7 @@ impl Render for ServersView {
                     .gap_4()
                     .child(div().text_xl().font_weight(FontWeight::SEMIBOLD).child("Servers"))
                     .child(muted(
-                        "Moltis Desktop connects to a running moltis daemon. Quitting the app leaves the daemon running.",
+                        "Antre Desktop connects to a running antre daemon. Quitting the app leaves the daemon running.",
                         cx,
                     ))
                     .children(rows)

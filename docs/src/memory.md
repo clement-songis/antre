@@ -1,6 +1,6 @@
 # Memory System
 
-Moltis provides a powerful memory system that enables the agent to recall past conversations, notes, and context across sessions. This document explains the available backends, features, and configuration options.
+Antre provides a powerful memory system that enables the agent to recall past conversations, notes, and context across sessions. This document explains the available backends, features, and configuration options.
 
 If you are trying to understand the difference between short-term session
 state, long-term memory files, and sandbox persistence, start with
@@ -8,7 +8,7 @@ state, long-term memory files, and sandbox persistence, start with
 
 ## Backends
 
-Moltis supports three memory backends:
+Antre supports three memory backends:
 
 | Feature | Built-in | Zvec | QMD |
 |---------|----------|------|-----|
@@ -27,7 +27,7 @@ Moltis supports three memory backends:
 
 The default backend uses SQLite for storage with FTS5 for keyword search and optional vector embeddings for semantic search. Key advantages:
 
-- **Zero external dependencies**: Everything is embedded in the moltis binary
+- **Zero external dependencies**: Everything is embedded in the antre binary
 - **Fallback chain**: Automatically switches between embedding providers if one fails
 - **Batch embedding**: Reduces OpenAI API costs by 50% for large sync operations
 - **Embedding cache**: Avoids re-embedding unchanged content
@@ -45,7 +45,7 @@ To use QMD:
 2. Verify the binary is on your `PATH`: `qmd --version`
 3. Enable it in Settings > Memory > Backend
 
-Moltis invokes the `qmd` CLI directly for indexing and search, so the memory
+Antre invokes the `qmd` CLI directly for indexing and search, so the memory
 backend does not require a separate background daemon.
 
 ### Zvec Backend
@@ -71,12 +71,12 @@ The Docker image and default source build include zvec. Standalone release
 packages use the self-contained `portable` feature set and currently omit zvec
 because its native runtime is not available for every supported target.
 
-1. Build moltis with the `zvec` feature flag:
+1. Build antre with the `zvec` feature flag:
    ```bash
    cargo build --release --features zvec
    ```
 
-2. Configure the backend in `moltis.toml`:
+2. Configure the backend in `antre.toml`:
    ```toml
    [memory]
    backend = "zvec"
@@ -87,11 +87,11 @@ because its native runtime is not available for every supported target.
    ```
 
 3. The zvec C library is built automatically from source by the `zvec-sys`
-   crate's Cargo build script when you compile moltis with the `zvec` feature.
+   crate's Cargo build script when you compile antre with the `zvec` feature.
 
 
-The `db_path` is resolved relative to Moltis' data directory
-(`~/.moltis/memory.zvec`). The directory is created on first run with the
+The `db_path` is resolved relative to Antre' data directory
+(`~/.antre/memory.zvec`). The directory is created on first run with the
 collection schema (chunk fields, FTS index, HNSW vector index with 768
 dimensions).
 
@@ -169,7 +169,7 @@ reranker = "cohere"
 
 ## Configuration
 
-Memory settings can be configured in `moltis.toml`:
+Memory settings can be configured in `antre.toml`:
 
 ```toml
 [memory]
@@ -235,7 +235,7 @@ mode controls whether prompt-visible `MEMORY.md` is live-reloaded or frozen
 per session.
 
 The web settings page exposes both knobs in the Memory section so you can
-experiment without hand-editing `moltis.toml`.
+experiment without hand-editing `antre.toml`.
 
 `agent_write_mode` is a separate axis again. It controls where agent-authored
 memory writes may land:
@@ -253,8 +253,8 @@ memory files:
   allows silent browser/channel timezone or location capture
 - `explicit-only` mirrors explicit settings saves to `USER.md`, but disables
   silent browser/channel capture
-- `off` stops Moltis from writing `USER.md`; the canonical user profile remains
-  in `moltis.toml [user]`
+- `off` stops Antre from writing `USER.md`; the canonical user profile remains
+  in `antre.toml [user]`
 
 `citations` and `search_merge_strategy` are typed config enums too:
 
@@ -309,15 +309,15 @@ The system auto-detects available providers and creates a fallback chain:
 The local provider reads the context capacity from the GGUF model and sizes a
 single encoder batch for each input. Inputs longer than the model context are
 truncated at the token boundary so an oversized line or query cannot terminate
-the Moltis process.
+the Antre process.
 
 ## Memory Directories
 
-By default, moltis indexes markdown files from:
+By default, antre indexes markdown files from:
 
-- `~/.moltis/MEMORY.md` - Main long-term memory file
-- `~/.moltis/memory/*.md` - Additional memory files
-- `~/.moltis/memory/sessions/*.md` - Exported session transcripts
+- `~/.antre/MEMORY.md` - Main long-term memory file
+- `~/.antre/memory/*.md` - Additional memory files
+- `~/.antre/memory/sessions/*.md` - Exported session transcripts
 
 Prompt injection from `MEMORY.md` is controlled separately via
 `[chat].prompt_memory_mode`. Use `live-reload` to reread `MEMORY.md` before
@@ -476,7 +476,7 @@ is removed. It is the low-level exact-delete primitive that powers
 ## Silent Memory Turn (Pre-Compaction Flush)
 
 Before compacting a session (summarizing old messages to free context window
-space), Moltis runs a **silent agentic turn** that reviews the conversation
+space), Antre runs a **silent agentic turn** that reviews the conversation
 and saves important information to memory files. This ensures durable memories
 survive compaction.
 
@@ -556,17 +556,17 @@ systems.
 ### Search returns no results
 
 1. Check that memory files exist in the expected directories
-2. Trigger a manual sync by restarting moltis
+2. Trigger a manual sync by restarting antre
 3. Check logs for sync errors
 
 ### Zvec not available
 
-1. Ensure moltis was built with `--features zvec`
+1. Ensure antre was built with `--features zvec`
 2. Verify the zvec C library built successfully (check for `libzvec_c_api.so` /
    `libzvec_c_api.dylib` / `zvec_c_api.dll` in the build output)
 3. Check that `db_path` points to a writable directory
 4. If the collection directory already exists but is corrupted, delete it and
-   restart — moltis will recreate it on the next run
+   restart — antre will recreate it on the next run
 
 ### QMD not available
 

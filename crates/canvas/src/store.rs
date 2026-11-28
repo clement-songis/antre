@@ -150,7 +150,7 @@ pub fn clean_title(title: &str) -> Result<String> {
     Ok(title)
 }
 
-/// Design metadata store backed by the shared `moltis.db` pool.
+/// Design metadata store backed by the shared `antre.db` pool.
 #[derive(Debug, Clone)]
 pub struct DesignStore {
     pool: SqlitePool,

@@ -20,9 +20,9 @@ use {
 };
 
 #[cfg(feature = "metrics")]
-use moltis_metrics::{counter, cron as cron_metrics, gauge, histogram};
+use antre_metrics::{counter, cron as cron_metrics, gauge, histogram};
 
-use moltis_config::schema::ActiveHoursConfig;
+use antre_config::schema::ActiveHoursConfig;
 
 use crate::{
     Error, Result,
@@ -121,7 +121,7 @@ pub struct AgentTurnRequest {
     pub model: Option<String>,
     pub agent_id: Option<String>,
     pub timeout_secs: Option<u64>,
-    pub tool_controls: moltis_config::schema::AgentToolControls,
+    pub tool_controls: antre_config::schema::AgentToolControls,
     pub deliver: bool,
     pub channel: Option<String>,
     pub to: Option<String>,

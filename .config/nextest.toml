@@ -7,19 +7,19 @@ retries = 0
 # QMD tests spawn shell scripts that time out under heavy parallelism. Reserve
 # the worker pool because a one-thread test group still competes with other tests.
 [[profile.default.overrides]]
-filter           = "package(moltis-qmd)"
+filter           = "package(antre-qmd)"
 threads-required = "num-test-threads"
 
 # This test boots the complete headless gateway in a child process. Reserve the
 # worker pool so model/provider startup is not starved by the workspace suite.
 [[profile.default.overrides]]
-filter           = "package(moltis) & binary(acp_stdio) & test(without_echo_boots_the_real_backend_and_serves_protocol)"
+filter           = "package(antre) & binary(acp_stdio) & test(without_echo_boots_the_real_backend_and_serves_protocol)"
 threads-required = "num-test-threads"
 
 # Synchronous WASM HTTP host tests depend on fixture threads accepting and
 # serving loopback requests within millisecond-scale request deadlines.
 [[profile.default.overrides]]
-filter           = "package(moltis-tools) & test(/^wasm_component::tests::http_host_/)"
+filter           = "package(antre-tools) & test(/^wasm_component::tests::http_host_/)"
 threads-required = "num-test-threads"
 
 [profile.ci]
@@ -32,13 +32,13 @@ slow-timeout = { period = "60s", terminate-after = 2 }
 junit.path = "junit.xml"
 
 [[profile.ci.overrides]]
-filter           = "package(moltis) & binary(acp_stdio) & test(without_echo_boots_the_real_backend_and_serves_protocol)"
+filter           = "package(antre) & binary(acp_stdio) & test(without_echo_boots_the_real_backend_and_serves_protocol)"
 threads-required = "num-test-threads"
 
 [[profile.ci.overrides]]
-filter           = "package(moltis-tools) & test(/^wasm_component::tests::http_host_/)"
+filter           = "package(antre-tools) & test(/^wasm_component::tests::http_host_/)"
 threads-required = "num-test-threads"
 
 [[profile.ci.overrides]]
-filter           = "package(moltis-qmd)"
+filter           = "package(antre-qmd)"
 threads-required = "num-test-threads"

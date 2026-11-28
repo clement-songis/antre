@@ -30,7 +30,7 @@ pub(crate) enum ManagedFilesPath {
 }
 
 pub(crate) fn configured_host_data_dir(config: &SandboxConfig) -> Option<PathBuf> {
-    let guest_data_dir = moltis_config::data_dir();
+    let guest_data_dir = antre_config::data_dir();
     let path = config
         .host_data_dir
         .as_ref()
@@ -56,10 +56,10 @@ pub(crate) fn detect_host_data_dir(cli: &str, guest_data_dir: &FsPath) -> Option
         }
     }
 
-    let detected = moltis_config::container_mounts::detect_host_data_dir_with_references(
+    let detected = antre_config::container_mounts::detect_host_data_dir_with_references(
         cli,
         guest_data_dir,
-        &moltis_config::container_mounts::current_container_references(),
+        &antre_config::container_mounts::current_container_references(),
     );
 
     if let Some(path) = detected.clone() {
@@ -93,7 +93,7 @@ pub(crate) fn detected_container_cli(config: &SandboxConfig) -> Option<&'static 
 }
 
 pub(crate) fn host_visible_data_dir(config: &SandboxConfig, cli: Option<&str>) -> PathBuf {
-    let guest_data_dir = moltis_config::data_dir();
+    let guest_data_dir = antre_config::data_dir();
     if let Some(configured) = configured_host_data_dir(config) {
         return configured;
     }
@@ -110,7 +110,7 @@ pub(crate) fn host_visible_path(
     cli: Option<&str>,
     path: &FsPath,
 ) -> PathBuf {
-    let guest_data_dir = moltis_config::data_dir();
+    let guest_data_dir = antre_config::data_dir();
     let Ok(relative_path) = path.strip_prefix(&guest_data_dir) else {
         return path.to_path_buf();
     };
@@ -123,14 +123,14 @@ pub(crate) fn host_visible_path(
 }
 
 pub(crate) fn host_visible_managed_files_dir(config: &SandboxConfig, cli: Option<&str>) -> PathBuf {
-    host_visible_path(config, cli, &moltis_config::managed_files_dir())
+    host_visible_path(config, cli, &antre_config::managed_files_dir())
 }
 
 pub(crate) fn ensure_managed_files_host_dir(
     config: &SandboxConfig,
     cli: Option<&str>,
 ) -> Result<PathBuf> {
-    std::fs::create_dir_all(moltis_config::managed_files_dir())?;
+    std::fs::create_dir_all(antre_config::managed_files_dir())?;
     Ok(host_visible_managed_files_dir(config, cli))
 }
 
@@ -139,7 +139,7 @@ pub(crate) fn ensure_managed_files_none_mask_host_dir(
     config: &SandboxConfig,
     cli: Option<&str>,
 ) -> Result<PathBuf> {
-    let guest_visible = moltis_config::data_dir()
+    let guest_visible = antre_config::data_dir()
         .join("sandbox")
         .join("masks")
         .join("managed-files-none");
@@ -172,7 +172,7 @@ pub(crate) fn resolve_managed_files_guest_path_on_host(
 ) -> ManagedFilesPath {
     let normalized = normalize_guest_path(guest_path);
     let canonical_guest_dir = FsPath::new(SANDBOX_FILES_DIR);
-    let legacy_guest_dir = moltis_config::managed_files_dir();
+    let legacy_guest_dir = antre_config::managed_files_dir();
     let relative = normalized
         .strip_prefix(canonical_guest_dir)
         .or_else(|_| normalized.strip_prefix(&legacy_guest_dir));
@@ -200,7 +200,7 @@ pub(crate) fn resolve_workspace_guest_path_on_host(
     if config.workspace_mount == WorkspaceMount::None {
         return None;
     }
-    let guest_workspace_dir = moltis_config::data_dir();
+    let guest_workspace_dir = antre_config::data_dir();
     let relative_path = guest_path.strip_prefix(&guest_workspace_dir).ok()?;
     let host_workspace_dir = host_visible_data_dir(config, cli);
     Some(if relative_path.as_os_str().is_empty() {
@@ -217,7 +217,7 @@ pub(crate) fn sandbox_home_persistence_base_dir(
     host_visible_path(
         config,
         cli,
-        &moltis_config::data_dir().join("sandbox").join("home"),
+        &antre_config::data_dir().join("sandbox").join("home"),
     )
 }
 
@@ -236,7 +236,7 @@ pub(crate) fn resolve_shared_home_dir(config: &SandboxConfig, cli: Option<&str>)
     if path.is_absolute() {
         return host_visible_path(config, cli, path);
     }
-    host_visible_path(config, cli, &moltis_config::data_dir().join(path))
+    host_visible_path(config, cli, &antre_config::data_dir().join(path))
 }
 
 /// Effective host path used when shared home persistence is enabled.
@@ -279,7 +279,7 @@ pub(crate) fn guest_visible_sandbox_home_persistence_host_dir(
     config: &SandboxConfig,
     id: &SandboxId,
 ) -> Option<PathBuf> {
-    let base = moltis_config::data_dir().join("sandbox").join("home");
+    let base = antre_config::data_dir().join("sandbox").join("home");
     match config.home_persistence {
         HomePersistence::Off => None,
         HomePersistence::Shared => Some(
@@ -291,7 +291,7 @@ pub(crate) fn guest_visible_sandbox_home_persistence_host_dir(
                     if path.is_absolute() {
                         path.clone()
                     } else {
-                        moltis_config::data_dir().join(path)
+                        antre_config::data_dir().join(path)
                     }
                 })
                 .unwrap_or_else(|| base.join("shared")),

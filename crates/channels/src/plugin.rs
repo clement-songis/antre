@@ -6,8 +6,8 @@ pub use self::channel_type::ChannelType;
 use std::sync::Arc;
 
 use {
+    antre_common::{hooks::ChannelBinding, types::ReplyPayload},
     async_trait::async_trait,
-    moltis_common::{hooks::ChannelBinding, types::ReplyPayload},
     tokio::sync::mpsc,
 };
 

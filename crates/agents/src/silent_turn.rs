@@ -17,7 +17,7 @@ use {
 };
 
 #[cfg(feature = "metrics")]
-use moltis_metrics::{counter, histogram, labels, memory as mem_metrics};
+use antre_metrics::{counter, histogram, labels, memory as mem_metrics};
 
 use crate::{
     memory_writer::{MemoryWriteResult, MemoryWriter},

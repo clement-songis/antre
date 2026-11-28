@@ -5,7 +5,7 @@ import { initTheme, injectMarkdownStyles } from "./theme";
 import "./time-format";
 
 // Expose state module for E2E test WS mocking via shims.
-window.__moltis_state = S;
+window.__antre_state = S;
 
 captureLaunchSetupCode();
 initTheme();

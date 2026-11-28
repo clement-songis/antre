@@ -1,5 +1,5 @@
 use {
-    moltis_channels::{ChannelReplyTarget, ChannelType},
+    antre_channels::{ChannelReplyTarget, ChannelType},
     serenity::all::{ChannelId, GuildId, MessageId},
 };
 

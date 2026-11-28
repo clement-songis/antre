@@ -4,14 +4,14 @@ use std::sync::Arc;
 
 use {async_trait::async_trait, serde_json::Value, tracing::error};
 
-use moltis_cron::{
+use antre_cron::{
     service::CronService,
     types::{CronJobCreate, CronJobPatch},
 };
 
 use crate::services::{CronService as CronServiceTrait, ServiceError, ServiceResult};
 
-/// Gateway-facing cron service backed by the real [`moltis_cron::service::CronService`].
+/// Gateway-facing cron service backed by the real [`antre_cron::service::CronService`].
 pub struct LiveCronService {
     inner: Arc<CronService>,
 }
@@ -91,7 +91,7 @@ impl CronServiceTrait for LiveCronService {
             .run(id, force)
             .await
             .map_err(ServiceError::message)?;
-        let ok = run.status == moltis_cron::types::RunStatus::Ok;
+        let ok = run.status == antre_cron::types::RunStatus::Ok;
         Ok(serde_json::json!({ "ran": id, "ok": ok, "run": run }))
     }
 

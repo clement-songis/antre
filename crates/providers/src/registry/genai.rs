@@ -3,7 +3,7 @@
 
 use std::{collections::HashMap, sync::Arc};
 
-use moltis_config::schema::ProvidersConfig;
+use antre_config::schema::ProvidersConfig;
 
 use super::ProviderRegistry;
 #[cfg(feature = "provider-genai")]
@@ -68,7 +68,7 @@ impl ProviderRegistry {
                 genai_provider_name.clone(),
                 // genai normalizes every adapter to inclusive prompt tokens,
                 // including Anthropic's otherwise-exclusive API counters.
-                moltis_agents::model::InputTokenAccounting::Inclusive,
+                antre_agents::model::InputTokenAccounting::Inclusive,
                 resolved_key,
             ));
             self.register(

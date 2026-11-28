@@ -5,12 +5,12 @@ pub(super) struct FinalizeGatewayArgs<'a> {
     pub port: u16,
     pub tls_enabled_for_gateway: bool,
     pub state: Arc<GatewayState>,
-    pub browser_for_lifecycle: Arc<dyn moltis_gateway::services::BrowserService>,
-    pub browser_tool_for_warmup: Option<Arc<dyn moltis_agents::tool_registry::AgentTool>>,
-    pub sandbox_router: Arc<moltis_tools::sandbox::SandboxRouter>,
-    pub cron_service: Arc<moltis_cron::service::CronService>,
-    pub log_buffer: Option<moltis_gateway::logs::LogBuffer>,
-    pub config: moltis_config::schema::MoltisConfig,
+    pub browser_for_lifecycle: Arc<dyn antre_gateway::services::BrowserService>,
+    pub browser_tool_for_warmup: Option<Arc<dyn antre_agents::tool_registry::AgentTool>>,
+    pub sandbox_router: Arc<antre_tools::sandbox::SandboxRouter>,
+    pub cron_service: Arc<antre_cron::service::CronService>,
+    pub log_buffer: Option<antre_gateway::logs::LogBuffer>,
+    pub config: antre_config::schema::AntreConfig,
     pub data_dir: PathBuf,
     pub provider_summary: String,
     pub mcp_configured_count: usize,
@@ -25,7 +25,7 @@ pub(super) struct FinalizeGatewayArgs<'a> {
     #[cfg(feature = "netbird")]
     pub netbird_controller: Arc<NetbirdController>,
     #[cfg(feature = "trusted-network")]
-    pub audit_buffer_for_broadcast: Option<moltis_gateway::network_audit::NetworkAuditBuffer>,
+    pub audit_buffer_for_broadcast: Option<antre_gateway::network_audit::NetworkAuditBuffer>,
     #[cfg(feature = "trusted-network")]
     pub _proxy_shutdown_tx: Option<tokio::sync::watch::Sender<bool>>,
     #[cfg(feature = "tailscale")]
@@ -43,16 +43,16 @@ pub(super) fn attach_ngrok_controller_owner(
     app_state.ngrok_controller_owner = Some(Arc::clone(ngrok_controller));
 }
 #[cfg(feature = "mdns")]
-pub(super) fn instance_slug(config: &moltis_config::MoltisConfig) -> String {
+pub(super) fn instance_slug(config: &antre_config::AntreConfig) -> String {
     let mut raw_name = config.identity.name.clone();
-    if let Some(file_identity) = moltis_config::load_identity()
+    if let Some(file_identity) = antre_config::load_identity()
         && file_identity.name.is_some()
     {
         raw_name = file_identity.name;
     }
 
     let base = raw_name
-        .unwrap_or_else(|| "moltis".to_string())
+        .unwrap_or_else(|| "antre".to_string())
         .to_lowercase();
     let mut out = String::new();
     let mut last_dash = false;
@@ -74,7 +74,7 @@ pub(super) fn instance_slug(config: &moltis_config::MoltisConfig) -> String {
     }
     let out = out.trim_matches('-').to_string();
     if out.is_empty() {
-        "moltis".to_string()
+        "antre".to_string()
     } else {
         out
     }
@@ -142,7 +142,7 @@ pub(super) async fn finalize_prepared_gateway(
         } else if tls_config.auto_generate {
             // Auto-generate certificates.
             let mgr =
-                moltis_tls::FsCertManager::new().map_err(|e| crate::Error::Tls(e.to_string()))?;
+                antre_tls::FsCertManager::new().map_err(|e| crate::Error::Tls(e.to_string()))?;
             let mut runtime_sans = tls_runtime_sans(bind);
             runtime_sans.extend(
                 tls_configured_sans(tls_config.public_ip.as_deref())
@@ -172,7 +172,7 @@ pub(super) async fn finalize_prepared_gateway(
                                 ("content-type", "application/x-pem-file"),
                                 (
                                     "content-disposition",
-                                    "attachment; filename=\"moltis-ca.pem\"",
+                                    "attachment; filename=\"antre-ca.pem\"",
                                 ),
                             ],
                             data.as_ref().clone(),
@@ -226,7 +226,7 @@ pub(super) async fn finalize_prepared_gateway(
                 0 => total.saturating_sub(sys.used_memory()),
                 v => v,
             };
-            let local_llama_cpp_bytes = moltis_gateway::server::local_llama_cpp_bytes_for_ui();
+            let local_llama_cpp_bytes = antre_gateway::server::local_llama_cpp_bytes_for_ui();
             broadcast_tick(
                 &tick_state,
                 process_mem,
@@ -272,7 +272,7 @@ pub(super) async fn finalize_prepared_gateway(
                                 entry.channel_binding
                             {
                                 if let Ok(target) = serde_json::from_str::<
-                                    moltis_channels::ChannelReplyTarget,
+                                    antre_channels::ChannelReplyTarget,
                                 >(binding_json)
                                 {
                                     metadata
@@ -346,7 +346,7 @@ pub(super) async fn finalize_prepared_gateway(
     let releases_url = resolve_releases_url(config.server.update_releases_url.as_deref());
     tokio::spawn(async move {
         let client = match reqwest::Client::builder()
-            .user_agent(format!("moltis-gateway/{}", update_state.version))
+            .user_agent(format!("antre-gateway/{}", update_state.version))
             .timeout(std::time::Duration::from_secs(12))
             .build()
         {
@@ -389,7 +389,7 @@ pub(super) async fn finalize_prepared_gateway(
         let server_start = std::time::Instant::now();
         tokio::spawn(async move {
             enum MetricsPersistJob {
-                Save(moltis_gateway::state::MetricsHistoryPoint),
+                Save(antre_gateway::state::MetricsHistoryPoint),
                 CleanupBefore(u64),
             }
 
@@ -456,7 +456,7 @@ pub(super) async fn finalize_prepared_gateway(
                 interval.tick().await;
                 if let Some(ref handle) = metrics_state.metrics_handle {
                     // Update gauges that are derived from server state, not events.
-                    moltis_metrics::gauge!(moltis_metrics::system::UPTIME_SECONDS)
+                    antre_metrics::gauge!(antre_metrics::system::UPTIME_SECONDS)
                         .set(server_start.elapsed().as_secs_f64());
                     let session_count = metrics_state
                         .client_registry
@@ -464,11 +464,11 @@ pub(super) async fn finalize_prepared_gateway(
                         .await
                         .active_sessions
                         .len() as f64;
-                    moltis_metrics::gauge!(moltis_metrics::session::ACTIVE).set(session_count);
+                    antre_metrics::gauge!(antre_metrics::session::ACTIVE).set(session_count);
 
                     let prometheus_text = handle.render();
                     let snapshot =
-                        moltis_metrics::MetricsSnapshot::from_prometheus_text(&prometheus_text);
+                        antre_metrics::MetricsSnapshot::from_prometheus_text(&prometheus_text);
                     sys.refresh_memory();
                     if let Some(pid) = pid {
                         sys.refresh_processes_specifics(
@@ -482,7 +482,7 @@ pub(super) async fn finalize_prepared_gateway(
                         .map(|p| p.memory())
                         .unwrap_or(0);
                     let local_llama_cpp_bytes =
-                        moltis_gateway::server::local_llama_cpp_bytes_for_ui();
+                        antre_gateway::server::local_llama_cpp_bytes_for_ui();
                     // Convert per-provider metrics to history format.
                     let by_provider = snapshot
                         .categories
@@ -490,7 +490,7 @@ pub(super) async fn finalize_prepared_gateway(
                         .by_provider
                         .iter()
                         .map(|(name, metrics)| {
-                            (name.clone(), moltis_metrics::ProviderTokens {
+                            (name.clone(), antre_metrics::ProviderTokens {
                                 input_tokens: metrics.input_tokens,
                                 output_tokens: metrics.output_tokens,
                                 completions: metrics.completions,
@@ -499,7 +499,7 @@ pub(super) async fn finalize_prepared_gateway(
                         })
                         .collect();
 
-                    let point = moltis_gateway::state::MetricsHistoryPoint {
+                    let point = antre_gateway::state::MetricsHistoryPoint {
                         timestamp: std::time::SystemTime::now()
                             .duration_since(std::time::UNIX_EPOCH)
                             .unwrap_or_default()
@@ -537,7 +537,7 @@ pub(super) async fn finalize_prepared_gateway(
                     }
 
                     // Broadcast metrics update to all connected clients.
-                    let payload = moltis_gateway::state::MetricsUpdatePayload { snapshot, point };
+                    let payload = antre_gateway::state::MetricsUpdatePayload { snapshot, point };
                     if let Ok(payload_json) = serde_json::to_value(&payload) {
                         broadcast(
                             &metrics_state,
@@ -581,7 +581,7 @@ pub(super) async fn finalize_prepared_gateway(
                 match event_rx.recv().await {
                     Ok(event) => {
                         let (event_name, payload) = match event {
-                            moltis_tools::sandbox::SandboxEvent::Preparing {
+                            antre_tools::sandbox::SandboxEvent::Preparing {
                                 session_key,
                                 backend,
                                 image,
@@ -594,7 +594,7 @@ pub(super) async fn finalize_prepared_gateway(
                                     "image": image,
                                 }),
                             ),
-                            moltis_tools::sandbox::SandboxEvent::Prepared {
+                            antre_tools::sandbox::SandboxEvent::Prepared {
                                 session_key,
                                 backend,
                                 image,
@@ -607,7 +607,7 @@ pub(super) async fn finalize_prepared_gateway(
                                     "image": image,
                                 }),
                             ),
-                            moltis_tools::sandbox::SandboxEvent::PrepareFailed {
+                            antre_tools::sandbox::SandboxEvent::PrepareFailed {
                                 session_key,
                                 backend,
                                 image,
@@ -622,7 +622,7 @@ pub(super) async fn finalize_prepared_gateway(
                                     "error": error,
                                 }),
                             ),
-                            moltis_tools::sandbox::SandboxEvent::Provisioning {
+                            antre_tools::sandbox::SandboxEvent::Provisioning {
                                 container,
                                 packages,
                             } => (
@@ -633,14 +633,14 @@ pub(super) async fn finalize_prepared_gateway(
                                     "packages": packages,
                                 }),
                             ),
-                            moltis_tools::sandbox::SandboxEvent::Provisioned { container } => (
+                            antre_tools::sandbox::SandboxEvent::Provisioned { container } => (
                                 "sandbox.image.provision",
                                 serde_json::json!({
                                     "phase": "done",
                                     "container": container,
                                 }),
                             ),
-                            moltis_tools::sandbox::SandboxEvent::ProvisionFailed {
+                            antre_tools::sandbox::SandboxEvent::ProvisionFailed {
                                 container,
                                 error,
                             } => (
@@ -725,7 +725,7 @@ pub(super) async fn finalize_prepared_gateway(
     // Upsert the built-in heartbeat job from config.
     // Use a fixed ID so run history persists across restarts.
     {
-        use moltis_cron::{
+        use antre_cron::{
             heartbeat::{
                 DEFAULT_INTERVAL_MS, HeartbeatPromptSource, parse_interval_ms,
                 resolve_heartbeat_prompt,
@@ -736,7 +736,7 @@ pub(super) async fn finalize_prepared_gateway(
 
         let hb = &config.heartbeat;
         let interval_ms = parse_interval_ms(&hb.every).unwrap_or(DEFAULT_INTERVAL_MS);
-        let heartbeat_md = moltis_config::load_heartbeat_md();
+        let heartbeat_md = antre_config::load_heartbeat_md();
         let (prompt, prompt_source) =
             resolve_heartbeat_prompt(hb.prompt.as_deref(), heartbeat_md.as_deref());
         if prompt_source == HeartbeatPromptSource::HeartbeatMd {
@@ -781,7 +781,7 @@ pub(super) async fn finalize_prepared_gateway(
                         to: hb.to.clone(),
                     }),
                     enabled: Some(true),
-                    sandbox: Some(moltis_cron::types::CronSandboxConfig {
+                    sandbox: Some(antre_cron::types::CronSandboxConfig {
                         enabled: hb.sandbox_enabled,
                         image: hb.sandbox_image.clone(),
                         auto_prune_container: None,
@@ -815,12 +815,12 @@ pub(super) async fn finalize_prepared_gateway(
                     delete_after_run: false,
                     enabled: true,
                     system: true,
-                    sandbox: moltis_cron::types::CronSandboxConfig {
+                    sandbox: antre_cron::types::CronSandboxConfig {
                         enabled: hb.sandbox_enabled,
                         image: hb.sandbox_image.clone(),
                         auto_prune_container: None,
                     },
-                    wake_mode: moltis_cron::types::CronWakeMode::default(),
+                    wake_mode: antre_cron::types::CronWakeMode::default(),
                 };
                 match cron_service.add(create).await {
                     Ok(job) => tracing::info!(id = %job.id, "heartbeat job created"),
@@ -887,7 +887,7 @@ pub async fn prepare_gateway_embedded(
     bind: &str,
     port: u16,
     no_tls: bool,
-    log_buffer: Option<moltis_gateway::logs::LogBuffer>,
+    log_buffer: Option<antre_gateway::logs::LogBuffer>,
     config_dir: Option<PathBuf>,
     data_dir: Option<PathBuf>,
     extra_routes: Option<RouteEnhancer>,
@@ -908,7 +908,7 @@ pub async fn prepare_gateway_embedded(
     .await?;
     // Embedded callers own the listener lifecycle, but still need non-blocking
     // OpenClaw startup tasks.
-    moltis_gateway::server::start_openclaw_background_tasks(prepared.banner.data_dir.clone());
+    antre_gateway::server::start_openclaw_background_tasks(prepared.banner.data_dir.clone());
     Ok(prepared)
 }
 
@@ -917,7 +917,7 @@ pub use prepare_gateway_embedded as prepare_httpd_embedded;
 
 #[cfg(feature = "ngrok")]
 pub(super) fn ngrok_loopback_has_proxy_headers(headers: &axum::http::HeaderMap) -> bool {
-    moltis_auth::locality::has_proxy_headers(headers)
+    antre_auth::locality::has_proxy_headers(headers)
 }
 
 #[cfg(feature = "ngrok")]
@@ -938,7 +938,7 @@ pub(super) async fn start_ngrok_tunnel(
     app: Router,
     gateway: Arc<GatewayState>,
     webauthn_registry: Option<SharedWebAuthnRegistry>,
-    ngrok_config: &moltis_config::NgrokConfig,
+    ngrok_config: &antre_config::NgrokConfig,
 ) -> crate::error::Result<NgrokActiveTunnel> {
     use ::ngrok::prelude::{EndpointInfo, ForwarderBuilder};
 
@@ -988,7 +988,7 @@ pub(super) async fn start_ngrok_tunnel(
     if let Some(domain) = ngrok_config.domain.as_deref() {
         endpoint.domain(domain);
     }
-    endpoint.forwards_to(format!("moltis://{internal_addr}"));
+    endpoint.forwards_to(format!("antre://{internal_addr}"));
     let forwarder = match endpoint.listen_and_forward(forward_to).await {
         Ok(forwarder) => forwarder,
         Err(error) => {
@@ -1007,7 +1007,7 @@ pub(super) async fn start_ngrok_tunnel(
         .ok()
         .and_then(|url| url.host_str().map(str::to_string));
 
-    let passkey_warning = moltis_gateway::server::sync_runtime_webauthn_host_and_notice(
+    let passkey_warning = antre_gateway::server::sync_runtime_webauthn_host_and_notice(
         &gateway,
         webauthn_registry.as_ref(),
         public_host.as_deref(),
@@ -1038,7 +1038,7 @@ pub async fn start_gateway(
     bind: &str,
     port: u16,
     no_tls: bool,
-    log_buffer: Option<moltis_gateway::logs::LogBuffer>,
+    log_buffer: Option<antre_gateway::logs::LogBuffer>,
     config_dir: Option<PathBuf>,
     data_dir: Option<PathBuf>,
     #[cfg(feature = "tailscale")] tailscale_opts: Option<TailscaleOpts>,
@@ -1069,7 +1069,7 @@ pub async fn start_gateway(
         .map_err(|e| crate::Error::Config(format!("invalid bind address '{bind}': {e}")))?;
     let addr = SocketAddr::new(ip, port);
 
-    let is_localhost = moltis_config::is_loopback_bind(bind);
+    let is_localhost = antre_config::is_loopback_bind(bind);
 
     // Register the gateway as a Bonjour/mDNS service so LAN clients can
     // discover it without typing the URL manually.
@@ -1078,9 +1078,9 @@ pub async fn start_gateway(
         let host = hostname::get()
             .ok()
             .and_then(|h| h.into_string().ok())
-            .unwrap_or_else(|| "moltis".to_string());
-        let instance = format!("Moltis on {host}");
-        match moltis_gateway::mdns::register(
+            .unwrap_or_else(|| "antre".to_string());
+        let instance = format!("Antre on {host}");
+        match antre_gateway::mdns::register(
             &instance,
             port,
             env!("CARGO_PKG_VERSION"),
@@ -1147,7 +1147,7 @@ pub async fn start_gateway(
         } else if tls_config.auto_generate {
             // Auto-generate certificates.
             let mgr =
-                moltis_tls::FsCertManager::new().map_err(|e| crate::Error::Tls(e.to_string()))?;
+                antre_tls::FsCertManager::new().map_err(|e| crate::Error::Tls(e.to_string()))?;
             let mut runtime_sans = tls_runtime_sans(bind);
             runtime_sans.extend(
                 tls_configured_sans(tls_config.public_ip.as_deref())
@@ -1170,7 +1170,7 @@ pub async fn start_gateway(
         }
         ca_cert_path = ca_path.clone();
 
-        let mgr = moltis_tls::FsCertManager::new().map_err(|e| crate::Error::Tls(e.to_string()))?;
+        let mgr = antre_tls::FsCertManager::new().map_err(|e| crate::Error::Tls(e.to_string()))?;
         rustls_config = Some(
             mgr.build_rustls_config(&cert_path, &key_path)
                 .map_err(|e| crate::Error::Tls(e.to_string()))?,
@@ -1179,13 +1179,13 @@ pub async fn start_gateway(
     }
 
     let (skill_count, repo_count) = {
-        use moltis_skills::discover::{FsSkillDiscoverer, SkillDiscoverer};
+        use antre_skills::discover::{FsSkillDiscoverer, SkillDiscoverer};
         let discoverer = FsSkillDiscoverer::new(FsSkillDiscoverer::default_paths());
         let sc = discoverer.discover().await.map(|s| s.len()).unwrap_or(0);
-        let rc = moltis_skills::manifest::ManifestStore::default_path()
+        let rc = antre_skills::manifest::ManifestStore::default_path()
             .ok()
             .map(|p| {
-                let store = moltis_skills::manifest::ManifestStore::new(p);
+                let store = antre_skills::manifest::ManifestStore::new(p);
                 store.load().map(|m| m.repos.len()).unwrap_or(0)
             })
             .unwrap_or(0);
@@ -1216,10 +1216,10 @@ pub async fn start_gateway(
     };
     #[cfg_attr(not(feature = "tls"), allow(unused_mut))]
     let mut lines = vec![
-        format!("moltis gateway v{}", state.version),
+        format!("antre gateway v{}", state.version),
         format!(
             "protocol v{}, listening on {}://{} (HTTP/1.1)",
-            moltis_protocol::PROTOCOL_VERSION,
+            antre_protocol::PROTOCOL_VERSION,
             scheme,
             display_host,
         ),
@@ -1248,7 +1248,7 @@ pub async fn start_gateway(
         format!("sandbox: {} backend", banner.sandbox_backend_name),
         format!(
             "config: {}",
-            moltis_config::find_or_default_config_path().display()
+            antre_config::find_or_default_config_path().display()
         ),
         format!("data: {}", banner.data_dir.display()),
         format!("openclaw: {}", banner.openclaw_status),
@@ -1315,10 +1315,9 @@ pub async fn start_gateway(
             ca_host, http_port
         ));
         lines.push(format!("  or: {}", ca.display()));
-        if moltis_tls::trust::recorded_decision(ca)
-            != Some(moltis_tls::trust::TrustDecision::Trusted)
+        if antre_tls::trust::recorded_decision(ca) != Some(antre_tls::trust::TrustDecision::Trusted)
         {
-            lines.push("run `moltis trust-ca` to remove browser warnings".into());
+            lines.push("run `antre trust-ca` to remove browser warnings".into());
         }
     }
     // Tailscale: enable serve/funnel and show in banner.
@@ -1351,7 +1350,7 @@ pub async fn start_gateway(
 
     // Dispatch GatewayStart hook.
     if let Some(ref hooks) = state.inner.read().await.hook_registry {
-        let payload = moltis_common::hooks::HookPayload::GatewayStart {
+        let payload = antre_common::hooks::HookPayload::GatewayStart {
             address: addr.to_string(),
         };
         if let Err(e) = hooks.dispatch(&payload).await {
@@ -1365,7 +1364,7 @@ pub async fn start_gateway(
         status: launch.status.clone(),
         #[cfg(feature = "mdns")]
         mdns: _mdns_daemon.map(|daemon| -> Box<dyn FnOnce() + Send> {
-            Box::new(move || moltis_gateway::mdns::shutdown(&daemon))
+            Box::new(move || antre_gateway::mdns::shutdown(&daemon))
         }),
         #[cfg(feature = "tailscale")]
         tailscale_reset: (banner.tailscale_mode != TailscaleMode::Off
@@ -1389,7 +1388,7 @@ pub async fn start_gateway(
             let ca_clone = ca.clone();
             tokio::spawn(async move {
                 if let Err(e) =
-                    moltis_tls::start_http_redirect_server(&bind_clone, http_port, port, &ca_clone)
+                    antre_tls::start_http_redirect_server(&bind_clone, http_port, port, &ca_clone)
                         .await
                 {
                     tracing::error!("HTTP redirect server failed: {e}");
@@ -1402,12 +1401,12 @@ pub async fn start_gateway(
         let tls_cfg = rustls_config.expect("rustls config must be set when TLS is active");
         let tcp_listener = tokio::net::TcpListener::bind(addr).await?;
         launch::spawn_after_listen(after_listen);
-        moltis_gateway::server::start_openclaw_background_tasks(banner.data_dir.clone());
-        moltis_gateway::server::start_browser_warmup_after_listener(
+        antre_gateway::server::start_openclaw_background_tasks(banner.data_dir.clone());
+        antre_gateway::server::start_browser_warmup_after_listener(
             Arc::clone(&browser_for_warmup),
             browser_tool_for_warmup.clone(),
         );
-        moltis_tls::serve_tls_with_http_redirect(tcp_listener, Arc::new(tls_cfg), app, port, bind)
+        antre_tls::serve_tls_with_http_redirect(tcp_listener, Arc::new(tls_cfg), app, port, bind)
             .await
             .map_err(|e| crate::Error::Tls(e.to_string()))?;
         return Ok(());
@@ -1416,8 +1415,8 @@ pub async fn start_gateway(
     // Plain HTTP server (existing behavior, or TLS feature disabled).
     let listener = tokio::net::TcpListener::bind(addr).await?;
     launch::spawn_after_listen(after_listen);
-    moltis_gateway::server::start_openclaw_background_tasks(banner.data_dir.clone());
-    moltis_gateway::server::start_browser_warmup_after_listener(
+    antre_gateway::server::start_openclaw_background_tasks(banner.data_dir.clone());
+    antre_gateway::server::start_browser_warmup_after_listener(
         Arc::clone(&browser_for_warmup),
         browser_tool_for_warmup,
     );

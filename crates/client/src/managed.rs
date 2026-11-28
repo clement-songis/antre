@@ -12,7 +12,7 @@ use std::{sync::Arc, time::Duration};
 #[cfg(feature = "tracing")]
 use tracing::{debug, info};
 use {
-    moltis_protocol::{
+    antre_protocol::{
         EventFrame, HelloOk,
         client_api::{SubscribeParams, methods},
     },

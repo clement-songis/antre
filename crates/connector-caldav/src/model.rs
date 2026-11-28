@@ -1,6 +1,6 @@
 use {
-    moltis_caldav::{ical::EventComponentIndex, types::CalendarInfo},
-    moltis_connectors::{ConnectorItemInput, SourceObservation},
+    antre_caldav::{ical::EventComponentIndex, types::CalendarInfo},
+    antre_connectors::{ConnectorItemInput, SourceObservation},
     serde::Serialize,
 };
 

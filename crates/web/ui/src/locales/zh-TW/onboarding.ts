@@ -28,8 +28,8 @@ export default {
 		chooseHowToSecureRequired: "請選擇保護伺服器的方式。",
 		setupCode: "設定碼",
 		setupCodePlaceholder: "終端機顯示的 6 位數設定碼",
-		setupCodeHint: "請在啟動 Moltis 的終端機輸出中找到此設定碼。",
-		setupCodePrefilledHint: "已從 Moltis 開啟的連結帶入設定碼。",
+		setupCodeHint: "請在啟動 Antre 的終端機輸出中找到此設定碼。",
+		setupCodePrefilledHint: "已從 Antre 開啟的連結帶入設定碼。",
 		enterSetupCode: "請輸入終端機輸出中顯示的設定碼。",
 		setupFailed: "設定失敗",
 		passkey: "通行金鑰",
@@ -199,7 +199,7 @@ export default {
 	// ── Skills step ──────────────────────────────────────────
 	skills: {
 		title: "內建 Skills",
-		description: "Moltis 內建多個領域的 Skills。停用不需要的類別，可讓 AI 助理保持專注。日後可在「設定」中變更。",
+		description: "Antre 內建多個領域的 Skills。停用不需要的類別，可讓 AI 助理保持專注。日後可在「設定」中變更。",
 		enableAll: "全部啟用",
 		disableAll: "全部停用",
 	},

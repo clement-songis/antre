@@ -18,7 +18,7 @@ use {
     tracing::{debug, info, warn},
 };
 
-use moltis_voice::{
+use antre_voice::{
     GeminiLiveStt, OpenAiRealtimeStt, StreamingSttEvent, StreamingSttInput, StreamingSttProvider,
     StreamingSttRequest, SttProviderId,
 };
@@ -160,7 +160,7 @@ pub struct StreamingStatus {
 /// provider supports live transcription and is configured.
 #[must_use]
 pub fn create_streaming_provider(
-    cfg: &moltis_config::MoltisConfig,
+    cfg: &antre_config::AntreConfig,
     id: SttProviderId,
 ) -> Option<Arc<dyn StreamingSttProvider>> {
     match id {
@@ -428,11 +428,11 @@ pub async fn run_stt_stream<F>(
 async fn relay(
     incoming: &mut mpsc::Receiver<SttStreamFrame>,
     outgoing: &mpsc::Sender<SttStreamServerMessage>,
-    session: moltis_voice::StreamingSttSession,
+    session: antre_voice::StreamingSttSession,
     limits: SttStreamLimits,
     started: Instant,
 ) -> (StreamEnd, u64) {
-    let moltis_voice::StreamingSttSession { input, mut events } = session;
+    let antre_voice::StreamingSttSession { input, mut events } = session;
     let mut input = Some(input);
     let mut finals: Vec<String> = Vec::new();
     let mut audio_bytes = 0u64;
@@ -533,20 +533,20 @@ async fn finish(
 fn record_end(provider: SttProviderId, end: StreamEnd, elapsed: Duration, audio_bytes: u64) {
     #[cfg(feature = "metrics")]
     {
-        use moltis_metrics::{counter, histogram, labels};
+        use antre_metrics::{counter, histogram, labels};
         counter!(
-            moltis_metrics::voice::STT_STREAMS_TOTAL,
+            antre_metrics::voice::STT_STREAMS_TOTAL,
             labels::PROVIDER => provider.as_str(),
             labels::STATUS => end.as_str()
         )
         .increment(1);
         histogram!(
-            moltis_metrics::voice::STT_STREAM_DURATION_SECONDS,
+            antre_metrics::voice::STT_STREAM_DURATION_SECONDS,
             labels::PROVIDER => provider.as_str()
         )
         .record(elapsed.as_secs_f64());
         counter!(
-            moltis_metrics::voice::STT_STREAM_AUDIO_BYTES_TOTAL,
+            antre_metrics::voice::STT_STREAM_AUDIO_BYTES_TOTAL,
             labels::PROVIDER => provider.as_str()
         )
         .increment(audio_bytes);

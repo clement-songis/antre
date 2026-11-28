@@ -46,7 +46,7 @@ fn env_authtoken_present() -> bool {
     env_authtoken_value_present(std::env::var_os("NGROK_AUTHTOKEN"))
 }
 
-fn authtoken_source(config: &moltis_config::NgrokConfig) -> Option<&'static str> {
+fn authtoken_source(config: &antre_config::NgrokConfig) -> Option<&'static str> {
     if config.authtoken.is_some() {
         Some("config")
     } else if env_authtoken_present() {
@@ -57,7 +57,7 @@ fn authtoken_source(config: &moltis_config::NgrokConfig) -> Option<&'static str>
 }
 
 fn status_payload_with(
-    config: &moltis_config::MoltisConfig,
+    config: &antre_config::AntreConfig,
     runtime: Option<crate::server::NgrokRuntimeStatus>,
 ) -> serde_json::Value {
     let authtoken_source = authtoken_source(&config.ngrok);
@@ -75,7 +75,7 @@ fn status_payload_with(
 }
 
 async fn status_payload(state: &AppState) -> serde_json::Value {
-    let config = moltis_config::discover_and_load();
+    let config = antre_config::discover_and_load();
     let runtime = state.ngrok_runtime.read().await.clone();
     status_payload_with(&config, runtime)
 }
@@ -106,7 +106,7 @@ async fn save_config_handler(
     State(state): State<AppState>,
     Json(body): Json<SaveNgrokConfigRequest>,
 ) -> impl IntoResponse {
-    let existing = moltis_config::discover_and_load();
+    let existing = antre_config::discover_and_load();
     let domain = normalize_optional(body.domain.as_deref());
     let new_authtoken = normalize_optional(body.authtoken.as_deref());
     let mut updated = existing.clone();
@@ -137,7 +137,7 @@ async fn save_config_handler(
         updated.ngrok.authtoken = Some(Secret::new(authtoken.clone()));
     }
 
-    if let Err(error) = moltis_config::update_config(|config| {
+    if let Err(error) = antre_config::update_config(|config| {
         config.ngrok = updated.ngrok.clone();
     }) {
         return (
@@ -189,10 +189,10 @@ mod tests {
     };
 
     use {
-        axum::{Json, body::to_bytes, extract::State},
-        moltis_gateway::{
+        antre_gateway::{
             auth, methods::MethodRegistry, services::GatewayServices, state::GatewayState,
         },
+        axum::{Json, body::to_bytes, extract::State},
     };
 
     #[cfg(feature = "cloudflare-tunnel")]
@@ -217,8 +217,8 @@ mod tests {
     async fn save_config_returns_error_when_ngrok_controller_is_unavailable()
     -> Result<(), Box<dyn std::error::Error>> {
         let tempdir = tempfile::tempdir()?;
-        moltis_config::set_config_dir(tempdir.path().to_path_buf());
-        moltis_config::set_data_dir(tempdir.path().to_path_buf());
+        antre_config::set_config_dir(tempdir.path().to_path_buf());
+        antre_config::set_data_dir(tempdir.path().to_path_buf());
 
         let gateway = GatewayState::new(auth::resolve_auth(None, None), GatewayServices::noop());
         #[cfg(feature = "cloudflare-tunnel")]
@@ -250,7 +250,7 @@ mod tests {
             #[cfg(feature = "netbird")]
             netbird_runtime,
             #[cfg(feature = "tailscale")]
-            tailscale_manager: moltis_gateway::tailscale::CachedTailscaleManager::new_with_prefetch(
+            tailscale_manager: antre_gateway::tailscale::CachedTailscaleManager::new_with_prefetch(
             ),
             #[cfg(feature = "push-notifications")]
             push_service: None,

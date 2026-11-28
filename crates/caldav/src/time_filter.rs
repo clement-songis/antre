@@ -7,7 +7,7 @@
 //! Naive date-times (no UTC offset) are treated as UTC. Date-only values
 //! resolve to midnight UTC.
 
-use moltis_agents::time::{
+use antre_agents::time::{
     Date, OffsetDateTime, PrimitiveDateTime, UtcOffset, format_description::well_known::Iso8601,
 };
 
@@ -16,7 +16,7 @@ use crate::error::{Error, Result};
 #[cfg(test)]
 use {
     crate::types::{EventSummary, TimeRange},
-    moltis_agents::time::Duration,
+    antre_agents::time::Duration,
 };
 
 /// Parse an ISO 8601 date or date-time string into a UTC instant.

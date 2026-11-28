@@ -14,7 +14,7 @@ use crate::state::GatewayState;
 /// Needs the database pool, which does not exist at state construction, so it
 /// runs here rather than in `GatewayState::new`.
 pub(super) fn install_feedback(state: &Arc<GatewayState>, db_pool: &SqlitePool) {
-    let links: Arc<dyn moltis_channels::trace_link::TraceLinkStore> = Arc::new(
+    let links: Arc<dyn antre_channels::trace_link::TraceLinkStore> = Arc::new(
         crate::trace_link_store::SqliteTraceLinkStore::new(db_pool.clone()),
     );
     state.feedback.apply(

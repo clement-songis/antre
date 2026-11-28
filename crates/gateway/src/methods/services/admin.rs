@@ -282,7 +282,7 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                 "voice.config.get",
                 Box::new(|_ctx| {
                     Box::pin(async move {
-                        let config = moltis_config::discover_and_load();
+                        let config = antre_config::discover_and_load();
                         Ok(serde_json::json!({
                             "tts": {
                                 "enabled": config.voice.tts.enabled,
@@ -310,7 +310,7 @@ pub(super) fn register(reg: &mut MethodRegistry) {
             "voice.providers.all",
             Box::new(|_ctx| {
                 Box::pin(async move {
-                    let mut config = moltis_config::discover_and_load();
+                    let mut config = antre_config::discover_and_load();
                     crate::voice::merge_voice_keys(&mut config);
                     let providers = voice::detect_voice_providers(&config).await;
                     Ok(serde_json::json!(providers))
@@ -321,7 +321,7 @@ pub(super) fn register(reg: &mut MethodRegistry) {
             "voice.elevenlabs.catalog",
             Box::new(|_ctx| {
                 Box::pin(async move {
-                    let mut config = moltis_config::discover_and_load();
+                    let mut config = antre_config::discover_and_load();
                     crate::voice::merge_voice_keys(&mut config);
                     Ok(voice::fetch_elevenlabs_catalog(&config).await)
                 })
@@ -544,7 +544,7 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                         })?;
 
                     // Save the API key to the credential store (KeyStore) instead
-                    // of writing it to moltis.toml.  The key store lives in
+                    // of writing it to antre.toml.  The key store lives in
                     // provider_keys.json and benefits from vault encryption when
                     // enabled.
                     let store = crate::provider_setup::KeyStore::new();
@@ -560,62 +560,61 @@ pub(super) fn register(reg: &mut MethodRegistry) {
 
                     // Update non-secret config (provider selection, enabled flags)
                     // and clear any legacy TOML API key entries.
-                    moltis_config::update_config(|cfg| {
+                    antre_config::update_config(|cfg| {
                         match provider {
                             "elevenlabs" | "elevenlabs-stt" => {
                                 cfg.voice.tts.elevenlabs.api_key = None;
                                 cfg.voice.stt.elevenlabs.api_key = None;
                                 cfg.voice.tts.provider =
-                                    Some(moltis_config::VoiceTtsProvider::ElevenLabs);
+                                    Some(antre_config::VoiceTtsProvider::ElevenLabs);
                                 cfg.voice.tts.enabled = true;
                                 cfg.voice.stt.provider =
-                                    Some(moltis_config::VoiceSttProvider::ElevenLabs);
+                                    Some(antre_config::VoiceSttProvider::ElevenLabs);
                                 cfg.voice.stt.enabled = true;
                             },
                             "openai" | "openai-tts" => {
                                 cfg.voice.tts.openai.api_key = None;
                                 cfg.voice.tts.provider =
-                                    Some(moltis_config::VoiceTtsProvider::OpenAi);
+                                    Some(antre_config::VoiceTtsProvider::OpenAi);
                                 cfg.voice.tts.enabled = true;
                             },
                             "google-tts" | "google" => {
                                 cfg.voice.tts.google.api_key = None;
                                 cfg.voice.stt.google.api_key = None;
                                 cfg.voice.tts.provider =
-                                    Some(moltis_config::VoiceTtsProvider::Google);
+                                    Some(antre_config::VoiceTtsProvider::Google);
                                 cfg.voice.tts.enabled = true;
                                 cfg.voice.stt.provider =
-                                    Some(moltis_config::VoiceSttProvider::Google);
+                                    Some(antre_config::VoiceSttProvider::Google);
                                 cfg.voice.stt.enabled = true;
                             },
                             "whisper" => {
                                 cfg.voice.stt.whisper.api_key = None;
                                 cfg.voice.stt.provider =
-                                    Some(moltis_config::VoiceSttProvider::Whisper);
+                                    Some(antre_config::VoiceSttProvider::Whisper);
                                 cfg.voice.stt.enabled = true;
                             },
                             "groq" => {
                                 cfg.voice.stt.groq.api_key = None;
-                                cfg.voice.stt.provider =
-                                    Some(moltis_config::VoiceSttProvider::Groq);
+                                cfg.voice.stt.provider = Some(antre_config::VoiceSttProvider::Groq);
                                 cfg.voice.stt.enabled = true;
                             },
                             "deepgram" => {
                                 cfg.voice.stt.deepgram.api_key = None;
                                 cfg.voice.stt.provider =
-                                    Some(moltis_config::VoiceSttProvider::Deepgram);
+                                    Some(antre_config::VoiceSttProvider::Deepgram);
                                 cfg.voice.stt.enabled = true;
                             },
                             "mistral" => {
                                 cfg.voice.stt.mistral.api_key = None;
                                 cfg.voice.stt.provider =
-                                    Some(moltis_config::VoiceSttProvider::Mistral);
+                                    Some(antre_config::VoiceSttProvider::Mistral);
                                 cfg.voice.stt.enabled = true;
                             },
                             "gemini" => {
                                 cfg.voice.stt.gemini.api_key = None;
                                 cfg.voice.stt.provider =
-                                    Some(moltis_config::VoiceSttProvider::Gemini);
+                                    Some(antre_config::VoiceSttProvider::Gemini);
                                 cfg.voice.stt.enabled = true;
                             },
                             _ => {},
@@ -652,7 +651,7 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                             ErrorShape::new(error_codes::INVALID_REQUEST, "missing provider")
                         })?;
 
-                    moltis_config::update_config(|cfg| {
+                    antre_config::update_config(|cfg| {
                         voice::apply_voice_provider_settings(cfg, provider, &ctx.params);
                     })
                     .map_err(|e| {
@@ -692,7 +691,7 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                     let _ = store.remove(&store_key);
 
                     // Also clear any legacy TOML entries.
-                    moltis_config::update_config(|cfg| match provider {
+                    antre_config::update_config(|cfg| match provider {
                         "elevenlabs" => {
                             cfg.voice.tts.elevenlabs.api_key = None;
                             cfg.voice.stt.elevenlabs.api_key = None;
@@ -800,7 +799,7 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                     ctx.state.set_graphql_enabled(enabled);
 
                     let mut persisted = true;
-                    if let Err(error) = moltis_config::update_config(|cfg| {
+                    if let Err(error) = antre_config::update_config(|cfg| {
                         cfg.graphql.enabled = enabled;
                     }) {
                         persisted = false;
@@ -906,7 +905,7 @@ pub(super) fn register(reg: &mut MethodRegistry) {
         "memory.config.get",
         Box::new(|ctx| {
             Box::pin(async move {
-                let config = moltis_config::discover_and_load();
+                let config = antre_config::discover_and_load();
                 let memory = &config.memory;
                 let chat = &config.chat;
 
@@ -922,48 +921,48 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                 );
                 Ok(serde_json::json!({
                     "style": match memory.style {
-                        moltis_config::MemoryStyle::Hybrid => "hybrid",
-                        moltis_config::MemoryStyle::PromptOnly => "prompt-only",
-                        moltis_config::MemoryStyle::SearchOnly => "search-only",
-                        moltis_config::MemoryStyle::Off => "off",
+                        antre_config::MemoryStyle::Hybrid => "hybrid",
+                        antre_config::MemoryStyle::PromptOnly => "prompt-only",
+                        antre_config::MemoryStyle::SearchOnly => "search-only",
+                        antre_config::MemoryStyle::Off => "off",
                     },
                     "agent_write_mode": match memory.agent_write_mode {
-                        moltis_config::AgentMemoryWriteMode::Hybrid => "hybrid",
-                        moltis_config::AgentMemoryWriteMode::PromptOnly => "prompt-only",
-                        moltis_config::AgentMemoryWriteMode::SearchOnly => "search-only",
-                        moltis_config::AgentMemoryWriteMode::Off => "off",
+                        antre_config::AgentMemoryWriteMode::Hybrid => "hybrid",
+                        antre_config::AgentMemoryWriteMode::PromptOnly => "prompt-only",
+                        antre_config::AgentMemoryWriteMode::SearchOnly => "search-only",
+                        antre_config::AgentMemoryWriteMode::Off => "off",
                     },
                     "user_profile_write_mode": match memory.user_profile_write_mode {
-                        moltis_config::UserProfileWriteMode::ExplicitAndAuto => "explicit-and-auto",
-                        moltis_config::UserProfileWriteMode::ExplicitOnly => "explicit-only",
-                        moltis_config::UserProfileWriteMode::Off => "off",
+                        antre_config::UserProfileWriteMode::ExplicitAndAuto => "explicit-and-auto",
+                        antre_config::UserProfileWriteMode::ExplicitOnly => "explicit-only",
+                        antre_config::UserProfileWriteMode::Off => "off",
                     },
                     "backend": active_backend,
                     "provider": match memory.provider {
-                        Some(moltis_config::MemoryProvider::Local) => "local",
-                        Some(moltis_config::MemoryProvider::Ollama) => "ollama",
-                        Some(moltis_config::MemoryProvider::OpenAi) => "openai",
-                        Some(moltis_config::MemoryProvider::Custom) => "custom",
+                        Some(antre_config::MemoryProvider::Local) => "local",
+                        Some(antre_config::MemoryProvider::Ollama) => "ollama",
+                        Some(antre_config::MemoryProvider::OpenAi) => "openai",
+                        Some(antre_config::MemoryProvider::Custom) => "custom",
                         None => "auto",
                     },
                     "citations": match memory.citations {
-                        moltis_config::MemoryCitationsMode::On => "on",
-                        moltis_config::MemoryCitationsMode::Off => "off",
-                        moltis_config::MemoryCitationsMode::Auto => "auto",
+                        antre_config::MemoryCitationsMode::On => "on",
+                        antre_config::MemoryCitationsMode::Off => "off",
+                        antre_config::MemoryCitationsMode::Auto => "auto",
                     },
                     "disable_rag": memory.disable_rag,
                     "llm_reranking": memory.llm_reranking,
                     "search_merge_strategy": match memory.search_merge_strategy {
-                        moltis_config::MemorySearchMergeStrategy::Rrf => "rrf",
-                        moltis_config::MemorySearchMergeStrategy::Linear => "linear",
+                        antre_config::MemorySearchMergeStrategy::Rrf => "rrf",
+                        antre_config::MemorySearchMergeStrategy::Linear => "linear",
                     },
                     "session_export": match memory.session_export {
-                        moltis_config::SessionExportMode::Off => "off",
-                        moltis_config::SessionExportMode::OnNewOrReset => "on-new-or-reset",
+                        antre_config::SessionExportMode::Off => "off",
+                        antre_config::SessionExportMode::OnNewOrReset => "on-new-or-reset",
                     },
                     "prompt_memory_mode": match chat.prompt_memory_mode {
-                        moltis_config::PromptMemoryMode::LiveReload => "live-reload",
-                        moltis_config::PromptMemoryMode::FrozenAtSessionStart => "frozen-at-session-start",
+                        antre_config::PromptMemoryMode::LiveReload => "live-reload",
+                        antre_config::PromptMemoryMode::FrozenAtSessionStart => "frozen-at-session-start",
                     },
                     "qmd_feature_enabled": cfg!(feature = "qmd"),
                     "zvec_feature_enabled": cfg!(feature = "zvec"),
@@ -981,15 +980,15 @@ pub(super) fn register(reg: &mut MethodRegistry) {
         "memory.config.update",
         Box::new(|ctx| {
             Box::pin(async move {
-                let current_config = moltis_config::discover_and_load();
+                let current_config = antre_config::discover_and_load();
                 let current_memory = current_config.memory;
                 let current_chat = current_config.chat;
                 let style = ctx.params.get("style").and_then(|v| v.as_str()).unwrap_or(
                     match current_memory.style {
-                        moltis_config::MemoryStyle::Hybrid => "hybrid",
-                        moltis_config::MemoryStyle::PromptOnly => "prompt-only",
-                        moltis_config::MemoryStyle::SearchOnly => "search-only",
-                        moltis_config::MemoryStyle::Off => "off",
+                        antre_config::MemoryStyle::Hybrid => "hybrid",
+                        antre_config::MemoryStyle::PromptOnly => "prompt-only",
+                        antre_config::MemoryStyle::SearchOnly => "search-only",
+                        antre_config::MemoryStyle::Off => "off",
                     },
                 );
                 let backend = ctx
@@ -1002,38 +1001,38 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                     .get("agent_write_mode")
                     .and_then(|v| v.as_str())
                     .unwrap_or(match current_memory.agent_write_mode {
-                        moltis_config::AgentMemoryWriteMode::Hybrid => "hybrid",
-                        moltis_config::AgentMemoryWriteMode::PromptOnly => "prompt-only",
-                        moltis_config::AgentMemoryWriteMode::SearchOnly => "search-only",
-                        moltis_config::AgentMemoryWriteMode::Off => "off",
+                        antre_config::AgentMemoryWriteMode::Hybrid => "hybrid",
+                        antre_config::AgentMemoryWriteMode::PromptOnly => "prompt-only",
+                        antre_config::AgentMemoryWriteMode::SearchOnly => "search-only",
+                        antre_config::AgentMemoryWriteMode::Off => "off",
                     });
                 let user_profile_write_mode = ctx
                     .params
                     .get("user_profile_write_mode")
                     .and_then(|v| v.as_str())
                     .unwrap_or(match current_memory.user_profile_write_mode {
-                        moltis_config::UserProfileWriteMode::ExplicitAndAuto => "explicit-and-auto",
-                        moltis_config::UserProfileWriteMode::ExplicitOnly => "explicit-only",
-                        moltis_config::UserProfileWriteMode::Off => "off",
+                        antre_config::UserProfileWriteMode::ExplicitAndAuto => "explicit-and-auto",
+                        antre_config::UserProfileWriteMode::ExplicitOnly => "explicit-only",
+                        antre_config::UserProfileWriteMode::Off => "off",
                     });
                 let citations = ctx
                     .params
                     .get("citations")
                     .and_then(|v| v.as_str())
                     .unwrap_or(match current_memory.citations {
-                        moltis_config::MemoryCitationsMode::On => "on",
-                        moltis_config::MemoryCitationsMode::Off => "off",
-                        moltis_config::MemoryCitationsMode::Auto => "auto",
+                        antre_config::MemoryCitationsMode::On => "on",
+                        antre_config::MemoryCitationsMode::Off => "off",
+                        antre_config::MemoryCitationsMode::Auto => "auto",
                     });
                 let provider = ctx
                     .params
                     .get("provider")
                     .and_then(|v| v.as_str())
                     .unwrap_or(match current_memory.provider {
-                        Some(moltis_config::MemoryProvider::Local) => "local",
-                        Some(moltis_config::MemoryProvider::Ollama) => "ollama",
-                        Some(moltis_config::MemoryProvider::OpenAi) => "openai",
-                        Some(moltis_config::MemoryProvider::Custom) => "custom",
+                        Some(antre_config::MemoryProvider::Local) => "local",
+                        Some(antre_config::MemoryProvider::Ollama) => "ollama",
+                        Some(antre_config::MemoryProvider::OpenAi) => "openai",
+                        Some(antre_config::MemoryProvider::Custom) => "custom",
                         None => "auto",
                     });
                 let llm_reranking = ctx
@@ -1046,8 +1045,8 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                     .get("search_merge_strategy")
                     .and_then(|v| v.as_str())
                     .unwrap_or(match current_memory.search_merge_strategy {
-                        moltis_config::MemorySearchMergeStrategy::Rrf => "rrf",
-                        moltis_config::MemorySearchMergeStrategy::Linear => "linear",
+                        antre_config::MemorySearchMergeStrategy::Rrf => "rrf",
+                        antre_config::MemorySearchMergeStrategy::Linear => "linear",
                     });
                 let style_value = parse_memory_style(style)?;
                 let backend_value = parse_memory_backend(backend)?;
@@ -1068,8 +1067,8 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                     .get("prompt_memory_mode")
                     .and_then(|v| v.as_str())
                     .unwrap_or(match current_chat.prompt_memory_mode {
-                        moltis_config::PromptMemoryMode::LiveReload => "live-reload",
-                        moltis_config::PromptMemoryMode::FrozenAtSessionStart => {
+                        antre_config::PromptMemoryMode::LiveReload => "live-reload",
+                        antre_config::PromptMemoryMode::FrozenAtSessionStart => {
                             "frozen-at-session-start"
                         },
                     });
@@ -1102,7 +1101,7 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                     .get("enable_self_improvement")
                     .and_then(|v| v.as_bool())
                     .unwrap_or(current_config.skills.enable_self_improvement);
-                if let Err(e) = moltis_config::update_config(|cfg| {
+                if let Err(e) = antre_config::update_config(|cfg| {
                     cfg.memory.style = style_value;
                     cfg.memory.agent_write_mode = agent_write_mode_value;
                     cfg.memory.user_profile_write_mode = user_profile_write_mode_value;
@@ -1137,8 +1136,8 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                     "llm_reranking": llm_reranking,
                     "search_merge_strategy": search_merge_strategy,
                     "session_export": match session_export {
-                        moltis_config::SessionExportMode::Off => "off",
-                        moltis_config::SessionExportMode::OnNewOrReset => "on-new-or-reset",
+                        antre_config::SessionExportMode::Off => "off",
+                        antre_config::SessionExportMode::OnNewOrReset => "on-new-or-reset",
                     },
                     "prompt_memory_mode": prompt_memory_mode,
                     "enable_prefetch": enable_prefetch,
@@ -1158,9 +1157,9 @@ pub(super) fn register(reg: &mut MethodRegistry) {
             Box::pin(async move {
                 #[cfg(feature = "qmd")]
                 {
-                    use moltis_qmd::{QmdManager, QmdManagerConfig};
+                    use antre_qmd::{QmdManager, QmdManagerConfig};
 
-                    let config = moltis_config::discover_and_load();
+                    let config = antre_config::discover_and_load();
                     let qmd_config = QmdManagerConfig {
                         command: config
                             .memory
@@ -1171,8 +1170,8 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                         collections: std::collections::HashMap::new(),
                         max_results: config.memory.qmd.max_results.unwrap_or(10),
                         timeout_ms: config.memory.qmd.timeout_ms.unwrap_or(30_000),
-                        work_dir: moltis_config::data_dir(),
-                        index_name: "moltis-status".into(),
+                        work_dir: antre_config::data_dir(),
+                        index_name: "antre-status".into(),
                         env_overrides: std::collections::HashMap::new(),
                     };
 

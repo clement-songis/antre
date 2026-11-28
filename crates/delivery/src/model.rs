@@ -3,7 +3,7 @@
 use std::{fmt, str::FromStr};
 
 use {
-    moltis_channels::ChannelReplyTarget,
+    antre_channels::ChannelReplyTarget,
     serde::{Deserialize, Serialize},
     time::OffsetDateTime,
 };
@@ -205,7 +205,7 @@ pub fn target_key(target: &ChannelReplyTarget) -> String {
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
-    use {super::*, moltis_channels::ChannelType};
+    use {super::*, antre_channels::ChannelType};
 
     fn target(thread: Option<&str>) -> ChannelReplyTarget {
         ChannelReplyTarget {

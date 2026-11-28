@@ -1,14 +1,14 @@
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 use {
+    antre_channels::{
+        gating::DmPolicy,
+        plugin::{ChannelOutbound, ChannelStreamOutbound, StreamEvent},
+    },
     axum::{
         Json, Router,
         extract::State,
         http::{StatusCode, Uri},
         routing::post,
-    },
-    moltis_channels::{
-        gating::DmPolicy,
-        plugin::{ChannelOutbound, ChannelStreamOutbound, StreamEvent},
     },
     secrecy::Secret,
     serde::{Deserialize, Serialize},
@@ -987,9 +987,9 @@ async fn send_html_fallback_sends_plain_text_without_raw_tags() {
 #[tokio::test]
 async fn send_document_to_topic_chat_does_not_panic() {
     use {
+        antre_channels::plugin::ChannelOutbound,
+        antre_common::types::{MediaAttachment, ReplyPayload},
         axum::{Router, body::Bytes, http::Uri, routing::post},
-        moltis_channels::plugin::ChannelOutbound,
-        moltis_common::types::{MediaAttachment, ReplyPayload},
     };
 
     // Mock Telegram API that returns a message result for every method.

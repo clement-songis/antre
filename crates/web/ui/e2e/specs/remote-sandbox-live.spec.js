@@ -19,7 +19,7 @@ const { test, expect } = require("../base-test");
 const VERCEL_TOKEN = process.env.VERCEL_TOKEN;
 const VERCEL_TEAM_ID = process.env.VERCEL_TEAM_ID;
 const VERCEL_PROJECT_ID = process.env.VERCEL_PROJECT_ID;
-const VERCEL_RUNTIME = process.env.MOLTIS_E2E_VERCEL_RUNTIME || "python3.13";
+const VERCEL_RUNTIME = process.env.ANTRE_E2E_VERCEL_RUNTIME || "python3.13";
 const DAYTONA_API_KEY = process.env.DAYTONA_API_KEY;
 
 const VERCEL_API = "https://vercel.com/api";
@@ -111,7 +111,7 @@ test.describe("Vercel Sandbox live integration", () => {
 			},
 			body: JSON.stringify({
 				command: "sh",
-				args: ["-c", "printf 'moltis-test-content' > /tmp/moltis-test-file && cat /tmp/moltis-test-file"],
+				args: ["-c", "printf 'antre-test-content' > /tmp/antre-test-file && cat /tmp/antre-test-file"],
 				cwd: "/vercel/sandbox",
 				wait: true,
 			}),
@@ -131,7 +131,7 @@ test.describe("Vercel Sandbox live integration", () => {
 			headers: { Authorization: `Bearer ${VERCEL_TOKEN}` },
 		});
 		const logsText = await logsResp.text();
-		expect(logsText).toContain("moltis-test-content");
+		expect(logsText).toContain("antre-test-content");
 
 		// Stop the sandbox.
 		const stopUrl = `${VERCEL_API}/v1/sandboxes/${sandboxId}/stop${VERCEL_TEAM_ID ? `?teamId=${VERCEL_TEAM_ID}` : ""}`;
@@ -159,7 +159,7 @@ test.describe("Daytona Sandbox live integration", () => {
 				method: "DELETE",
 				headers: {
 					Authorization: `Bearer ${DAYTONA_API_KEY}`,
-					"X-Daytona-Source": "moltis-e2e",
+					"X-Daytona-Source": "antre-e2e",
 				},
 			}).catch(() => undefined);
 			sandboxId = null;
@@ -175,7 +175,7 @@ test.describe("Daytona Sandbox live integration", () => {
 				headers: {
 					Authorization: `Bearer ${DAYTONA_API_KEY}`,
 					"Content-Type": "application/json",
-					"X-Daytona-Source": "moltis-e2e",
+					"X-Daytona-Source": "antre-e2e",
 				},
 				body: JSON.stringify({}),
 			});
@@ -200,12 +200,12 @@ test.describe("Daytona Sandbox live integration", () => {
 				headers: {
 					Authorization: `Bearer ${DAYTONA_API_KEY}`,
 					"Content-Type": "application/json",
-					"X-Daytona-Source": "moltis-e2e",
+					"X-Daytona-Source": "antre-e2e",
 				},
 				body: JSON.stringify({
-					command: 'printf "%s" "$MOLTIS_DAYTONA_E2E_ENV"',
+					command: 'printf "%s" "$ANTRE_DAYTONA_E2E_ENV"',
 					cwd: "/home/daytona",
-					envs: { MOLTIS_DAYTONA_E2E_ENV: "hello-from-daytona" },
+					envs: { ANTRE_DAYTONA_E2E_ENV: "hello-from-daytona" },
 					timeout: 30,
 				}),
 			});
@@ -224,7 +224,7 @@ test.describe("Daytona Sandbox live integration", () => {
 			method: "DELETE",
 			headers: {
 				Authorization: `Bearer ${DAYTONA_API_KEY}`,
-				"X-Daytona-Source": "moltis-e2e",
+				"X-Daytona-Source": "antre-e2e",
 			},
 		});
 		expect(deleteResp.status).toBeLessThan(300);

@@ -24,9 +24,9 @@ const FALLBACK_MODEL: &str = "gpt-4o-mini-tts";
 
 /// The provider's TTS role from the model catalog.
 fn default_model() -> String {
-    moltis_model_catalog::global::role_id_or(
+    antre_model_catalog::global::role_id_or(
         "openai",
-        moltis_model_catalog::ModelKind::Tts,
+        antre_model_catalog::ModelKind::Tts,
         FALLBACK_MODEL,
     )
 }

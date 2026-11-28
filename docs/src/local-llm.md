@@ -1,12 +1,12 @@
 # Local LLM Support
 
-Moltis can run LLM inference locally on your machine without requiring an API
+Antre can run LLM inference locally on your machine without requiring an API
 key or internet connection. This enables fully offline operation and keeps your
 conversations private.
 
 ## Backends
 
-Moltis supports two backends for local inference:
+Antre supports two backends for local inference:
 
 | Backend | Format | Platform | GPU Acceleration |
 |---------|--------|----------|------------------|
@@ -50,7 +50,7 @@ Models are organized by memory tiers based on your system RAM:
 | **Medium** | 16GB | Qwen 2.5 Coder 7B, Llama 3.1 8B |
 | **Large** | 32GB+ | Qwen 2.5 Coder 14B, DeepSeek Coder V2 Lite |
 
-Moltis automatically detects your system memory and suggests appropriate models
+Antre automatically detects your system memory and suggests appropriate models
 in the UI.
 
 ## Configuration
@@ -65,7 +65,7 @@ in the UI.
 
 ### Via Configuration File
 
-Add to `~/.config/moltis/moltis.toml`:
+Add to `~/.config/antre/antre.toml`:
 
 ```toml
 [providers.local-llm]
@@ -87,12 +87,12 @@ For custom GGUF files:
 }
 ```
 
-Save this as `~/.config/moltis/local-llm.json` (the same file managed by the
+Save this as `~/.config/antre/local-llm.json` (the same file managed by the
 Settings UI).
 
 ## Model Storage
 
-Downloaded models are cached in `~/.moltis/models/` by default. This
+Downloaded models are cached in `~/.antre/models/` by default. This
 directory can grow large (several GB per model).
 
 ## HuggingFace Integration
@@ -148,7 +148,7 @@ cargo build --release --features local-llm-cuda
 ### Vulkan
 
 Vulkan acceleration is available as an opt-in build. It is not enabled by
-default in Moltis release builds.
+default in Antre release builds.
 
 Build with:
 
@@ -166,7 +166,7 @@ Requirements:
 - Windows: install the LunarG Vulkan SDK and set the `VULKAN_SDK` environment
   variable before building
 
-If llama.cpp detects a Vulkan device at runtime, Moltis will report GGUF as
+If llama.cpp detects a Vulkan device at runtime, Antre will report GGUF as
 using Vulkan acceleration in the local model setup flow.
 
 ## Limitations
@@ -188,7 +188,7 @@ Local LLM models have some limitations compared to cloud providers:
 
 ## Chat Templates
 
-Different model families use different chat formatting. Moltis automatically
+Different model families use different chat formatting. Antre automatically
 detects the correct template for registered models:
 
 - **ChatML** — Qwen, many instruction-tuned models

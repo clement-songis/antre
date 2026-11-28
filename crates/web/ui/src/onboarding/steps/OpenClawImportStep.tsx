@@ -210,7 +210,7 @@ export function OpenClawImportStep({ onNext, onBack }: { onNext: () => void; onB
 				) : null}
 				{(result.todos?.length ?? 0) > 0 ? (
 					<div className="text-xs text-[var(--muted)]">
-						<div className="font-medium">Not yet supported in Moltis:</div>
+						<div className="font-medium">Not yet supported in Antre:</div>
 						{(result.todos || []).map((td) => (
 							<div key={td.feature}>
 								&bull; {td.feature}: {td.description}
@@ -309,11 +309,11 @@ export function OpenClawImportStep({ onNext, onBack }: { onNext: () => void; onB
 			<h2 className="text-lg font-medium text-[var(--text-strong)]">Import from OpenClaw</h2>
 			<p className="text-xs text-[var(--muted)] leading-relaxed">
 				We detected an OpenClaw installation at <code className="text-[var(--text)]">{scan.home_dir}</code>. Select the
-				data you'd like to bring into Moltis.
+				data you'd like to bring into Antre.
 			</p>
 			<p className="text-xs text-[var(--muted)] leading-relaxed">
 				This is a read-only copy &mdash; your OpenClaw installation will not be modified or removed. You can keep using
-				OpenClaw alongside Moltis, and re-import at any time from Settings.
+				OpenClaw alongside Antre, and re-import at any time from Settings.
 			</p>
 			{workspaceMissing ? (
 				<p className="text-xs text-[var(--muted)] leading-relaxed">

@@ -22,7 +22,7 @@ pub enum CloudflareTunnelAction {
 pub async fn handle_cloudflare_tunnel(action: CloudflareTunnelAction) -> Result<()> {
     match action {
         CloudflareTunnelAction::Status => {
-            let config = moltis_config::discover_and_load();
+            let config = antre_config::discover_and_load();
             println!("Enabled: {}", config.cloudflare_tunnel.enabled);
             println!(
                 "Token:   {}",
@@ -39,7 +39,7 @@ pub async fn handle_cloudflare_tunnel(action: CloudflareTunnelAction) -> Result<
             if !has_enable_token(&token, env_token_present()) {
                 anyhow::bail!("Cloudflare Tunnel requires --token or CLOUDFLARE_TUNNEL_TOKEN");
             }
-            moltis_config::update_config(|config| {
+            antre_config::update_config(|config| {
                 config.cloudflare_tunnel.enabled = true;
                 if let Some(token) = token.clone() {
                     config.cloudflare_tunnel.token = Some(Secret::new(token));
@@ -49,7 +49,7 @@ pub async fn handle_cloudflare_tunnel(action: CloudflareTunnelAction) -> Result<
             println!("Cloudflare Tunnel enabled in config");
         },
         CloudflareTunnelAction::Disable => {
-            moltis_config::update_config(|config| {
+            antre_config::update_config(|config| {
                 config.cloudflare_tunnel.enabled = false;
             })?;
             println!("Cloudflare Tunnel disabled");

@@ -1,16 +1,16 @@
 [package]
-description       = "Network client for a running Moltis daemon (WebSocket RPC v4, auth, discovery)"
+description       = "Network client for a running Antre daemon (WebSocket RPC v4, auth, discovery)"
 edition.workspace = true
 license.workspace = true
-name              = "moltis-client"
+name              = "antre-client"
 version.workspace = true
 
 [dependencies]
+antre-config             = { optional = true, workspace = true }
+antre-metrics            = { optional = true, workspace = true }
+antre-protocol           = { workspace = true }
 futures                  = { workspace = true }
 mdns-sd                  = { optional = true, workspace = true }
-moltis-config            = { optional = true, workspace = true }
-moltis-metrics           = { optional = true, workspace = true }
-moltis-protocol          = { workspace = true }
 reqwest                  = { workspace = true }
 rustls                   = { workspace = true }
 rustls-platform-verifier = { workspace = true }
@@ -34,11 +34,11 @@ tokio    = { features = ["macros", "rt-multi-thread", "test-util"], workspace = 
 
 [features]
 default = ["local", "metrics", "tracing"]
-# Find the daemon configured on this machine through `moltis.toml`.
-local = ["dep:moltis-config"]
-# Browse `_moltis._tcp.local.` for daemons on the local network.
+# Find the daemon configured on this machine through `antre.toml`.
+local = ["dep:antre-config"]
+# Browse `_antre._tcp.local.` for daemons on the local network.
 mdns    = ["dep:mdns-sd"]
-metrics = ["dep:moltis-metrics"]
+metrics = ["dep:antre-metrics"]
 tracing = ["dep:tracing"]
 # Forward a remote daemon's loopback port through the system `ssh`.
 ssh = ["tokio/process"]

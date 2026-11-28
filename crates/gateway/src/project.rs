@@ -5,7 +5,7 @@ use std::{
 
 use {async_trait::async_trait, serde_json::Value, tracing::warn};
 
-use moltis_projects::{
+use antre_projects::{
     ProjectStore,
     complete::complete_path,
     context::load_context_files,
@@ -28,7 +28,7 @@ fn session_root(project_dir: &Path, session_key: Option<&str>) -> PathBuf {
     if key.contains('/') || key.contains('\\') || key.contains("..") {
         return project_dir.to_path_buf();
     }
-    let worktree = project_dir.join(".moltis-worktrees").join(key);
+    let worktree = project_dir.join(".antre-worktrees").join(key);
     if worktree.is_dir() {
         worktree
     } else {
@@ -63,7 +63,7 @@ impl ProjectService for LiveProjectService {
     }
 
     async fn upsert(&self, params: Value) -> ServiceResult {
-        let project: moltis_projects::Project = serde_json::from_value(params)?;
+        let project: antre_projects::Project = serde_json::from_value(params)?;
         self.store
             .upsert(project.clone())
             .await
@@ -188,7 +188,7 @@ mod files_tests {
     #[test]
     fn session_root_uses_an_existing_worktree() {
         let dir = tempfile::tempdir().unwrap();
-        let worktree = dir.path().join(".moltis-worktrees").join("session:abc");
+        let worktree = dir.path().join(".antre-worktrees").join("session:abc");
         std::fs::create_dir_all(&worktree).unwrap();
         assert_eq!(session_root(dir.path(), Some("session:abc")), worktree);
         assert_eq!(session_root(dir.path(), Some("session:none")), dir.path());

@@ -21,7 +21,7 @@ test("serves the website on the advertised loopback URL", { timeout: 10_000 }, a
 
     const response = await fetch(url);
     assert.equal(response.status, 200);
-    assert.match(await response.text(), /<title>Moltis/);
+    assert.match(await response.text(), /<title>Antre/);
   } finally {
     child.kill();
   }

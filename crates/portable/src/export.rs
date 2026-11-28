@@ -1,4 +1,4 @@
-//! Export Moltis data into a `.tar.gz` archive.
+//! Export Antre data into a `.tar.gz` archive.
 
 use std::{
     io::{self, Write},
@@ -90,7 +90,7 @@ impl Default for ExportOptions {
     }
 }
 
-/// Auth tables to clear from the exported moltis.db snapshot.
+/// Auth tables to clear from the exported antre.db snapshot.
 const AUTH_TABLES_TO_CLEAR: &[&str] = &[
     "auth_password",
     "auth_sessions",
@@ -140,7 +140,7 @@ pub(crate) async fn export_archive_from_dirs<W: Write>(
     add_config_file(
         &mut builder,
         config_dir,
-        "moltis.toml",
+        "antre.toml",
         &prefix,
         &mut inventory,
     )?;
@@ -194,14 +194,14 @@ pub(crate) async fn export_archive_from_dirs<W: Write>(
     }
 
     // ── SQLite databases ─────────────────────────────────────────────
-    let moltis_db = data_dir.join("moltis.db");
-    if moltis_db.exists() {
-        let snapshot = vacuum_snapshot(&moltis_db).await?;
+    let antre_db = data_dir.join("antre.db");
+    if antre_db.exists() {
+        let snapshot = vacuum_snapshot(&antre_db).await?;
         let _guard = TempFileGuard(snapshot.clone());
         strip_auth_tables(&snapshot).await?;
-        add_file_to_tar(&mut builder, &snapshot, &format!("{prefix}/db/moltis.db"))?;
-        inventory.has_moltis_db = true;
-        info!("exported moltis.db snapshot");
+        add_file_to_tar(&mut builder, &snapshot, &format!("{prefix}/db/antre.db"))?;
+        inventory.has_antre_db = true;
+        info!("exported antre.db snapshot");
     }
 
     let memory_db = data_dir.join("memory.db");
@@ -264,8 +264,7 @@ pub(crate) async fn export_archive_from_dirs<W: Write>(
         + entries_for("sessions", &inventory.media_files)
         + entries_for("files", &inventory.managed_files.files)
         + entries_for("files", &inventory.managed_files.directories)
-        + usize::from(inventory.has_moltis_db)
-            * tar_member_count(&format!("{prefix}/db/moltis.db"))
+        + usize::from(inventory.has_antre_db) * tar_member_count(&format!("{prefix}/db/antre.db"))
         + usize::from(inventory.has_memory_db)
             * tar_member_count(&format!("{prefix}/db/memory.db"))
         + tar_member_count(&format!("{prefix}/manifest.json"));
@@ -279,12 +278,12 @@ pub(crate) async fn export_archive_from_dirs<W: Write>(
         .format(&time::format_description::well_known::Rfc3339)
         .unwrap_or_else(|_| "unknown".into());
 
-    let moltis_version =
-        std::env::var("MOLTIS_VERSION").unwrap_or_else(|_| env!("CARGO_PKG_VERSION").into());
+    let antre_version =
+        std::env::var("ANTRE_VERSION").unwrap_or_else(|_| env!("CARGO_PKG_VERSION").into());
 
     let manifest = ExportManifest {
         format_version: FORMAT_VERSION,
-        moltis_version,
+        antre_version,
         created_at,
         inventory,
     };
@@ -315,7 +314,7 @@ pub(crate) async fn export_archive_from_dirs<W: Write>(
 const MAX_MANAGED_PATH_DEPTH: usize = 64;
 const MAX_MANAGED_PATH_BYTES: usize = 4096;
 const MAX_MANAGED_COMPONENT_BYTES: usize = 255;
-const MANAGED_TEMP_PREFIX: &str = ".moltis-upload-";
+const MANAGED_TEMP_PREFIX: &str = ".antre-upload-";
 
 fn add_managed_files<W: Write>(
     builder: &mut Builder<W>,
@@ -546,7 +545,7 @@ fn add_open_file_to_tar<W: Write>(
 fn archive_prefix() -> String {
     let now = time::OffsetDateTime::now_utc();
     format!(
-        "moltis-backup-{:04}{:02}{:02}-{:02}{:02}{:02}",
+        "antre-backup-{:04}{:02}{:02}-{:02}{:02}{:02}",
         now.year(),
         now.month() as u8,
         now.day(),
@@ -682,9 +681,9 @@ mod tests {
     #[test]
     fn archive_prefix_format() {
         let prefix = archive_prefix();
-        assert!(prefix.starts_with("moltis-backup-"));
-        // e.g. moltis-backup-20260501-143022
-        assert_eq!(prefix.len(), "moltis-backup-YYYYMMDD-HHMMSS".len());
+        assert!(prefix.starts_with("antre-backup-"));
+        // e.g. antre-backup-20260501-143022
+        assert_eq!(prefix.len(), "antre-backup-YYYYMMDD-HHMMSS".len());
     }
 
     #[test]

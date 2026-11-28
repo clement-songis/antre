@@ -15,7 +15,7 @@ pub struct VoiceConfig {
     pub stt: VoiceSttConfig,
 }
 
-/// Voice TTS configuration for moltis.toml.
+/// Voice TTS configuration for antre.toml.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct VoiceTtsConfig {
@@ -227,7 +227,7 @@ impl Default for VoiceCoquiTtsConfig {
     }
 }
 
-/// Voice STT configuration for moltis.toml.
+/// Voice STT configuration for antre.toml.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct VoiceSttConfig {
@@ -294,8 +294,8 @@ impl Default for VoiceSttConfig {
 
 /// Text-to-Speech provider identifier.
 ///
-/// Canonical definition used across moltis-config, moltis-voice, and
-/// moltis-gateway. Re-exported as `TtsProviderId` from `moltis-voice`.
+/// Canonical definition used across antre-config, antre-voice, and
+/// antre-gateway. Re-exported as `TtsProviderId` from `antre-voice`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
 pub enum VoiceTtsProvider {
     #[default]
@@ -368,8 +368,8 @@ impl std::fmt::Display for VoiceTtsProvider {
 
 /// Speech-to-Text provider identifier.
 ///
-/// Canonical definition used across moltis-config, moltis-voice, and
-/// moltis-gateway. Re-exported as `SttProviderId` from `moltis-voice`.
+/// Canonical definition used across antre-config, antre-voice, and
+/// antre-gateway. Re-exported as `SttProviderId` from `antre-voice`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
 pub enum VoiceSttProvider {
     #[default]
@@ -778,7 +778,7 @@ pub struct VoiceWhisperCliConfig {
     pub enabled: bool,
     /// Path to whisper-cli binary. If not set, looks in PATH.
     pub binary_path: Option<String>,
-    /// Path to the GGML model file (e.g., "~/.moltis/models/ggml-base.en.bin").
+    /// Path to the GGML model file (e.g., "~/.antre/models/ggml-base.en.bin").
     pub model_path: Option<String>,
     /// Language hint (ISO 639-1 code).
     pub language: Option<String>,

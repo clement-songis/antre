@@ -13,11 +13,11 @@ export default {
 
 	// ── Loading & error states ─────────────────────────────
 	loadingMetrics: "載入指標中\u2026",
-	metricsDisabled: "指標功能未啟用。請在 moltis.toml 中以 [metrics] enabled = true 啟用",
+	metricsDisabled: "指標功能未啟用。請在 antre.toml 中以 [metrics] enabled = true 啟用",
 
 	// ── Empty states ───────────────────────────────────────
 	noActivityTitle: "尚無活動",
-	noActivityDescription: "開始使用 Moltis 後，指標將會顯示在此處。試著傳送一則訊息或執行一個工具來檢視資料。",
+	noActivityDescription: "開始使用 Antre 後，指標將會顯示在此處。試著傳送一則訊息或執行一個工具來檢視資料。",
 	collectingTitle: "正在收集資料\u2026",
 	collectingDescription: "收集到幾個資料點後，歷史圖表將會顯示在此處。通常需要約 20\u201330 秒。",
 
@@ -44,7 +44,7 @@ export default {
 		connectedClients: "目前連線數",
 		activeSessions: "使用中的工作階段",
 		httpRequests: "HTTP 請求",
-		processMemory: "Moltis 使用的記憶體",
+		processMemory: "Antre 使用的記憶體",
 		completions: "LLM 推論次數",
 		inputTokens: "輸入 Token",
 		outputTokens: "輸出 Token",
@@ -79,7 +79,7 @@ export default {
 		llmCompletions: "LLM 推論次數",
 		wsActive: "WebSocket 使用中",
 		activeSessions: "使用中的工作階段",
-		processMemory: "Moltis 使用的記憶體",
+		processMemory: "Antre 使用的記憶體",
 		localLlamaCpp: "本機 llama.cpp",
 		toolExecutions: "工具執行次數",
 		mcpCalls: "MCP 呼叫",

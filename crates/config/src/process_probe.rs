@@ -119,7 +119,7 @@ mod tests {
     #[test]
     fn missing_program_is_none() {
         assert!(
-            output_within("moltis-no-such-cli", &["--version"], Duration::from_secs(1)).is_none()
+            output_within("antre-no-such-cli", &["--version"], Duration::from_secs(1)).is_none()
         );
     }
 }

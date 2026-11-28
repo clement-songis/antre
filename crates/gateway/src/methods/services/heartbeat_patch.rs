@@ -1,4 +1,4 @@
-use moltis_config::schema::HeartbeatConfig;
+use antre_config::schema::HeartbeatConfig;
 
 /// Apply a `heartbeat.update` payload to the configuration already in effect.
 ///
@@ -65,7 +65,7 @@ mod tests {
     #[test]
     fn partial_active_hours_moves_only_the_keys_it_carries() -> anyhow::Result<()> {
         let current = HeartbeatConfig {
-            active_hours: moltis_config::schema::ActiveHoursConfig {
+            active_hours: antre_config::schema::ActiveHoursConfig {
                 start: "09:00".into(),
                 end: "21:00".into(),
                 timezone: "UTC".into(),

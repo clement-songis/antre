@@ -1,4 +1,4 @@
-// The built-in mockup, shown when no MOLTIS_MOCKUP_FILE was given. It is also
+// The built-in mockup, shown when no ANTRE_MOCKUP_FILE was given. It is also
 // the template for an agent's own file: the same imports, the same
 // `pub(super) fn mockup() -> Mockup`, and both kinds of body. Each body's
 // root takes `.flex_1()` to fill its frame. A file compiled

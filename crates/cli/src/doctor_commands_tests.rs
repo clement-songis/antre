@@ -1,6 +1,6 @@
 use {
     super::*,
-    moltis_config::{MoltisConfig, validate::Diagnostic},
+    antre_config::{AntreConfig, validate::Diagnostic},
 };
 
 #[test]
@@ -52,7 +52,7 @@ fn config_validation_status_warns_for_deprecated_field() {
 
 #[test]
 fn check_providers_empty_config() {
-    let config = MoltisConfig::default();
+    let config = AntreConfig::default();
     let section = check_providers(&config);
     assert_eq!(section.items.len(), 1);
     assert_eq!(section.items[0].status, Status::Info);
@@ -61,8 +61,8 @@ fn check_providers_empty_config() {
 
 #[test]
 fn check_providers_with_config_key() {
-    let mut config = MoltisConfig::default();
-    let entry = moltis_config::schema::ProviderEntry {
+    let mut config = AntreConfig::default();
+    let entry = antre_config::schema::ProviderEntry {
         api_key: Some(secrecy::Secret::new("sk-test-fake".to_string())),
         ..Default::default()
     };
@@ -79,10 +79,10 @@ fn check_providers_with_config_key() {
 
 #[test]
 fn check_providers_missing_key_warns() {
-    let mut config = MoltisConfig::default();
+    let mut config = AntreConfig::default();
     config.providers.providers.insert(
         "minimax".to_string(),
-        moltis_config::schema::ProviderEntry::default(),
+        antre_config::schema::ProviderEntry::default(),
     );
 
     if std::env::var("MINIMAX_API_KEY").is_err() {
@@ -95,10 +95,10 @@ fn check_providers_missing_key_warns() {
 
 #[test]
 fn check_providers_ollama_optional() {
-    let mut config = MoltisConfig::default();
+    let mut config = AntreConfig::default();
     config.providers.providers.insert(
         "ollama".to_string(),
-        moltis_config::schema::ProviderEntry::default(),
+        antre_config::schema::ProviderEntry::default(),
     );
 
     let section = check_providers(&config);
@@ -113,8 +113,8 @@ fn check_providers_ollama_optional() {
 
 #[test]
 fn check_providers_disabled_skipped() {
-    let mut config = MoltisConfig::default();
-    let entry = moltis_config::schema::ProviderEntry {
+    let mut config = AntreConfig::default();
+    let entry = antre_config::schema::ProviderEntry {
         enabled: false,
         ..Default::default()
     };
@@ -128,10 +128,10 @@ fn check_providers_disabled_skipped() {
 
 #[test]
 fn check_providers_oauth_skipped() {
-    let mut config = MoltisConfig::default();
+    let mut config = AntreConfig::default();
     config.providers.providers.insert(
         "github-copilot".to_string(),
-        moltis_config::schema::ProviderEntry::default(),
+        antre_config::schema::ProviderEntry::default(),
     );
 
     let section = check_providers(&config);
@@ -145,7 +145,7 @@ fn check_providers_oauth_skipped() {
 
 #[test]
 fn check_mcp_servers_empty() {
-    let config = MoltisConfig::default();
+    let config = AntreConfig::default();
     let section = check_mcp_servers(&config);
     assert_eq!(section.items.len(), 1);
     assert_eq!(section.items[0].status, Status::Info);
@@ -153,8 +153,8 @@ fn check_mcp_servers_empty() {
 
 #[test]
 fn check_mcp_servers_disabled_skipped() {
-    let mut config = MoltisConfig::default();
-    let entry = moltis_config::schema::McpServerEntry {
+    let mut config = AntreConfig::default();
+    let entry = antre_config::schema::McpServerEntry {
         command: "node".to_string(),
         args: vec![],
         env: Default::default(),
@@ -178,8 +178,8 @@ fn check_mcp_servers_disabled_skipped() {
 
 #[test]
 fn check_mcp_servers_missing_command_fails() {
-    let mut config = MoltisConfig::default();
-    let entry = moltis_config::schema::McpServerEntry {
+    let mut config = AntreConfig::default();
+    let entry = antre_config::schema::McpServerEntry {
         command: String::new(),
         args: vec![],
         env: Default::default(),
@@ -203,8 +203,8 @@ fn check_mcp_servers_missing_command_fails() {
 
 #[test]
 fn check_mcp_servers_sse_with_url_ok() {
-    let mut config = MoltisConfig::default();
-    let entry = moltis_config::schema::McpServerEntry {
+    let mut config = AntreConfig::default();
+    let entry = antre_config::schema::McpServerEntry {
         command: String::new(),
         args: vec![],
         env: Default::default(),
@@ -228,8 +228,8 @@ fn check_mcp_servers_sse_with_url_ok() {
 
 #[test]
 fn check_mcp_servers_sse_without_url_fails() {
-    let mut config = MoltisConfig::default();
-    let entry = moltis_config::schema::McpServerEntry {
+    let mut config = AntreConfig::default();
+    let entry = antre_config::schema::McpServerEntry {
         command: String::new(),
         args: vec![],
         env: Default::default(),
@@ -257,8 +257,8 @@ fn check_mcp_servers_sse_without_url_fails() {
 #[test]
 fn check_mcp_servers_streamable_http_with_url_ok() {
     for transport in ["streamable-http", "streamable_http", "http"] {
-        let mut config = MoltisConfig::default();
-        let entry = moltis_config::schema::McpServerEntry {
+        let mut config = AntreConfig::default();
+        let entry = antre_config::schema::McpServerEntry {
             command: String::new(),
             args: vec![],
             env: Default::default(),
@@ -291,8 +291,8 @@ fn check_mcp_servers_streamable_http_with_url_ok() {
 
 #[test]
 fn check_mcp_servers_streamable_http_without_url_fails() {
-    let mut config = MoltisConfig::default();
-    let entry = moltis_config::schema::McpServerEntry {
+    let mut config = AntreConfig::default();
+    let entry = antre_config::schema::McpServerEntry {
         command: String::new(),
         args: vec![],
         env: Default::default(),
@@ -318,8 +318,8 @@ fn check_mcp_servers_streamable_http_without_url_fails() {
 #[test]
 fn check_mcp_servers_streamable_http_with_invalid_url_fails() {
     for url in ["", "not a url", "http://[::1"] {
-        let mut config = MoltisConfig::default();
-        let entry = moltis_config::schema::McpServerEntry {
+        let mut config = AntreConfig::default();
+        let entry = antre_config::schema::McpServerEntry {
             command: String::new(),
             args: vec![],
             env: Default::default(),
@@ -345,12 +345,12 @@ fn check_mcp_servers_streamable_http_with_invalid_url_fails() {
 #[test]
 fn check_mcp_servers_streamable_http_resolves_config_env_url() {
     for placeholder in ["$MCP_URL", "${MCP_URL}"] {
-        let mut config = MoltisConfig::default();
+        let mut config = AntreConfig::default();
         config.env.insert(
             "MCP_URL".to_string(),
             "http://localhost:3131/mcp".to_string(),
         );
-        let entry = moltis_config::schema::McpServerEntry {
+        let entry = antre_config::schema::McpServerEntry {
             command: String::new(),
             args: vec![],
             env: Default::default(),
@@ -374,8 +374,8 @@ fn check_mcp_servers_streamable_http_resolves_config_env_url() {
 
 #[test]
 fn check_mcp_servers_streamable_http_defers_unavailable_env_url() {
-    let mut config = MoltisConfig::default();
-    let entry = moltis_config::schema::McpServerEntry {
+    let mut config = AntreConfig::default();
+    let entry = antre_config::schema::McpServerEntry {
         command: String::new(),
         args: vec![],
         env: Default::default(),
@@ -403,8 +403,8 @@ fn check_mcp_servers_streamable_http_defers_unavailable_env_url() {
 
 #[test]
 fn check_mcp_servers_nonexistent_command_fails() {
-    let mut config = MoltisConfig::default();
-    let entry = moltis_config::schema::McpServerEntry {
+    let mut config = AntreConfig::default();
+    let entry = antre_config::schema::McpServerEntry {
         command: "definitely-not-a-real-command-xyz123".to_string(),
         args: vec![],
         env: Default::default(),
@@ -474,7 +474,7 @@ async fn check_database_missing_file() {
 #[tokio::test]
 async fn check_database_valid_db() {
     let temp = tempfile::TempDir::new().unwrap();
-    let db_path = temp.path().join("moltis.db");
+    let db_path = temp.path().join("antre.db");
     let db_url = format!("sqlite:{}?mode=rwc", db_path.display());
     let pool = sqlx::sqlite::SqlitePoolOptions::new()
         .max_connections(1)
@@ -499,7 +499,7 @@ async fn check_database_valid_db() {
 #[tokio::test]
 async fn read_remote_exec_inventory_reports_pinned_defaults() {
     let temp = tempfile::TempDir::new().unwrap();
-    let db_path = temp.path().join("moltis.db");
+    let db_path = temp.path().join("antre.db");
     let db_url = format!("sqlite:{}?mode=rwc", db_path.display());
     let pool = sqlx::sqlite::SqlitePoolOptions::new()
         .max_connections(1)
@@ -570,7 +570,7 @@ async fn read_remote_exec_inventory_reports_pinned_defaults() {
 #[tokio::test]
 async fn check_remote_exec_warns_for_unpinned_active_target() {
     let temp = tempfile::TempDir::new().unwrap();
-    let db_path = temp.path().join("moltis.db");
+    let db_path = temp.path().join("antre.db");
     let db_url = format!("sqlite:{}?mode=rwc", db_path.display());
     let pool = sqlx::sqlite::SqlitePoolOptions::new()
         .max_connections(1)
@@ -618,7 +618,7 @@ async fn check_remote_exec_warns_for_unpinned_active_target() {
     .unwrap();
     pool.close().await;
 
-    let mut config = MoltisConfig::default();
+    let mut config = AntreConfig::default();
     config.tools.exec.host = "ssh".to_string();
     let section = check_remote_exec(&config, temp.path()).await;
     assert!(
@@ -630,7 +630,7 @@ async fn check_remote_exec_warns_for_unpinned_active_target() {
 
 #[test]
 fn check_security_no_api_keys_in_config() {
-    let config = MoltisConfig::default();
+    let config = AntreConfig::default();
     let temp = tempfile::TempDir::new().unwrap();
     let section = check_security(&config, Some(temp.path()), temp.path());
 
@@ -644,8 +644,8 @@ fn check_security_no_api_keys_in_config() {
 
 #[test]
 fn check_security_api_keys_in_config_warns() {
-    let mut config = MoltisConfig::default();
-    let entry = moltis_config::schema::ProviderEntry {
+    let mut config = AntreConfig::default();
+    let entry = antre_config::schema::ProviderEntry {
         api_key: Some(secrecy::Secret::new("sk-test".to_string())),
         ..Default::default()
     };

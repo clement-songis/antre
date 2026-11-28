@@ -1,4 +1,4 @@
-// Service Worker for moltis PWA
+// Service Worker for antre PWA
 // Handles caching for offline support and push notifications
 
 /// <reference lib="webworker" />
@@ -7,27 +7,27 @@
 // The double cast is unavoidable when both DOM and WebWorker types coexist in tsconfig.
 const sw = self as unknown as ServiceWorkerGlobalScope;
 
-declare const __MOLTIS_SW_VERSION__: string;
+declare const __ANTRE_SW_VERSION__: string;
 
 // The build hashes this worker source. A waiting worker therefore fills its own
 // cache instead of mutating entries still used by the active worker.
-const CACHE_NAME = `moltis-shell-${__MOLTIS_SW_VERSION__}`;
-const CACHE_PREFIX = "moltis-";
+const CACHE_NAME = `antre-shell-${__ANTRE_SW_VERSION__}`;
+const CACHE_PREFIX = "antre-";
 const OFFLINE_URL = "/offline.html";
 
 /**
  * Small persistent flag store, kept out of the shell cache lifecycle. The
  * service worker has no localStorage, and this state must survive app closure.
  */
-const STATE_CACHE = "moltis-state";
+const STATE_CACHE = "antre-state";
 const STATE_KEYS = {
-	installed: "/__moltis__/installed",
-	pushEnabled: "/__moltis__/push-enabled",
-	pushDisabled: "/__moltis__/push-disabled",
-	pushRotationPending: "/__moltis__/push-rotation-pending",
-	notificationOrder: "/__moltis__/push-notification-order",
+	installed: "/__antre__/installed",
+	pushEnabled: "/__antre__/push-enabled",
+	pushDisabled: "/__antre__/push-disabled",
+	pushRotationPending: "/__antre__/push-rotation-pending",
+	notificationOrder: "/__antre__/push-notification-order",
 } as const;
-const PUSH_STATE_LOCK = "moltis-push-state";
+const PUSH_STATE_LOCK = "antre-push-state";
 
 const REQUIRED_ASSETS: string[] = [
 	OFFLINE_URL,
@@ -239,7 +239,7 @@ interface OrderedPushState {
 
 /** Group notifications per session so one chat never floods the shade. */
 function notificationTag(data: PushData): string {
-	return data.sessionKey ? `moltis:session:${data.sessionKey}` : "moltis:general";
+	return data.sessionKey ? `antre:session:${data.sessionKey}` : "antre:general";
 }
 
 /**
@@ -261,8 +261,7 @@ function storedNotificationCount(notification: Notification): number {
 
 function notificationMatchesSession(notification: Notification, sessionKey: string): boolean {
 	return (
-		notification.tag === `moltis:session:${sessionKey}` ||
-		storedNotificationData(notification).sessionKey === sessionKey
+		notification.tag === `antre:session:${sessionKey}` || storedNotificationData(notification).sessionKey === sessionKey
 	);
 }
 
@@ -536,7 +535,7 @@ async function handlePush(data: PushData): Promise<void> {
 		options.vibrate = [100, 50, 100];
 	}
 
-	await sw.registration.showNotification(data.title || "moltis", options);
+	await sw.registration.showNotification(data.title || "antre", options);
 	if (ordered) {
 		ordered.orders[ordered.sessionKey] = ordered.order;
 		await writeNotificationOrders(ordered.cache, ordered.orders);
@@ -560,7 +559,7 @@ sw.addEventListener("push", (event: PushEvent) => {
 	try {
 		data = event.data ? (event.data.json() as PushData) : {};
 	} catch {
-		data = { body: event.data ? event.data.text() : "New message from moltis" };
+		data = { body: event.data ? event.data.text() : "New message from antre" };
 	}
 
 	const queued = pushQueue.then(() => handlePush(data));

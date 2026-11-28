@@ -9,17 +9,17 @@ mod permissions;
 mod security;
 
 use {
-    async_trait::async_trait,
-    futures::StreamExt,
-    moltis_config::schema::ExternalAgentsConfig,
-    moltis_external_agents::{
+    antre_config::schema::ExternalAgentsConfig,
+    antre_external_agents::{
         AcpPermissionHandler, AgentTransportKind, ContextSnapshot, ExternalAgentEvent,
         ExternalAgentRegistry, ExternalAgentSession, ExternalAgentSpec,
         runtimes::{acp::AcpTransport, claude_code::ClaudeCodeTransport, codex::CodexTransport},
         types::ContextTurn,
     },
-    moltis_service_traits::{ChatService, ExternalAgentService, ServiceResult, SessionService},
-    moltis_sessions::{MessageContent, PersistedMessage},
+    antre_service_traits::{ChatService, ExternalAgentService, ServiceResult, SessionService},
+    antre_sessions::{MessageContent, PersistedMessage},
+    async_trait::async_trait,
+    futures::StreamExt,
     serde_json::Value,
     tokio::sync::Mutex,
     tracing::{info, warn},
@@ -27,11 +27,11 @@ use {
 
 #[cfg(test)]
 use {
-    moltis_external_agents::{AcpPermissionOptionKind, AcpPermissionRequest},
+    antre_external_agents::{AcpPermissionOptionKind, AcpPermissionRequest},
     permissions::{select_allowed_acp_option, select_rejected_acp_option},
 };
 
-use moltis_tools::approval::ApprovalManager;
+use antre_tools::approval::ApprovalManager;
 
 use crate::{broadcast::BroadcastOpts, state::GatewayState};
 
@@ -43,7 +43,7 @@ use self::{
 pub struct GatewayExternalAgentService {
     registry: ExternalAgentRegistry,
     config: ExternalAgentsConfig,
-    session_metadata: Arc<moltis_sessions::metadata::SqliteSessionMetadata>,
+    session_metadata: Arc<antre_sessions::metadata::SqliteSessionMetadata>,
     live_sessions: Mutex<HashMap<LiveSessionKey, LiveSessionEntry>>,
 }
 
@@ -65,7 +65,7 @@ struct LiveSessionKey {
 impl GatewayExternalAgentService {
     pub fn new(
         config: ExternalAgentsConfig,
-        session_metadata: Arc<moltis_sessions::metadata::SqliteSessionMetadata>,
+        session_metadata: Arc<antre_sessions::metadata::SqliteSessionMetadata>,
         approval_manager: Arc<ApprovalManager>,
     ) -> Self {
         let mut registry = ExternalAgentRegistry::new();
@@ -133,7 +133,7 @@ impl GatewayExternalAgentService {
     #[cfg(test)]
     fn with_registry(
         config: ExternalAgentsConfig,
-        session_metadata: Arc<moltis_sessions::metadata::SqliteSessionMetadata>,
+        session_metadata: Arc<antre_sessions::metadata::SqliteSessionMetadata>,
         registry: ExternalAgentRegistry,
     ) -> Self {
         Self {
@@ -537,8 +537,8 @@ pub struct ExternalAgentChatService {
     inner: Arc<dyn ChatService>,
     external_agents: Arc<GatewayExternalAgentService>,
     state: Arc<GatewayState>,
-    session_store: Arc<moltis_sessions::store::SessionStore>,
-    session_metadata: Arc<moltis_sessions::metadata::SqliteSessionMetadata>,
+    session_store: Arc<antre_sessions::store::SessionStore>,
+    session_metadata: Arc<antre_sessions::metadata::SqliteSessionMetadata>,
 }
 
 impl ExternalAgentChatService {
@@ -546,8 +546,8 @@ impl ExternalAgentChatService {
         inner: Arc<dyn ChatService>,
         external_agents: Arc<GatewayExternalAgentService>,
         state: Arc<GatewayState>,
-        session_store: Arc<moltis_sessions::store::SessionStore>,
-        session_metadata: Arc<moltis_sessions::metadata::SqliteSessionMetadata>,
+        session_store: Arc<antre_sessions::store::SessionStore>,
+        session_metadata: Arc<antre_sessions::metadata::SqliteSessionMetadata>,
     ) -> Self {
         Self {
             inner,
@@ -592,7 +592,7 @@ impl ExternalAgentChatService {
             .ok()?;
         let dir = val.get("directory").and_then(|v| v.as_str())?;
         let worktree = entry.worktree_branch.as_ref().and_then(|_| {
-            let wt = Path::new(dir).join(".moltis-worktrees").join(session_key);
+            let wt = Path::new(dir).join(".antre-worktrees").join(session_key);
             wt.exists().then_some(wt)
         });
         Some(worktree.unwrap_or_else(|| PathBuf::from(dir)))
@@ -614,7 +614,7 @@ impl ExternalAgentChatService {
             .get("_channel_reply_target")
             .cloned()
             .and_then(|value| {
-                match serde_json::from_value::<moltis_channels::ChannelReplyTarget>(value) {
+                match serde_json::from_value::<antre_channels::ChannelReplyTarget>(value) {
                     Ok(target) => Some(target),
                     Err(error) => {
                         warn!(
@@ -680,7 +680,7 @@ impl ExternalAgentChatService {
         .await;
 
         let context_working_dir = self.resolve_context_working_dir(&session_key).await;
-        let context_command_output = moltis_common::context_command::run_context_command(
+        let context_command_output = antre_common::context_command::run_context_command(
             self.state.config.chat.context_command.as_deref(),
             context_working_dir.as_deref(),
         )
@@ -861,7 +861,7 @@ impl ExternalAgentChatService {
 
 async fn deliver_external_agent_channel_reply(
     state: &GatewayState,
-    target: Option<moltis_channels::ChannelReplyTarget>,
+    target: Option<antre_channels::ChannelReplyTarget>,
     text: &str,
     session_key: &str,
 ) {

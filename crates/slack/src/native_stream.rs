@@ -1,11 +1,11 @@
 use std::{collections::BTreeMap, time::Duration};
 
 use {
-    async_trait::async_trait,
-    moltis_channels::{
+    antre_channels::{
         Error as ChannelError, Result as ChannelResult,
         plugin::{ChannelTaskStatus, ChannelTaskUpdate},
     },
+    async_trait::async_trait,
     tracing::warn,
 };
 
@@ -325,7 +325,7 @@ pub(crate) async fn send_native_stream(
     thread_ts: &str,
     recipient: Option<&StreamRecipient>,
     throttle: Duration,
-    stream: &mut moltis_channels::plugin::StreamReceiver,
+    stream: &mut antre_channels::plugin::StreamReceiver,
 ) -> ChannelResult<Vec<String>> {
     send_native_stream_with_api(api, channel, thread_ts, recipient, throttle, stream).await
 }
@@ -336,9 +336,9 @@ async fn send_native_stream_with_api<A: NativeStreamApi>(
     thread_ts: &str,
     recipient: Option<&StreamRecipient>,
     throttle: Duration,
-    stream: &mut moltis_channels::plugin::StreamReceiver,
+    stream: &mut antre_channels::plugin::StreamReceiver,
 ) -> ChannelResult<Vec<String>> {
-    use moltis_channels::plugin::StreamEvent;
+    use antre_channels::plugin::StreamEvent;
 
     let mut pending_text = String::new();
     let mut full_text = String::new();
@@ -603,9 +603,9 @@ async fn recover_stream_message<A: NativeStreamApi>(
     full_text: &mut String,
     recovery_overflowed: &mut bool,
     recovery: &StreamRecovery,
-    stream: &mut moltis_channels::plugin::StreamReceiver,
+    stream: &mut antre_channels::plugin::StreamReceiver,
 ) -> bool {
-    use moltis_channels::plugin::StreamEvent;
+    use antre_channels::plugin::StreamEvent;
 
     while let Some(event) = stream.recv().await {
         match event {
@@ -773,7 +773,7 @@ fn truncate_chars(value: &str, max_chars: usize) -> String {
 #[allow(clippy::unwrap_used)]
 mod tests {
     use {
-        moltis_channels::plugin::{StreamEvent, StreamReceiver},
+        antre_channels::plugin::{StreamEvent, StreamReceiver},
         std::sync::Mutex,
     };
 

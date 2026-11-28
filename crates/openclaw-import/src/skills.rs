@@ -1,6 +1,6 @@
-//! Import skills from OpenClaw to Moltis.
+//! Import skills from OpenClaw to Antre.
 //!
-//! OpenClaw skills use the SKILL.md format that Moltis already parses.
+//! OpenClaw skills use the SKILL.md format that Antre already parses.
 //! This module copies skill directories, skipping duplicates.
 
 use std::path::{Path, PathBuf};
@@ -66,9 +66,9 @@ fn scan_skill_dir(dir: &Path, is_workspace: bool, skills: &mut Vec<DiscoveredSki
     }
 }
 
-/// Import discovered skills into the Moltis skills directory.
+/// Import discovered skills into the Antre skills directory.
 ///
-/// `dest_skills_dir` is typically `~/.moltis/skills/`.
+/// `dest_skills_dir` is typically `~/.antre/skills/`.
 pub fn import_skills(detection: &OpenClawDetection, dest_skills_dir: &Path) -> CategoryReport {
     let skills = discover_skills(detection);
 
@@ -213,7 +213,7 @@ mod tests {
         let tmp = tempfile::tempdir().unwrap();
         setup_skills(tmp.path());
 
-        let dest = tmp.path().join("moltis-skills");
+        let dest = tmp.path().join("antre-skills");
         let detection = make_detection(tmp.path());
         let report = import_skills(&detection, &dest);
 
@@ -229,7 +229,7 @@ mod tests {
         let tmp = tempfile::tempdir().unwrap();
         setup_skills(tmp.path());
 
-        let dest = tmp.path().join("moltis-skills");
+        let dest = tmp.path().join("antre-skills");
         // Pre-create one skill
         std::fs::create_dir_all(dest.join("my-skill")).unwrap();
 

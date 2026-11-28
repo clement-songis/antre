@@ -1,8 +1,8 @@
 use {
+    antre_agents::tool_registry::{AgentTool, ToolRegistry},
+    antre_connectors::{ConnectorItem, ConnectorKind, ConnectorReader, Dataset, ItemQuery},
     anyhow::{Context, Result, bail},
     async_trait::async_trait,
-    moltis_agents::tool_registry::{AgentTool, ToolRegistry},
-    moltis_connectors::{ConnectorItem, ConnectorKind, ConnectorReader, Dataset, ItemQuery},
     serde::{Deserialize, Serialize},
     serde_json::{Value, json},
     std::sync::Arc,
@@ -385,8 +385,8 @@ mod tests {
     use {
         super::*,
         crate::{GmailAttachment, GmailBodyFormat, GmailHeader},
-        moltis_agents::tool_registry::ToolAudience,
-        moltis_connectors::{ConnectorError, ProjectionConfig},
+        antre_agents::tool_registry::ToolAudience,
+        antre_connectors::{ConnectorError, ProjectionConfig},
         std::sync::Mutex,
         time::OffsetDateTime,
     };
@@ -401,7 +401,7 @@ mod tests {
         async fn list_datasets_for_kind(
             &self,
             kind: ConnectorKind,
-        ) -> moltis_connectors::Result<Vec<Dataset>> {
+        ) -> antre_connectors::Result<Vec<Dataset>> {
             self.kinds.lock().unwrap().push(kind);
             Ok(vec![dataset()])
         }
@@ -411,7 +411,7 @@ mod tests {
             kind: ConnectorKind,
             _dataset_id: &str,
             _query: ItemQuery,
-        ) -> moltis_connectors::Result<Vec<ConnectorItem>> {
+        ) -> antre_connectors::Result<Vec<ConnectorItem>> {
             self.kinds.lock().unwrap().push(kind);
             Ok(vec![self.item.clone()])
         }
@@ -421,7 +421,7 @@ mod tests {
             kind: ConnectorKind,
             _dataset_id: &str,
             item_id: &str,
-        ) -> moltis_connectors::Result<Option<ConnectorItem>> {
+        ) -> antre_connectors::Result<Option<ConnectorItem>> {
             self.kinds.lock().unwrap().push(kind);
             if item_id == self.item.id {
                 Ok(Some(self.item.clone()))

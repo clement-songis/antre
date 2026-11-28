@@ -5,7 +5,7 @@ use std::{
 };
 
 use {
-    moltis_channels::{ChannelEventSink, message_log::MessageLog, otp::OtpState},
+    antre_channels::{ChannelEventSink, message_log::MessageLog, otp::OtpState},
     tokio_util::sync::CancellationToken,
 };
 

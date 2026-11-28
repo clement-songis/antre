@@ -1,0 +1,25 @@
+app-id: org.moltbot.Antre
+runtime: org.freedesktop.Platform
+runtime-version: '24.08'
+sdk: org.freedesktop.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
+command: antre
+
+finish-args:
+  - --share=network
+
+build-options:
+  append-path: /usr/lib/sdk/rust-stable/bin
+  env:
+    CARGO_HOME: /run/build/antre/cargo
+
+modules:
+  - name: antre
+    buildsystem: simple
+    build-commands:
+      - ANTRE_BUILD_FEATURES=portable ./scripts/cargo-build-antre.sh --release
+      - install -Dm755 target/release/antre /app/bin/antre
+    sources:
+      - type: dir
+        path: ..

@@ -14,7 +14,7 @@ use {
 };
 
 use {
-    moltis_agents::{
+    antre_agents::{
         ChatMessage, UserContent,
         model::{
             StreamEvent, push_capped_provider_raw_event,
@@ -22,7 +22,7 @@ use {
         },
         prompt::{PromptRuntimeContext, build_system_prompt_minimal_runtime_details},
     },
-    moltis_sessions::store::SessionStore,
+    antre_sessions::store::SessionStore,
 };
 
 use crate::{
@@ -121,7 +121,7 @@ pub(crate) async fn run_streaming(
     state: &Arc<dyn ChatRuntime>,
     model_store: &Arc<RwLock<DisabledModelsStore>>,
     run_id: &str,
-    provider: Arc<dyn moltis_agents::model::LlmProvider>,
+    provider: Arc<dyn antre_agents::model::LlmProvider>,
     model_id: &str,
     user_content: &UserContent,
     provider_name: &str,
@@ -131,7 +131,7 @@ pub(crate) async fn run_streaming(
     desired_reply_medium: ReplyMedium,
     project_context: Option<&str>,
     user_message_index: usize,
-    _skills: &[moltis_skills::types::SkillMetadata],
+    _skills: &[antre_skills::types::SkillMetadata],
     runtime_context: Option<&PromptRuntimeContext>,
     sender_name: Option<String>,
     session_store: Option<&Arc<SessionStore>>,
@@ -139,7 +139,7 @@ pub(crate) async fn run_streaming(
     active_partial_assistant: Option<Arc<RwLock<HashMap<String, ActiveAssistantDraft>>>>,
     terminal_runs: &Arc<RwLock<HashSet<String>>>,
     private_context: bool,
-    hook_registry: Option<Arc<moltis_common::hooks::HookRegistry>>,
+    hook_registry: Option<Arc<antre_common::hooks::HookRegistry>>,
 ) -> Option<AssistantTurnOutput> {
     let run_started = Instant::now();
 
@@ -149,7 +149,7 @@ pub(crate) async fn run_streaming(
         let query_text = match user_content {
             UserContent::Text(t) => Some(t.as_str()),
             UserContent::Multimodal(parts) => parts.iter().find_map(|p| match p {
-                moltis_agents::model::ContentPart::Text(t) => Some(t.as_str()),
+                antre_agents::model::ContentPart::Text(t) => Some(t.as_str()),
                 _ => None,
             }),
         };
@@ -243,7 +243,7 @@ pub(crate) async fn run_streaming(
     // it stays positionally stable, preserving KV cache prefix matching for
     // local LLMs (llama.cpp, Ollama, LM Studio) and prompt-cache hits for
     // cloud providers.
-    let effective_user_content = moltis_agents::prompt::prepend_datetime_to_user_content(
+    let effective_user_content = antre_agents::prompt::prepend_datetime_to_user_content(
         user_content,
         prompt_runtime_context,
     )
@@ -427,7 +427,7 @@ pub(crate) async fn run_streaming(
                     let assistant_message_index = user_message_index + 1;
                     if let Some(hooks) = hook_registry.as_deref()
                         && let Err(error) = hooks
-                            .dispatch(&moltis_common::hooks::HookPayload::AgentEnd {
+                            .dispatch(&antre_common::hooks::HookPayload::AgentEnd {
                                 session_key: session_key.into(),
                                 text: accumulated.clone(),
                                 iterations: 1,

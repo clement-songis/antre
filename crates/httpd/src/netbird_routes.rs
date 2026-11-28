@@ -32,18 +32,18 @@ pub fn netbird_router() -> Router<AppState> {
 }
 
 async fn status_handler(State(state): State<AppState>) -> impl IntoResponse {
-    let config = moltis_config::discover_and_load();
+    let config = antre_config::discover_and_load();
     let mode = config
         .netbird
         .mode
-        .parse::<moltis_gateway::netbird::NetbirdMode>()
+        .parse::<antre_gateway::netbird::NetbirdMode>()
         .unwrap_or_default();
-    let manager = moltis_gateway::netbird::CliNetbirdManager::new(
+    let manager = antre_gateway::netbird::CliNetbirdManager::new(
         mode,
         config.server.port,
         config.tls_active(),
     );
-    match moltis_gateway::netbird::NetbirdManager::status(&manager).await {
+    match antre_gateway::netbird::NetbirdManager::status(&manager).await {
         Ok(status) => {
             let runtime = state.netbird_runtime.read().await.clone();
             Json(status_with_runtime_forwarder(status, runtime)).into_response()
@@ -58,9 +58,9 @@ async fn status_handler(State(state): State<AppState>) -> impl IntoResponse {
 
 #[cfg(feature = "netbird")]
 fn status_with_runtime_forwarder(
-    mut status: moltis_gateway::netbird::NetbirdStatus,
+    mut status: antre_gateway::netbird::NetbirdStatus,
     runtime: Option<NetbirdRuntimeStatus>,
-) -> moltis_gateway::netbird::NetbirdStatus {
+) -> antre_gateway::netbird::NetbirdStatus {
     status.url = runtime.map(|runtime| runtime.url);
     status
 }
@@ -69,8 +69,8 @@ async fn configure_handler(
     State(state): State<AppState>,
     Json(body): Json<ConfigureNetbirdRequest>,
 ) -> impl IntoResponse {
-    let existing = moltis_config::discover_and_load();
-    let mode = match body.mode.parse::<moltis_gateway::netbird::NetbirdMode>() {
+    let existing = antre_config::discover_and_load();
+    let mode = match body.mode.parse::<antre_gateway::netbird::NetbirdMode>() {
         Ok(mode) => mode,
         Err(error) => {
             return (
@@ -81,8 +81,7 @@ async fn configure_handler(
         },
     };
 
-    if let Err(error) =
-        moltis_gateway::netbird::validate_netbird_config(mode, &existing.server.bind)
+    if let Err(error) = antre_gateway::netbird::validate_netbird_config(mode, &existing.server.bind)
     {
         return (
             StatusCode::BAD_REQUEST,
@@ -94,7 +93,7 @@ async fn configure_handler(
     let mut updated = existing.clone();
     updated.netbird.mode = mode.to_string();
 
-    if let Err(error) = moltis_config::update_config(|config| {
+    if let Err(error) = antre_config::update_config(|config| {
         config.netbird.mode = mode.to_string();
     }) {
         return (
@@ -138,10 +137,10 @@ mod tests {
     use std::sync::Weak;
 
     use {
-        axum::body::to_bytes,
-        moltis_gateway::{
+        antre_gateway::{
             auth, methods::MethodRegistry, services::GatewayServices, state::GatewayState,
         },
+        axum::body::to_bytes,
     };
 
     #[cfg(feature = "cloudflare-tunnel")]
@@ -176,19 +175,19 @@ mod tests {
     #[test]
     fn status_without_runtime_does_not_expose_forwarder_url() {
         let status = status_with_runtime_forwarder(
-            moltis_gateway::netbird::NetbirdStatus {
-                mode: moltis_gateway::netbird::NetbirdMode::Serve,
+            antre_gateway::netbird::NetbirdStatus {
+                mode: antre_gateway::netbird::NetbirdMode::Serve,
                 installed: true,
                 netbird_up: true,
                 version: Some("netbird version 0.42.0".to_string()),
                 peer_ip: Some("100.96.0.10".to_string()),
-                dns_name: Some("moltis.netbird.cloud".to_string()),
-                url: Some("https://moltis.netbird.cloud:8080".to_string()),
+                dns_name: Some("antre.netbird.cloud".to_string()),
+                url: Some("https://antre.netbird.cloud:8080".to_string()),
             },
             None,
         );
 
-        assert_eq!(status.mode, moltis_gateway::netbird::NetbirdMode::Serve);
+        assert_eq!(status.mode, antre_gateway::netbird::NetbirdMode::Serve);
         assert_eq!(status.peer_ip.as_deref(), Some("100.96.0.10"));
         assert!(status.url.is_none());
     }
@@ -196,14 +195,14 @@ mod tests {
     #[test]
     fn status_with_runtime_exposes_active_forwarder_url() {
         let status = status_with_runtime_forwarder(
-            moltis_gateway::netbird::NetbirdStatus {
-                mode: moltis_gateway::netbird::NetbirdMode::Serve,
+            antre_gateway::netbird::NetbirdStatus {
+                mode: antre_gateway::netbird::NetbirdMode::Serve,
                 installed: true,
                 netbird_up: true,
                 version: Some("netbird version 0.42.0".to_string()),
                 peer_ip: Some("100.96.0.10".to_string()),
-                dns_name: Some("moltis.netbird.cloud".to_string()),
-                url: Some("https://moltis.netbird.cloud:8080".to_string()),
+                dns_name: Some("antre.netbird.cloud".to_string()),
+                url: Some("https://antre.netbird.cloud:8080".to_string()),
             },
             Some(NetbirdRuntimeStatus {
                 url: "https://100.96.0.10:8080".to_string(),
@@ -245,7 +244,7 @@ mod tests {
             netbird_controller: Arc::new(NetbirdController::new(Arc::clone(&netbird_runtime))),
             netbird_runtime,
             #[cfg(feature = "tailscale")]
-            tailscale_manager: moltis_gateway::tailscale::CachedTailscaleManager::new_with_prefetch(
+            tailscale_manager: antre_gateway::tailscale::CachedTailscaleManager::new_with_prefetch(
             ),
             #[cfg(feature = "push-notifications")]
             push_service: None,
@@ -261,8 +260,8 @@ mod tests {
     #[serial_test::serial(config_dir)]
     async fn configure_rejects_invalid_mode() -> Result<(), Box<dyn std::error::Error>> {
         let tempdir = tempfile::tempdir()?;
-        moltis_config::set_config_dir(tempdir.path().to_path_buf());
-        moltis_config::set_data_dir(tempdir.path().to_path_buf());
+        antre_config::set_config_dir(tempdir.path().to_path_buf());
+        antre_config::set_data_dir(tempdir.path().to_path_buf());
 
         let response = configure_handler(
             State(test_state()),
@@ -284,8 +283,8 @@ mod tests {
     #[serial_test::serial(config_dir)]
     async fn configure_accepts_off_mode() -> Result<(), Box<dyn std::error::Error>> {
         let tempdir = tempfile::tempdir()?;
-        moltis_config::set_config_dir(tempdir.path().to_path_buf());
-        moltis_config::set_data_dir(tempdir.path().to_path_buf());
+        antre_config::set_config_dir(tempdir.path().to_path_buf());
+        antre_config::set_data_dir(tempdir.path().to_path_buf());
 
         let response = configure_handler(
             State(test_state()),

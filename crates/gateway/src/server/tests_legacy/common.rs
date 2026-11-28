@@ -1,6 +1,6 @@
 use std::sync::MutexGuard;
 
-use {async_trait::async_trait, moltis_common::types::ReplyPayload, tokio::sync::Mutex};
+use {antre_common::types::ReplyPayload, async_trait::async_trait, tokio::sync::Mutex};
 
 pub(crate) struct LocalModelConfigTestGuard {
     _lock: MutexGuard<'static, ()>,
@@ -16,8 +16,8 @@ impl LocalModelConfigTestGuard {
 
 impl Drop for LocalModelConfigTestGuard {
     fn drop(&mut self) {
-        moltis_config::clear_config_dir();
-        moltis_config::clear_data_dir();
+        antre_config::clear_config_dir();
+        antre_config::clear_data_dir();
     }
 }
 
@@ -35,14 +35,14 @@ pub(crate) struct RecordingChannelOutbound {
 }
 
 #[async_trait]
-impl moltis_channels::ChannelOutbound for RecordingChannelOutbound {
+impl antre_channels::ChannelOutbound for RecordingChannelOutbound {
     async fn send_text(
         &self,
         account_id: &str,
         to: &str,
         text: &str,
         reply_to: Option<&str>,
-    ) -> moltis_channels::Result<()> {
+    ) -> antre_channels::Result<()> {
         self.delivered.lock().await.push(DeliveredMessage {
             account_id: account_id.to_string(),
             to: to.to_string(),
@@ -58,13 +58,13 @@ impl moltis_channels::ChannelOutbound for RecordingChannelOutbound {
         _to: &str,
         _payload: &ReplyPayload,
         _reply_to: Option<&str>,
-    ) -> moltis_channels::Result<()> {
+    ) -> antre_channels::Result<()> {
         Ok(())
     }
 }
 
-pub(crate) fn cron_delivery_request() -> moltis_cron::service::AgentTurnRequest {
-    moltis_cron::service::AgentTurnRequest {
+pub(crate) fn cron_delivery_request() -> antre_cron::service::AgentTurnRequest {
+    antre_cron::service::AgentTurnRequest {
         message: "Run background summary".to_string(),
         model: None,
         agent_id: None,
@@ -73,7 +73,7 @@ pub(crate) fn cron_delivery_request() -> moltis_cron::service::AgentTurnRequest 
         deliver: true,
         channel: Some("bot-main".to_string()),
         to: Some("123456".to_string()),
-        session_target: moltis_cron::types::SessionTarget::Isolated,
-        sandbox: moltis_cron::types::CronSandboxConfig::default(),
+        session_target: antre_cron::types::SessionTarget::Isolated,
+        sandbox: antre_cron::types::CronSandboxConfig::default(),
     }
 }

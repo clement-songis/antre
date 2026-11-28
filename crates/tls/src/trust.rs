@@ -15,7 +15,7 @@ use sha2::{Digest, Sha256};
 use super::{Context, Result};
 
 const TRUST_MARKER_FILE: &str = "ca-trust.txt";
-const NSS_NICKNAME: &str = "Moltis Local CA";
+const NSS_NICKNAME: &str = "Antre Local CA";
 
 /// The user's recorded answer for a specific CA certificate.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -120,7 +120,7 @@ fn run(store: &str, command: &mut Command) -> TrustStep {
 
 #[cfg(target_os = "macos")]
 fn install_os_store(ca_path: &Path, report: &mut TrustReport) {
-    let Some(home) = moltis_config::home_dir() else {
+    let Some(home) = antre_config::home_dir() else {
         report.hints.push("could not resolve home directory".into());
         return;
     };
@@ -136,7 +136,7 @@ fn install_os_store(ca_path: &Path, report: &mut TrustReport) {
 
 #[cfg(target_os = "linux")]
 fn install_os_store(ca_path: &Path, report: &mut TrustReport) {
-    let dest = Path::new("/usr/local/share/ca-certificates/moltis-ca.crt");
+    let dest = Path::new("/usr/local/share/ca-certificates/antre-ca.crt");
     let copy = run(
         "system CA store",
         Command::new("sudo").arg("cp").arg(ca_path).arg(dest),
@@ -193,7 +193,7 @@ fn nss_databases(home: &Path) -> Vec<PathBuf> {
 }
 
 fn install_nss_stores(ca_path: &Path, report: &mut TrustReport) {
-    let Some(home) = moltis_config::home_dir() else {
+    let Some(home) = antre_config::home_dir() else {
         return;
     };
     let dbs = nss_databases(&home);
@@ -203,7 +203,7 @@ fn install_nss_stores(ca_path: &Path, report: &mut TrustReport) {
     if Command::new("certutil").arg("-H").output().is_err() || cfg!(target_os = "windows") {
         report.hints.push(
             "install NSS tools (`certutil`, e.g. libnss3-tools or `brew install nss`) and run \
-             `moltis trust-ca` again to trust the CA in Firefox/Chromium"
+             `antre trust-ca` again to trust the CA in Firefox/Chromium"
                 .into(),
         );
         return;

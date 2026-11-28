@@ -363,10 +363,10 @@ fn validate_hf_file_path(path: &str) -> anyhow::Result<Vec<&str>> {
 
 /// Default cache directory for downloaded models.
 ///
-/// Returns `~/.moltis/models` (same base as config/data directories).
+/// Returns `~/.antre/models` (same base as config/data directories).
 #[must_use]
 pub fn default_models_dir() -> PathBuf {
-    moltis_config::data_dir().join("models")
+    antre_config::data_dir().join("models")
 }
 
 /// Check if a GGUF model file is cached locally.
@@ -881,7 +881,7 @@ async fn list_hf_repo_files(repo: &str) -> anyhow::Result<Vec<String>> {
     let client = reqwest::Client::new();
     let response = client
         .get(url)
-        .header("User-Agent", "moltis/1.0")
+        .header("User-Agent", "antre/1.0")
         .send()
         .await
         .context("fetching HuggingFace repo file list")?
@@ -916,7 +916,7 @@ where
     let client = reqwest::Client::new();
     let response = client
         .get(url)
-        .header("User-Agent", "moltis/1.0")
+        .header("User-Agent", "antre/1.0")
         .send()
         .await
         .context("starting download")?

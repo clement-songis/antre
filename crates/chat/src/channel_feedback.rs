@@ -22,13 +22,13 @@ pub(crate) async fn record_web_reply_trace(
     let Some(feedback) = state.feedback() else {
         return;
     };
-    let Some(trace_id) = moltis_observability::recent_trace(run_id) else {
+    let Some(trace_id) = antre_observability::recent_trace(run_id) else {
         return;
     };
     feedback
         .record_reply(
-            moltis_channels::trace_link::WEB_CHANNEL,
-            moltis_channels::trace_link::WEB_CHANNEL,
+            antre_channels::trace_link::WEB_CHANNEL,
+            antre_channels::trace_link::WEB_CHANNEL,
             session_key,
             std::slice::from_ref(&run_id.to_string()),
             &trace_id,
@@ -47,10 +47,10 @@ pub(crate) async fn record_web_reply_trace(
 /// Best-effort by design: a missing link costs feedback attribution for one
 /// reply, and the user already has the message.
 ///
-/// [`ChannelReplyTarget::chat_id`]: moltis_channels::ChannelReplyTarget::chat_id
+/// [`ChannelReplyTarget::chat_id`]: antre_channels::ChannelReplyTarget::chat_id
 pub(crate) async fn record_reply_trace(
-    feedback: Option<&moltis_channels::FeedbackService>,
-    target: &moltis_channels::ChannelReplyTarget,
+    feedback: Option<&antre_channels::FeedbackService>,
+    target: &antre_channels::ChannelReplyTarget,
     message_ids: &[String],
     session_key: &str,
     trace_correlation_key: &str,
@@ -61,7 +61,7 @@ pub(crate) async fn record_reply_trace(
     let Some(feedback) = feedback else {
         return;
     };
-    let Some(trace_id) = moltis_observability::recent_trace(trace_correlation_key) else {
+    let Some(trace_id) = antre_observability::recent_trace(trace_correlation_key) else {
         return;
     };
     feedback
@@ -82,10 +82,10 @@ mod tests {
     use std::sync::Mutex;
 
     use {
+        antre_channels::trace_link::{TraceLink, TraceLinkStore},
+        antre_config::FeedbackSettings,
+        antre_observability::TraceId,
         async_trait::async_trait,
-        moltis_channels::trace_link::{TraceLink, TraceLinkStore},
-        moltis_config::FeedbackSettings,
-        moltis_observability::TraceId,
     };
 
     use super::*;
@@ -97,7 +97,7 @@ mod tests {
 
     #[async_trait]
     impl TraceLinkStore for RecordingLinks {
-        async fn link(&self, link: TraceLink) -> moltis_channels::Result<()> {
+        async fn link(&self, link: TraceLink) -> antre_channels::Result<()> {
             self.links.lock().unwrap().push(link);
             Ok(())
         }
@@ -108,20 +108,20 @@ mod tests {
             _account_id: &str,
             _chat_id: &str,
             _message_id: &str,
-        ) -> moltis_channels::Result<Option<TraceLink>> {
+        ) -> antre_channels::Result<Option<TraceLink>> {
             Ok(None)
         }
 
-        async fn prune(&self, _cutoff: i64) -> moltis_channels::Result<u64> {
+        async fn prune(&self, _cutoff: i64) -> antre_channels::Result<u64> {
             Ok(0)
         }
     }
 
-    fn telegram_topic_target() -> moltis_channels::ChannelReplyTarget {
-        moltis_channels::ChannelReplyTarget {
+    fn telegram_topic_target() -> antre_channels::ChannelReplyTarget {
+        antre_channels::ChannelReplyTarget {
             direct_chat: false,
             ack_message_id: None,
-            channel_type: moltis_channels::ChannelType::Telegram,
+            channel_type: antre_channels::ChannelType::Telegram,
             account_id: "bot1".into(),
             chat_id: "-1001234".into(),
             message_id: Some("77".into()),
@@ -136,13 +136,13 @@ mod tests {
     async fn topic_replies_are_keyed_on_the_bare_chat_id() {
         let session_key = "topic-key-test-session";
         let links = Arc::new(RecordingLinks::default());
-        let feedback = moltis_channels::FeedbackService::default();
+        let feedback = antre_channels::FeedbackService::default();
         feedback.apply(
             Arc::clone(&links) as Arc<dyn TraceLinkStore>,
             &FeedbackSettings::default(),
             None,
         );
-        moltis_observability::remember_trace(session_key, &TraceId("trace-abc".into()));
+        antre_observability::remember_trace(session_key, &TraceId("trace-abc".into()));
 
         let target = telegram_topic_target();
         assert_eq!(target.outbound_to().as_ref(), "-1001234:42");

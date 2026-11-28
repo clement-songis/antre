@@ -14,13 +14,13 @@ use super::{clear_session_response, localhost_cookie_domain, session_response};
 use crate::login_guard::LoginGuard;
 
 #[cfg(test)]
-use moltis_gateway::{auth::CredentialStore, state::GatewayState};
+use antre_gateway::{auth::CredentialStore, state::GatewayState};
 
 // ── Vault handlers ──────────────────────────────────────────────────────────
 
 #[cfg(feature = "vault")]
 pub(super) async fn vault_status_handler(State(state): State<AuthState>) -> impl IntoResponse {
-    let status = if !moltis_gateway::vault_lifecycle::is_vault_encryption_runtime_enabled() {
+    let status = if !antre_gateway::vault_lifecycle::is_vault_encryption_runtime_enabled() {
         "disabled".to_owned()
     } else if let Some(ref vault) = state.gateway_state.vault {
         match vault.status().await {
@@ -45,7 +45,7 @@ pub(super) async fn vault_initialize_handler(
     State(state): State<AuthState>,
     Json(body): Json<VaultInitializeRequest>,
 ) -> impl IntoResponse {
-    if !moltis_gateway::vault_lifecycle::is_vault_encryption_runtime_enabled() {
+    if !antre_gateway::vault_lifecycle::is_vault_encryption_runtime_enabled() {
         return (StatusCode::NOT_FOUND, "vault not available").into_response();
     }
     if state.gateway_state.vault.is_none() {
@@ -74,10 +74,10 @@ pub(super) async fn vault_initialize_handler(
             }))
             .into_response()
         },
-        Err(moltis_gateway::auth::VaultInitializeError::IncorrectCurrentPassword) => {
+        Err(antre_gateway::auth::VaultInitializeError::IncorrectCurrentPassword) => {
             (StatusCode::FORBIDDEN, "current password is incorrect").into_response()
         },
-        Err(moltis_gateway::auth::VaultInitializeError::AlreadyInitialized) => {
+        Err(antre_gateway::auth::VaultInitializeError::AlreadyInitialized) => {
             (StatusCode::CONFLICT, "vault is already initialized").into_response()
         },
         Err(error) => (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()).into_response(),
@@ -103,7 +103,7 @@ pub(super) async fn vault_unlock_handler(
     State(state): State<AuthState>,
     Json(body): Json<VaultUnlockRequest>,
 ) -> impl IntoResponse {
-    if !moltis_gateway::vault_lifecycle::is_vault_encryption_runtime_enabled() {
+    if !antre_gateway::vault_lifecycle::is_vault_encryption_runtime_enabled() {
         return (StatusCode::NOT_FOUND, "vault not available").into_response();
     }
     let Some(ref vault) = state.gateway_state.vault else {
@@ -115,7 +115,7 @@ pub(super) async fn vault_unlock_handler(
             start_stored_channels_on_vault_unseal(&state).await;
             Json(serde_json::json!({ "ok": true })).into_response()
         },
-        Err(moltis_vault::VaultError::BadCredential) => {
+        Err(antre_vault::VaultError::BadCredential) => {
             (StatusCode::LOCKED, "invalid password").into_response()
         },
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
@@ -139,7 +139,7 @@ pub(super) async fn vault_recovery_handler(
     State(state): State<AuthState>,
     Json(body): Json<VaultRecoveryRequest>,
 ) -> impl IntoResponse {
-    if !moltis_gateway::vault_lifecycle::is_vault_encryption_runtime_enabled() {
+    if !antre_gateway::vault_lifecycle::is_vault_encryption_runtime_enabled() {
         return (StatusCode::NOT_FOUND, "vault not available").into_response();
     }
     let Some(ref vault) = state.gateway_state.vault else {
@@ -151,7 +151,7 @@ pub(super) async fn vault_recovery_handler(
             start_stored_channels_on_vault_unseal(&state).await;
             Json(serde_json::json!({ "ok": true })).into_response()
         },
-        Err(moltis_vault::VaultError::BadCredential) => {
+        Err(antre_vault::VaultError::BadCredential) => {
             (StatusCode::LOCKED, "invalid recovery key").into_response()
         },
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
@@ -170,7 +170,7 @@ pub(super) async fn vault_disable_handler(
     State(state): State<AuthState>,
     Json(body): Json<VaultDisableRequest>,
 ) -> impl IntoResponse {
-    if !moltis_gateway::vault_lifecycle::is_vault_encryption_runtime_enabled() {
+    if !antre_gateway::vault_lifecycle::is_vault_encryption_runtime_enabled() {
         return (StatusCode::NOT_FOUND, "vault not available").into_response();
     }
     let Some(ref vault) = state.gateway_state.vault else {
@@ -187,7 +187,7 @@ pub(super) async fn vault_disable_handler(
         };
         if let Err(error) = vault.unseal(password).await {
             return match error {
-                moltis_vault::VaultError::BadCredential => {
+                antre_vault::VaultError::BadCredential => {
                     (StatusCode::LOCKED, "invalid password").into_response()
                 },
                 other => (StatusCode::INTERNAL_SERVER_ERROR, other.to_string()).into_response(),
@@ -197,7 +197,7 @@ pub(super) async fn vault_disable_handler(
 
     #[cfg(feature = "connectors")]
     let connector_manager = state.gateway_state.connector_manager();
-    match moltis_gateway::vault_lifecycle::disable_vault_and_decrypt_all(
+    match antre_gateway::vault_lifecycle::disable_vault_and_decrypt_all(
         vault,
         state.credential_store.db_pool(),
         #[cfg(feature = "connectors")]
@@ -232,7 +232,7 @@ pub(super) async fn vault_disable_handler(
 /// Migrate plaintext secrets to encrypted storage after vault unseal.
 #[cfg(feature = "vault")]
 pub(super) async fn run_vault_env_migration(state: &AuthState) {
-    moltis_gateway::vault_lifecycle::run_vault_env_migration(&state.credential_store).await;
+    antre_gateway::vault_lifecycle::run_vault_env_migration(&state.credential_store).await;
 }
 
 /// Start stored channel accounts after vault unseal.
@@ -245,7 +245,7 @@ pub(super) async fn run_vault_env_migration(state: &AuthState) {
 #[cfg(feature = "vault")]
 #[tracing::instrument(skip(state))]
 pub(super) async fn start_stored_channels_on_vault_unseal(state: &AuthState) {
-    moltis_gateway::vault_lifecycle::start_stored_channels_on_vault_unseal(&state.gateway_state)
+    antre_gateway::vault_lifecycle::start_stored_channels_on_vault_unseal(&state.gateway_state)
         .await;
 }
 
@@ -270,8 +270,8 @@ mod tests {
     }
 
     #[test]
-    fn localhost_cookie_domain_moltis_subdomain() {
-        let h = headers_with_host("moltis.localhost:59263");
+    fn localhost_cookie_domain_antre_subdomain() {
+        let h = headers_with_host("antre.localhost:59263");
         assert_eq!(localhost_cookie_domain(&h, false), "; Domain=localhost");
     }
 
@@ -321,13 +321,13 @@ mod tests {
     #[test]
     fn localhost_cookie_domain_proxy_mode_supports_forwarded_localhost_subdomain() {
         let mut h = headers_with_host("localhost:13131");
-        h.insert("x-forwarded-host", "moltis.localhost:8080".parse().unwrap());
+        h.insert("x-forwarded-host", "antre.localhost:8080".parse().unwrap());
         assert_eq!(localhost_cookie_domain(&h, true), "; Domain=localhost");
     }
 
     #[test]
     fn session_response_includes_domain_for_localhost() {
-        let h = headers_with_host("moltis.localhost:8080");
+        let h = headers_with_host("antre.localhost:8080");
         let resp = session_response("test-token".into(), &h, false, false);
         let cookie = resp
             .headers()
@@ -339,7 +339,7 @@ mod tests {
             cookie.contains("; Domain=localhost"),
             "cookie should include Domain=localhost for .localhost host, got: {cookie}"
         );
-        assert!(cookie.contains("moltis_session=test-token"));
+        assert!(cookie.contains("antre_session=test-token"));
         assert!(
             !cookie.contains("; Secure"),
             "cookie should NOT include Secure when not using TLS, got: {cookie}"
@@ -512,31 +512,31 @@ mod tests {
 mod vault_unseal_tests {
     use {
         super::*,
-        async_trait::async_trait,
-        moltis_channels::{
+        antre_channels::{
             ChannelRegistry,
             config_view::ChannelConfigView,
             plugin::{ChannelOutbound, ChannelPlugin, ChannelStreamOutbound, StreamEvent},
             store::{ChannelStore, StoredChannel},
         },
+        async_trait::async_trait,
     };
 
     use {
-        moltis_channels::plugin::ChannelStatus, moltis_common::types::ReplyPayload,
-        std::sync::Mutex, tokio::sync::RwLock,
+        antre_channels::plugin::ChannelStatus, antre_common::types::ReplyPayload, std::sync::Mutex,
+        tokio::sync::RwLock,
     };
 
     /// Helper to build a minimal AuthState with the given services.
-    async fn build_auth_state(services: moltis_gateway::services::GatewayServices) -> AuthState {
+    async fn build_auth_state(services: antre_gateway::services::GatewayServices) -> AuthState {
         let pool = sqlx::SqlitePool::connect("sqlite::memory:").await.unwrap();
-        let auth_config = moltis_config::AuthConfig::default();
+        let auth_config = antre_config::AuthConfig::default();
         let cred_store = Arc::new(
             CredentialStore::with_config(pool, &auth_config)
                 .await
                 .unwrap(),
         );
         let gateway_state =
-            GatewayState::new(moltis_gateway::auth::resolve_auth(None, None), services);
+            GatewayState::new(antre_gateway::auth::resolve_auth(None, None), services);
         AuthState {
             credential_store: cred_store,
             webauthn_registry: None,
@@ -571,9 +571,9 @@ mod vault_unseal_tests {
 
     #[async_trait]
     impl ChannelStore for MockChannelStore {
-        async fn list(&self) -> moltis_channels::Result<Vec<StoredChannel>> {
+        async fn list(&self) -> antre_channels::Result<Vec<StoredChannel>> {
             if self.should_fail {
-                return Err(moltis_channels::Error::unavailable("store error"));
+                return Err(antre_channels::Error::unavailable("store error"));
             }
             Ok(self.channels.clone())
         }
@@ -582,11 +582,11 @@ mod vault_unseal_tests {
             &self,
             _channel_type: &str,
             _account_id: &str,
-        ) -> moltis_channels::Result<Option<StoredChannel>> {
+        ) -> antre_channels::Result<Option<StoredChannel>> {
             Ok(None)
         }
 
-        async fn upsert(&self, _channel: StoredChannel) -> moltis_channels::Result<()> {
+        async fn upsert(&self, _channel: StoredChannel) -> antre_channels::Result<()> {
             Ok(())
         }
 
@@ -594,7 +594,7 @@ mod vault_unseal_tests {
             &self,
             _channel_type: &str,
             _account_id: &str,
-        ) -> moltis_channels::Result<()> {
+        ) -> antre_channels::Result<()> {
             Ok(())
         }
     }
@@ -610,7 +610,7 @@ mod vault_unseal_tests {
             _: &str,
             _: &str,
             _: Option<&str>,
-        ) -> moltis_channels::Result<()> {
+        ) -> antre_channels::Result<()> {
             Ok(())
         }
 
@@ -620,7 +620,7 @@ mod vault_unseal_tests {
             _: &str,
             _: &ReplyPayload,
             _: Option<&str>,
-        ) -> moltis_channels::Result<()> {
+        ) -> antre_channels::Result<()> {
             Ok(())
         }
     }
@@ -635,8 +635,8 @@ mod vault_unseal_tests {
             _: &str,
             _: &str,
             _: Option<&str>,
-            mut stream: moltis_channels::plugin::StreamReceiver,
-        ) -> moltis_channels::Result<()> {
+            mut stream: antre_channels::plugin::StreamReceiver,
+        ) -> antre_channels::Result<()> {
             while let Some(event) = stream.recv().await {
                 if matches!(event, StreamEvent::Done | StreamEvent::Error(_)) {
                     break;
@@ -685,9 +685,9 @@ mod vault_unseal_tests {
             &mut self,
             account_id: &str,
             config: serde_json::Value,
-        ) -> moltis_channels::Result<()> {
+        ) -> antre_channels::Result<()> {
             if self.should_fail_start {
-                return Err(moltis_channels::Error::unavailable("start failed"));
+                return Err(antre_channels::Error::unavailable("start failed"));
             }
             self.started_accounts
                 .lock()
@@ -696,7 +696,7 @@ mod vault_unseal_tests {
             Ok(())
         }
 
-        async fn stop_account(&mut self, _account_id: &str) -> moltis_channels::Result<()> {
+        async fn stop_account(&mut self, _account_id: &str) -> antre_channels::Result<()> {
             Ok(())
         }
 
@@ -724,7 +724,7 @@ mod vault_unseal_tests {
             &self,
             _account_id: &str,
             _config: serde_json::Value,
-        ) -> moltis_channels::Result<()> {
+        ) -> antre_channels::Result<()> {
             Ok(())
         }
 
@@ -741,7 +741,7 @@ mod vault_unseal_tests {
 
     #[tokio::test]
     async fn returns_early_when_channel_registry_is_none() {
-        let services = moltis_gateway::services::GatewayServices::noop();
+        let services = antre_gateway::services::GatewayServices::noop();
         let state = build_auth_state(services).await;
         // noop() has no channel_registry — should return without panicking
         start_stored_channels_on_vault_unseal(&state).await;
@@ -751,7 +751,7 @@ mod vault_unseal_tests {
     async fn returns_early_when_channel_store_is_none() {
         let registry = Arc::new(ChannelRegistry::new());
         let services =
-            moltis_gateway::services::GatewayServices::noop().with_channel_registry(registry);
+            antre_gateway::services::GatewayServices::noop().with_channel_registry(registry);
         // No channel_store set — should return without panicking
         let state = build_auth_state(services).await;
         start_stored_channels_on_vault_unseal(&state).await;
@@ -761,7 +761,7 @@ mod vault_unseal_tests {
     async fn logs_warning_when_store_list_fails() {
         let registry = Arc::new(ChannelRegistry::new());
         let store: Arc<dyn ChannelStore> = Arc::new(MockChannelStore::failing());
-        let services = moltis_gateway::services::GatewayServices::noop()
+        let services = antre_gateway::services::GatewayServices::noop()
             .with_channel_registry(registry)
             .with_channel_store(store);
         let state = build_auth_state(services).await;
@@ -773,7 +773,7 @@ mod vault_unseal_tests {
     async fn returns_when_store_is_empty() {
         let registry = Arc::new(ChannelRegistry::new());
         let store: Arc<dyn ChannelStore> = Arc::new(MockChannelStore::new(vec![]));
-        let services = moltis_gateway::services::GatewayServices::noop()
+        let services = antre_gateway::services::GatewayServices::noop()
             .with_channel_registry(registry)
             .with_channel_store(store);
         let state = build_auth_state(services).await;
@@ -790,7 +790,7 @@ mod vault_unseal_tests {
             created_at: 0,
             updated_at: 0,
         }]));
-        let services = moltis_gateway::services::GatewayServices::noop()
+        let services = antre_gateway::services::GatewayServices::noop()
             .with_channel_registry(registry)
             .with_channel_store(store);
         let state = build_auth_state(services).await;
@@ -827,7 +827,7 @@ mod vault_unseal_tests {
             created_at: 0,
             updated_at: 0,
         }]));
-        let services = moltis_gateway::services::GatewayServices::noop()
+        let services = antre_gateway::services::GatewayServices::noop()
             .with_channel_registry(registry)
             .with_channel_store(store);
         let state = build_auth_state(services).await;
@@ -871,7 +871,7 @@ mod vault_unseal_tests {
                 updated_at: 2001,
             },
         ]));
-        let services = moltis_gateway::services::GatewayServices::noop()
+        let services = antre_gateway::services::GatewayServices::noop()
             .with_channel_registry(registry)
             .with_channel_store(store);
         let state = build_auth_state(services).await;
@@ -902,7 +902,7 @@ mod vault_unseal_tests {
             created_at: 0,
             updated_at: 0,
         }]));
-        let services = moltis_gateway::services::GatewayServices::noop()
+        let services = antre_gateway::services::GatewayServices::noop()
             .with_channel_registry(registry)
             .with_channel_store(store);
         let state = build_auth_state(services).await;
@@ -944,7 +944,7 @@ mod vault_unseal_tests {
                 updated_at: 0,
             },
         ]));
-        let services = moltis_gateway::services::GatewayServices::noop()
+        let services = antre_gateway::services::GatewayServices::noop()
             .with_channel_registry(registry)
             .with_channel_store(store);
         let state = build_auth_state(services).await;
@@ -979,7 +979,7 @@ mod vault_unseal_tests {
             &mut self,
             account_id: &str,
             config: serde_json::Value,
-        ) -> moltis_channels::Result<()> {
+        ) -> antre_channels::Result<()> {
             self.started_accounts
                 .lock()
                 .unwrap()
@@ -987,7 +987,7 @@ mod vault_unseal_tests {
             self.inner.start_account(account_id, config).await
         }
 
-        async fn stop_account(&mut self, account_id: &str) -> moltis_channels::Result<()> {
+        async fn stop_account(&mut self, account_id: &str) -> antre_channels::Result<()> {
             self.inner.stop_account(account_id).await
         }
 
@@ -1015,7 +1015,7 @@ mod vault_unseal_tests {
             &self,
             account_id: &str,
             config: serde_json::Value,
-        ) -> moltis_channels::Result<()> {
+        ) -> antre_channels::Result<()> {
             self.inner.update_account_config(account_id, config).await
         }
 

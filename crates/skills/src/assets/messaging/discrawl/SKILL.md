@@ -14,21 +14,21 @@ requires:
       module: "github.com/openclaw/discrawl/cmd/discrawl@latest"
       bins: [discrawl]
 origin:
-  source: moltis
-  url: https://github.com/moltis-org/moltis
+  source: antre
+  url: https://github.com/antre-ai/antre
 ---
 
 # discrawl — Discord Guild Archive
 
 `discrawl` mirrors Discord guild data (channels, threads, messages, members) into a local SQLite database for offline search and inspection.
 
-This is different from the `discord` channel skill — discrawl is for archiving and searching historical guild data; the discord channel skill is for sending messages via Moltis.
+This is different from the `discord` channel skill — discrawl is for archiving and searching historical guild data; the discord channel skill is for sending messages via Antre.
 
 ## Secret Safety (MANDATORY)
 
 - **Never** read, print, or send Discord bot tokens to LLM context.
 - **Never** ask the user to paste tokens into chat.
-- The user must set `DISCORD_BOT_TOKEN` in their environment or Moltis credential store manually.
+- The user must set `DISCORD_BOT_TOKEN` in their environment or Antre credential store manually.
 - To verify credentials, only use: `discrawl doctor`.
 
 ## One-Time User Setup (user runs these outside the agent)
@@ -37,7 +37,7 @@ This is different from the `discord` channel skill — discrawl is for archiving
 2. Create a bot user and copy the bot token
 3. Set the token:
    - Via env var: `export DISCORD_BOT_TOKEN=<token>`
-   - Via Moltis credential store (web UI → Settings → Environment Variables)
+   - Via Antre credential store (web UI → Settings → Environment Variables)
    - Via discrawl config: `~/.discrawl/config.toml`
 4. Invite the bot to target guilds with message read permissions
 5. Verify: `discrawl doctor`
@@ -90,7 +90,7 @@ discrawl sql "SELECT * FROM messages WHERE content LIKE '%keyword%' ORDER BY tim
 
 ## Saving to Memory
 
-To archive Discord data into Moltis memory:
+To archive Discord data into Antre memory:
 
 1. Run discrawl search or sync with `--json`
 2. Summarize key conversations into a daily digest

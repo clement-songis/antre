@@ -14,8 +14,8 @@ requires:
       module: "github.com/openclaw/slacrawl/cmd/slacrawl@latest"
       bins: [slacrawl]
 origin:
-  source: moltis
-  url: https://github.com/moltis-org/moltis
+  source: antre
+  url: https://github.com/antre-ai/antre
 ---
 
 # slacrawl — Slack Workspace Archive
@@ -26,7 +26,7 @@ origin:
 
 - **Never** read, print, or send Slack tokens to LLM context.
 - **Never** ask the user to paste tokens into chat.
-- The user must set tokens in their environment or Moltis credential store manually.
+- The user must set tokens in their environment or Antre credential store manually.
 - To verify credentials, only use: `slacrawl doctor`.
 
 ## One-Time User Setup (user runs these outside the agent)
@@ -40,7 +40,7 @@ origin:
    - `SLACK_USER_TOKEN` — optional, for fuller thread/DM coverage
 5. Verify: `slacrawl doctor`
 
-Tokens can be set via environment variables or Moltis credential store (web UI → Settings → Environment Variables).
+Tokens can be set via environment variables or Antre credential store (web UI → Settings → Environment Variables).
 
 ## Health Check
 
@@ -104,7 +104,7 @@ slacrawl sql "SELECT * FROM messages WHERE text LIKE '%deploy%' ORDER BY ts DESC
 
 ## Saving to Memory
 
-To archive Slack data into Moltis memory:
+To archive Slack data into Antre memory:
 
 1. Run slacrawl search with `--json`
 2. Summarize key conversations into a daily digest

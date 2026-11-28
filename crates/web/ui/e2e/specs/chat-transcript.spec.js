@@ -15,7 +15,7 @@ async function chatEvent(page, payload) {
 async function mockNextRpc(page, method, payload) {
 	await page.evaluate(
 		({ targetMethod, responsePayload }) => {
-			const state = window.__moltis_modules.state;
+			const state = window.__antre_modules.state;
 			const ws = state.ws;
 			const originalSend = ws.send.bind(ws);
 			ws.send = (raw) => {
@@ -122,7 +122,7 @@ test.describe("Chat transcript components", () => {
 			replying: true,
 			streamText: "Partial answer so far",
 		});
-		await page.evaluate(() => window.__moltis_modules.sessions.switchSession("main"));
+		await page.evaluate(() => window.__antre_modules.sessions.switchSession("main"));
 		const reply = page.locator("#messages .msg.assistant.streaming");
 		await expect(reply).toContainText("Partial answer so far");
 		await chatEvent(page, { state: "delta", runId: "run-resume", text: " and more." });

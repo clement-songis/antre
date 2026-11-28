@@ -1,4 +1,4 @@
-//! Shared types, error definitions, and utilities used across all moltis crates.
+//! Shared types, error definitions, and utilities used across all antre crates.
 
 pub mod context_command;
 pub mod error;
@@ -10,4 +10,4 @@ pub mod secret_serde;
 pub mod ssrf;
 pub mod types;
 
-pub use error::{Error, FromMessage, MoltisError, Result};
+pub use error::{AntreError, Error, FromMessage, Result};

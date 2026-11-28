@@ -1,4 +1,4 @@
-//! Shared types and small utility helpers used across `moltis_chat` modules.
+//! Shared types and small utility helpers used across `antre_chat` modules.
 
 use std::collections::HashSet;
 
@@ -8,8 +8,8 @@ use {
 };
 
 use {
-    moltis_agents::model::Usage,
-    moltis_config::{AgentMemoryWriteMode, MemoryStyle, PromptMemoryMode},
+    antre_agents::model::Usage,
+    antre_config::{AgentMemoryWriteMode, MemoryStyle, PromptMemoryMode},
 };
 
 /// Placeholder to match the old `BroadcastOpts` pattern. All fields are ignored;
@@ -336,7 +336,7 @@ mod tests {
             build_chat_final_broadcast, compute_auto_compact_threshold, estimate_history_tokens,
             session_token_usage_from_messages, usable_input_budget,
         },
-        moltis_agents::model::Usage,
+        antre_agents::model::Usage,
     };
 
     #[test]
@@ -462,11 +462,11 @@ mod tests {
         assert_eq!(payload.seq, Some(42));
     }
 
-    /// Native clients parse `final` with `moltis_protocol::chat_event`; keep the
+    /// Native clients parse `final` with `antre_protocol::chat_event`; keep the
     /// wire shape compatible.
     #[test]
     fn chat_final_broadcast_parses_as_protocol_event() {
-        use moltis_protocol::chat_event::{ChatEvent, ChatEventKind};
+        use antre_protocol::chat_event::{ChatEvent, ChatEventKind};
 
         let usage = Usage {
             input_tokens: 12,
@@ -979,7 +979,7 @@ pub(crate) fn allowlist_pattern_matches_key(pattern: &str, key: &str) -> bool {
 }
 
 #[allow(dead_code)]
-pub fn model_matches_allowlist(model: &moltis_providers::ModelInfo, patterns: &[String]) -> bool {
+pub fn model_matches_allowlist(model: &antre_providers::ModelInfo, patterns: &[String]) -> bool {
     if patterns.is_empty() {
         return true;
     }
@@ -987,7 +987,7 @@ pub fn model_matches_allowlist(model: &moltis_providers::ModelInfo, patterns: &[
         return true;
     }
     let full = normalize_model_key(&model.id);
-    let raw = normalize_model_key(moltis_providers::model_id::raw_model_id(&model.id));
+    let raw = normalize_model_key(antre_providers::model_id::raw_model_id(&model.id));
     let display = normalize_model_key(&model.display_name);
     patterns.iter().any(|p| {
         allowlist_pattern_matches_key(p, &full)
@@ -998,7 +998,7 @@ pub fn model_matches_allowlist(model: &moltis_providers::ModelInfo, patterns: &[
 
 #[allow(dead_code)]
 pub fn model_matches_allowlist_with_provider(
-    model: &moltis_providers::ModelInfo,
+    model: &antre_providers::ModelInfo,
     provider_name: Option<&str>,
     patterns: &[String],
 ) -> bool {
@@ -1079,14 +1079,14 @@ pub(crate) struct PromptMemoryStatus {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub path: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub file_source: Option<moltis_config::WorkspaceMarkdownSource>,
+    pub file_source: Option<antre_config::WorkspaceMarkdownSource>,
 }
 
 /// Pre-loaded persona data used to build the system prompt.
 pub(crate) struct PromptPersona {
-    pub config: moltis_config::MoltisConfig,
-    pub identity: moltis_config::AgentIdentity,
-    pub user: moltis_config::UserProfile,
+    pub config: antre_config::AntreConfig,
+    pub identity: antre_config::AgentIdentity,
+    pub user: antre_config::UserProfile,
     pub soul_text: Option<String>,
     pub boot_text: Option<String>,
     pub agents_text: Option<String>,
@@ -1110,7 +1110,7 @@ pub(crate) async fn broadcast(
 }
 
 #[cfg(feature = "metrics")]
-pub(crate) use moltis_metrics::{counter, histogram, labels, llm as llm_metrics};
+pub(crate) use antre_metrics::{counter, histogram, labels, llm as llm_metrics};
 
 /// Detect the current user's runtime shell from environment variables.
 pub(crate) fn detect_runtime_shell() -> Option<String> {
@@ -1233,7 +1233,7 @@ pub(crate) fn normalized_iana_timezone(timezone: Option<&str>) -> Option<String>
 }
 
 pub(crate) fn default_user_prompt_timezone() -> Option<String> {
-    moltis_config::resolve_user_profile()
+    antre_config::resolve_user_profile()
         .timezone
         .as_ref()
         .map(|timezone| timezone.name().to_string())
@@ -1279,7 +1279,7 @@ pub(crate) fn prompt_today_for_timezone(timezone: Option<&str>) -> String {
 }
 
 pub(crate) fn refresh_runtime_prompt_time(
-    host: &mut moltis_agents::prompt::PromptHostRuntimeContext,
+    host: &mut antre_agents::prompt::PromptHostRuntimeContext,
 ) {
     host.time = Some(prompt_now_for_timezone(host.timezone.as_deref()));
     host.today = Some(prompt_today_for_timezone(host.timezone.as_deref()));
@@ -1404,7 +1404,7 @@ pub(crate) fn suggest_model_ids(
     }
 
     let requested_provider = model_id_provider(requested_model_id).map(str::to_ascii_lowercase);
-    let requested_raw = moltis_providers::model_id::raw_model_id(requested_model_id);
+    let requested_raw = antre_providers::model_id::raw_model_id(requested_model_id);
     let requested_norm = normalize_model_lookup_key(requested_model_id);
     let requested_raw_norm = normalize_model_lookup_key(requested_raw);
 
@@ -1417,7 +1417,7 @@ pub(crate) fn suggest_model_ids(
                 .zip(candidate_provider.as_deref())
                 .is_some_and(|(left, right)| left == right);
 
-            let candidate_raw = moltis_providers::model_id::raw_model_id(candidate);
+            let candidate_raw = antre_providers::model_id::raw_model_id(candidate);
             let candidate_norm = normalize_model_lookup_key(candidate);
             let candidate_raw_norm = normalize_model_lookup_key(candidate_raw);
 

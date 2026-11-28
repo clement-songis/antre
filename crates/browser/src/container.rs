@@ -154,7 +154,7 @@ fn host_visible_data_dir_with_references(
     if let Some(configured) = configured_host_data_dir(configured_data_dir) {
         return configured;
     }
-    moltis_config::container_mounts::detect_host_data_dir_with_references(
+    antre_config::container_mounts::detect_host_data_dir_with_references(
         cli,
         guest_data_dir,
         references,
@@ -168,7 +168,7 @@ fn host_visible_path_with_references(
     path: &Path,
     references: &[String],
 ) -> PathBuf {
-    let guest_data_dir = moltis_config::data_dir();
+    let guest_data_dir = antre_config::data_dir();
     let Ok(relative_path) = path.strip_prefix(&guest_data_dir) else {
         return path.to_path_buf();
     };
@@ -190,7 +190,7 @@ fn host_visible_path(cli: &str, configured_data_dir: Option<&Path>, path: &Path)
         cli,
         configured_data_dir,
         path,
-        &moltis_config::container_mounts::current_container_references(),
+        &antre_config::container_mounts::current_container_references(),
     )
 }
 
@@ -234,7 +234,7 @@ fn browser_profile_permission_hint(
     }
     let mount_dir = profile_mount_dir?;
     Some(format!(
-        "Chrome could not write its browser profile at {CONTAINER_PROFILE_PATH}; Moltis mounted `{}` from the host. When Moltis runs inside Docker with the Docker socket mounted, add `host_data_dir = \"/absolute/host/path/to/moltis-data\"` under `[tools.exec.sandbox]` in moltis.toml to the host-visible path backing Moltis data, then restart Moltis",
+        "Chrome could not write its browser profile at {CONTAINER_PROFILE_PATH}; Antre mounted `{}` from the host. When Antre runs inside Docker with the Docker socket mounted, add `host_data_dir = \"/absolute/host/path/to/antre-data\"` under `[tools.exec.sandbox]` in antre.toml to the host-visible path backing Antre data, then restart Antre",
         mount_dir.display()
     ))
 }
@@ -592,9 +592,9 @@ impl BrowserContainer {
             if is_running_in_container() {
                 warn!(
                     container_host,
-                    "moltis appears to be running inside a container — if the browser \
+                    "antre appears to be running inside a container — if the browser \
                      container is a sibling (not nested), set browser.container_host to \
-                     the Docker host IP or \"host.docker.internal\" in moltis.toml"
+                     the Docker host IP or \"host.docker.internal\" in antre.toml"
                 );
             }
 
@@ -1308,7 +1308,7 @@ pub fn ensure_image(image: &str) -> Result<()> {
 
     #[cfg(target_os = "macos")]
     if backend == ContainerBackend::AppleContainer
-        && moltis_config::apple_container_marked_unhealthy()
+        && antre_config::apple_container_marked_unhealthy()
     {
         if is_docker_available() {
             warn!(
@@ -1330,7 +1330,7 @@ pub fn ensure_image(image: &str) -> Result<()> {
     #[cfg(target_os = "macos")]
     if result.is_err() && backend == ContainerBackend::AppleContainer && is_docker_available() {
         if let Err(ref e) = result {
-            moltis_config::mark_apple_container_unhealthy();
+            antre_config::mark_apple_container_unhealthy();
             log_apple_container_diagnostics("browser image pull fallback");
             warn!(
                 image,
@@ -1391,11 +1391,11 @@ pub fn ensure_image_with_backend(backend: ContainerBackend, image: &str) -> Resu
 
     #[cfg(target_os = "macos")]
     let _apple_container_lock = (backend == ContainerBackend::AppleContainer)
-        .then(moltis_config::apple_container_operation_lock);
+        .then(antre_config::apple_container_operation_lock);
 
     #[cfg(target_os = "macos")]
     if backend == ContainerBackend::AppleContainer
-        && moltis_config::apple_container_marked_unhealthy()
+        && antre_config::apple_container_marked_unhealthy()
     {
         return Err(Error::LaunchFailed(
             "Apple Container is marked unhealthy after an earlier failure".to_string(),

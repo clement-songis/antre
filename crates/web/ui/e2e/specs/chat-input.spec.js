@@ -554,7 +554,7 @@ test.describe("Chat input and slash commands", () => {
 		await expect
 			.poll(() =>
 				page.evaluate(() => {
-					var store = window.__moltis_stores.sessionStore;
+					var store = window.__antre_stores.sessionStore;
 					var activeKey = store.activeSessionKey.value;
 					return {
 						activeRunId: store.getByKey(activeKey)?.activeRunId.value || null,
@@ -614,7 +614,7 @@ test.describe("Chat input and slash commands", () => {
 			.poll(() =>
 				page.evaluate(
 					(message) =>
-						window.__moltis_stores.sessionStore.getByKey("main")?.sendErrors.value.includes(message) === true,
+						window.__antre_stores.sessionStore.getByKey("main")?.sendErrors.value.includes(message) === true,
 					failure,
 				),
 			)
@@ -645,7 +645,7 @@ test.describe("Chat input and slash commands", () => {
 
 		await expect(sendFailure).toHaveCount(0);
 		await expect
-			.poll(() => page.evaluate(() => window.__moltis_stores.sessionStore.getByKey("main")?.sendErrors.value.length))
+			.poll(() => page.evaluate(() => window.__antre_stores.sessionStore.getByKey("main")?.sendErrors.value.length))
 			.toBe(0);
 		expect(pageErrors).toEqual([]);
 	});

@@ -1,4 +1,4 @@
-/// Design canvas configuration for `moltis.toml`.
+/// Design canvas configuration for `antre.toml`.
 ///
 /// ```toml
 /// [canvas]

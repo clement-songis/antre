@@ -85,13 +85,13 @@ test.describe("Authentication", () => {
 				return origFetch.apply(this, args);
 			};
 
-			Object.defineProperty(window, "__MOLTIS__", {
+			Object.defineProperty(window, "__ANTRE__", {
 				configurable: true,
 				set(value) {
 					var next = value || {};
 					next.vault_status = "sealed";
 					next.sessions_recent = [seedSession];
-					Object.defineProperty(window, "__MOLTIS__", {
+					Object.defineProperty(window, "__ANTRE__", {
 						value: next,
 						writable: true,
 						configurable: true,
@@ -278,7 +278,7 @@ test.describe("Authentication", () => {
 		await expect(page.getByRole("heading", { name: "Danger Zone", exact: true })).toBeVisible();
 		await expect(
 			page.getByText(
-				"If you know what you're doing, you can fully disable authentication. Anyone with network access will be able to access moltis and your computer. This removes your password, all passkeys, all API keys, and all sessions.",
+				"If you know what you're doing, you can fully disable authentication. Anyone with network access will be able to access antre and your computer. This removes your password, all passkeys, all API keys, and all sessions.",
 				{ exact: true },
 			),
 		).toBeVisible();
@@ -500,7 +500,7 @@ test.describe("Authentication", () => {
 
 		await page.evaluate(() => {
 			window.__e2eAuthStatus.hasPasskeyCredential = true;
-			window.dispatchEvent(new CustomEvent("moltis:auth-status-changed"));
+			window.dispatchEvent(new CustomEvent("antre:auth-status-changed"));
 		});
 
 		await expect(logoutBtn).toBeVisible();
@@ -513,12 +513,12 @@ test.describe("Authentication", () => {
 		await page.waitForLoadState("networkidle");
 
 		const expected = await page.evaluate(() => {
-			var id = window.__MOLTIS__?.identity;
-			var name = (id?.name ? String(id.name).trim() : "") || "moltis";
+			var id = window.__ANTRE__?.identity;
+			var name = (id?.name ? String(id.name).trim() : "") || "antre";
 			var emoji = (id?.emoji ? String(id.emoji) : "").trim();
 			return {
 				title: name,
-				branch: window.__MOLTIS__?.git_branch || "",
+				branch: window.__ANTRE__?.git_branch || "",
 				hasEmoji: !!emoji,
 				firstIconHref: document.querySelector('link[rel="icon"]')?.href || "",
 			};
@@ -614,8 +614,8 @@ test.describe("Login page", () => {
 		await expect(page.locator(".auth-card")).toBeVisible();
 
 		const expected = await page.evaluate(() => {
-			var id = window.__MOLTIS__?.identity;
-			var name = (id?.name ? String(id.name).trim() : "") || "moltis";
+			var id = window.__ANTRE__?.identity;
+			var name = (id?.name ? String(id.name).trim() : "") || "antre";
 			var emoji = (id?.emoji ? String(id.emoji) : "").trim();
 			return {
 				title: name,
@@ -648,12 +648,12 @@ test.describe("Login page", () => {
 		const pageErrors = watchPageErrors(page);
 		await mockAuthStatus(page);
 		await page.addInitScript(() => {
-			Object.defineProperty(window, "__MOLTIS__", {
+			Object.defineProperty(window, "__ANTRE__", {
 				configurable: true,
 				set(value) {
 					var next = value || {};
 					next.vault_status = "sealed";
-					Object.defineProperty(window, "__MOLTIS__", {
+					Object.defineProperty(window, "__ANTRE__", {
 						value: next,
 						writable: true,
 						configurable: true,

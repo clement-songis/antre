@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Build the release `moltis` daemon and stage it where Tauri's bundler picks
-# it up as a sidecar (`binaries/moltis-<target triple>`). The bundle installs
+# Build the release `antre` daemon and stage it where Tauri's bundler picks
+# it up as a sidecar (`binaries/antre-<target triple>`). The bundle installs
 # it next to the shell executable, where the shell looks for it first.
 #
 #   apps/tauri/scripts/stage-sidecar.sh [extra cargo build args]
@@ -13,8 +13,8 @@ triple="$(rustc -vV | sed -n 's/^host: //p')"
 exe=""
 [[ "$triple" == *windows* ]] && exe=".exe"
 
-(cd "$root" && cargo build --release -p moltis "$@")
+(cd "$root" && cargo build --release -p antre "$@")
 target_dir="${CARGO_TARGET_DIR:-$root/target}"
 mkdir -p "$here/binaries"
-cp "$target_dir/release/moltis$exe" "$here/binaries/moltis-$triple$exe"
-echo "staged binaries/moltis-$triple$exe"
+cp "$target_dir/release/antre$exe" "$here/binaries/antre-$triple$exe"
+echo "staged binaries/antre-$triple$exe"

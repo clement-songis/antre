@@ -387,7 +387,7 @@ function saveSharedHomeConfig(): void {
 		})
 		.then((data) => {
 			applySharedHomeConfig(data?.config || {});
-			sharedHomeMsg.value = "Saved. Restart Moltis to apply shared folder changes.";
+			sharedHomeMsg.value = "Saved. Restart Antre to apply shared folder changes.";
 			if (sandboxInfo.value) {
 				sandboxInfo.value = {
 					...(sandboxInfo.value as SandboxInfoValue),
@@ -442,7 +442,7 @@ function saveRemoteBackend(backend: string, config: Record<string, unknown>): vo
 		.then((data) => {
 			if (data?.config) remoteConfig.value = data.config;
 			if (backend !== "_global") {
-				remoteMsg.value = `${backend} configuration saved. Restart Moltis to apply.`;
+				remoteMsg.value = `${backend} configuration saved. Restart Antre to apply.`;
 				vercelToken.value = "";
 				daytonaApiKey.value = "";
 			}
@@ -658,7 +658,7 @@ function backendRecommendation(info: SandboxInfoValue | null): { level: string; 
 	if (os === "macos" && backend === "docker") {
 		return {
 			level: "info",
-			text: "Apple Container provides stronger VM-level isolation on macOS 26+. Install it for automatic use (moltis prefers it over Docker). Run: brew install container",
+			text: "Apple Container provides stronger VM-level isolation on macOS 26+. Install it for automatic use (antre prefers it over Docker). Run: brew install container",
 		};
 	}
 	if (os === "linux" && backend === "docker") {

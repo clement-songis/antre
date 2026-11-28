@@ -173,7 +173,7 @@ async function expectActiveSessionExternalAgent(page, kind) {
 		.poll(
 			async () =>
 				page.evaluate((nextKind) => {
-					const session = window.__moltis_stores?.sessionStore?.activeSession?.value;
+					const session = window.__antre_stores?.sessionStore?.activeSession?.value;
 					if (!session) return undefined;
 					session.external_agent_kind = nextKind;
 					session.dataVersion.value++;
@@ -441,7 +441,7 @@ test.describe("Agents settings page", () => {
 			await expect(selectorOption).toBeVisible({ timeout: 10_000 });
 			await selectorOption.click();
 			await expect
-				.poll(async () => page.evaluate(() => window.__moltis_stores?.sessionStore?.activeSession?.value?.agent_id), {
+				.poll(async () => page.evaluate(() => window.__antre_stores?.sessionStore?.activeSession?.value?.agent_id), {
 					timeout: 15_000,
 				})
 				.toBe("selector-test");
@@ -471,7 +471,7 @@ test.describe("Agents settings page", () => {
 		await waitForWsConnected(page);
 		await createSession(page);
 
-		const sessionKey = await page.evaluate(() => window.__moltis_stores?.sessionStore?.activeSessionKey?.value || "");
+		const sessionKey = await page.evaluate(() => window.__antre_stores?.sessionStore?.activeSessionKey?.value || "");
 		const bindResponse = await sendRpcFromPage(page, "external_agents.bind", { sessionKey, kind: "codex" });
 		expect(bindResponse?.ok).toBe(true);
 		await expect
@@ -533,8 +533,8 @@ test.describe("Agents settings page", () => {
 		await expectPageContentMounted(page);
 		await waitForWsConnected(page);
 		await createSession(page);
-		const sessionKey = await page.evaluate(() => window.__moltis_stores?.sessionStore?.activeSessionKey?.value || "");
-		await page.evaluate(() => window.__moltis_stores?.modelStore?.select("e2e/model"));
+		const sessionKey = await page.evaluate(() => window.__antre_stores?.sessionStore?.activeSessionKey?.value || "");
+		await page.evaluate(() => window.__antre_stores?.modelStore?.select("e2e/model"));
 
 		await expect(page.getByTestId("external-agent-picker")).toHaveCount(0);
 		const picker = page.locator("#modelComboBtn");
@@ -696,7 +696,7 @@ test.describe("Agents settings page", () => {
 		await waitForWsConnected(page);
 
 		const firstSessionKey = await page.evaluate(
-			() => window.__moltis_stores?.sessionStore?.activeSessionKey?.value || "",
+			() => window.__antre_stores?.sessionStore?.activeSessionKey?.value || "",
 		);
 		const picker = page.locator("#modelComboBtn");
 		await expect(picker).toBeEnabled({ timeout: 10_000 });
@@ -706,7 +706,7 @@ test.describe("Agents settings page", () => {
 
 		await createSession(page);
 		const secondSessionKey = await page.evaluate(
-			() => window.__moltis_stores?.sessionStore?.activeSessionKey?.value || "",
+			() => window.__antre_stores?.sessionStore?.activeSessionKey?.value || "",
 		);
 		expect(secondSessionKey).not.toBe(firstSessionKey);
 		await expect(picker).toBeEnabled();
@@ -716,7 +716,7 @@ test.describe("Agents settings page", () => {
 			.poll(
 				async () =>
 					page.evaluate(
-						(key) => window.__moltis_stores?.sessionStore?.getByKey?.(key)?.external_agent_kind || null,
+						(key) => window.__antre_stores?.sessionStore?.getByKey?.(key)?.external_agent_kind || null,
 						firstSessionKey,
 					),
 				{ timeout: 10_000 },
@@ -738,7 +738,7 @@ test.describe("Agents settings page", () => {
 		await waitForWsConnected(page);
 		await createSession(page);
 
-		const sessionKey = await page.evaluate(() => window.__moltis_stores?.sessionStore?.activeSessionKey?.value || "");
+		const sessionKey = await page.evaluate(() => window.__antre_stores?.sessionStore?.activeSessionKey?.value || "");
 		await expect
 			.poll(
 				async () =>
@@ -769,7 +769,7 @@ test.describe("Agents settings page", () => {
 		await expectPageContentMounted(page);
 		await waitForWsConnected(page);
 
-		const sessionKey = await page.evaluate(() => window.__moltis_stores?.sessionStore?.activeSessionKey?.value || "");
+		const sessionKey = await page.evaluate(() => window.__antre_stores?.sessionStore?.activeSessionKey?.value || "");
 		await expect
 			.poll(
 				async () =>

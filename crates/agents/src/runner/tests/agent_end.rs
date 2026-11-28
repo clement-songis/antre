@@ -1,8 +1,8 @@
 use {
     super::helpers::*,
     crate::model::{ChatMessage, CompletionResponse, LlmProvider, StreamEvent, ToolCall, Usage},
+    antre_common::hooks::{HookAction, HookEvent, HookHandler, HookPayload, HookRegistry},
     async_trait::async_trait,
-    moltis_common::hooks::{HookAction, HookEvent, HookHandler, HookPayload, HookRegistry},
     std::{
         collections::VecDeque,
         pin::Pin,
@@ -29,7 +29,7 @@ impl HookHandler for EndHook {
         &self,
         _event: HookEvent,
         payload: &HookPayload,
-    ) -> moltis_common::error::Result<HookAction> {
+    ) -> antre_common::error::Result<HookAction> {
         self.payloads.lock().unwrap().push(payload.clone());
         // AgentEnd is read-only: a handler cannot block a completed run.
         Ok(HookAction::Block("ignored at completion".into()))

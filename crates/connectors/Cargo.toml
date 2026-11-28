@@ -1,7 +1,7 @@
 [package]
-description       = "Provider-neutral connector persistence and projections for Moltis"
+description       = "Provider-neutral connector persistence and projections for Antre"
 edition.workspace = true
-name              = "moltis-connectors"
+name              = "antre-connectors"
 version.workspace = true
 
 [features]
@@ -11,16 +11,16 @@ tracing = ["dep:tracing"]
 
 [dependencies]
 async-trait = { workspace = true }
-metrics    = { optional = true, workspace = true }
-serde      = { workspace = true }
-serde_json = { workspace = true }
-sha2       = { workspace = true }
-sqlx       = { workspace = true }
-thiserror  = { workspace = true }
-time       = { workspace = true }
-tokio      = { workspace = true }
-tracing    = { optional = true, workspace = true }
-uuid       = { workspace = true }
+metrics     = { optional = true, workspace = true }
+serde       = { workspace = true }
+serde_json  = { workspace = true }
+sha2        = { workspace = true }
+sqlx        = { workspace = true }
+thiserror   = { workspace = true }
+time        = { workspace = true }
+tokio       = { workspace = true }
+tracing     = { optional = true, workspace = true }
+uuid        = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }

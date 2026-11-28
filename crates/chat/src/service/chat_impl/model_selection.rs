@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use {
-    moltis_agents::model::{LlmProvider, ReasoningEffort},
-    moltis_providers::ProviderRegistry,
+    antre_agents::model::{LlmProvider, ReasoningEffort},
+    antre_providers::ProviderRegistry,
 };
 
 use crate::service::LiveChatService;
@@ -57,7 +57,7 @@ impl LiveChatService {
         }
         let mut chain = vec![primary];
         chain.extend(fallbacks);
-        Ok(Arc::new(moltis_agents::provider_chain::ProviderChain::new(
+        Ok(Arc::new(antre_agents::provider_chain::ProviderChain::new(
             chain,
         )))
     }
@@ -95,8 +95,8 @@ pub(super) fn resolve_primary(
 mod tests {
     use {
         super::*,
-        moltis_agents::model::{ChatMessage, CompletionResponse, StreamEvent},
-        moltis_providers::{ModelCapabilities, ModelInfo},
+        antre_agents::model::{ChatMessage, CompletionResponse, StreamEvent},
+        antre_providers::{ModelCapabilities, ModelInfo},
         std::pin::Pin,
         tokio_stream::Stream,
     };

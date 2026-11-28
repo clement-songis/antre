@@ -13,7 +13,7 @@ const MAX_LOCAL_LEN: usize = 64;
 /// Publishers that packages cannot claim. `core` names built-in
 /// contributions, `local` names compatibility mods the host creates itself
 /// (for example migrated shell hooks).
-const RESERVED_PUBLISHERS: &[&str] = &["core", "local", "moltis", "antre"];
+const RESERVED_PUBLISHERS: &[&str] = &["core", "local", "antre", "antre"];
 
 fn invalid(value: &str, reason: &'static str) -> Error {
     Error::InvalidId {
@@ -283,7 +283,7 @@ mod tests {
 
     #[test]
     fn packages_cannot_claim_reserved_publishers() {
-        for reserved in ["core.calc", "local.hook-x", "moltis.web", "antre.ui"] {
+        for reserved in ["core.calc", "local.hook-x", "antre.web", "antre.ui"] {
             assert!(ModId::parse(reserved).is_err(), "{reserved} accepted");
         }
         let host = ModId::host_owned("local", "hook-x").unwrap();

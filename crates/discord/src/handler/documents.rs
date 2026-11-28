@@ -3,7 +3,7 @@
 //! the agent as `ChannelDocumentFile`s.
 
 use {
-    moltis_channels::{
+    antre_channels::{
         ChannelDocumentFile, ChannelEventSink, ChannelReplyTarget, InboundMediaDownloader,
         InboundMediaSource,
     },
@@ -250,7 +250,7 @@ pub(super) fn document_media_type(content_type: Option<&str>, filename: &str) ->
     }
     filename
         .rsplit_once('.')
-        .and_then(|(_, extension)| moltis_media::mime::mime_from_extension(extension))
+        .and_then(|(_, extension)| antre_media::mime::mime_from_extension(extension))
         .unwrap_or(OCTET_STREAM)
         .to_string()
 }
@@ -291,7 +291,7 @@ pub(super) fn stored_filename(attachment_id: &str, filename: &str, mime_type: &s
     let sanitized = sanitized.trim_start_matches('.');
     let (stem, extension) = match sanitized.rsplit_once('.') {
         Some((stem, extension)) if !extension.is_empty() => (stem, extension),
-        _ => (sanitized, moltis_media::mime::extension_for_mime(mime_type)),
+        _ => (sanitized, antre_media::mime::extension_for_mime(mime_type)),
     };
     let stem: String = stem.chars().take(MAX_STORED_NAME_CHARS).collect();
     let stem = if stem.is_empty() {

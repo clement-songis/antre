@@ -9,7 +9,7 @@ const {
 } = require("../helpers");
 
 function activeSessionKey(page) {
-	return page.evaluate(() => window.__moltis_stores?.sessionStore?.activeSessionKey?.value || "");
+	return page.evaluate(() => window.__antre_stores?.sessionStore?.activeSessionKey?.value || "");
 }
 
 function sessionRow(page, key) {
@@ -89,7 +89,7 @@ test.describe("Context menus", () => {
 		await page.getByRole("button", { name: "Undo", exact: true }).click();
 		await expect(row).toBeVisible();
 		const listed = await page.evaluate(async (k) => {
-			const res = await window.__moltis_modules.helpers.sendRpc("sessions.list", {});
+			const res = await window.__antre_modules.helpers.sendRpc("sessions.list", {});
 			return JSON.stringify(res?.payload || "").includes(k);
 		}, key);
 		expect(listed).toBe(true);

@@ -6,13 +6,13 @@ use {
         auth::{AuthMode, ResolvedAuth},
         services::GatewayServices,
     },
-    futures::{Stream, stream},
-    moltis_external_agents::{
+    antre_external_agents::{
         ExternalAgentTransport,
         types::{AcpPermissionOption, ExternalAgentStatus},
     },
-    moltis_service_traits::{ExternalAgentService, NoopChatService},
-    moltis_sessions::{metadata::SqliteSessionMetadata, store::SessionStore},
+    antre_service_traits::{ExternalAgentService, NoopChatService},
+    antre_sessions::{metadata::SqliteSessionMetadata, store::SessionStore},
+    futures::{Stream, stream},
 };
 
 #[derive(Default)]
@@ -98,7 +98,7 @@ impl ExternalAgentSession for FakeSession {
         Ok(Box::pin(stream::iter([
             ExternalAgentEvent::TextDelta(format!("reply to {prompt}")),
             ExternalAgentEvent::Done {
-                usage: (prompt == "usage").then_some(moltis_external_agents::types::TokenUsage {
+                usage: (prompt == "usage").then_some(antre_external_agents::types::TokenUsage {
                     input_tokens: 7,
                     output_tokens: 11,
                 }),
@@ -149,7 +149,7 @@ fn context_from_history_includes_project_context() {
 
 async fn sqlite_pool() -> sqlx::SqlitePool {
     let pool = sqlx::SqlitePool::connect("sqlite::memory:").await.unwrap();
-    moltis_projects::run_migrations(&pool).await.unwrap();
+    antre_projects::run_migrations(&pool).await.unwrap();
     SqliteSessionMetadata::init(&pool).await.unwrap();
     pool
 }
@@ -215,14 +215,14 @@ struct RecordingOutbound {
 }
 
 #[async_trait]
-impl moltis_channels::ChannelOutbound for RecordingOutbound {
+impl antre_channels::ChannelOutbound for RecordingOutbound {
     async fn send_text(
         &self,
         account_id: &str,
         to: &str,
         text: &str,
         reply_to: Option<&str>,
-    ) -> moltis_channels::Result<()> {
+    ) -> antre_channels::Result<()> {
         self.messages.lock().await.push((
             account_id.to_string(),
             to.to_string(),
@@ -236,9 +236,9 @@ impl moltis_channels::ChannelOutbound for RecordingOutbound {
         &self,
         _account_id: &str,
         _to: &str,
-        _payload: &moltis_common::types::ReplyPayload,
+        _payload: &antre_common::types::ReplyPayload,
         _reply_to: Option<&str>,
-    ) -> moltis_channels::Result<()> {
+    ) -> antre_channels::Result<()> {
         Ok(())
     }
 }
@@ -433,7 +433,7 @@ async fn disabled_external_agents_do_not_route_stale_bindings() {
 #[test]
 fn acp_permission_selection_prefers_matching_decision_kind() {
     let request = AcpPermissionRequest {
-        moltis_session_key: Some("main".to_string()),
+        antre_session_key: Some("main".to_string()),
         acp_session_id: "acp-1".to_string(),
         tool_call: "run tool".to_string(),
         options: vec![

@@ -27,7 +27,7 @@ fn offline_send_does_not_start_an_rpc(cx: &mut TestAppContext) {
 
 #[gpui::test]
 fn connected_update_invalidates_cached_history_and_inflight_loads(cx: &mut TestAppContext) {
-    use moltis_protocol::{Extensions, Features, Policy, ServerInfo};
+    use antre_protocol::{Extensions, Features, Policy, ServerInfo};
 
     let daemon = cx.new(|cx| Daemon::disconnected_for_test(profile(), cx));
     daemon.update(cx, |daemon, cx| {
@@ -93,7 +93,7 @@ async fn disconnect_during_submission_reports_failure_to_composer(cx: &mut TestA
 fn ssh_profile() -> ServerProfile {
     ServerProfile {
         kind: ServerKind::Ssh {
-            target: moltis_client::ssh::SshTarget {
+            target: antre_client::ssh::SshTarget {
                 destination: "test".into(),
                 remote_port: 18789,
                 ssh_port: None,

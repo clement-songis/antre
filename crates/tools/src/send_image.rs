@@ -5,9 +5,9 @@
 //! chat runner picks up and routes through `send_screenshot_to_channels`.
 
 use {
+    antre_agents::tool_registry::AgentTool,
     async_trait::async_trait,
     base64::{Engine as _, engine::general_purpose::STANDARD as BASE64},
-    moltis_agents::tool_registry::AgentTool,
     serde_json::{Value, json},
     std::{path::Path, sync::Arc},
     tracing::debug,
@@ -38,10 +38,10 @@ impl SendImageTool {
 
 /// Map a file extension to its image MIME type.
 ///
-/// Delegates to `moltis_media::mime::mime_from_extension` but only accepts
+/// Delegates to `antre_media::mime::mime_from_extension` but only accepts
 /// image MIME types — returns `None` for documents, audio, etc.
 fn mime_from_extension(ext: &str) -> Option<&'static str> {
-    moltis_media::mime::mime_from_extension(ext).filter(|m| m.starts_with("image/"))
+    antre_media::mime::mime_from_extension(ext).filter(|m| m.starts_with("image/"))
 }
 
 #[async_trait]

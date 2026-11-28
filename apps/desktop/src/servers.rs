@@ -1,4 +1,4 @@
-//! Saved daemons the app can connect to, stored as JSON next to the moltis
+//! Saved daemons the app can connect to, stored as JSON next to the antre
 //! config (`<config_dir>/desktop/servers.json`). API keys are never stored
 //! here; they live in the OS keychain under [`ServerProfile::keychain_url`].
 
@@ -8,12 +8,12 @@ use std::{
 };
 
 use {
-    moltis_client::{Endpoint, TlsTrust},
+    antre_client::{Endpoint, TlsTrust},
     serde::{Deserialize, Serialize},
 };
 
 #[cfg(feature = "ssh")]
-use moltis_client::ssh::SshTarget;
+use antre_client::ssh::SshTarget;
 
 /// Id of the daemon configured on this machine (never saved to disk).
 pub const LOCAL_ID: &str = "local";
@@ -42,11 +42,11 @@ pub struct ServerProfile {
 }
 
 impl ServerProfile {
-    /// Offer the local service even before its first launch writes moltis.toml.
+    /// Offer the local service even before its first launch writes antre.toml.
     /// Read-only discovery also honours config overrides.
     pub fn local() -> Option<Self> {
-        let config = moltis_config::discover_and_load_readonly();
-        Self::local_for(&config, &moltis_config::config_dir()?).ok()
+        let config = antre_config::discover_and_load_readonly();
+        Self::local_for(&config, &antre_config::config_dir()?).ok()
     }
 
     /// The local profile read again, when its trust has changed since this
@@ -61,12 +61,12 @@ impl ServerProfile {
         fresh.filter(|fresh| self.is_local() && fresh.tls() != self.tls())
     }
 
-    fn local_for(config: &moltis_config::MoltisConfig, dir: &Path) -> moltis_client::Result<Self> {
+    fn local_for(config: &antre_config::AntreConfig, dir: &Path) -> antre_client::Result<Self> {
         Ok(Self {
             id: LOCAL_ID.into(),
             name: "This computer".into(),
             kind: ServerKind::Direct {
-                endpoint: moltis_client::local::endpoint_for(config, dir)?,
+                endpoint: antre_client::local::endpoint_for(config, dir)?,
             },
         })
     }
@@ -88,7 +88,7 @@ impl ServerProfile {
     /// Keychain entry holding this server's API key.
     #[must_use]
     pub fn keychain_url(&self) -> String {
-        format!("moltis-desktop://{}", self.id)
+        format!("antre-desktop://{}", self.id)
     }
 
     /// Where it is, for display.
@@ -143,7 +143,7 @@ impl ServerStore {
     #[must_use]
     pub fn default_path() -> Option<PathBuf> {
         Some(
-            moltis_config::config_dir()?
+            antre_config::config_dir()?
                 .join("desktop")
                 .join("servers.json"),
         )
@@ -239,18 +239,18 @@ mod tests {
     #[test]
     fn clean_install_has_a_local_service_profile() {
         let dir = tempfile::tempdir().unwrap();
-        let config = moltis_config::MoltisConfig::default();
+        let config = antre_config::AntreConfig::default();
         let profile = ServerProfile::local_for(&config, dir.path()).unwrap();
         assert!(profile.is_local());
         assert_eq!(profile.name, "This computer");
         assert!(profile.address().contains("localhost"));
-        assert!(!dir.path().join("moltis.toml").exists());
+        assert!(!dir.path().join("antre.toml").exists());
     }
 
     #[test]
     fn local_profile_picks_up_a_ca_written_after_it_was_read() {
         let dir = tempfile::tempdir().unwrap();
-        let mut config = moltis_config::MoltisConfig::default();
+        let mut config = antre_config::AntreConfig::default();
         config.tls.enabled = true;
         let before = ServerProfile::local_for(&config, dir.path()).unwrap();
         assert_eq!(before.tls(), &TlsTrust::System);
@@ -274,7 +274,7 @@ mod tests {
     #[test]
     fn local_profile_honours_custom_configuration() {
         let dir = tempfile::tempdir().unwrap();
-        let mut config = moltis_config::MoltisConfig::default();
+        let mut config = antre_config::AntreConfig::default();
         config.server.port = 4321;
         config.tls.enabled = false;
         let profile = ServerProfile::local_for(&config, dir.path()).unwrap();
@@ -339,7 +339,7 @@ mod tests {
     #[test]
     fn keychain_url_and_address() {
         let profile = ServerProfile::direct("x", endpoint("https://h:2"));
-        assert!(profile.keychain_url().starts_with("moltis-desktop://"));
+        assert!(profile.keychain_url().starts_with("antre-desktop://"));
         assert_eq!(profile.address(), "https://h:2");
         assert!(!profile.is_local());
     }

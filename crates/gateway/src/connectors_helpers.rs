@@ -156,7 +156,7 @@ pub(super) fn ensure_caldav(kind: ConnectorKind) -> Result<()> {
 }
 
 pub(super) fn invalid_caldav(
-    error: moltis_connector_caldav::CalDavConnectorError,
+    error: antre_connector_caldav::CalDavConnectorError,
 ) -> ConnectorManagerError {
     ConnectorManagerError::InvalidInput(error.to_string())
 }

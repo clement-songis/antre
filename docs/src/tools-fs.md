@@ -1,6 +1,6 @@
 # Filesystem Tools
 
-Moltis ships six native filesystem tools that agents use for structured,
+Antre ships six native filesystem tools that agents use for structured,
 typed file I/O: `Read`, `Write`, `Edit`, `MultiEdit`, `Glob`, and `Grep`.
 Their schemas match Claude Code exactly so LLMs trained on those tools
 work without adaptation. See [GitHub #657](https://github.com/moltis-org/moltis/issues/657)
@@ -234,7 +234,7 @@ allow it.
 Use the host path reported as `Host: files_dir=...` when filesystem tools run
 on the gateway host. In Docker, Podman, or Apple Container sandboxes, use
 `/home/sandbox/files`; `tools.exec.sandbox.managed_files_mount` determines
-whether that path is unavailable, read-only, or read-write. `MOLTIS_FILES_DIR`
+whether that path is unavailable, read-only, or read-write. `ANTRE_FILES_DIR`
 provides the corresponding path to `exec`.
 
 Files placed there are not automatically read, indexed as memory, or added to
@@ -243,9 +243,9 @@ deliberately.
 
 ## Structured Audit
 
-Every tool invocation is a structured event through moltis's existing
-tracing layer and the `moltis_tool_executions_total` /
-`moltis_tool_execution_errors_total` metrics. Writes appear in traces as
+Every tool invocation is a structured event through antre's existing
+tracing layer and the `antre_tool_executions_total` /
+`antre_tool_execution_errors_total` metrics. Writes appear in traces as
 structured key/value pairs — `tool=Write file_path=... bytes=... outcome=ok`
 — dramatically easier to review than an opaque shell command string, and
 the second big win (alongside model-quality improvements) that motivated
@@ -259,5 +259,5 @@ the second big win (alongside model-quality improvements) that motivated
   structured payloads for each fs tool call, so policy hooks can inspect
   typed parameters instead of parsing shell strings.
 - [Sandbox](sandbox.md) — fs tools route through the sandbox when the
-  session is sandboxed. If no real sandbox backend is available, Moltis
+  session is sandboxed. If no real sandbox backend is available, Antre
   warns at startup and the tools operate on the gateway host.

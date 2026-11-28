@@ -1,6 +1,6 @@
 # Rate Limits and Quotas
 
-Providers stop answering for two different reasons, and Moltis treats them
+Providers stop answering for two different reasons, and Antre treats them
 differently:
 
 - **Rate limits**: too many requests or tokens per minute. Waiting seconds to
@@ -48,7 +48,7 @@ the past or more than eight days ahead is treated as unknown.
    message and, when known, the reset time.
 
 Parked runs are saved in `data_dir()/chat/quota-waits.json` and rescheduled
-after a restart; a reset that passed while Moltis was down resumes right away.
+after a restart; a reset that passed while Antre was down resumes right away.
 Cancel from the chat card, or with the `chat.cancel_quota_wait` RPC
 (`{"sessionKey": "..."}`).
 

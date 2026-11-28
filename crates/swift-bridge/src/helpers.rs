@@ -2,7 +2,7 @@
 
 use std::ffi::{CStr, CString, c_char};
 
-use {moltis_config::validate::Severity, serde::Serialize};
+use {antre_config::validate::Severity, serde::Serialize};
 
 use crate::{
     state::{BRIDGE, HTTPD},
@@ -98,7 +98,7 @@ pub(crate) fn format_bytes(bytes: u64) -> String {
 
 pub(crate) fn build_validation_summary(config_toml: Option<&str>) -> Option<ValidationSummary> {
     let config_toml = config_toml?;
-    let result = moltis_config::validate::validate_toml_str(config_toml);
+    let result = antre_config::validate::validate_toml_str(config_toml);
 
     Some(ValidationSummary {
         errors: result.count(Severity::Error),
@@ -109,14 +109,14 @@ pub(crate) fn build_validation_summary(config_toml: Option<&str>) -> Option<Vali
 }
 
 pub(crate) fn config_dir_string() -> String {
-    match moltis_config::config_dir() {
+    match antre_config::config_dir() {
         Some(path) => path.display().to_string(),
         None => "unavailable".to_owned(),
     }
 }
 
 pub(crate) fn data_dir_string() -> String {
-    moltis_config::data_dir().display().to_string()
+    antre_config::data_dir().display().to_string()
 }
 
 pub(crate) fn vault_status_string() -> String {
@@ -129,7 +129,7 @@ pub(crate) fn vault_status_string() -> String {
     }
 }
 
-pub(crate) fn sandbox_effective_default_image(config: &moltis_config::MoltisConfig) -> String {
+pub(crate) fn sandbox_effective_default_image(config: &antre_config::AntreConfig) -> String {
     if let Some(value) = BRIDGE
         .sandbox_default_image_override
         .read()
@@ -144,17 +144,17 @@ pub(crate) fn sandbox_effective_default_image(config: &moltis_config::MoltisConf
         .sandbox
         .image
         .clone()
-        .unwrap_or_else(|| moltis_tools::sandbox::DEFAULT_SANDBOX_IMAGE.to_owned())
+        .unwrap_or_else(|| antre_tools::sandbox::DEFAULT_SANDBOX_IMAGE.to_owned())
 }
 
-pub(crate) fn sandbox_backend_name(config: &moltis_config::MoltisConfig) -> String {
-    let runtime_cfg = moltis_tools::sandbox::SandboxConfig::from(&config.tools.exec.sandbox);
-    let backend = moltis_tools::sandbox::create_sandbox(runtime_cfg);
+pub(crate) fn sandbox_backend_name(config: &antre_config::AntreConfig) -> String {
+    let runtime_cfg = antre_tools::sandbox::SandboxConfig::from(&config.tools.exec.sandbox);
+    let backend = antre_tools::sandbox::create_sandbox(runtime_cfg);
     backend.backend_name().to_owned()
 }
 
 pub(crate) fn sandbox_status_from_config(
-    config: &moltis_config::MoltisConfig,
+    config: &antre_config::AntreConfig,
 ) -> SandboxStatusResponse {
     SandboxStatusResponse {
         backend: sandbox_backend_name(config),
@@ -163,7 +163,7 @@ pub(crate) fn sandbox_status_from_config(
     }
 }
 
-pub(crate) fn sandbox_container_prefix(config: &moltis_config::MoltisConfig) -> String {
+pub(crate) fn sandbox_container_prefix(config: &antre_config::AntreConfig) -> String {
     let runtime_prefix = HTTPD
         .lock()
         .unwrap_or_else(|error| error.into_inner())
@@ -171,26 +171,26 @@ pub(crate) fn sandbox_container_prefix(config: &moltis_config::MoltisConfig) -> 
         .and_then(|handle| handle.state.sandbox_router.as_ref())
         .and_then(|router| router.config().container_prefix.clone());
     runtime_prefix
-        .unwrap_or_else(|| moltis_gateway::server::sandbox_container_prefix_for_config(config))
+        .unwrap_or_else(|| antre_gateway::server::sandbox_container_prefix_for_config(config))
 }
 
 pub(crate) fn sandbox_shared_home_config_from_config(
-    config: &moltis_config::MoltisConfig,
+    config: &antre_config::AntreConfig,
 ) -> SandboxSharedHomeConfigResponse {
-    let runtime_cfg = moltis_tools::sandbox::SandboxConfig::from(&config.tools.exec.sandbox);
+    let runtime_cfg = antre_tools::sandbox::SandboxConfig::from(&config.tools.exec.sandbox);
     let mode = match config.tools.exec.sandbox.home_persistence {
-        moltis_config::schema::HomePersistenceConfig::Off => "off",
-        moltis_config::schema::HomePersistenceConfig::Session => "session",
-        moltis_config::schema::HomePersistenceConfig::Shared => "shared",
+        antre_config::schema::HomePersistenceConfig::Off => "off",
+        antre_config::schema::HomePersistenceConfig::Session => "session",
+        antre_config::schema::HomePersistenceConfig::Shared => "shared",
     };
 
     SandboxSharedHomeConfigResponse {
         enabled: matches!(
             config.tools.exec.sandbox.home_persistence,
-            moltis_config::schema::HomePersistenceConfig::Shared
+            antre_config::schema::HomePersistenceConfig::Shared
         ),
         mode: mode.to_owned(),
-        path: moltis_tools::sandbox::shared_home_dir_path(&runtime_cfg)
+        path: antre_tools::sandbox::shared_home_dir_path(&runtime_cfg)
             .display()
             .to_string(),
         configured_path: config.tools.exec.sandbox.shared_home_dir.clone(),
@@ -201,7 +201,7 @@ pub(crate) fn sandbox_shared_home_config_from_config(
 
 #[cfg(feature = "metrics")]
 pub(crate) fn record_call(function: &'static str) {
-    metrics::counter!("moltis_swift_bridge_calls_total", "function" => function).increment(1);
+    metrics::counter!("antre_swift_bridge_calls_total", "function" => function).increment(1);
 }
 
 #[cfg(not(feature = "metrics"))]
@@ -210,7 +210,7 @@ pub(crate) fn record_call(_function: &'static str) {}
 #[cfg(feature = "metrics")]
 pub(crate) fn record_error(function: &'static str, code: &'static str) {
     metrics::counter!(
-        "moltis_swift_bridge_errors_total",
+        "antre_swift_bridge_errors_total",
         "function" => function,
         "code" => code
     )
@@ -222,7 +222,7 @@ pub(crate) fn record_error(_function: &'static str, _code: &'static str) {}
 
 #[cfg(feature = "tracing")]
 pub(crate) fn trace_call(function: &'static str) {
-    tracing::debug!(target: "moltis_swift_bridge", function, "ffi call");
+    tracing::debug!(target: "antre_swift_bridge", function, "ffi call");
 }
 
 #[cfg(not(feature = "tracing"))]

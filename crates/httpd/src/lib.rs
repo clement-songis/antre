@@ -1,10 +1,10 @@
-//! HTTP/WebSocket transport layer for the moltis gateway.
+//! HTTP/WebSocket transport layer for the antre gateway.
 //!
 //! This crate provides the HTTP server, WebSocket upgrade handler,
 //! authentication middleware, and all HTTP route handlers. It depends
-//! on `moltis-gateway` for core business logic but never the reverse.
+//! on `antre-gateway` for core business logic but never the reverse.
 //!
-//! Non-HTTP consumers (TUI, tests) can depend on `moltis-gateway`
+//! Non-HTTP consumers (TUI, tests) can depend on `antre-gateway`
 //! directly without pulling in the HTTP stack.
 
 pub mod auth_middleware;
@@ -45,7 +45,7 @@ pub mod tailscale_routes;
 
 // Re-export key types for consumers.
 #[cfg(feature = "tls")]
-pub use moltis_tls as tls;
+pub use antre_tls as tls;
 #[cfg(feature = "tailscale")]
 pub use server::TailscaleOpts;
 pub use server::{

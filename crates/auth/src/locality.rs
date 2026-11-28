@@ -45,7 +45,7 @@ fn is_loopback_host(host: &str) -> bool {
 /// container-side TCP source to a bridge-network address even when the
 /// published port is bound only to `127.0.0.1` on the host (e.g.
 /// `-p 127.0.0.1:PORT:PORT`), so `remote_addr.ip().is_loopback()` can never
-/// be true for that deployment shape — see `MOLTIS_TRUST_DOCKER_LOOPBACK`.
+/// be true for that deployment shape — see `ANTRE_TRUST_DOCKER_LOOPBACK`.
 /// The `Host` check still matters here: `Host` alone is attacker-controlled
 /// and is never sufficient proof of locality on its own, but combined with
 /// "no proxy headers" it is the same signal `behind_proxy` already accepts
@@ -128,13 +128,13 @@ mod tests {
         assert!(is_loopback_host("127.0.0.1:18789"));
         assert!(is_loopback_host("::1"));
         assert!(is_loopback_host("[::1]:18789"));
-        assert!(is_loopback_host("moltis.localhost"));
-        assert!(is_loopback_host("moltis.localhost:8080"));
+        assert!(is_loopback_host("antre.localhost"));
+        assert!(is_loopback_host("antre.localhost:8080"));
 
         assert!(!is_loopback_host("example.com"));
         assert!(!is_loopback_host("example.com:18789"));
         assert!(!is_loopback_host("192.168.1.1:18789"));
-        assert!(!is_loopback_host("moltis.example.com"));
+        assert!(!is_loopback_host("antre.example.com"));
     }
 
     #[test]
@@ -213,7 +213,7 @@ mod tests {
         let mut headers = axum::http::HeaderMap::new();
         headers.insert(
             axum::http::header::HOST,
-            "moltis.example.com".parse().unwrap(),
+            "antre.example.com".parse().unwrap(),
         );
         assert!(!is_local_connection(&headers, addr, false, false));
     }
@@ -221,7 +221,7 @@ mod tests {
     /// Simulates a reverse proxy (Caddy/nginx) on the same machine that
     /// does NOT add proxy headers (bare nginx `proxy_pass`). The Host header
     /// is rewritten to the upstream (loopback) address and the TCP source is
-    /// loopback. Without `MOLTIS_BEHIND_PROXY`, this would appear local.
+    /// loopback. Without `ANTRE_BEHIND_PROXY`, this would appear local.
     #[test]
     fn bare_proxy_without_env_var_appears_local() {
         let addr: SocketAddr = "127.0.0.1:12345".parse().unwrap();
@@ -229,7 +229,7 @@ mod tests {
         headers.insert(axum::http::header::HOST, "127.0.0.1:18789".parse().unwrap());
         // This is the known limitation: bare proxy looks like local.
         assert!(is_local_connection(&headers, addr, false, false));
-        // Setting MOLTIS_BEHIND_PROXY fixes it.
+        // Setting ANTRE_BEHIND_PROXY fixes it.
         assert!(!is_local_connection(&headers, addr, true, false));
     }
 
@@ -241,7 +241,7 @@ mod tests {
         let mut headers = axum::http::HeaderMap::new();
         headers.insert(
             axum::http::header::HOST,
-            "moltis.example.com".parse().unwrap(),
+            "antre.example.com".parse().unwrap(),
         );
         headers.insert("x-forwarded-for", "203.0.113.50".parse().unwrap());
         assert!(!is_local_connection(&headers, addr, false, false));
@@ -254,7 +254,7 @@ mod tests {
         let mut headers = axum::http::HeaderMap::new();
         headers.insert(
             axum::http::header::HOST,
-            "moltis.example.com".parse().unwrap(),
+            "antre.example.com".parse().unwrap(),
         );
         assert!(!is_local_connection(&headers, addr, false, false));
     }
@@ -262,7 +262,7 @@ mod tests {
     /// Docker's userland-proxy/iptables DNAT rewrites the container-side TCP
     /// source to a bridge-network address even when the published port is
     /// bound only to `127.0.0.1` on the host (`-p 127.0.0.1:PORT:PORT`).
-    /// Without `MOLTIS_TRUST_DOCKER_LOOPBACK`, this looks identical to a
+    /// Without `ANTRE_TRUST_DOCKER_LOOPBACK`, this looks identical to a
     /// genuinely remote connection and is correctly rejected.
     #[test]
     fn docker_bridge_source_not_local_without_trust_flag() {
@@ -304,7 +304,7 @@ mod tests {
         let mut headers = axum::http::HeaderMap::new();
         headers.insert(
             axum::http::header::HOST,
-            "moltis.example.com".parse().unwrap(),
+            "antre.example.com".parse().unwrap(),
         );
         assert!(!is_local_connection(&headers, addr, false, true));
     }

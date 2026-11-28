@@ -1,9 +1,9 @@
 //! Trusted, read-only agent access to synchronized connector data.
 
 use {
+    antre_agents::tool_registry::AgentTool,
     anyhow::{Context, Result, anyhow, bail},
     async_trait::async_trait,
-    moltis_agents::tool_registry::AgentTool,
     serde::{Deserialize, Serialize},
     serde_json::{Value, json},
     std::sync::Arc,
@@ -11,7 +11,7 @@ use {
 
 use {
     crate::connectors::{ConnectorItemView, ConnectorManager, ItemQueryRequest},
-    moltis_connectors::ConnectorKind,
+    antre_connectors::ConnectorKind,
 };
 
 const DEFAULT_SEARCH_LIMIT: u64 = 20;

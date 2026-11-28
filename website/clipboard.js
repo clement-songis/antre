@@ -59,5 +59,5 @@
         });
     });
 
-    window.moltisClipboard = { copyText: copyText, showToast: showToast };
+    window.antreClipboard = { copyText: copyText, showToast: showToast };
 })();

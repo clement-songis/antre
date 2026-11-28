@@ -116,7 +116,7 @@ libraries load only when a reply contains a diagram or a formula.
 ## Background sessions
 
 The tab title starts with the number of sessions holding replies you have
-not read, for example `(2) moltis`. When a reply you started in another
+not read, for example `(2) antre`. When a reply you started in another
 session finishes, a toast offers to open it. Channel and cron sessions
 count in the title but do not raise a toast.
 

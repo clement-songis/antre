@@ -9,9 +9,9 @@
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use {
+    antre_agents::model::{ChatMessage, LlmProvider, StreamEvent, ToolCall},
+    antre_providers::{openai::OpenAiProvider, openai_compat::to_openai_tools},
     futures::StreamExt,
-    moltis_agents::model::{ChatMessage, LlmProvider, StreamEvent, ToolCall},
-    moltis_providers::{openai::OpenAiProvider, openai_compat::to_openai_tools},
     secrecy::{ExposeSecret, Secret},
 };
 

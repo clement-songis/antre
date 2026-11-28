@@ -1,12 +1,12 @@
 //! Import credentials from Hermes `.env` file.
 //!
 //! Parses well-known API key environment variables and maps them to
-//! Moltis provider names.
+//! Antre provider names.
 
 use std::path::Path;
 
 use {
-    moltis_import_core::report::{CategoryReport, ImportCategory, ImportStatus},
+    antre_import_core::report::{CategoryReport, ImportCategory, ImportStatus},
     tracing::debug,
 };
 
@@ -81,7 +81,7 @@ pub fn discover_credentials(detection: &HermesDetection) -> Vec<DiscoveredCreden
     found
 }
 
-/// Import credentials from Hermes `.env` into Moltis provider keys.
+/// Import credentials from Hermes `.env` into Antre provider keys.
 ///
 /// Writes discovered API keys to `provider_keys.json` in the config directory.
 /// Skips providers that already have keys configured.

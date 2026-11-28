@@ -1,6 +1,6 @@
 # Telephony (Phone Calls)
 
-Moltis can make and receive phone calls, enabling voice-based AI conversations over the public telephone network (PSTN).
+Antre can make and receive phone calls, enabling voice-based AI conversations over the public telephone network (PSTN).
 
 ## Supported Providers
 
@@ -41,7 +41,7 @@ webhook_url = "https://your-domain.com"
 ### 3. Start the Gateway
 
 ```bash
-moltis gateway
+antre gateway
 ```
 
 The phone integration starts automatically with the gateway when `[phone]` is enabled and the active
@@ -103,10 +103,10 @@ Available actions:
 ## CLI Commands
 
 ```bash
-moltis voice-call call --to +15559876543 --message "Hello"
-moltis voice-call status [call-id]
-moltis voice-call end <call-id>
-moltis voice-call setup
+antre voice-call call --to +15559876543 --message "Hello"
+antre voice-call status [call-id]
+antre voice-call end <call-id>
+antre voice-call setup
 ```
 
 ## RPC Methods

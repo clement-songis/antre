@@ -7,13 +7,13 @@ use {
 };
 
 use {
-    moltis_channels::{
+    antre_channels::{
         ChannelAckOutcome, ChannelAttachment, ChannelEvent, ChannelEventSink, ChannelMessageMeta,
         ChannelReplyTarget, Error as ChannelError, Result as ChannelResult, SavedChannelFile,
         config_view::{UntrustedAudience, UntrustedTools},
     },
-    moltis_sessions::metadata::{SessionEntry, SqliteSessionMetadata},
-    moltis_tools::approval::PendingApprovalView,
+    antre_sessions::metadata::{SessionEntry, SqliteSessionMetadata},
+    antre_tools::approval::PendingApprovalView,
 };
 
 use crate::{
@@ -22,7 +22,7 @@ use crate::{
     state::GatewayState,
 };
 
-pub use moltis_channels::operators::ChannelSenderRole;
+pub use antre_channels::operators::ChannelSenderRole;
 
 /// Default (deterministic) session key for a channel chat.
 ///
@@ -121,9 +121,9 @@ pub(in crate::channel_events) fn operator_denied_message(
     let mut message = format!(
         "{action} is restricted to this bot's operators in direct chats. \
          Shared chats and chats that cannot be verified as direct are denied.\n\n\
-         Open a direct chat first. If you own this moltis instance and are still denied, add yourself under \
+         Open a direct chat first. If you own this antre instance and are still denied, add yourself under \
          Settings → Channels → (your account) → Edit → Operators in the web UI, \
-         or set `operators` for the account in moltis.toml. Entries must be exact \
+         or set `operators` for the account in antre.toml. Entries must be exact \
          platform sender IDs."
     );
     if let Some(sender_id) = sender_id.map(str::trim).filter(|id| !id.is_empty()) {
@@ -153,7 +153,7 @@ async fn resolve_sender_role(
     let Some(config) = registry.account_config(account_id).await else {
         return ChannelSenderRole::Guest;
     };
-    moltis_channels::operators::resolve_sender_role(sender_id, config.operators())
+    antre_channels::operators::resolve_sender_role(sender_id, config.operators())
 }
 
 /// Read the account's untrusted-turn ceiling. A missing registry or an unknown
@@ -215,13 +215,13 @@ fn is_trusted_channel_turn(role: ChannelSenderRole, reply_to: &ChannelReplyTarge
 }
 
 fn is_channel_command_authorized(
-    privilege: moltis_channels::commands::CommandPrivilege,
+    privilege: antre_channels::commands::CommandPrivilege,
     role: ChannelSenderRole,
     reply_to: &ChannelReplyTarget,
 ) -> bool {
     match privilege {
-        moltis_channels::commands::CommandPrivilege::Public => true,
-        moltis_channels::commands::CommandPrivilege::OperatorDirect => {
+        antre_channels::commands::CommandPrivilege::Public => true,
+        antre_channels::commands::CommandPrivilege::OperatorDirect => {
             is_trusted_channel_turn(role, reply_to)
         },
     }
@@ -468,7 +468,7 @@ async fn register_channel_reaction_controller(
 async fn finalize_reaction_on_early_return(
     state: &Arc<GatewayState>,
     ack_key: Option<&String>,
-    send_result: &Result<serde_json::Value, moltis_service_traits::ServiceError>,
+    send_result: &Result<serde_json::Value, antre_service_traits::ServiceError>,
 ) {
     let Some(ack_key) = ack_key else {
         return;

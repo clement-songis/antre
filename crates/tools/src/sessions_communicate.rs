@@ -11,8 +11,8 @@ use std::{collections::HashMap, sync::Arc};
 use {async_trait::async_trait, futures::future::BoxFuture, serde_json::Value};
 
 use {
-    moltis_agents::tool_registry::AgentTool,
-    moltis_sessions::{metadata::SqliteSessionMetadata, store::SessionStore},
+    antre_agents::tool_registry::AgentTool,
+    antre_sessions::{metadata::SqliteSessionMetadata, store::SessionStore},
 };
 
 use crate::{
@@ -64,8 +64,8 @@ impl SessionAccessPolicy {
     }
 }
 
-impl From<&moltis_config::SessionAccessPolicyConfig> for SessionAccessPolicy {
-    fn from(config: &moltis_config::SessionAccessPolicyConfig) -> Self {
+impl From<&antre_config::SessionAccessPolicyConfig> for SessionAccessPolicy {
+    fn from(config: &antre_config::SessionAccessPolicyConfig) -> Self {
         Self {
             key_prefix: config.key_prefix.clone(),
             allowed_keys: config.allowed_keys.clone(),
@@ -288,7 +288,7 @@ impl AgentTool for SessionsSearchTool {
             None
         };
 
-        let entries: HashMap<String, moltis_sessions::metadata::SessionEntry> = self
+        let entries: HashMap<String, antre_sessions::metadata::SessionEntry> = self
             .metadata
             .list()
             .await

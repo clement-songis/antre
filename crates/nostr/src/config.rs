@@ -1,11 +1,11 @@
 //! Nostr channel account configuration.
 
 use {
-    moltis_channels::{
+    antre_channels::{
         config_view::ChannelConfigView,
         gating::{DmPolicy, GroupPolicy, MentionMode},
     },
-    moltis_common::secret_serde,
+    antre_common::secret_serde,
     nostr_sdk::prelude::PublicKey,
     secrecy::Secret,
     serde::{Deserialize, Serialize, ser::SerializeStruct},
@@ -250,7 +250,7 @@ impl ChannelConfigView for NostrAccountConfig {
         {
             return true;
         }
-        moltis_channels::gating::sender_matches_allowlist(sender_id, &self.allowed_pubkeys)
+        antre_channels::gating::sender_matches_allowlist(sender_id, &self.allowed_pubkeys)
     }
 }
 

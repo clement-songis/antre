@@ -169,7 +169,7 @@ function Toolbar(): VNode {
 			<a
 				href="/api/logs/download"
 				className="logs-btn"
-				download="moltis-logs.jsonl"
+				download="antre-logs.jsonl"
 				style={{ textDecoration: "none", textAlign: "center" }}
 			>
 				{t("logs:toolbar.download")}

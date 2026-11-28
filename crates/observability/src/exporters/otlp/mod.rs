@@ -70,7 +70,7 @@ impl Default for OtlpConfig {
             endpoint: String::new(),
             headers: BTreeMap::new(),
             timeout: Duration::from_secs(10),
-            service_name: "moltis".to_string(),
+            service_name: "antre".to_string(),
             service_version: env!("CARGO_PKG_VERSION").to_string(),
             environment: None,
             profile: ExportProfile::default(),
@@ -112,7 +112,7 @@ impl OtlpTransport {
         }
 
         Self {
-            client: moltis_common::http_client::build_default_http_client(),
+            client: antre_common::http_client::build_default_http_client(),
             headers,
             config,
         }
@@ -226,7 +226,7 @@ mod tests {
             endpoint,
             headers,
             timeout: Duration::from_secs(5),
-            service_name: "moltis".into(),
+            service_name: "antre".into(),
             service_version: "test".into(),
             environment: Some("staging".into()),
             profile: ExportProfile::langfuse(),

@@ -62,7 +62,7 @@ export function isConflict(error: unknown): error is FilesApiError {
 
 export async function listEntries(path: string, signal?: AbortSignal): Promise<FileEntriesResponse> {
 	const response = await fetch("/api/files/entries", {
-		headers: { "X-Moltis-File-Path": pathHeader(path) },
+		headers: { "X-Antre-File-Path": pathHeader(path) },
 		signal,
 	});
 	await requireOk(response, "Could not load files");
@@ -72,9 +72,9 @@ export async function listEntries(path: string, signal?: AbortSignal): Promise<F
 export async function uploadFile(path: string, file: File, overwrite = false, signal?: AbortSignal): Promise<void> {
 	const headers: Record<string, string> = {
 		"Content-Type": file.type || "application/octet-stream",
-		"X-Moltis-File-Path": pathHeader(path),
+		"X-Antre-File-Path": pathHeader(path),
 	};
-	if (overwrite) headers["X-Moltis-Overwrite"] = "true";
+	if (overwrite) headers["X-Antre-Overwrite"] = "true";
 	const response = await fetch("/api/files/content", {
 		method: "PUT",
 		headers,
@@ -86,7 +86,7 @@ export async function uploadFile(path: string, file: File, overwrite = false, si
 
 export async function downloadFile(path: string): Promise<Response> {
 	const response = await fetch("/api/files/content", {
-		headers: { "X-Moltis-File-Path": pathHeader(path) },
+		headers: { "X-Antre-File-Path": pathHeader(path) },
 	});
 	return requireOk(response, "Could not download file");
 }

@@ -50,7 +50,7 @@ fn valid_sources(sources: &[String]) -> impl Iterator<Item = &str> {
     sources
         .iter()
         .map(String::as_str)
-        .filter(|source| moltis_config::schema::is_https_origin(source))
+        .filter(|source| antre_config::schema::is_https_origin(source))
 }
 
 fn with_sources(base: &str, sources: &[String]) -> String {
@@ -191,7 +191,7 @@ pub fn host_without_port(host: &str) -> Option<&str> {
 /// could break out of a CSP source expression are refused.
 #[must_use]
 pub fn request_origin(public_url: Option<&str>, host: Option<&str>) -> Option<String> {
-    if let Some(url) = public_url.filter(|url| moltis_config::schema::is_http_origin(url)) {
+    if let Some(url) = public_url.filter(|url| antre_config::schema::is_http_origin(url)) {
         return Some(url.trim_end_matches('/').to_string());
     }
     let host = host?.trim();

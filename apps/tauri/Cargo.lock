@@ -189,14 +189,1104 @@ dependencies = [
 ]
 
 [[package]]
+name = "antre-agents"
+version = "0.1.0"
+dependencies = [
+ "antre-common",
+ "antre-config",
+ "antre-metrics",
+ "antre-observability",
+ "antre-sessions",
+ "antre-skills",
+ "anyhow",
+ "async-stream",
+ "async-trait",
+ "base64 0.22.1",
+ "futures",
+ "image",
+ "include_dir",
+ "reqwest 0.13.2",
+ "secrecy 0.8.0",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "time",
+ "tokio",
+ "tokio-stream",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "antre-auth"
+version = "0.1.0"
+dependencies = [
+ "antre-config",
+ "antre-tools",
+ "antre-vault",
+ "argon2",
+ "async-trait",
+ "axum",
+ "base64 0.22.1",
+ "dashmap 6.1.0",
+ "hmac 0.12.1",
+ "openssl",
+ "password-hash",
+ "rand 0.10.1",
+ "secrecy 0.8.0",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "sqlx",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+ "webauthn-rs",
+ "webauthn-rs-proto",
+]
+
+[[package]]
+name = "antre-browser"
+version = "0.1.0"
+dependencies = [
+ "antre-common",
+ "antre-config",
+ "antre-metrics",
+ "async-trait",
+ "base64 0.22.1",
+ "chromiumoxide",
+ "futures",
+ "rand 0.10.1",
+ "serde",
+ "serde_json",
+ "sysinfo",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+ "url",
+ "uuid",
+ "which 8.0.2",
+]
+
+[[package]]
+name = "antre-caldav"
+version = "0.1.0"
+dependencies = [
+ "antre-agents",
+ "antre-config",
+ "anyhow",
+ "async-trait",
+ "http 1.4.2",
+ "hyper",
+ "hyper-rustls",
+ "hyper-util",
+ "icalendar",
+ "libdav",
+ "secrecy 0.8.0",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "tokio",
+ "tower-http",
+ "tower-service",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "antre-canvas"
+version = "0.1.0"
+dependencies = [
+ "antre-agents",
+ "antre-browser",
+ "antre-common",
+ "antre-config",
+ "antre-metrics",
+ "antre-tools",
+ "anyhow",
+ "async-trait",
+ "axum",
+ "base64 0.22.1",
+ "hex",
+ "hmac 0.12.1",
+ "mime_guess",
+ "rand 0.10.1",
+ "regex",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "sqlx",
+ "thiserror 2.0.18",
+ "time",
+ "tokio",
+ "tracing",
+ "uuid",
+ "walkdir",
+ "zip",
+]
+
+[[package]]
+name = "antre-channels"
+version = "0.1.0"
+dependencies = [
+ "antre-common",
+ "antre-config",
+ "antre-observability",
+ "async-trait",
+ "bytes",
+ "http 1.4.2",
+ "rand 0.10.1",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "time",
+ "tokio",
+ "tokio-util",
+ "tracing",
+ "url",
+]
+
+[[package]]
+name = "antre-chat"
+version = "0.1.0"
+dependencies = [
+ "antre-agents",
+ "antre-channels",
+ "antre-common",
+ "antre-config",
+ "antre-delivery",
+ "antre-memory",
+ "antre-metrics",
+ "antre-observability",
+ "antre-plugins",
+ "antre-projects",
+ "antre-providers",
+ "antre-service-traits",
+ "antre-sessions",
+ "antre-skills",
+ "antre-tools",
+ "antre-voice",
+ "anyhow",
+ "async-trait",
+ "base64 0.22.1",
+ "chrono",
+ "chrono-tz",
+ "futures",
+ "html2text",
+ "pulldown-cmark 0.12.2",
+ "rand 0.10.1",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "time",
+ "tokio",
+ "tokio-stream",
+ "tokio-util",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "antre-client"
+version = "0.1.0"
+dependencies = [
+ "antre-config",
+ "antre-protocol",
+ "futures",
+ "reqwest 0.13.2",
+ "rustls 0.23.39",
+ "rustls-platform-verifier",
+ "secrecy 0.8.0",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "thiserror 2.0.18",
+ "tokio",
+ "tokio-rustls 0.26.4",
+ "tokio-tungstenite 0.26.2",
+ "url",
+ "uuid",
+]
+
+[[package]]
+name = "antre-code-index"
+version = "0.1.0"
+dependencies = [
+ "antre-agents",
+ "antre-config",
+ "antre-memory",
+ "antre-splitter",
+ "antre-tools",
+ "anyhow",
+ "async-trait",
+ "gix",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "sqlx",
+ "tempfile",
+ "thiserror 2.0.18",
+ "time",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "antre-common"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "futures",
+ "ipnet",
+ "process-wrap",
+ "reqwest 0.13.2",
+ "secrecy 0.8.0",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+ "url",
+ "uuid",
+]
+
+[[package]]
+name = "antre-config"
+version = "0.1.0"
+dependencies = [
+ "antre-model-catalog",
+ "antre-protocol",
+ "anyhow",
+ "chrono-tz",
+ "directories",
+ "ipnet",
+ "secrecy 0.8.0",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "tempfile",
+ "thiserror 2.0.18",
+ "toml 0.8.23",
+ "toml_edit 0.22.27",
+ "tracing",
+]
+
+[[package]]
+name = "antre-connector-caldav"
+version = "0.1.0"
+dependencies = [
+ "antre-caldav",
+ "antre-common",
+ "antre-connectors",
+ "async-trait",
+ "metrics",
+ "secrecy 0.8.0",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "thiserror 2.0.18",
+ "time",
+ "tokio",
+ "tracing",
+ "url",
+]
+
+[[package]]
+name = "antre-connector-gmail"
+version = "0.1.0"
+dependencies = [
+ "antre-agents",
+ "antre-common",
+ "antre-connectors",
+ "antre-oauth",
+ "anyhow",
+ "async-trait",
+ "base64 0.22.1",
+ "futures",
+ "html2text",
+ "metrics",
+ "reqwest 0.13.2",
+ "secrecy 0.8.0",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "thiserror 2.0.18",
+ "time",
+ "tokio",
+ "tracing",
+ "url",
+]
+
+[[package]]
+name = "antre-connector-himalaya"
+version = "0.1.0"
+dependencies = [
+ "antre-agents",
+ "antre-common",
+ "antre-connectors",
+ "anyhow",
+ "async-trait",
+ "mail-parser",
+ "metrics",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "thiserror 2.0.18",
+ "time",
+ "tokio",
+ "tracing",
+ "which 8.0.2",
+]
+
+[[package]]
+name = "antre-connectors"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "metrics",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "sqlx",
+ "thiserror 2.0.18",
+ "time",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "antre-cron"
+version = "0.1.0"
+dependencies = [
+ "antre-agents",
+ "antre-common",
+ "antre-config",
+ "async-trait",
+ "chrono",
+ "chrono-tz",
+ "cron",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "antre-delivery"
+version = "0.1.0"
+dependencies = [
+ "antre-channels",
+ "antre-config",
+ "antre-metrics",
+ "async-trait",
+ "rand 0.10.1",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 2.0.18",
+ "time",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "antre-discord"
+version = "0.1.0"
+dependencies = [
+ "antre-channels",
+ "antre-common",
+ "antre-media",
+ "antre-metrics",
+ "anyhow",
+ "async-trait",
+ "base64 0.22.1",
+ "futures",
+ "reqwest 0.13.2",
+ "secrecy 0.8.0",
+ "serde",
+ "serde_json",
+ "serenity",
+ "thiserror 2.0.18",
+ "tokio",
+ "tokio-util",
+ "tracing",
+]
+
+[[package]]
+name = "antre-external-agents"
+version = "0.1.0"
+dependencies = [
+ "agent-client-protocol",
+ "antre-config",
+ "antre-sessions",
+ "anyhow",
+ "async-trait",
+ "futures",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "thiserror 2.0.18",
+ "tokio",
+ "tokio-stream",
+ "tokio-util",
+ "which 8.0.2",
+]
+
+[[package]]
+name = "antre-gateway"
+version = "0.1.0"
+dependencies = [
+ "antre-agents",
+ "antre-auth",
+ "antre-browser",
+ "antre-caldav",
+ "antre-canvas",
+ "antre-channels",
+ "antre-chat",
+ "antre-code-index",
+ "antre-common",
+ "antre-config",
+ "antre-connector-caldav",
+ "antre-connector-gmail",
+ "antre-connector-himalaya",
+ "antre-connectors",
+ "antre-cron",
+ "antre-delivery",
+ "antre-discord",
+ "antre-external-agents",
+ "antre-learning",
+ "antre-matrix",
+ "antre-mcp",
+ "antre-mcp-agent-bridge",
+ "antre-media",
+ "antre-memory",
+ "antre-metrics",
+ "antre-model-catalog",
+ "antre-msteams",
+ "antre-netbird",
+ "antre-network-filter",
+ "antre-nostr",
+ "antre-oauth",
+ "antre-observability",
+ "antre-onboarding",
+ "antre-plugins",
+ "antre-projects",
+ "antre-protocol",
+ "antre-provider-setup",
+ "antre-providers",
+ "antre-routing",
+ "antre-secret-store",
+ "antre-service-traits",
+ "antre-sessions",
+ "antre-signal",
+ "antre-skills",
+ "antre-slack",
+ "antre-tailscale",
+ "antre-telephony",
+ "antre-tools",
+ "antre-vault",
+ "antre-voice",
+ "antre-webhooks",
+ "anyhow",
+ "async-trait",
+ "base64 0.22.1",
+ "bytes",
+ "cap-fs-ext 4.0.2",
+ "cap-std 4.0.2",
+ "chrono",
+ "chrono-tz",
+ "dashmap 6.1.0",
+ "ed25519-dalek",
+ "flate2",
+ "futures",
+ "gix",
+ "hostname",
+ "http 1.4.2",
+ "include_dir",
+ "isahc",
+ "mdns-sd",
+ "p256",
+ "portable-pty",
+ "pulldown-cmark 0.12.2",
+ "rand 0.10.1",
+ "reqwest 0.13.2",
+ "rustix 1.1.4",
+ "secrecy 0.8.0",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "shell-words",
+ "sqlx",
+ "sysinfo",
+ "tar",
+ "tempfile",
+ "thiserror 2.0.18",
+ "time",
+ "tokio",
+ "tokio-stream",
+ "tokio-util",
+ "toml 0.8.23",
+ "tracing",
+ "tracing-subscriber",
+ "url",
+ "urlencoding",
+ "uuid",
+ "web-push",
+ "webauthn-rs",
+ "which 8.0.2",
+]
+
+[[package]]
+name = "antre-graphql"
+version = "0.1.0"
+dependencies = [
+ "antre-service-traits",
+ "async-graphql",
+ "async-stream",
+ "async-trait",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "tokio",
+ "tokio-stream",
+]
+
+[[package]]
+name = "antre-httpd"
+version = "0.1.0"
+dependencies = [
+ "antre-agents",
+ "antre-auth",
+ "antre-browser",
+ "antre-canvas",
+ "antre-channels",
+ "antre-common",
+ "antre-config",
+ "antre-cron",
+ "antre-gateway",
+ "antre-graphql",
+ "antre-matrix",
+ "antre-metrics",
+ "antre-msteams",
+ "antre-portable",
+ "antre-protocol",
+ "antre-service-traits",
+ "antre-sessions",
+ "antre-skills",
+ "antre-slack",
+ "antre-telephony",
+ "antre-tls",
+ "antre-tools",
+ "antre-vault",
+ "antre-webhooks",
+ "anyhow",
+ "async-graphql",
+ "async-graphql-axum",
+ "async-trait",
+ "axum",
+ "axum-extra",
+ "base64 0.22.1",
+ "bytes",
+ "chrono",
+ "chrono-tz",
+ "dashmap 6.1.0",
+ "futures",
+ "hostname",
+ "ipnet",
+ "rand 0.10.1",
+ "reqwest 0.13.2",
+ "rustls 0.23.39",
+ "secrecy 0.8.0",
+ "serde",
+ "serde_json",
+ "sysinfo",
+ "tempfile",
+ "thiserror 2.0.18",
+ "time",
+ "tokio",
+ "tokio-tungstenite 0.26.2",
+ "tokio-util",
+ "toml 0.8.23",
+ "tower-http",
+ "tracing",
+ "url",
+ "urlencoding",
+ "uuid",
+ "webauthn-rs",
+ "webbrowser",
+]
+
+[[package]]
+name = "antre-learning"
+version = "0.1.0"
+dependencies = [
+ "antre-config",
+ "antre-metrics",
+ "antre-skills",
+ "async-trait",
+ "hex",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "similar",
+ "thiserror 2.0.18",
+ "time",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "antre-matrix"
+version = "0.1.0"
+dependencies = [
+ "antre-channels",
+ "antre-common",
+ "antre-config",
+ "antre-metrics",
+ "async-trait",
+ "base64 0.22.1",
+ "futures",
+ "matrix-sdk",
+ "reqwest 0.13.2",
+ "secrecy 0.8.0",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "time",
+ "tokio",
+ "tokio-util",
+ "tracing",
+ "url",
+]
+
+[[package]]
+name = "antre-mcp"
+version = "0.1.0"
+dependencies = [
+ "antre-common",
+ "antre-config",
+ "antre-metrics",
+ "antre-oauth",
+ "async-trait",
+ "futures",
+ "reqwest 0.13.2",
+ "secrecy 0.8.0",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "tokio",
+ "tokio-util",
+ "tracing",
+ "url",
+ "uuid",
+]
+
+[[package]]
+name = "antre-mcp-agent-bridge"
+version = "0.1.0"
+dependencies = [
+ "antre-agents",
+ "antre-mcp",
+ "antre-metrics",
+ "anyhow",
+ "async-trait",
+ "serde_json",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "antre-media"
+version = "0.1.0"
+dependencies = [
+ "antre-common",
+ "image",
+ "mime_guess",
+ "pdf-extract",
+ "reqwest 0.13.2",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "antre-memory"
+version = "0.1.0"
+dependencies = [
+ "antre-agents",
+ "antre-common",
+ "antre-config",
+ "antre-splitter",
+ "antre-tools",
+ "anyhow",
+ "async-trait",
+ "bytemuck",
+ "chrono",
+ "directories",
+ "futures",
+ "notify-debouncer-full",
+ "reqwest 0.13.2",
+ "secrecy 0.8.0",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "sqlx",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+ "walkdir",
+]
+
+[[package]]
+name = "antre-metrics"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "metrics",
+ "metrics-exporter-prometheus",
+ "once_cell",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "antre-model-catalog"
+version = "0.1.0"
+dependencies = [
+ "antre-metrics",
+ "flate2",
+ "reqwest 0.13.2",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "time",
+ "tokio",
+ "toml 0.8.23",
+ "tracing",
+]
+
+[[package]]
+name = "antre-msteams"
+version = "0.1.0"
+dependencies = [
+ "antre-channels",
+ "antre-common",
+ "antre-metrics",
+ "anyhow",
+ "async-trait",
+ "base64 0.22.1",
+ "bytes",
+ "http 1.4.2",
+ "jsonwebtoken",
+ "rand 0.10.1",
+ "reqwest 0.13.2",
+ "secrecy 0.8.0",
+ "serde",
+ "serde_json",
+ "subtle",
+ "tokio",
+ "tracing",
+ "url",
+ "urlencoding",
+]
+
+[[package]]
+name = "antre-netbird"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "antre-network-filter"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "time",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "antre-nostr"
+version = "0.1.0"
+dependencies = [
+ "antre-channels",
+ "antre-common",
+ "antre-config",
+ "antre-metrics",
+ "async-trait",
+ "nostr-sdk",
+ "secrecy 0.8.0",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "time",
+ "tokio",
+ "tokio-util",
+ "tracing",
+]
+
+[[package]]
+name = "antre-oauth"
+version = "0.1.0"
+dependencies = [
+ "antre-common",
+ "antre-config",
+ "axum",
+ "base64 0.22.1",
+ "rand 0.10.1",
+ "reqwest 0.13.2",
+ "secrecy 0.8.0",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+ "url",
+ "uuid",
+]
+
+[[package]]
+name = "antre-observability"
+version = "0.1.0"
+dependencies = [
+ "antre-common",
+ "antre-config",
+ "antre-metrics",
+ "anyhow",
+ "async-trait",
+ "base64 0.22.1",
+ "futures",
+ "rand 0.10.1",
+ "reqwest 0.13.2",
+ "secrecy 0.8.0",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "time",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "antre-onboarding"
+version = "0.1.0"
+dependencies = [
+ "antre-common",
+ "antre-config",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "tokio",
+ "toml 0.8.23",
+ "tracing",
+]
+
+[[package]]
+name = "antre-plugins"
+version = "0.1.0"
+dependencies = [
+ "antre-common",
+ "antre-config",
+ "antre-sessions",
+ "async-trait",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "time",
+ "tokio",
+ "toml 0.8.23",
+ "tracing",
+]
+
+[[package]]
+name = "antre-portable"
+version = "0.1.0"
+dependencies = [
+ "antre-config",
+ "anyhow",
+ "cap-fs-ext 4.0.2",
+ "cap-std 4.0.2",
+ "flate2",
+ "hex",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "sqlx",
+ "tar",
+ "tempfile",
+ "time",
+ "tokio",
+ "tracing",
+ "uuid",
+ "walkdir",
+]
+
+[[package]]
+name = "antre-projects"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "ignore",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 2.0.18",
+ "tokio",
+ "toml 0.8.23",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "antre-protocol"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+]
+
+[[package]]
+name = "antre-provider-setup"
+version = "0.1.0"
+dependencies = [
+ "antre-agents",
+ "antre-config",
+ "antre-model-catalog",
+ "antre-oauth",
+ "antre-providers",
+ "antre-service-traits",
+ "antre-vault",
+ "async-trait",
+ "reqwest 0.13.2",
+ "secrecy 0.8.0",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+ "url",
+]
+
+[[package]]
+name = "antre-providers"
+version = "0.1.0"
+dependencies = [
+ "antre-agents",
+ "antre-common",
+ "antre-config",
+ "antre-metrics",
+ "antre-model-catalog",
+ "antre-oauth",
+ "anyhow",
+ "async-openai",
+ "async-stream",
+ "async-trait",
+ "base64 0.22.1",
+ "futures",
+ "genai",
+ "http 1.4.2",
+ "json_schema_ast",
+ "reqwest 0.13.2",
+ "schemars 1.2.1",
+ "secrecy 0.8.0",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "time",
+ "tokio",
+ "tokio-stream",
+ "tokio-tungstenite 0.26.2",
+ "tracing",
+]
+
+[[package]]
+name = "antre-routing"
+version = "0.1.0"
+dependencies = [
+ "antre-common",
+ "antre-config",
+ "antre-sessions",
+ "serde_json",
+ "thiserror 2.0.18",
+ "tracing",
+]
+
+[[package]]
+name = "antre-secret-store"
+version = "0.1.0"
+dependencies = [
+ "antre-vault",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+]
+
+[[package]]
+name = "antre-service-traits"
+version = "0.1.0"
+dependencies = [
+ "antre-protocol",
+ "async-trait",
+ "bytes",
+ "serde_json",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "antre-sessions"
+version = "0.1.0"
+dependencies = [
+ "antre-common",
+ "antre-metrics",
+ "antre-protocol",
+ "fd-lock",
+ "hex",
+ "libc",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
 name = "antre-shell"
 version = "0.1.0"
 dependencies = [
+ "antre-client",
+ "antre-config",
+ "antre-httpd",
+ "antre-web",
  "anyhow",
- "moltis-client",
- "moltis-config",
- "moltis-httpd",
- "moltis-web",
  "reqwest 0.13.2",
  "secrecy 0.8.0",
  "serde",
@@ -210,6 +1300,306 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "url",
+]
+
+[[package]]
+name = "antre-signal"
+version = "0.1.0"
+dependencies = [
+ "antre-channels",
+ "antre-common",
+ "antre-media",
+ "async-trait",
+ "base64 0.22.1",
+ "futures",
+ "reqwest 0.13.2",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "time",
+ "tokio",
+ "tokio-util",
+ "tracing",
+ "url",
+ "uuid",
+]
+
+[[package]]
+name = "antre-skills"
+version = "0.1.0"
+dependencies = [
+ "antre-config",
+ "async-trait",
+ "cap-fs-ext 4.0.2",
+ "cap-std 4.0.2",
+ "flate2",
+ "reqwest 0.13.2",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "tar",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+ "walkdir",
+ "zip",
+]
+
+[[package]]
+name = "antre-slack"
+version = "0.1.0"
+dependencies = [
+ "antre-channels",
+ "antre-common",
+ "antre-metrics",
+ "async-trait",
+ "base64 0.22.1",
+ "bytes",
+ "form_urlencoded",
+ "hmac 0.12.1",
+ "http 1.4.2",
+ "reqwest 0.13.2",
+ "secrecy 0.8.0",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "slack-morphism",
+ "tokio",
+ "tokio-util",
+ "tracing",
+]
+
+[[package]]
+name = "antre-splitter"
+version = "0.1.0"
+dependencies = [
+ "text-splitter",
+ "tracing",
+ "tree-sitter-go",
+ "tree-sitter-javascript",
+ "tree-sitter-python",
+ "tree-sitter-rust",
+]
+
+[[package]]
+name = "antre-tailscale"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "antre-telephony"
+version = "0.1.0"
+dependencies = [
+ "antre-agents",
+ "antre-channels",
+ "antre-common",
+ "antre-voice",
+ "anyhow",
+ "async-trait",
+ "base64 0.22.1",
+ "bytes",
+ "dashmap 6.1.0",
+ "hex",
+ "hmac 0.12.1",
+ "http 1.4.2",
+ "reqwest 0.13.2",
+ "ring",
+ "secrecy 0.8.0",
+ "serde",
+ "serde_json",
+ "sha1",
+ "sha2 0.10.9",
+ "thiserror 2.0.18",
+ "time",
+ "tokio",
+ "tracing",
+ "url",
+ "uuid",
+]
+
+[[package]]
+name = "antre-tls"
+version = "0.1.0"
+dependencies = [
+ "antre-common",
+ "antre-config",
+ "axum",
+ "hex",
+ "hostname",
+ "hyper-util",
+ "rcgen",
+ "rustls 0.23.39",
+ "rustls-pemfile",
+ "sha2 0.10.9",
+ "thiserror 2.0.18",
+ "time",
+ "tokio",
+ "tokio-rustls 0.26.4",
+ "tower",
+ "tracing",
+]
+
+[[package]]
+name = "antre-tools"
+version = "0.1.0"
+dependencies = [
+ "antre-agents",
+ "antre-browser",
+ "antre-common",
+ "antre-config",
+ "antre-cron",
+ "antre-media",
+ "antre-metrics",
+ "antre-network-filter",
+ "antre-providers",
+ "antre-service-traits",
+ "antre-sessions",
+ "antre-skills",
+ "anyhow",
+ "async-trait",
+ "base64 0.22.1",
+ "bytes",
+ "flate2",
+ "futures",
+ "globset",
+ "grep-matcher",
+ "grep-regex",
+ "grep-searcher",
+ "html2text",
+ "ignore",
+ "image",
+ "ipnet",
+ "pdf-extract",
+ "regex",
+ "reqwest 0.13.2",
+ "secrecy 0.8.0",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "shell-words",
+ "sqlx",
+ "tar",
+ "tempfile",
+ "thiserror 2.0.18",
+ "time",
+ "tokio",
+ "tracing",
+ "url",
+ "uuid",
+ "wasmtime",
+ "wasmtime-wasi",
+ "which 8.0.2",
+]
+
+[[package]]
+name = "antre-vault"
+version = "0.1.0"
+dependencies = [
+ "antre-metrics",
+ "anyhow",
+ "argon2",
+ "base64 0.22.1",
+ "chacha20poly1305",
+ "rand 0.10.1",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "sqlx",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+ "zeroize",
+]
+
+[[package]]
+name = "antre-voice"
+version = "0.1.0"
+dependencies = [
+ "antre-config",
+ "antre-model-catalog",
+ "anyhow",
+ "async-trait",
+ "base64 0.22.1",
+ "bytes",
+ "dirs 6.0.0",
+ "futures",
+ "reqwest 0.13.2",
+ "secrecy 0.8.0",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tokio",
+ "tokio-tungstenite 0.26.2",
+ "tracing",
+ "urlencoding",
+ "which 7.0.3",
+]
+
+[[package]]
+name = "antre-web"
+version = "0.1.0"
+dependencies = [
+ "antre-auth",
+ "antre-channels",
+ "antre-config",
+ "antre-cron",
+ "antre-gateway",
+ "antre-httpd",
+ "antre-media",
+ "antre-skills",
+ "antre-tools",
+ "askama",
+ "axum",
+ "axum-extra",
+ "base64 0.22.1",
+ "chrono",
+ "futures",
+ "gix",
+ "include_dir",
+ "portable-pty",
+ "secrecy 0.8.0",
+ "serde",
+ "serde_json",
+ "sysinfo",
+ "thiserror 2.0.18",
+ "tokio",
+ "tokio-util",
+ "tracing",
+ "url",
+ "uuid",
+ "which 8.0.2",
+]
+
+[[package]]
+name = "antre-webhooks"
+version = "0.1.0"
+dependencies = [
+ "antre-common",
+ "antre-config",
+ "anyhow",
+ "async-trait",
+ "axum",
+ "hex",
+ "hmac 0.12.1",
+ "rand 0.10.1",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "sqlx",
+ "subtle",
+ "thiserror 2.0.18",
+ "time",
+ "tokio",
+ "tracing",
+ "uuid",
 ]
 
 [[package]]
@@ -7345,1354 +8735,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "moltis-agents"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-stream",
- "async-trait",
- "base64 0.22.1",
- "futures",
- "image",
- "include_dir",
- "moltis-common",
- "moltis-config",
- "moltis-metrics",
- "moltis-observability",
- "moltis-sessions",
- "moltis-skills",
- "reqwest 0.13.2",
- "secrecy 0.8.0",
- "serde",
- "serde_json",
- "thiserror 2.0.18",
- "time",
- "tokio",
- "tokio-stream",
- "tracing",
- "uuid",
-]
-
-[[package]]
-name = "moltis-auth"
-version = "0.1.0"
-dependencies = [
- "argon2",
- "async-trait",
- "axum",
- "base64 0.22.1",
- "dashmap 6.1.0",
- "hmac 0.12.1",
- "moltis-config",
- "moltis-tools",
- "moltis-vault",
- "openssl",
- "password-hash",
- "rand 0.10.1",
- "secrecy 0.8.0",
- "serde",
- "serde_json",
- "sha2 0.10.9",
- "sqlx",
- "thiserror 2.0.18",
- "tokio",
- "tracing",
- "webauthn-rs",
- "webauthn-rs-proto",
-]
-
-[[package]]
-name = "moltis-browser"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "base64 0.22.1",
- "chromiumoxide",
- "futures",
- "moltis-common",
- "moltis-config",
- "moltis-metrics",
- "rand 0.10.1",
- "serde",
- "serde_json",
- "sysinfo",
- "thiserror 2.0.18",
- "tokio",
- "tracing",
- "url",
- "uuid",
- "which 8.0.2",
-]
-
-[[package]]
-name = "moltis-caldav"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "http 1.4.2",
- "hyper",
- "hyper-rustls",
- "hyper-util",
- "icalendar",
- "libdav",
- "moltis-agents",
- "moltis-config",
- "secrecy 0.8.0",
- "serde",
- "serde_json",
- "thiserror 2.0.18",
- "tokio",
- "tower-http",
- "tower-service",
- "tracing",
- "uuid",
-]
-
-[[package]]
-name = "moltis-canvas"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "axum",
- "base64 0.22.1",
- "hex",
- "hmac 0.12.1",
- "mime_guess",
- "moltis-agents",
- "moltis-browser",
- "moltis-common",
- "moltis-config",
- "moltis-metrics",
- "moltis-tools",
- "rand 0.10.1",
- "regex",
- "serde",
- "serde_json",
- "sha2 0.10.9",
- "sqlx",
- "thiserror 2.0.18",
- "time",
- "tokio",
- "tracing",
- "uuid",
- "walkdir",
- "zip",
-]
-
-[[package]]
-name = "moltis-channels"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "bytes",
- "http 1.4.2",
- "moltis-common",
- "moltis-config",
- "moltis-observability",
- "rand 0.10.1",
- "serde",
- "serde_json",
- "thiserror 2.0.18",
- "time",
- "tokio",
- "tokio-util",
- "tracing",
- "url",
-]
-
-[[package]]
-name = "moltis-chat"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "base64 0.22.1",
- "chrono",
- "chrono-tz",
- "futures",
- "html2text",
- "moltis-agents",
- "moltis-channels",
- "moltis-common",
- "moltis-config",
- "moltis-memory",
- "moltis-metrics",
- "moltis-observability",
- "moltis-plugins",
- "moltis-projects",
- "moltis-providers",
- "moltis-service-traits",
- "moltis-sessions",
- "moltis-skills",
- "moltis-tools",
- "moltis-voice",
- "pulldown-cmark 0.12.2",
- "rand 0.10.1",
- "serde",
- "serde_json",
- "thiserror 2.0.18",
- "time",
- "tokio",
- "tokio-stream",
- "tokio-util",
- "tracing",
- "uuid",
-]
-
-[[package]]
-name = "moltis-client"
-version = "0.1.0"
-dependencies = [
- "futures",
- "moltis-config",
- "moltis-protocol",
- "reqwest 0.13.2",
- "rustls 0.23.39",
- "rustls-platform-verifier",
- "secrecy 0.8.0",
- "serde",
- "serde_json",
- "sha2 0.10.9",
- "thiserror 2.0.18",
- "tokio",
- "tokio-rustls 0.26.4",
- "tokio-tungstenite 0.26.2",
- "url",
- "uuid",
-]
-
-[[package]]
-name = "moltis-code-index"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "gix",
- "moltis-agents",
- "moltis-config",
- "moltis-memory",
- "moltis-splitter",
- "moltis-tools",
- "serde",
- "serde_json",
- "sha2 0.10.9",
- "sqlx",
- "tempfile",
- "thiserror 2.0.18",
- "time",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "moltis-common"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "futures",
- "ipnet",
- "process-wrap",
- "reqwest 0.13.2",
- "secrecy 0.8.0",
- "serde",
- "serde_json",
- "thiserror 2.0.18",
- "tokio",
- "tracing",
- "url",
- "uuid",
-]
-
-[[package]]
-name = "moltis-config"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "chrono-tz",
- "directories",
- "ipnet",
- "moltis-model-catalog",
- "moltis-protocol",
- "secrecy 0.8.0",
- "serde",
- "serde_json",
- "serde_yaml",
- "tempfile",
- "thiserror 2.0.18",
- "toml 0.8.23",
- "toml_edit 0.22.27",
- "tracing",
-]
-
-[[package]]
-name = "moltis-connector-caldav"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "metrics",
- "moltis-caldav",
- "moltis-common",
- "moltis-connectors",
- "secrecy 0.8.0",
- "serde",
- "serde_json",
- "sha2 0.10.9",
- "thiserror 2.0.18",
- "time",
- "tokio",
- "tracing",
- "url",
-]
-
-[[package]]
-name = "moltis-connector-gmail"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "base64 0.22.1",
- "futures",
- "html2text",
- "metrics",
- "moltis-agents",
- "moltis-common",
- "moltis-connectors",
- "moltis-oauth",
- "reqwest 0.13.2",
- "secrecy 0.8.0",
- "serde",
- "serde_json",
- "sha2 0.10.9",
- "thiserror 2.0.18",
- "time",
- "tokio",
- "tracing",
- "url",
-]
-
-[[package]]
-name = "moltis-connector-himalaya"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "mail-parser",
- "metrics",
- "moltis-agents",
- "moltis-common",
- "moltis-connectors",
- "serde",
- "serde_json",
- "sha2 0.10.9",
- "thiserror 2.0.18",
- "time",
- "tokio",
- "tracing",
- "which 8.0.2",
-]
-
-[[package]]
-name = "moltis-connectors"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "metrics",
- "serde",
- "serde_json",
- "sha2 0.10.9",
- "sqlx",
- "thiserror 2.0.18",
- "time",
- "tokio",
- "tracing",
- "uuid",
-]
-
-[[package]]
-name = "moltis-cron"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "chrono",
- "chrono-tz",
- "cron",
- "moltis-agents",
- "moltis-common",
- "moltis-config",
- "serde",
- "serde_json",
- "sqlx",
- "thiserror 2.0.18",
- "tokio",
- "tracing",
- "uuid",
-]
-
-[[package]]
-name = "moltis-discord"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "base64 0.22.1",
- "futures",
- "moltis-channels",
- "moltis-common",
- "moltis-media",
- "moltis-metrics",
- "reqwest 0.13.2",
- "secrecy 0.8.0",
- "serde",
- "serde_json",
- "serenity",
- "thiserror 2.0.18",
- "tokio",
- "tokio-util",
- "tracing",
-]
-
-[[package]]
-name = "moltis-external-agents"
-version = "0.1.0"
-dependencies = [
- "agent-client-protocol",
- "anyhow",
- "async-trait",
- "futures",
- "moltis-config",
- "moltis-sessions",
- "serde",
- "serde_json",
- "sha2 0.10.9",
- "thiserror 2.0.18",
- "tokio",
- "tokio-stream",
- "tokio-util",
- "which 8.0.2",
-]
-
-[[package]]
-name = "moltis-gateway"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "base64 0.22.1",
- "bytes",
- "cap-fs-ext 4.0.2",
- "cap-std 4.0.2",
- "chrono",
- "chrono-tz",
- "dashmap 6.1.0",
- "ed25519-dalek",
- "flate2",
- "futures",
- "gix",
- "hostname",
- "http 1.4.2",
- "include_dir",
- "isahc",
- "mdns-sd",
- "moltis-agents",
- "moltis-auth",
- "moltis-browser",
- "moltis-caldav",
- "moltis-canvas",
- "moltis-channels",
- "moltis-chat",
- "moltis-code-index",
- "moltis-common",
- "moltis-config",
- "moltis-connector-caldav",
- "moltis-connector-gmail",
- "moltis-connector-himalaya",
- "moltis-connectors",
- "moltis-cron",
- "moltis-discord",
- "moltis-external-agents",
- "moltis-matrix",
- "moltis-mcp",
- "moltis-mcp-agent-bridge",
- "moltis-media",
- "moltis-memory",
- "moltis-metrics",
- "moltis-model-catalog",
- "moltis-msteams",
- "moltis-netbird",
- "moltis-network-filter",
- "moltis-nostr",
- "moltis-oauth",
- "moltis-observability",
- "moltis-onboarding",
- "moltis-plugins",
- "moltis-projects",
- "moltis-protocol",
- "moltis-provider-setup",
- "moltis-providers",
- "moltis-routing",
- "moltis-secret-store",
- "moltis-service-traits",
- "moltis-sessions",
- "moltis-signal",
- "moltis-skills",
- "moltis-slack",
- "moltis-tailscale",
- "moltis-telephony",
- "moltis-tools",
- "moltis-vault",
- "moltis-voice",
- "moltis-webhooks",
- "p256",
- "portable-pty",
- "pulldown-cmark 0.12.2",
- "rand 0.10.1",
- "reqwest 0.13.2",
- "rustix 1.1.4",
- "secrecy 0.8.0",
- "serde",
- "serde_json",
- "sha2 0.10.9",
- "shell-words",
- "sqlx",
- "sysinfo",
- "tar",
- "tempfile",
- "thiserror 2.0.18",
- "time",
- "tokio",
- "tokio-stream",
- "tokio-util",
- "toml 0.8.23",
- "tracing",
- "tracing-subscriber",
- "url",
- "urlencoding",
- "uuid",
- "web-push",
- "webauthn-rs",
- "which 8.0.2",
-]
-
-[[package]]
-name = "moltis-graphql"
-version = "0.1.0"
-dependencies = [
- "async-graphql",
- "async-stream",
- "async-trait",
- "moltis-service-traits",
- "serde",
- "serde_json",
- "thiserror 2.0.18",
- "tokio",
- "tokio-stream",
-]
-
-[[package]]
-name = "moltis-httpd"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-graphql",
- "async-graphql-axum",
- "async-trait",
- "axum",
- "axum-extra",
- "base64 0.22.1",
- "bytes",
- "chrono",
- "chrono-tz",
- "dashmap 6.1.0",
- "futures",
- "hostname",
- "ipnet",
- "moltis-agents",
- "moltis-auth",
- "moltis-browser",
- "moltis-canvas",
- "moltis-channels",
- "moltis-common",
- "moltis-config",
- "moltis-cron",
- "moltis-gateway",
- "moltis-graphql",
- "moltis-matrix",
- "moltis-metrics",
- "moltis-msteams",
- "moltis-portable",
- "moltis-protocol",
- "moltis-service-traits",
- "moltis-sessions",
- "moltis-skills",
- "moltis-slack",
- "moltis-telephony",
- "moltis-tls",
- "moltis-tools",
- "moltis-vault",
- "moltis-webhooks",
- "rand 0.10.1",
- "reqwest 0.13.2",
- "rustls 0.23.39",
- "secrecy 0.8.0",
- "serde",
- "serde_json",
- "sysinfo",
- "tempfile",
- "thiserror 2.0.18",
- "time",
- "tokio",
- "tokio-tungstenite 0.26.2",
- "tokio-util",
- "toml 0.8.23",
- "tower-http",
- "tracing",
- "url",
- "urlencoding",
- "uuid",
- "webauthn-rs",
- "webbrowser",
-]
-
-[[package]]
-name = "moltis-matrix"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "base64 0.22.1",
- "futures",
- "matrix-sdk",
- "moltis-channels",
- "moltis-common",
- "moltis-config",
- "moltis-metrics",
- "reqwest 0.13.2",
- "secrecy 0.8.0",
- "serde",
- "serde_json",
- "thiserror 2.0.18",
- "time",
- "tokio",
- "tokio-util",
- "tracing",
- "url",
-]
-
-[[package]]
-name = "moltis-mcp"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "futures",
- "moltis-common",
- "moltis-config",
- "moltis-metrics",
- "moltis-oauth",
- "reqwest 0.13.2",
- "secrecy 0.8.0",
- "serde",
- "serde_json",
- "thiserror 2.0.18",
- "tokio",
- "tokio-util",
- "tracing",
- "url",
- "uuid",
-]
-
-[[package]]
-name = "moltis-mcp-agent-bridge"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "moltis-agents",
- "moltis-mcp",
- "moltis-metrics",
- "serde_json",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "moltis-media"
-version = "0.1.0"
-dependencies = [
- "image",
- "mime_guess",
- "moltis-common",
- "pdf-extract",
- "reqwest 0.13.2",
- "tempfile",
- "thiserror 2.0.18",
- "tokio",
- "tracing",
- "uuid",
-]
-
-[[package]]
-name = "moltis-memory"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "bytemuck",
- "chrono",
- "directories",
- "futures",
- "moltis-agents",
- "moltis-common",
- "moltis-splitter",
- "moltis-tools",
- "notify-debouncer-full",
- "reqwest 0.13.2",
- "secrecy 0.8.0",
- "serde",
- "serde_json",
- "sha2 0.10.9",
- "sqlx",
- "thiserror 2.0.18",
- "tokio",
- "tracing",
- "walkdir",
-]
-
-[[package]]
-name = "moltis-metrics"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "metrics",
- "metrics-exporter-prometheus",
- "once_cell",
- "serde",
- "serde_json",
- "sqlx",
- "thiserror 2.0.18",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "moltis-model-catalog"
-version = "0.1.0"
-dependencies = [
- "flate2",
- "moltis-metrics",
- "reqwest 0.13.2",
- "serde",
- "serde_json",
- "thiserror 2.0.18",
- "time",
- "tokio",
- "toml 0.8.23",
- "tracing",
-]
-
-[[package]]
-name = "moltis-msteams"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "base64 0.22.1",
- "bytes",
- "http 1.4.2",
- "jsonwebtoken",
- "moltis-channels",
- "moltis-common",
- "moltis-metrics",
- "rand 0.10.1",
- "reqwest 0.13.2",
- "secrecy 0.8.0",
- "serde",
- "serde_json",
- "subtle",
- "tokio",
- "tracing",
- "url",
- "urlencoding",
-]
-
-[[package]]
-name = "moltis-netbird"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "serde",
- "serde_json",
- "thiserror 2.0.18",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "moltis-network-filter"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "serde",
- "serde_json",
- "thiserror 2.0.18",
- "time",
- "tokio",
- "tracing",
- "uuid",
-]
-
-[[package]]
-name = "moltis-nostr"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "moltis-channels",
- "moltis-common",
- "moltis-config",
- "moltis-metrics",
- "nostr-sdk",
- "secrecy 0.8.0",
- "serde",
- "serde_json",
- "thiserror 2.0.18",
- "time",
- "tokio",
- "tokio-util",
- "tracing",
-]
-
-[[package]]
-name = "moltis-oauth"
-version = "0.1.0"
-dependencies = [
- "axum",
- "base64 0.22.1",
- "moltis-common",
- "moltis-config",
- "rand 0.10.1",
- "reqwest 0.13.2",
- "secrecy 0.8.0",
- "serde",
- "serde_json",
- "sha2 0.10.9",
- "thiserror 2.0.18",
- "tokio",
- "tracing",
- "url",
- "uuid",
-]
-
-[[package]]
-name = "moltis-observability"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "base64 0.22.1",
- "futures",
- "moltis-common",
- "moltis-config",
- "moltis-metrics",
- "rand 0.10.1",
- "reqwest 0.13.2",
- "secrecy 0.8.0",
- "serde",
- "serde_json",
- "thiserror 2.0.18",
- "time",
- "tokio",
- "tracing",
- "uuid",
-]
-
-[[package]]
-name = "moltis-onboarding"
-version = "0.1.0"
-dependencies = [
- "moltis-common",
- "moltis-config",
- "serde",
- "serde_json",
- "thiserror 2.0.18",
- "tokio",
- "toml 0.8.23",
- "tracing",
-]
-
-[[package]]
-name = "moltis-plugins"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "moltis-common",
- "moltis-config",
- "moltis-sessions",
- "serde",
- "serde_json",
- "thiserror 2.0.18",
- "time",
- "tokio",
- "toml 0.8.23",
- "tracing",
-]
-
-[[package]]
-name = "moltis-portable"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "cap-fs-ext 4.0.2",
- "cap-std 4.0.2",
- "flate2",
- "hex",
- "moltis-config",
- "serde",
- "serde_json",
- "sha2 0.10.9",
- "sqlx",
- "tar",
- "tempfile",
- "time",
- "tokio",
- "tracing",
- "uuid",
- "walkdir",
-]
-
-[[package]]
-name = "moltis-projects"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "ignore",
- "serde",
- "serde_json",
- "sqlx",
- "thiserror 2.0.18",
- "tokio",
- "toml 0.8.23",
- "tracing",
- "uuid",
-]
-
-[[package]]
-name = "moltis-protocol"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
- "thiserror 2.0.18",
-]
-
-[[package]]
-name = "moltis-provider-setup"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "moltis-agents",
- "moltis-config",
- "moltis-model-catalog",
- "moltis-oauth",
- "moltis-providers",
- "moltis-service-traits",
- "moltis-vault",
- "reqwest 0.13.2",
- "secrecy 0.8.0",
- "serde",
- "serde_json",
- "thiserror 2.0.18",
- "tokio",
- "tracing",
- "url",
-]
-
-[[package]]
-name = "moltis-providers"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-openai",
- "async-stream",
- "async-trait",
- "base64 0.22.1",
- "futures",
- "genai",
- "http 1.4.2",
- "json_schema_ast",
- "moltis-agents",
- "moltis-common",
- "moltis-config",
- "moltis-metrics",
- "moltis-model-catalog",
- "moltis-oauth",
- "reqwest 0.13.2",
- "schemars 1.2.1",
- "secrecy 0.8.0",
- "serde",
- "serde_json",
- "thiserror 2.0.18",
- "time",
- "tokio",
- "tokio-stream",
- "tokio-tungstenite 0.26.2",
- "tracing",
-]
-
-[[package]]
-name = "moltis-routing"
-version = "0.1.0"
-dependencies = [
- "moltis-common",
- "moltis-config",
- "moltis-sessions",
- "serde_json",
- "thiserror 2.0.18",
- "tracing",
-]
-
-[[package]]
-name = "moltis-secret-store"
-version = "0.1.0"
-dependencies = [
- "moltis-vault",
- "serde",
- "serde_json",
- "thiserror 2.0.18",
-]
-
-[[package]]
-name = "moltis-service-traits"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "bytes",
- "moltis-protocol",
- "serde_json",
- "thiserror 2.0.18",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "moltis-sessions"
-version = "0.1.0"
-dependencies = [
- "fd-lock",
- "hex",
- "libc",
- "moltis-common",
- "moltis-metrics",
- "moltis-protocol",
- "serde",
- "serde_json",
- "sqlx",
- "thiserror 2.0.18",
- "tokio",
- "tracing",
- "uuid",
-]
-
-[[package]]
-name = "moltis-signal"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "base64 0.22.1",
- "futures",
- "moltis-channels",
- "moltis-common",
- "moltis-media",
- "reqwest 0.13.2",
- "serde",
- "serde_json",
- "thiserror 2.0.18",
- "time",
- "tokio",
- "tokio-util",
- "tracing",
- "url",
- "uuid",
-]
-
-[[package]]
-name = "moltis-skills"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "cap-fs-ext 4.0.2",
- "cap-std 4.0.2",
- "flate2",
- "moltis-config",
- "reqwest 0.13.2",
- "serde",
- "serde_json",
- "serde_yaml",
- "tar",
- "thiserror 2.0.18",
- "tokio",
- "tracing",
- "walkdir",
- "zip",
-]
-
-[[package]]
-name = "moltis-slack"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "base64 0.22.1",
- "bytes",
- "form_urlencoded",
- "hmac 0.12.1",
- "http 1.4.2",
- "moltis-channels",
- "moltis-common",
- "moltis-metrics",
- "reqwest 0.13.2",
- "secrecy 0.8.0",
- "serde",
- "serde_json",
- "sha2 0.10.9",
- "slack-morphism",
- "tokio",
- "tokio-util",
- "tracing",
-]
-
-[[package]]
-name = "moltis-splitter"
-version = "0.1.0"
-dependencies = [
- "text-splitter",
- "tracing",
- "tree-sitter-go",
- "tree-sitter-javascript",
- "tree-sitter-python",
- "tree-sitter-rust",
-]
-
-[[package]]
-name = "moltis-tailscale"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "serde",
- "serde_json",
- "thiserror 2.0.18",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "moltis-telephony"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "base64 0.22.1",
- "bytes",
- "dashmap 6.1.0",
- "hex",
- "hmac 0.12.1",
- "http 1.4.2",
- "moltis-agents",
- "moltis-channels",
- "moltis-common",
- "moltis-voice",
- "reqwest 0.13.2",
- "ring",
- "secrecy 0.8.0",
- "serde",
- "serde_json",
- "sha1",
- "sha2 0.10.9",
- "thiserror 2.0.18",
- "time",
- "tokio",
- "tracing",
- "url",
- "uuid",
-]
-
-[[package]]
-name = "moltis-tls"
-version = "0.1.0"
-dependencies = [
- "axum",
- "hex",
- "hostname",
- "hyper-util",
- "moltis-common",
- "moltis-config",
- "rcgen",
- "rustls 0.23.39",
- "rustls-pemfile",
- "sha2 0.10.9",
- "thiserror 2.0.18",
- "time",
- "tokio",
- "tokio-rustls 0.26.4",
- "tower",
- "tracing",
-]
-
-[[package]]
-name = "moltis-tools"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "base64 0.22.1",
- "bytes",
- "flate2",
- "futures",
- "globset",
- "grep-matcher",
- "grep-regex",
- "grep-searcher",
- "html2text",
- "ignore",
- "image",
- "ipnet",
- "moltis-agents",
- "moltis-browser",
- "moltis-common",
- "moltis-config",
- "moltis-cron",
- "moltis-media",
- "moltis-metrics",
- "moltis-network-filter",
- "moltis-providers",
- "moltis-service-traits",
- "moltis-sessions",
- "moltis-skills",
- "pdf-extract",
- "regex",
- "reqwest 0.13.2",
- "secrecy 0.8.0",
- "serde",
- "serde_json",
- "sha2 0.10.9",
- "shell-words",
- "sqlx",
- "tar",
- "tempfile",
- "thiserror 2.0.18",
- "time",
- "tokio",
- "tracing",
- "url",
- "uuid",
- "wasmtime",
- "wasmtime-wasi",
- "which 8.0.2",
-]
-
-[[package]]
-name = "moltis-vault"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "argon2",
- "base64 0.22.1",
- "chacha20poly1305",
- "moltis-metrics",
- "rand 0.10.1",
- "serde",
- "serde_json",
- "sha2 0.10.9",
- "sqlx",
- "thiserror 2.0.18",
- "tokio",
- "tracing",
- "zeroize",
-]
-
-[[package]]
-name = "moltis-voice"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "base64 0.22.1",
- "bytes",
- "dirs 6.0.0",
- "futures",
- "moltis-config",
- "moltis-model-catalog",
- "reqwest 0.13.2",
- "secrecy 0.8.0",
- "serde",
- "serde_json",
- "tempfile",
- "thiserror 2.0.18",
- "tokio",
- "tokio-tungstenite 0.26.2",
- "tracing",
- "urlencoding",
- "which 7.0.3",
-]
-
-[[package]]
-name = "moltis-web"
-version = "0.1.0"
-dependencies = [
- "askama",
- "axum",
- "axum-extra",
- "base64 0.22.1",
- "chrono",
- "futures",
- "gix",
- "include_dir",
- "moltis-auth",
- "moltis-channels",
- "moltis-config",
- "moltis-cron",
- "moltis-gateway",
- "moltis-httpd",
- "moltis-media",
- "moltis-skills",
- "moltis-tools",
- "portable-pty",
- "secrecy 0.8.0",
- "serde",
- "serde_json",
- "sysinfo",
- "thiserror 2.0.18",
- "tokio",
- "tokio-util",
- "tracing",
- "url",
- "uuid",
- "which 8.0.2",
-]
-
-[[package]]
-name = "moltis-webhooks"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "axum",
- "hex",
- "hmac 0.12.1",
- "moltis-common",
- "moltis-config",
- "rand 0.10.1",
- "serde",
- "serde_json",
- "sha2 0.10.9",
- "sqlx",
- "subtle",
- "thiserror 2.0.18",
- "time",
- "tokio",
- "tracing",
- "uuid",
-]
-
-[[package]]
 name = "moxcms"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -12029,6 +12071,12 @@ name = "simdutf8"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e3a9fe34e3e7a50316060351f37187a3f546bce95496156754b601a5fa71b76e"
+
+[[package]]
+name = "similar"
+version = "2.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bbbb5d9659141646ae647b42fe094daf6c6192d1620870b449d9557f748b2daa"
 
 [[package]]
 name = "simple_asn1"

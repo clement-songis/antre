@@ -1,9 +1,9 @@
 # Microsoft Teams
 
-Moltis can connect to Microsoft Teams as a bot, letting you chat with your
+Antre can connect to Microsoft Teams as a bot, letting you chat with your
 agent from any Teams workspace, group chat, or direct message. The integration
 uses the [Bot Framework](https://learn.microsoft.com/en-us/azure/bot-service/)
-with an inbound webhook — your Moltis instance must be reachable from the
+with an inbound webhook — your Antre instance must be reachable from the
 internet over HTTPS.
 
 ## How It Works
@@ -15,7 +15,7 @@ internet over HTTPS.
                           HTTP POST (webhook)
                                     ▼
 ┌──────────────────────────────────────────────────────────────┐
-│                      moltis-msteams crate                     │
+│                      antre-msteams crate                     │
 │  ┌──────────────┐  ┌────────────┐  ┌──────────────────────┐  │
 │  │  JWT + Secret │  │  Outbound  │  │      Plugin          │  │
 │  │  Verification │  │ (replies,  │  │  (lifecycle, cards,  │  │
@@ -25,13 +25,13 @@ internet over HTTPS.
                            │
                            ▼
 ┌──────────────────────────────────────────────────────────────┐
-│                     Moltis Gateway                            │
+│                     Antre Gateway                            │
 │           (chat dispatch, tools, memory)                      │
 └──────────────────────────────────────────────────────────────┘
 ```
 
 Teams sends each user message as an HTTP POST to your webhook endpoint.
-Moltis verifies the request (JWT signature and/or shared secret), processes
+Antre verifies the request (JWT signature and/or shared secret), processes
 it, and replies via the Bot Framework REST API.
 
 Streaming uses **edit-in-place** — an initial message is posted once enough
@@ -40,7 +40,7 @@ complete.
 
 ## Prerequisites
 
-Before configuring Moltis you need to register a bot in Azure. There are two
+Before configuring Antre you need to register a bot in Azure. There are two
 approaches; the **Teams Developer Portal** route is quickest for most users.
 
 ### Option A: Teams Developer Portal (recommended)
@@ -50,7 +50,7 @@ approaches; the **Teams Developer Portal** route is quickest for most users.
 3. Give the bot a name and click **Add**
 4. On the bot's page, go to **Configure** and note the **Bot ID** (this is your `app_id`)
 5. Under **Client secrets**, click **Add a client secret for your bot** and copy the generated value (this is your `app_password`)
-6. Set the **Endpoint address** to your Moltis webhook URL (see [Webhook Endpoint](#webhook-endpoint) below)
+6. Set the **Endpoint address** to your Antre webhook URL (see [Webhook Endpoint](#webhook-endpoint) below)
 
 ### Option B: Azure Portal
 
@@ -63,7 +63,7 @@ approaches; the **Teams Developer Portal** route is quickest for most users.
    - Copy the **Microsoft App ID** (`app_id`)
    - Click **Manage Password** to go to **Certificates & secrets**
    - Click **+ New client secret**, copy the value (`app_password`)
-7. Still in **Configuration**, set the **Messaging endpoint** to your Moltis webhook URL
+7. Still in **Configuration**, set the **Messaging endpoint** to your Antre webhook URL
 
 ### Install the bot in Teams
 
@@ -78,8 +78,8 @@ After creating the bot, you need to install it in your Teams organization:
 
 ```admonish warning
 The App Password is a secret — treat it like a password. Never commit it to
-version control. Moltis stores it with `secrecy::Secret` and redacts it from
-logs, but your `moltis.toml` file is plain text on disk. Consider using
+version control. Antre stores it with `secrecy::Secret` and redacts it from
+logs, but your `antre.toml` file is plain text on disk. Consider using
 [Vault](vault.md) for encryption at rest.
 ```
 
@@ -92,10 +92,10 @@ https://<your-domain>/api/channels/msteams/<account-id>/webhook?secret=<webhook-
 ```
 
 - **`<your-domain>`** — your public HTTPS domain (e.g. `bot.example.com`)
-- **`<account-id>`** — the account identifier in your `moltis.toml` (e.g. `my-bot`)
+- **`<account-id>`** — the account identifier in your `antre.toml` (e.g. `my-bot`)
 - **`<webhook-secret>`** — an optional shared secret for additional verification
 
-The Moltis web UI and CLI both generate this URL for you. Paste it into your
+The Antre web UI and CLI both generate this URL for you. Paste it into your
 bot's **Messaging endpoint** field in the Azure Portal or Teams Developer Portal.
 
 ```admonish info title="HTTPS required"
@@ -106,7 +106,7 @@ Teams requires HTTPS. For local development, use a tunnel like
 
 ## Configuration
 
-Add a `[channels.msteams.<account-id>]` section to your `moltis.toml`:
+Add a `[channels.msteams.<account-id>]` section to your `antre.toml`:
 
 ```toml
 [channels.msteams.my-bot]
@@ -138,7 +138,7 @@ app_password = "your-client-secret-here"
 | `reply_style` | no | `"top_level"` | `"top_level"` or `"thread"` (reply in thread) |
 | `welcome_card` | no | `true` | Send an Adaptive Card welcome message in DMs |
 | `group_welcome_card` | no | `false` | Send a welcome message when the bot is added to a group |
-| `bot_name` | no | `"Moltis"` | Display name shown on welcome cards |
+| `bot_name` | no | `"Antre"` | Display name shown on welcome cards |
 | `prompt_starters` | no | `[]` | Prompt starter buttons on the welcome card |
 | `max_retries` | no | `3` | Max retry attempts for failed sends |
 | `retry_base_delay_ms` | no | `250` | Base delay (ms) for exponential backoff |
@@ -204,7 +204,7 @@ Controls who can send direct messages to the bot.
 
 When `dm_policy = "allowlist"` and `otp_self_approval = true`, unknown DM users
 receive a verification prompt. The PIN is visible to the bot owner in the web UI
-under **Channels → Senders**. After a correct PIN reply, Moltis adds the sender's
+under **Channels → Senders**. After a correct PIN reply, Antre adds the sender's
 Teams user ID to the account allowlist.
 
 ```admonish note title="Privileged access fails closed"
@@ -243,7 +243,7 @@ this in:
 - **Microsoft 365 Admin Center** → Users → Active users → select user → Properties
 - **Teams Admin Center** → Users → select user
 
-Alternatively, set `dm_policy = "open"` initially and check the Moltis web UI
+Alternatively, set `dm_policy = "open"` initially and check the Antre web UI
 under **Channels → Senders** to see user IDs as messages arrive.
 
 ## Streaming
@@ -266,7 +266,7 @@ edit_throttle_ms = 1500
 
 ## Welcome Cards
 
-When a user first messages the bot in a DM, Moltis sends an
+When a user first messages the bot in a DM, Antre sends an
 [Adaptive Card](https://learn.microsoft.com/en-us/adaptive-cards/) with a
 greeting and optional prompt starter buttons:
 
@@ -289,7 +289,7 @@ received one. This is a known limitation.
 ## Interactive Messages
 
 The bot supports Adaptive Cards for interactive button menus. When an agent
-returns an interactive message (buttons), Moltis renders it as an Adaptive
+returns an interactive message (buttons), Antre renders it as an Adaptive
 Card with `Action.Submit` buttons. Clicking a button sends the callback data
 back to the bot as a regular message.
 
@@ -297,7 +297,7 @@ back to the bot as a regular message.
 
 ### Inbound
 
-When users send images or files in Teams, Moltis downloads the attachments
+When users send images or files in Teams, Antre downloads the attachments
 using the bot's access token and passes them to the LLM as multimodal content
 (if the model supports it).
 
@@ -337,7 +337,7 @@ You can configure Teams through the web interface:
 2. Click **Connect Microsoft Teams**
 3. Enter your **App ID** and **App Password** from the Azure bot registration
 4. Optionally enter a **Webhook Secret** (one is generated if left blank)
-5. Set the **Public Base URL** to your Moltis server's HTTPS URL
+5. Set the **Public Base URL** to your Antre server's HTTPS URL
 6. Click **Bootstrap Teams** to generate the messaging endpoint
 7. Click **Copy Endpoint** and paste it into your bot's Messaging Endpoint in the Azure Portal or Teams Developer Portal
 8. Adjust DM policy, mention mode, and allowlist as needed
@@ -351,7 +351,7 @@ The same form is available during onboarding when `"msteams"` is in
 Use the CLI bootstrap command for a quick setup:
 
 ```bash
-moltis channels teams bootstrap \
+antre channels teams bootstrap \
   --account-id my-bot \
   --app-id 12345678-abcd-efgh-ijkl-000000000000 \
   --app-password your-client-secret \
@@ -359,7 +359,7 @@ moltis channels teams bootstrap \
 ```
 
 This generates the webhook endpoint URL and writes the configuration to
-`moltis.toml`. Add `--dry-run` to preview without saving, or `--open` to
+`antre.toml`. Add `--dry-run` to preview without saving, or `--open` to
 launch the Azure documentation in your browser.
 
 ## Crate Structure
@@ -399,18 +399,18 @@ The crate implements the same trait set as other channel crates:
 
 ### Bot doesn't respond
 
-- Verify the **Messaging endpoint** in the Azure Portal matches your Moltis webhook URL
+- Verify the **Messaging endpoint** in the Azure Portal matches your Antre webhook URL
 - Check that `app_id` and `app_password` are correct
 - Ensure your server is reachable from the internet over HTTPS
 - Check `dm_policy` — if set to `"allowlist"`, make sure your user ID is listed
 - Check `mention_mode` — in group chats, you may need to @mention the bot
-- Look at logs: `RUST_LOG=moltis_msteams=debug moltis`
+- Look at logs: `RUST_LOG=antre_msteams=debug antre`
 
 ### "Teams token acquisition failed"
 
 - The `app_password` may have expired — rotate the client secret in the Azure Portal
 - Check that `oauth_tenant` and `oauth_scope` are correct (defaults should work for most setups)
-- Network issues: Moltis must be able to reach `login.microsoftonline.com`
+- Network issues: Antre must be able to reach `login.microsoftonline.com`
 
 ### Webhook returns 401 / 403
 
@@ -426,8 +426,8 @@ The crate implements the same trait set as other channel crates:
 
 ### Messages are duplicated
 
-- Moltis returns `202 Accepted` immediately to prevent Teams retry timeouts.
-  If you see duplicates, check for multiple Moltis instances pointing at the
+- Antre returns `202 Accepted` immediately to prevent Teams retry timeouts.
+  If you see duplicates, check for multiple Antre instances pointing at the
   same webhook URL, or verify the deduplication middleware is working
   (duplicate activity IDs are filtered automatically)
 

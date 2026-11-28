@@ -14,7 +14,7 @@ use {
     tracing::{debug, info},
 };
 
-use moltis_channels::{
+use antre_channels::{
     ChannelEventSink,
     message_log::MessageLog,
     plugin::{ChannelReplyTarget, ChannelType},
@@ -39,11 +39,11 @@ pub async fn register_events_api_account(
     accounts: AccountStateMap,
     message_log: Option<Arc<dyn MessageLog>>,
     event_sink: Option<Arc<dyn ChannelEventSink>>,
-) -> moltis_channels::Result<()> {
+) -> antre_channels::Result<()> {
     let bot_token_str = config.bot_token.expose_secret().clone();
 
     if bot_token_str.is_empty() {
-        return Err(moltis_channels::Error::invalid_input(
+        return Err(antre_channels::Error::invalid_input(
             "Slack bot_token is required",
         ));
     }
@@ -56,7 +56,7 @@ pub async fn register_events_api_account(
     let auth_response = session
         .auth_test()
         .await
-        .map_err(|e| moltis_channels::Error::unavailable(format!("auth.test failed: {e}")))?;
+        .map_err(|e| antre_channels::Error::unavailable(format!("auth.test failed: {e}")))?;
 
     let bot_user_id = auth_response.user_id.to_string();
     info!(
@@ -78,7 +78,7 @@ pub async fn register_events_api_account(
             cancel,
             bot_user_id: Some(bot_user_id),
             stream_recipients: Default::default(),
-            otp: std::sync::Mutex::new(moltis_channels::otp::OtpState::new(otp_cooldown_secs)),
+            otp: std::sync::Mutex::new(antre_channels::otp::OtpState::new(otp_cooldown_secs)),
             dedup: std::sync::Mutex::new(crate::state::EventDedup::default()),
         });
     }
@@ -140,23 +140,23 @@ pub async fn handle_webhook(
     timestamp: &str,
     signature: &str,
     accounts: &AccountStateMap,
-) -> moltis_channels::Result<Option<String>> {
+) -> antre_channels::Result<Option<String>> {
     // Look up the account and verify the signature.
     let signing_secret = {
         let accts = accounts.read().unwrap_or_else(|e| e.into_inner());
         let state = accts
             .get(account_id)
-            .ok_or_else(|| moltis_channels::Error::unknown_account(account_id))?;
+            .ok_or_else(|| antre_channels::Error::unknown_account(account_id))?;
         state
             .config
             .signing_secret
             .as_ref()
             .map(|s| s.expose_secret().clone())
-            .ok_or_else(|| moltis_channels::Error::invalid_input("signing_secret not configured"))?
+            .ok_or_else(|| antre_channels::Error::invalid_input("signing_secret not configured"))?
     };
 
     if !verify_signature(&signing_secret, timestamp, body, signature) {
-        return Err(moltis_channels::Error::invalid_input(
+        return Err(antre_channels::Error::invalid_input(
             "invalid Slack webhook signature",
         ));
     }
@@ -191,7 +191,7 @@ pub async fn handle_verified_webhook(
     account_id: &str,
     body: &[u8],
     accounts: &AccountStateMap,
-) -> moltis_channels::Result<Option<String>> {
+) -> antre_channels::Result<Option<String>> {
     let payload: serde_json::Value = serde_json::from_slice(body)?;
 
     // URL verification challenge.
@@ -219,13 +219,13 @@ pub async fn handle_verified_interaction_webhook(
     account_id: &str,
     body: &[u8],
     accounts: &AccountStateMap,
-) -> moltis_channels::Result<()> {
+) -> antre_channels::Result<()> {
     // Parse form-encoded body to extract `payload` field.
     let body_str = std::str::from_utf8(body)
-        .map_err(|e| moltis_channels::Error::invalid_input(format!("invalid utf-8: {e}")))?;
+        .map_err(|e| antre_channels::Error::invalid_input(format!("invalid utf-8: {e}")))?;
 
     let payload_json = extract_form_payload(body_str).ok_or_else(|| {
-        moltis_channels::Error::invalid_input("missing payload field in interaction")
+        antre_channels::Error::invalid_input("missing payload field in interaction")
     })?;
 
     let payload: serde_json::Value = serde_json::from_str(&payload_json)?;
@@ -312,9 +312,9 @@ pub async fn handle_verified_command_webhook(
     account_id: &str,
     body: &[u8],
     accounts: &AccountStateMap,
-) -> moltis_channels::Result<String> {
+) -> antre_channels::Result<String> {
     let body_str = std::str::from_utf8(body)
-        .map_err(|e| moltis_channels::Error::invalid_input(format!("invalid utf-8: {e}")))?;
+        .map_err(|e| antre_channels::Error::invalid_input(format!("invalid utf-8: {e}")))?;
 
     let command = extract_form_field(body_str, "command").unwrap_or_default();
     let text = extract_form_field(body_str, "text").unwrap_or_default();
@@ -323,13 +323,13 @@ pub async fn handle_verified_command_webhook(
     let response_url = extract_form_field(body_str, "response_url");
 
     if command.is_empty() {
-        return Err(moltis_channels::Error::invalid_input(
+        return Err(antre_channels::Error::invalid_input(
             "missing command field in slash command payload",
         ));
     }
 
     if user_id.is_empty() || channel_id.is_empty() {
-        return Err(moltis_channels::Error::invalid_input(
+        return Err(antre_channels::Error::invalid_input(
             "missing user_id or channel_id in slash command payload",
         ));
     }
@@ -479,23 +479,23 @@ pub async fn handle_interaction_webhook(
     timestamp: &str,
     signature: &str,
     accounts: &AccountStateMap,
-) -> moltis_channels::Result<()> {
+) -> antre_channels::Result<()> {
     // Verify signature.
     let signing_secret = {
         let accts = accounts.read().unwrap_or_else(|e| e.into_inner());
         let state = accts
             .get(account_id)
-            .ok_or_else(|| moltis_channels::Error::unknown_account(account_id))?;
+            .ok_or_else(|| antre_channels::Error::unknown_account(account_id))?;
         state
             .config
             .signing_secret
             .as_ref()
             .map(|s| s.expose_secret().clone())
-            .ok_or_else(|| moltis_channels::Error::invalid_input("signing_secret not configured"))?
+            .ok_or_else(|| antre_channels::Error::invalid_input("signing_secret not configured"))?
     };
 
     if !verify_signature(&signing_secret, timestamp, body, signature) {
-        return Err(moltis_channels::Error::invalid_input(
+        return Err(antre_channels::Error::invalid_input(
             "invalid Slack webhook signature",
         ));
     }
@@ -565,7 +565,7 @@ mod tests {
 
     use std::sync::Mutex;
 
-    use moltis_channels::{ChannelEvent, ChannelMessageMeta, Result as ChannelResult};
+    use antre_channels::{ChannelEvent, ChannelMessageMeta, Result as ChannelResult};
 
     /// Mock sink that records the command string passed to `dispatch_command`.
     struct RecordingSink {
@@ -756,7 +756,7 @@ mod tests {
                 cancel: tokio_util::sync::CancellationToken::new(),
                 bot_user_id: Some("B123".to_string()),
                 stream_recipients: Default::default(),
-                otp: Mutex::new(moltis_channels::otp::OtpState::new(300)),
+                otp: Mutex::new(antre_channels::otp::OtpState::new(300)),
                 dedup: Mutex::new(crate::state::EventDedup::default()),
             });
         }
@@ -787,7 +787,7 @@ mod tests {
                 cancel: tokio_util::sync::CancellationToken::new(),
                 bot_user_id: Some("B123".to_string()),
                 stream_recipients: Default::default(),
-                otp: Mutex::new(moltis_channels::otp::OtpState::new(300)),
+                otp: Mutex::new(antre_channels::otp::OtpState::new(300)),
                 dedup: Mutex::new(crate::state::EventDedup::default()),
             });
         }
@@ -823,7 +823,7 @@ mod tests {
                 cancel: tokio_util::sync::CancellationToken::new(),
                 bot_user_id: Some("B123".to_string()),
                 stream_recipients: Default::default(),
-                otp: Mutex::new(moltis_channels::otp::OtpState::new(300)),
+                otp: Mutex::new(antre_channels::otp::OtpState::new(300)),
                 dedup: Mutex::new(crate::state::EventDedup::default()),
             });
         }
@@ -844,7 +844,7 @@ mod tests {
         let accounts: AccountStateMap =
             Arc::new(std::sync::RwLock::new(std::collections::HashMap::new()));
         let config = SlackAccountConfig {
-            group_policy: moltis_channels::gating::GroupPolicy::Disabled,
+            group_policy: antre_channels::gating::GroupPolicy::Disabled,
             ..Default::default()
         };
         {
@@ -857,7 +857,7 @@ mod tests {
                 cancel: tokio_util::sync::CancellationToken::new(),
                 bot_user_id: Some("B123".to_string()),
                 stream_recipients: Default::default(),
-                otp: Mutex::new(moltis_channels::otp::OtpState::new(300)),
+                otp: Mutex::new(antre_channels::otp::OtpState::new(300)),
                 dedup: Mutex::new(crate::state::EventDedup::default()),
             });
         }
@@ -885,7 +885,7 @@ mod tests {
                 cancel: tokio_util::sync::CancellationToken::new(),
                 bot_user_id: Some("B123".to_string()),
                 stream_recipients: Default::default(),
-                otp: Mutex::new(moltis_channels::otp::OtpState::new(300)),
+                otp: Mutex::new(antre_channels::otp::OtpState::new(300)),
                 dedup: Mutex::new(crate::state::EventDedup::default()),
             });
         }
@@ -929,7 +929,7 @@ mod tests {
                 cancel: tokio_util::sync::CancellationToken::new(),
                 bot_user_id: Some("B123".to_string()),
                 stream_recipients: Default::default(),
-                otp: Mutex::new(moltis_channels::otp::OtpState::new(300)),
+                otp: Mutex::new(antre_channels::otp::OtpState::new(300)),
                 dedup: Mutex::new(crate::state::EventDedup::default()),
             });
         let payload = serde_json::json!({
@@ -964,7 +964,7 @@ mod tests {
         let accounts: AccountStateMap =
             Arc::new(std::sync::RwLock::new(std::collections::HashMap::new()));
         let config = SlackAccountConfig {
-            group_policy: moltis_channels::gating::GroupPolicy::Disabled,
+            group_policy: antre_channels::gating::GroupPolicy::Disabled,
             ..Default::default()
         };
         {
@@ -977,7 +977,7 @@ mod tests {
                 cancel: tokio_util::sync::CancellationToken::new(),
                 bot_user_id: Some("B123".to_string()),
                 stream_recipients: Default::default(),
-                otp: Mutex::new(moltis_channels::otp::OtpState::new(300)),
+                otp: Mutex::new(antre_channels::otp::OtpState::new(300)),
                 dedup: Mutex::new(crate::state::EventDedup::default()),
             });
         }

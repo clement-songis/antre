@@ -197,10 +197,10 @@ else
   test_cmd="cargo +${nightly_toolchain} nextest run --all-features --profile ci"
 fi
 e2e_cmd="${LOCAL_VALIDATE_E2E_CMD:-cd crates/web/ui && if [ ! -d node_modules ]; then npm ci; fi && npm run e2e:install && npm run e2e}"
-ollama_qwen_e2e_cmd="${LOCAL_VALIDATE_OLLAMA_QWEN_E2E_CMD:-cd crates/web/ui && if [ ! -d node_modules ]; then npm ci; fi && npm run e2e:install && MOLTIS_E2E_OLLAMA_QWEN_LIVE=1 npx playwright test --project=ollama-qwen-live e2e/specs/ollama-qwen-live.spec.js}"
+ollama_qwen_e2e_cmd="${LOCAL_VALIDATE_OLLAMA_QWEN_E2E_CMD:-cd crates/web/ui && if [ ! -d node_modules ]; then npm ci; fi && npm run e2e:install && ANTRE_E2E_OLLAMA_QWEN_LIVE=1 npx playwright test --project=ollama-qwen-live e2e/specs/ollama-qwen-live.spec.js}"
 coverage_cmd="${LOCAL_VALIDATE_COVERAGE_CMD:-cargo +${nightly_toolchain} llvm-cov --workspace --all-features --html}"
-macos_app_cmd="${LOCAL_VALIDATE_MACOS_APP_CMD:-./scripts/build-swift-bridge.sh && ./scripts/generate-swift-project.sh && ./scripts/lint-swift.sh && xcodebuild -project apps/macos/Moltis.xcodeproj -scheme Moltis -configuration Release -destination \"platform=macOS\" -derivedDataPath apps/macos/.derivedData-local-validate CODE_SIGNING_ALLOWED=NO build}"
-ios_app_cmd="${LOCAL_VALIDATE_IOS_APP_CMD:-cargo run -p moltis-schema-export -- apps/ios/GraphQL/Schema/schema.graphqls && ./scripts/generate-ios-project.sh && ./scripts/generate-ios-graphql.sh && ./scripts/generate-ios-project.sh && xcodebuild -project apps/ios/Moltis.xcodeproj -scheme Moltis -configuration Debug -destination \"generic/platform=iOS\" CODE_SIGNING_ALLOWED=NO build}"
+macos_app_cmd="${LOCAL_VALIDATE_MACOS_APP_CMD:-./scripts/build-swift-bridge.sh && ./scripts/generate-swift-project.sh && ./scripts/lint-swift.sh && xcodebuild -project apps/macos/Antre.xcodeproj -scheme Antre -configuration Release -destination \"platform=macOS\" -derivedDataPath apps/macos/.derivedData-local-validate CODE_SIGNING_ALLOWED=NO build}"
+ios_app_cmd="${LOCAL_VALIDATE_IOS_APP_CMD:-cargo run -p antre-schema-export -- apps/ios/GraphQL/Schema/schema.graphqls && ./scripts/generate-ios-project.sh && ./scripts/generate-ios-graphql.sh && ./scripts/generate-ios-project.sh && xcodebuild -project apps/ios/Antre.xcodeproj -scheme Antre -configuration Debug -destination \"generic/platform=iOS\" CODE_SIGNING_ALLOWED=NO build}"
 build_cmd="${LOCAL_VALIDATE_BUILD_CMD:-cargo +${nightly_toolchain} build --workspace --all-features --all-targets}"
 
 strip_all_features_flag() {
@@ -290,7 +290,7 @@ nextest_base_cmd_for_package() {
   local package="$1"
   if [[ "$(uname -s)" == "Darwin" ]]; then
     case "$package" in
-      moltis-gateway|moltis-providers)
+      antre-gateway|antre-providers)
         printf 'cargo +%s nextest run -p %s --features local-llm-metal' "$nightly_toolchain" "$package"
         ;;
       *)
@@ -392,18 +392,18 @@ if [[ "$(uname -s)" == "Darwin" ]] && ! command -v nvcc >/dev/null 2>&1; then
     if command -v just >/dev/null 2>&1 && [[ -f justfile ]]; then
       lint_cmd="just lint"
     else
-      lint_cmd="cargo +${nightly_toolchain} clippy -Z unstable-options --workspace --all-targets --exclude moltis-providers --exclude moltis-gateway --timings -- -D warnings && cargo +${nightly_toolchain} clippy -Z unstable-options -p moltis-providers --all-targets --features local-llm-metal --timings -- -D warnings && cargo +${nightly_toolchain} clippy -Z unstable-options -p moltis-gateway --all-targets --features local-llm-metal --timings -- -D warnings"
+      lint_cmd="cargo +${nightly_toolchain} clippy -Z unstable-options --workspace --all-targets --exclude antre-providers --exclude antre-gateway --timings -- -D warnings && cargo +${nightly_toolchain} clippy -Z unstable-options -p antre-providers --all-targets --features local-llm-metal --timings -- -D warnings && cargo +${nightly_toolchain} clippy -Z unstable-options -p antre-gateway --all-targets --features local-llm-metal --timings -- -D warnings"
     fi
   fi
   if [[ -z "${LOCAL_VALIDATE_TEST_CMD:-}" ]]; then
     if command -v just >/dev/null 2>&1 && [[ -f justfile ]]; then
       test_cmd="just test"
     else
-      test_cmd="cargo +${nightly_toolchain} nextest run --workspace --all-features --exclude moltis-providers --exclude moltis-gateway && cargo +${nightly_toolchain} nextest run -p moltis-providers --features local-llm-metal && cargo +${nightly_toolchain} nextest run -p moltis-gateway --features local-llm-metal"
+      test_cmd="cargo +${nightly_toolchain} nextest run --workspace --all-features --exclude antre-providers --exclude antre-gateway && cargo +${nightly_toolchain} nextest run -p antre-providers --features local-llm-metal && cargo +${nightly_toolchain} nextest run -p antre-gateway --features local-llm-metal"
     fi
   fi
   if [[ -z "${LOCAL_VALIDATE_BUILD_CMD:-}" ]]; then
-    build_cmd="cargo +${nightly_toolchain} build --workspace --all-targets --exclude moltis-providers --exclude moltis-gateway && cargo +${nightly_toolchain} build -p moltis-providers --all-targets --features local-llm-metal && cargo +${nightly_toolchain} build -p moltis-gateway --all-targets --features local-llm-metal"
+    build_cmd="cargo +${nightly_toolchain} build --workspace --all-targets --exclude antre-providers --exclude antre-gateway && cargo +${nightly_toolchain} build -p antre-providers --all-targets --features local-llm-metal && cargo +${nightly_toolchain} build -p antre-gateway --all-targets --features local-llm-metal"
   fi
   if [[ -z "${LOCAL_VALIDATE_COVERAGE_CMD:-}" ]]; then
     coverage_cmd="cargo +${nightly_toolchain} llvm-cov --workspace --html"
@@ -470,14 +470,14 @@ cleanup_e2e_ports() {
   fi
 
   local ports=(
-    "${MOLTIS_E2E_PORT:-18789}"
-    "${MOLTIS_E2E_ONBOARDING_PORT:-18790}"
-    "${MOLTIS_E2E_ONBOARDING_AUTH_PORT:-18791}"
-    "${MOLTIS_E2E_OAUTH_PORT:-18792}"
-    "${MOLTIS_E2E_ONBOARDING_ANTHROPIC_PORT:-18793}"
-    "${MOLTIS_E2E_OPENAI_LIVE_PORT:-18794}"
-    "${MOLTIS_E2E_OLLAMA_QWEN_LIVE_PORT:-18795}"
-    "${MOLTIS_E2E_OLLAMA_QWEN_API_PORT:-11435}"
+    "${ANTRE_E2E_PORT:-18789}"
+    "${ANTRE_E2E_ONBOARDING_PORT:-18790}"
+    "${ANTRE_E2E_ONBOARDING_AUTH_PORT:-18791}"
+    "${ANTRE_E2E_OAUTH_PORT:-18792}"
+    "${ANTRE_E2E_ONBOARDING_ANTHROPIC_PORT:-18793}"
+    "${ANTRE_E2E_OPENAI_LIVE_PORT:-18794}"
+    "${ANTRE_E2E_OLLAMA_QWEN_LIVE_PORT:-18795}"
+    "${ANTRE_E2E_OLLAMA_QWEN_API_PORT:-11435}"
   )
 
   local port
@@ -754,8 +754,8 @@ run_check "local/lint" "$lint_cmd"
 # via include_bytes!.
 if rustup target list --installed 2>/dev/null | grep -q wasm32-wasip2; then
   echo "Building WASM tool components..."
-  cargo build --target wasm32-wasip2 -p moltis-wasm-calc -p moltis-wasm-web-fetch -p moltis-wasm-web-search --release
-  cargo run -p moltis-wasm-precompile --release
+  cargo build --target wasm32-wasip2 -p antre-wasm-calc -p antre-wasm-web-fetch -p antre-wasm-web-search --release
+  cargo run -p antre-wasm-precompile --release
 fi
 
 # Compile all workspace targets (bin + test harnesses) using the same nightly

@@ -1,15 +1,15 @@
-//! Chat execution engine — re-exported from [`moltis_chat`] with the gateway
+//! Chat execution engine — re-exported from [`antre_chat`] with the gateway
 //! runtime adapter.
 
-pub use moltis_chat::*;
+pub use antre_chat::*;
 
 use std::sync::Arc;
 
 use {async_trait::async_trait, serde_json::Value};
 
 use {
-    moltis_channels::{ChannelActivity, ChannelReplyTarget},
-    moltis_tools::sandbox::SandboxRouter,
+    antre_channels::{ChannelActivity, ChannelReplyTarget},
+    antre_tools::sandbox::SandboxRouter,
 };
 
 use crate::state::GatewayState;
@@ -17,7 +17,7 @@ use crate::state::GatewayState;
 // ── GatewayChatRuntime ──────────────────────────────────────────────────────
 
 /// Adapts [`GatewayState`] to the [`ChatRuntime`] trait expected by
-/// `moltis-chat`.
+/// `antre-chat`.
 pub struct GatewayChatRuntime {
     state: Arc<GatewayState>,
 }
@@ -42,7 +42,7 @@ impl ChatRuntime for GatewayChatRuntime {
         .await;
     }
 
-    fn feedback(&self) -> Option<Arc<moltis_channels::FeedbackService>> {
+    fn feedback(&self) -> Option<Arc<antre_channels::FeedbackService>> {
         Some(Arc::clone(&self.state.feedback))
     }
 
@@ -84,7 +84,7 @@ impl ChatRuntime for GatewayChatRuntime {
     async fn finalize_active_channel_acks(
         &self,
         activity_id: &str,
-        outcome: moltis_channels::ChannelAckOutcome,
+        outcome: antre_channels::ChannelAckOutcome,
     ) {
         self.state
             .channel_reaction_controllers
@@ -95,7 +95,7 @@ impl ChatRuntime for GatewayChatRuntime {
     async fn finalize_channel_acks(
         &self,
         ack_keys: Vec<String>,
-        outcome: moltis_channels::ChannelAckOutcome,
+        outcome: antre_channels::ChannelAckOutcome,
     ) {
         self.state
             .channel_reaction_controllers
@@ -153,13 +153,13 @@ impl ChatRuntime for GatewayChatRuntime {
         self.state.sandbox_router.as_ref()
     }
 
-    fn memory_manager(&self) -> Option<&moltis_memory::runtime::DynMemoryRuntime> {
+    fn memory_manager(&self) -> Option<&antre_memory::runtime::DynMemoryRuntime> {
         self.state.memory_manager.as_ref()
     }
 
     // ── Cached location ─────────────────────────────────────────────────────
 
-    async fn cached_location(&self) -> Option<moltis_config::GeoLocation> {
+    async fn cached_location(&self) -> Option<antre_config::GeoLocation> {
         self.state.inner.read().await.cached_location.clone()
     }
 
@@ -192,31 +192,31 @@ impl ChatRuntime for GatewayChatRuntime {
 
     // ── Services ────────────────────────────────────────────────────────────
 
-    fn channel_outbound(&self) -> Option<Arc<dyn moltis_channels::ChannelOutbound>> {
+    fn channel_outbound(&self) -> Option<Arc<dyn antre_channels::ChannelOutbound>> {
         self.state.services.channel_outbound_arc()
     }
 
-    fn delivery_outbox(&self) -> Option<Arc<moltis_delivery::Outbox>> {
+    fn delivery_outbox(&self) -> Option<Arc<antre_delivery::Outbox>> {
         self.state.delivery_outbox.get().cloned()
     }
 
-    fn channel_stream_outbound(&self) -> Option<Arc<dyn moltis_channels::ChannelStreamOutbound>> {
+    fn channel_stream_outbound(&self) -> Option<Arc<dyn antre_channels::ChannelStreamOutbound>> {
         self.state.services.channel_stream_outbound_arc()
     }
 
-    fn tts_service(&self) -> &dyn moltis_service_traits::TtsService {
+    fn tts_service(&self) -> &dyn antre_service_traits::TtsService {
         &*self.state.services.tts
     }
 
-    fn project_service(&self) -> &dyn moltis_service_traits::ProjectService {
+    fn project_service(&self) -> &dyn antre_service_traits::ProjectService {
         &*self.state.services.project
     }
 
-    fn mcp_service(&self) -> &dyn moltis_service_traits::McpService {
+    fn mcp_service(&self) -> &dyn antre_service_traits::McpService {
         &*self.state.services.mcp
     }
 
-    async fn chat_service(&self) -> Arc<dyn moltis_service_traits::ChatService> {
+    async fn chat_service(&self) -> Arc<dyn antre_service_traits::ChatService> {
         self.state.chat()
     }
 

@@ -501,9 +501,9 @@ pub struct BrowserConfig {
     /// If not set and `persist_profile` is true, defaults to `data_dir()/browser/profile/`.
     pub profile_dir: Option<String>,
     /// Hostname or IP used to connect to the browser container from the host.
-    /// Default: "127.0.0.1" (localhost). When running Moltis itself inside Docker,
+    /// Default: "127.0.0.1" (localhost). When running Antre itself inside Docker,
     /// set this to "host.docker.internal" or the Docker bridge gateway IP so
-    /// Moltis can reach the sibling browser container via the host's port mapping.
+    /// Antre can reach the sibling browser container via the host's port mapping.
     #[serde(default = "default_container_host")]
     pub container_host: String,
     /// Browserless container API compatibility mode. Must match `sandbox_image`.
@@ -723,7 +723,7 @@ pub struct SandboxConfig {
     pub workspace_mount: String,
     /// Access to managed Files at `/home/sandbox/files` in local sandboxes.
     pub managed_files_mount: ManagedFilesMountConfig,
-    /// Optional host-visible path for Moltis `data_dir()` when creating
+    /// Optional host-visible path for Antre `data_dir()` when creating
     /// sandbox containers from inside another container.
     pub host_data_dir: Option<String>,
     /// Persistence strategy for `/home/sandbox`: off, session, or shared.
@@ -742,7 +742,7 @@ pub struct SandboxConfig {
     pub trusted_domains: Vec<String>,
     /// Port of the trusted-network egress proxy. Unset (default): an
     /// ephemeral port picked at startup, so several daemons can run on one
-    /// machine. Set it when something outside Moltis must know the port.
+    /// machine. Set it when something outside Antre must know the port.
     #[serde(default)]
     pub proxy_port: Option<u16>,
     /// Backend: "auto" (default), "docker", "podman", "apple-container",

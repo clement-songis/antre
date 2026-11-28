@@ -14,8 +14,8 @@ use {
 };
 
 use {
-    moltis_auth::locality::is_local_connection,
-    moltis_gateway::{
+    antre_auth::locality::is_local_connection,
+    antre_gateway::{
         auth::CredentialStore, auth_webauthn::SharedWebAuthnRegistry, state::GatewayState,
     },
 };
@@ -297,14 +297,14 @@ async fn setup_handler(
                     run_vault_env_migration(&state).await;
                     start_stored_channels_on_vault_unseal(&state).await;
                 },
-                Err(moltis_gateway::auth::PasswordVaultChangeError::VaultBadCredential) => {
+                Err(antre_gateway::auth::PasswordVaultChangeError::VaultBadCredential) => {
                     return (
                         StatusCode::LOCKED,
                         "password must match the existing vault password; unlock with recovery key before setting a different password",
                     )
                     .into_response();
                 },
-                Err(moltis_gateway::auth::PasswordVaultChangeError::VaultStateChanged) => {
+                Err(antre_gateway::auth::PasswordVaultChangeError::VaultStateChanged) => {
                     return (
                         StatusCode::CONFLICT,
                         "vault state changed while setting password; retry the setup",
@@ -479,7 +479,7 @@ async fn reset_auth_handler(
                 .gateway_state
                 .disconnect_all_clients("auth_reset")
                 .await;
-            let code = moltis_gateway::auth::generate_setup_code();
+            let code = antre_gateway::auth::generate_setup_code();
             tracing::info!("setup code: {code} (enter this in the browser to set your password)");
             {
                 let mut inner = state.gateway_state.inner.write().await;
@@ -542,14 +542,14 @@ async fn change_password_handler(
                     }
                     Json(serde_json::json!({ "ok": true })).into_response()
                 },
-                Err(moltis_gateway::auth::PasswordVaultChangeError::VaultBadCredential) => {
+                Err(antre_gateway::auth::PasswordVaultChangeError::VaultBadCredential) => {
                     (
                         StatusCode::LOCKED,
                         "password must match the existing vault password; unlock with recovery key before setting a different password",
                     )
                     .into_response()
                 },
-                Err(moltis_gateway::auth::PasswordVaultChangeError::VaultStateChanged) => {
+                Err(antre_gateway::auth::PasswordVaultChangeError::VaultStateChanged) => {
                     (
                         StatusCode::CONFLICT,
                         "vault state changed while setting password; retry the password change",
@@ -608,20 +608,20 @@ async fn change_password_handler(
                     .await;
                 Json(serde_json::json!({ "ok": true })).into_response()
             },
-            Err(moltis_gateway::auth::PasswordVaultChangeError::IncorrectCurrentPassword) => {
+            Err(antre_gateway::auth::PasswordVaultChangeError::IncorrectCurrentPassword) => {
                 state
                     .login_guard
                     .record_failure(client_ip, PASSWORD_CHANGE_ACCOUNT);
                 (StatusCode::FORBIDDEN, "current password is incorrect").into_response()
             },
-            Err(moltis_gateway::auth::PasswordVaultChangeError::VaultBadCredential) => {
+            Err(antre_gateway::auth::PasswordVaultChangeError::VaultBadCredential) => {
                 (
                     StatusCode::LOCKED,
                     "vault password does not match current password; unlock with recovery key before changing password",
                 )
                     .into_response()
             },
-            Err(moltis_gateway::auth::PasswordVaultChangeError::VaultStateChanged) => {
+            Err(antre_gateway::auth::PasswordVaultChangeError::VaultStateChanged) => {
                 (
                     StatusCode::CONFLICT,
                     "vault state changed while changing password; retry the password change",
@@ -690,7 +690,7 @@ async fn create_api_key_handler(
     // Validate scopes if provided
     if let Some(ref scopes) = body.scopes {
         for scope in scopes {
-            if !moltis_gateway::auth::VALID_SCOPES.contains(&scope.as_str()) {
+            if !antre_gateway::auth::VALID_SCOPES.contains(&scope.as_str()) {
                 return (StatusCode::BAD_REQUEST, format!("invalid scope: {scope}"))
                     .into_response();
             }
@@ -821,7 +821,7 @@ fn should_secure_cookie(
 }
 
 /// Build a session cookie string, adding `Domain=localhost` when the request
-/// arrived on a `.localhost` subdomain (e.g. `moltis.localhost`) so the cookie
+/// arrived on a `.localhost` subdomain (e.g. `antre.localhost`) so the cookie
 /// is shared across all loopback names per RFC 6761.
 fn session_response(
     token: String,
@@ -869,10 +869,10 @@ fn clear_session_response(
 }
 
 /// Return `; Domain=localhost` when the request's `Host` header is a
-/// `.localhost` subdomain (e.g. `moltis.localhost:8080`), otherwise `""`.
+/// `.localhost` subdomain (e.g. `antre.localhost:8080`), otherwise `""`.
 ///
 /// Without this, a session cookie set on `localhost` isn't sent by the browser
-/// to `moltis.localhost` and vice versa because `Set-Cookie` without a `Domain`
+/// to `antre.localhost` and vice versa because `Set-Cookie` without a `Domain`
 /// attribute is a host-only cookie.  Adding `Domain=localhost` makes the
 /// cookie available to `localhost` **and** all its subdomains (RFC 6265 §5.2.3).
 fn localhost_cookie_domain(headers: &axum::http::HeaderMap, behind_proxy: bool) -> &'static str {
@@ -930,7 +930,7 @@ async fn passkey_register_begin_handler(
             .into_response();
     };
 
-    let existing = moltis_gateway::auth_webauthn::load_passkeys(&state.credential_store)
+    let existing = antre_gateway::auth_webauthn::load_passkeys(&state.credential_store)
         .await
         .unwrap_or_default();
 
@@ -1018,7 +1018,7 @@ async fn passkey_auth_begin_handler(
             .into_response();
     };
 
-    let passkeys = match moltis_gateway::auth_webauthn::load_passkeys(&state.credential_store).await
+    let passkeys = match antre_gateway::auth_webauthn::load_passkeys(&state.credential_store).await
     {
         Ok(pks) => pks,
         Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
@@ -1125,7 +1125,7 @@ async fn setup_passkey_register_begin_handler(
             .into_response();
     };
 
-    let existing = moltis_gateway::auth_webauthn::load_passkeys(&state.credential_store)
+    let existing = antre_gateway::auth_webauthn::load_passkeys(&state.credential_store)
         .await
         .unwrap_or_default();
 
@@ -1241,7 +1241,7 @@ async fn setup_passkey_register_finish_handler(
 async fn host_to_webauthn(
     host: &str,
     registry: &SharedWebAuthnRegistry,
-) -> Option<Arc<moltis_gateway::auth_webauthn::WebAuthnState>> {
+) -> Option<Arc<antre_gateway::auth_webauthn::WebAuthnState>> {
     registry.read().await.get_for_host(host)
 }
 

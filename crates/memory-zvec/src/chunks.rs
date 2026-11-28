@@ -36,7 +36,7 @@ impl ChunkDoc {
     /// doc satisfies the collection schema's fixed-dimension vector field.
     /// Without this, zvec rejects the upsert with a dimension-mismatch error
     /// and every chunk sync silently fails, leaving the collection empty.
-    pub fn from_chunk_row(c: &moltis_memory::schema::ChunkRow, dimension: u32) -> Self {
+    pub fn from_chunk_row(c: &antre_memory::schema::ChunkRow, dimension: u32) -> Self {
         let embedding = c
             .embedding
             .as_ref()
@@ -114,9 +114,9 @@ impl ChunkDoc {
     }
 }
 
-impl From<ChunkDoc> for moltis_memory::schema::ChunkRow {
+impl From<ChunkDoc> for antre_memory::schema::ChunkRow {
     fn from(c: ChunkDoc) -> Self {
-        use moltis_memory::schema::ChunkRow;
+        use antre_memory::schema::ChunkRow;
         let embedding = if c.embedding.is_empty() {
             None
         } else {
@@ -257,7 +257,7 @@ mod tests {
                 .all(|c| c.is_ascii_hexdigit())
         );
         assert!(
-            ChunkDoc::safe_pk("/tmp/moltis_data/memory/session-main-2026-06-20.md:3")
+            ChunkDoc::safe_pk("/tmp/antre_data/memory/session-main-2026-06-20.md:3")
                 .chars()
                 .all(|c| c.is_ascii_hexdigit())
         );
@@ -281,8 +281,8 @@ mod tests {
     fn test_to_zvec_doc_with_special_chars_in_id() {
         let _guard = TestGuard::new();
         let chunk = ChunkDoc {
-            id: "/tmp/moltis_data/memory/session-main-2026-06-20.md:3".into(),
-            path: "/tmp/moltis_data/memory/session-main-2026-06-20.md".into(),
+            id: "/tmp/antre_data/memory/session-main-2026-06-20.md:3".into(),
+            path: "/tmp/antre_data/memory/session-main-2026-06-20.md".into(),
             source: "daily".into(),
             start_line: 10,
             end_line: 20,
@@ -321,7 +321,7 @@ mod tests {
     /// embedding provider is configured.
     #[test]
     fn test_from_chunk_row_none_embedding_fills_zero_vector() {
-        let row = moltis_memory::schema::ChunkRow {
+        let row = antre_memory::schema::ChunkRow {
             id: "kw-1".into(),
             path: "kw.md".into(),
             source: "test".into(),
@@ -354,7 +354,7 @@ mod tests {
     fn test_upsert_chunks_keyword_only_no_embedding() {
         let guard = TestGuard::new();
 
-        let row = moltis_memory::schema::ChunkRow {
+        let row = antre_memory::schema::ChunkRow {
             id: "kw-upsert-1".into(),
             path: "kw-upsert.md".into(),
             source: "test".into(),
@@ -398,7 +398,7 @@ mod tests {
             size: 0,
         };
 
-        let row = moltis_memory::schema::ChunkRow::from(chunk);
+        let row = antre_memory::schema::ChunkRow::from(chunk);
         let emb = row
             .embedding
             .as_ref()
@@ -432,7 +432,7 @@ mod tests {
             size: 0,
         };
 
-        let row = moltis_memory::schema::ChunkRow::from(chunk);
+        let row = antre_memory::schema::ChunkRow::from(chunk);
         assert!(row.embedding.is_none(), "empty embedding must map to None");
     }
 }

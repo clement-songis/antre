@@ -7,8 +7,8 @@
 use std::sync::Arc;
 
 use {
-    moltis_channels::{ChannelEvent, ChannelType},
-    moltis_common::types::ChatType,
+    antre_channels::{ChannelEvent, ChannelType},
+    antre_common::types::ChatType,
     teloxide::types::{MessageReactionUpdated, ReactionType},
     tracing::debug,
 };

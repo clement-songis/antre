@@ -56,20 +56,20 @@ pub async fn keyword_only_search(
     limit: usize,
 ) -> crate::error::Result<Vec<SearchResult>> {
     #[cfg(feature = "metrics")]
-    use moltis_metrics::memory as mem_metrics;
+    use antre_metrics::memory as mem_metrics;
 
     #[cfg(feature = "metrics")]
     let start = std::time::Instant::now();
 
     #[cfg(feature = "metrics")]
-    moltis_metrics::counter!(mem_metrics::SEARCHES_TOTAL, moltis_metrics::labels::SEARCH_TYPE => "keyword").increment(1);
+    antre_metrics::counter!(mem_metrics::SEARCHES_TOTAL, antre_metrics::labels::SEARCH_TYPE => "keyword").increment(1);
 
     let results = store
         .hybrid_search(&[], query, 0.0, 1.0, MergeStrategy::Weighted, limit)
         .await?;
 
     #[cfg(feature = "metrics")]
-    moltis_metrics::histogram!(mem_metrics::SEARCH_DURATION_SECONDS, moltis_metrics::labels::SEARCH_TYPE => "keyword")
+    antre_metrics::histogram!(mem_metrics::SEARCH_DURATION_SECONDS, antre_metrics::labels::SEARCH_TYPE => "keyword")
         .record(start.elapsed().as_secs_f64());
 
     Ok(results)
@@ -289,7 +289,7 @@ mod tests {
     #[test]
     fn test_merge_strategy_from_str() {
         // config::MergeStrategy (Rrf/Linear) — the user-facing enum parsed
-        // from moltis.toml. Distinct from store::MergeStrategy, which is the
+        // from antre.toml. Distinct from store::MergeStrategy, which is the
         // parameterized runtime enum without FromStr.
         use crate::config::MergeStrategy;
 
@@ -315,9 +315,9 @@ mod tests {
     //
     // Canonical coverage for the shared merge functions used by every store
     // backend. Previously these were duplicated in `store_sqlite::tests` and
-    // `moltis_memory_zvec::store::tests`; both copies now defer to this
+    // `antre_memory_zvec::store::tests`; both copies now defer to this
     // module so the critical path is exercised by plain `cargo test
-    // -p moltis-memory` regardless of backend feature flags.
+    // -p antre-memory` regardless of backend feature flags.
 
     fn make_search_result(id: &str, score: f32) -> SearchResult {
         SearchResult {

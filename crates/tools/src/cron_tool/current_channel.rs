@@ -1,5 +1,5 @@
 use {
-    moltis_common::hooks::ChannelBinding,
+    antre_common::hooks::ChannelBinding,
     serde_json::{Map, Value, json},
 };
 
@@ -104,8 +104,8 @@ mod tests {
     use std::sync::Arc;
 
     use {
-        moltis_agents::tool_registry::AgentTool,
-        moltis_cron::{
+        antre_agents::tool_registry::AgentTool,
+        antre_cron::{
             service::{AgentTurnFn, CronService, SystemEventFn},
             store_memory::InMemoryStore,
         },
@@ -117,7 +117,7 @@ mod tests {
         let system_event: SystemEventFn = Arc::new(|_| {});
         let agent_turn: AgentTurnFn = Arc::new(|_| {
             Box::pin(async {
-                Ok(moltis_cron::service::AgentTurnResult {
+                Ok(antre_cron::service::AgentTurnResult {
                     output: "ok".into(),
                     input_tokens: None,
                     output_tokens: None,

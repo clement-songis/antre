@@ -30,7 +30,7 @@ export interface FrameError {
 	line?: number;
 }
 
-const WIDTH_KEY = "moltis-canvas-pane-width";
+const WIDTH_KEY = "antre-canvas-pane-width";
 export const MIN_PANE_WIDTH = 320;
 export const DEFAULT_PANE_WIDTH = 560;
 const MAX_FRAME_ERRORS = 20;

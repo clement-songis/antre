@@ -1,28 +1,28 @@
 [package]
 edition.workspace = true
-name              = "moltis-cron"
+name              = "antre-cron"
 version.workspace = true
 
 [dependencies]
-async-trait    = { workspace = true }
-chrono         = { workspace = true }
-chrono-tz      = { workspace = true }
-cron           = { workspace = true }
-moltis-agents  = { workspace = true }
-moltis-common  = { workspace = true }
-moltis-config  = { workspace = true }
-moltis-metrics = { optional = true, workspace = true }
-serde          = { workspace = true }
-serde_json     = { workspace = true }
-sqlx           = { workspace = true }
-thiserror      = { workspace = true }
-tokio          = { workspace = true }
-tracing        = { workspace = true }
-uuid           = { workspace = true }
+antre-agents  = { workspace = true }
+antre-common  = { workspace = true }
+antre-config  = { workspace = true }
+antre-metrics = { optional = true, workspace = true }
+async-trait   = { workspace = true }
+chrono        = { workspace = true }
+chrono-tz     = { workspace = true }
+cron          = { workspace = true }
+serde         = { workspace = true }
+serde_json    = { workspace = true }
+sqlx          = { workspace = true }
+thiserror     = { workspace = true }
+tokio         = { workspace = true }
+tracing       = { workspace = true }
+uuid          = { workspace = true }
 
 [features]
 default = []
-metrics = ["dep:moltis-metrics"]
+metrics = ["dep:antre-metrics"]
 
 [dev-dependencies]
 rstest   = { workspace = true }

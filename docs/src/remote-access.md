@@ -1,10 +1,10 @@
 # Remote Access
 
-Moltis can expose the gateway beyond `localhost` through private mesh networks
+Antre can expose the gateway beyond `localhost` through private mesh networks
 or managed HTTPS tunnels. Configure these providers from **Settings -> Remote
-Access** in the web UI, or through `moltis.toml` and the CLI.
+Access** in the web UI, or through `antre.toml` and the CLI.
 
-Use authentication before exposing Moltis outside your machine. Public tunnels
+Use authentication before exposing Antre outside your machine. Public tunnels
 with `auth.disabled = true` are blocked by the setup-required page until
 authentication is configured.
 
@@ -20,8 +20,8 @@ authentication is configured.
 
 Tailscale support shells out to the `tailscale` CLI and supports two modes:
 
-- `serve`: exposes Moltis over HTTPS inside your tailnet.
-- `funnel`: exposes Moltis over public HTTPS through Tailscale Funnel.
+- `serve`: exposes Antre over HTTPS inside your tailnet.
+- `funnel`: exposes Antre over public HTTPS through Tailscale Funnel.
 
 Configuration:
 
@@ -34,17 +34,17 @@ reset_on_exit = true
 CLI:
 
 ```bash
-moltis tailscale status
-moltis tailscale serve --port 18789
-moltis tailscale funnel --port 18789
-moltis tailscale disable
+antre tailscale status
+antre tailscale serve --port 18789
+antre tailscale funnel --port 18789
+antre tailscale disable
 ```
 
 Notes:
 
 - Install and log in to Tailscale before enabling Serve or Funnel.
-- Moltis must bind to a loopback address for Serve/Funnel.
-- Funnel exposes Moltis to the public internet. Keep password/passkey
+- Antre must bind to a loopback address for Serve/Funnel.
+- Funnel exposes Antre to the public internet. Keep password/passkey
   authentication enabled.
 - Passkeys are hostname-bound; changing the Tailscale hostname or public URL can
   require logging in again on the new origin.
@@ -52,7 +52,7 @@ Notes:
 ## NetBird
 
 NetBird support shells out to the `netbird` CLI and provides private mesh access
-similar to Tailscale Serve. NetBird does not provide a Moltis-managed public
+similar to Tailscale Serve. NetBird does not provide a Antre-managed public
 Funnel equivalent.
 
 Configuration:
@@ -65,15 +65,15 @@ mode = "serve" # "off" | "serve"
 CLI:
 
 ```bash
-moltis netbird status
-moltis netbird serve
-moltis netbird disable
+antre netbird status
+antre netbird serve
+antre netbird disable
 ```
 
 Notes:
 
 - Install NetBird and connect the peer before enabling serve mode.
-- Moltis keeps its main listener bound to loopback and starts a NetBird peer-IP
+- Antre keeps its main listener bound to loopback and starts a NetBird peer-IP
   forwarder to the local gateway port.
 - Use Cloudflare Tunnel, ngrok, or Tailscale Funnel when you need a public HTTPS
   endpoint.
@@ -81,7 +81,7 @@ Notes:
 ## ngrok
 
 ngrok support uses the Rust ngrok SDK and does not require a separate `ngrok`
-binary. Moltis starts an internal loopback forwarding listener and exposes it
+binary. Antre starts an internal loopback forwarding listener and exposes it
 through ngrok.
 
 Configuration:
@@ -96,14 +96,14 @@ authtoken = "${NGROK_AUTHTOKEN}" # or set NGROK_AUTHTOKEN
 Notes:
 
 - Use a reserved domain for stable passkey behavior across restarts.
-- If `authtoken` is omitted, Moltis reads `NGROK_AUTHTOKEN` from the
+- If `authtoken` is omitted, Antre reads `NGROK_AUTHTOKEN` from the
   environment.
 - ngrok is useful for webhook callbacks, demos, and temporary public access.
 
 ## Cloudflare Tunnel
 
 Cloudflare Tunnel support starts `cloudflared` and forwards a Cloudflare-managed
-public hostname to the local Moltis gateway.
+public hostname to the local Antre gateway.
 
 Configuration:
 
@@ -111,23 +111,23 @@ Configuration:
 [cloudflare_tunnel]
 enabled = true
 token = "${CLOUDFLARE_TUNNEL_TOKEN}" # or set CLOUDFLARE_TUNNEL_TOKEN
-hostname = "moltis.example.com"      # optional but recommended for passkeys
+hostname = "antre.example.com"      # optional but recommended for passkeys
 ```
 
 CLI:
 
 ```bash
-moltis cloudflare-tunnel status
-moltis cloudflare-tunnel enable --token <token> --hostname moltis.example.com
-moltis cloudflare-tunnel disable
+antre cloudflare-tunnel status
+antre cloudflare-tunnel enable --token <token> --hostname antre.example.com
+antre cloudflare-tunnel disable
 ```
 
 Notes:
 
 - Install `cloudflared` before enabling the connector.
-- If `token` is omitted, Moltis reads `CLOUDFLARE_TUNNEL_TOKEN` from the
+- If `token` is omitted, Antre reads `CLOUDFLARE_TUNNEL_TOKEN` from the
   environment.
-- Set `hostname` when you know the public route so Moltis can update WebAuthn
+- Set `hostname` when you know the public route so Antre can update WebAuthn
   passkey origins consistently.
 
 ## Choosing a Provider

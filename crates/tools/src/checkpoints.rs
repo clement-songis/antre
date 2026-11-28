@@ -11,7 +11,7 @@ use {
     uuid::Uuid,
 };
 
-use moltis_agents::tool_registry::AgentTool;
+use antre_agents::tool_registry::AgentTool;
 
 use crate::{
     Error, Result,

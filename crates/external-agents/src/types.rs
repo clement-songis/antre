@@ -5,7 +5,7 @@ use {
     serde::{Deserialize, Serialize},
 };
 
-pub use moltis_sessions::metadata::ExternalAgentKind as AgentTransportKind;
+pub use antre_sessions::metadata::ExternalAgentKind as AgentTransportKind;
 
 /// Events emitted by an external agent session.
 ///
@@ -109,7 +109,7 @@ impl ExternalAgentSpec {
 /// ACP permission request normalized away from ACP wire types.
 #[derive(Debug, Clone)]
 pub struct AcpPermissionRequest {
-    pub moltis_session_key: Option<String>,
+    pub antre_session_key: Option<String>,
     pub acp_session_id: String,
     pub tool_call: String,
     pub options: Vec<AcpPermissionOption>,
@@ -130,7 +130,7 @@ pub enum AcpPermissionOptionKind {
     RejectAlways,
 }
 
-/// Host hook used by ACP runtimes to route permission prompts through Moltis approvals.
+/// Host hook used by ACP runtimes to route permission prompts through Antre approvals.
 #[async_trait]
 pub trait AcpPermissionHandler: Send + Sync {
     async fn select_option(&self, request: AcpPermissionRequest) -> anyhow::Result<Option<String>>;

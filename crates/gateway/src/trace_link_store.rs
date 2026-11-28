@@ -1,11 +1,11 @@
 //! SQLite-backed reply/trace correlation.
 
 use {
-    async_trait::async_trait,
-    moltis_channels::{
+    antre_channels::{
         Error as ChannelError, Result as ChannelResult,
         trace_link::{TraceLink, TraceLinkStore},
     },
+    async_trait::async_trait,
     sqlx::SqlitePool,
 };
 

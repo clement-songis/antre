@@ -1,8 +1,8 @@
-//! `moltis service` subcommands — install/manage the gateway as an OS service.
+//! `antre service` subcommands — install/manage the gateway as an OS service.
 //!
-//! - **macOS**: launchd user agent (`~/Library/LaunchAgents/org.moltis.plist`)
-//! - **Linux**: systemd user unit (`~/.config/systemd/user/moltis.service`)
-//! - **Linux without systemd**: portable user supervisor (`~/.moltis/moltis-service-supervisor.sh`)
+//! - **macOS**: launchd user agent (`~/Library/LaunchAgents/ai.antre.plist`)
+//! - **Linux**: systemd user unit (`~/.config/systemd/user/antre.service`)
+//! - **Linux without systemd**: portable user supervisor (`~/.antre/antre-service-supervisor.sh`)
 
 use std::{
     fs,
@@ -17,10 +17,10 @@ use std::os::unix::fs::PermissionsExt;
 
 use {anyhow::Result, clap::Subcommand};
 
-/// `moltis service` subcommands.
+/// `antre service` subcommands.
 #[derive(Subcommand)]
 pub enum ServiceAction {
-    /// Install moltis as an OS service (launchd on macOS, systemd on Linux).
+    /// Install antre as an OS service (launchd on macOS, systemd on Linux).
     Install {
         /// Address to bind to (passed as --bind).
         #[arg(long)]
@@ -33,16 +33,16 @@ pub enum ServiceAction {
         log_level: String,
     },
 
-    /// Uninstall the moltis service.
+    /// Uninstall the antre service.
     Uninstall,
 
-    /// Show the current status of the moltis service.
+    /// Show the current status of the antre service.
     Status,
 
-    /// Stop the moltis service.
+    /// Stop the antre service.
     Stop,
 
-    /// Restart the moltis service.
+    /// Restart the antre service.
     Restart,
 
     /// Print the path to the service log file.
@@ -56,9 +56,9 @@ pub fn handle_service(action: ServiceAction) -> Result<()> {
             port,
             log_level,
         } => {
-            let data_dir = moltis_config::data_dir();
-            let log_path = data_dir.join("moltis.log");
-            let moltis_bin = resolve_binary()?;
+            let data_dir = antre_config::data_dir();
+            let log_path = data_dir.join("antre.log");
+            let antre_bin = resolve_binary()?;
 
             let opts = GatewayServiceOpts {
                 bind,
@@ -67,12 +67,12 @@ pub fn handle_service(action: ServiceAction) -> Result<()> {
             };
 
             if cfg!(target_os = "macos") {
-                install_launchd(&moltis_bin, &opts, &log_path)?;
+                install_launchd(&antre_bin, &opts, &log_path)?;
             } else if cfg!(target_os = "linux") {
                 if systemd_user_available() {
-                    install_systemd(&moltis_bin, &opts, &log_path)?;
+                    install_systemd(&antre_bin, &opts, &log_path)?;
                 } else {
-                    install_process_service(&moltis_bin, &opts, &log_path)?;
+                    install_process_service(&antre_bin, &opts, &log_path)?;
                     println!("Using portable supervisor because systemd --user is unavailable.");
                     println!(
                         "Auto-start after container reboot requires your devbox startup configuration."
@@ -82,7 +82,7 @@ pub fn handle_service(action: ServiceAction) -> Result<()> {
                 anyhow::bail!("service install not supported on {}", std::env::consts::OS);
             }
 
-            println!("Moltis service installed and started.");
+            println!("Antre service installed and started.");
             println!("Logs: {}", log_path.display());
             Ok(())
         },
@@ -98,7 +98,7 @@ pub fn handle_service(action: ServiceAction) -> Result<()> {
                     std::env::consts::OS
                 );
             }
-            println!("Moltis service uninstalled.");
+            println!("Antre service uninstalled.");
             Ok(())
         },
 
@@ -110,7 +110,7 @@ pub fn handle_service(action: ServiceAction) -> Result<()> {
             } else {
                 anyhow::bail!("service status not supported on {}", std::env::consts::OS);
             };
-            println!("Moltis service: {status}");
+            println!("Antre service: {status}");
             Ok(())
         },
 
@@ -122,7 +122,7 @@ pub fn handle_service(action: ServiceAction) -> Result<()> {
             } else {
                 anyhow::bail!("service stop not supported on {}", std::env::consts::OS);
             }
-            println!("Moltis service stopped.");
+            println!("Antre service stopped.");
             Ok(())
         },
 
@@ -134,13 +134,13 @@ pub fn handle_service(action: ServiceAction) -> Result<()> {
             } else {
                 anyhow::bail!("service restart not supported on {}", std::env::consts::OS);
             }
-            println!("Moltis service restarted.");
+            println!("Antre service restarted.");
             Ok(())
         },
 
         ServiceAction::Logs => {
-            let data_dir = moltis_config::data_dir();
-            println!("{}", data_dir.join("moltis.log").display());
+            let data_dir = antre_config::data_dir();
+            println!("{}", data_dir.join("antre.log").display());
             Ok(())
         },
     }
@@ -180,13 +180,13 @@ impl std::fmt::Display for ServiceStatus {
 fn resolve_binary() -> Result<PathBuf> {
     if let Ok(exe) = std::env::current_exe() {
         let name = exe.file_name().unwrap_or_default().to_string_lossy();
-        if name == "moltis" || name.starts_with("moltis-") {
+        if name == "antre" || name.starts_with("antre-") {
             return Ok(exe);
         }
     }
 
-    which::which("moltis").map_err(|_| {
-        anyhow::anyhow!("cannot find 'moltis' binary; ensure it is installed and in PATH")
+    which::which("antre").map_err(|_| {
+        anyhow::anyhow!("cannot find 'antre' binary; ensure it is installed and in PATH")
     })
 }
 
@@ -207,8 +207,8 @@ fn uid() -> u32 {
 
 // ── macOS launchd ──────────────────────────────────────────────────────────
 
-const LAUNCHD_LABEL: &str = "org.moltis.gateway";
-const SYSTEMD_UNIT: &str = "moltis.service";
+const LAUNCHD_LABEL: &str = "ai.antre.gateway";
+const SYSTEMD_UNIT: &str = "antre.service";
 
 fn launchd_plist_path() -> Result<PathBuf> {
     let home = home_dir()?;
@@ -218,8 +218,8 @@ fn launchd_plist_path() -> Result<PathBuf> {
         .join(format!("{LAUNCHD_LABEL}.plist")))
 }
 
-fn generate_launchd_plist(moltis_bin: &Path, opts: &GatewayServiceOpts, log_path: &Path) -> String {
-    let bin = moltis_bin.display();
+fn generate_launchd_plist(antre_bin: &Path, opts: &GatewayServiceOpts, log_path: &Path) -> String {
+    let bin = antre_bin.display();
     let log = log_path.display();
 
     let mut args = vec![
@@ -271,7 +271,7 @@ fn generate_launchd_plist(moltis_bin: &Path, opts: &GatewayServiceOpts, log_path
     )
 }
 
-fn install_launchd(moltis_bin: &Path, opts: &GatewayServiceOpts, log_path: &Path) -> Result<()> {
+fn install_launchd(antre_bin: &Path, opts: &GatewayServiceOpts, log_path: &Path) -> Result<()> {
     let plist_path = launchd_plist_path()?;
 
     // Unload first if already loaded (ignore errors).
@@ -283,7 +283,7 @@ fn install_launchd(moltis_bin: &Path, opts: &GatewayServiceOpts, log_path: &Path
         ])
         .output();
 
-    let plist = generate_launchd_plist(moltis_bin, opts, log_path);
+    let plist = generate_launchd_plist(antre_bin, opts, log_path);
 
     if let Some(parent) = plist_path.parent() {
         fs::create_dir_all(parent)?;
@@ -399,8 +399,8 @@ fn systemd_unit_path() -> Result<PathBuf> {
         .join(SYSTEMD_UNIT))
 }
 
-fn generate_systemd_unit(moltis_bin: &Path, opts: &GatewayServiceOpts, log_path: &Path) -> String {
-    let bin = moltis_bin.display();
+fn generate_systemd_unit(antre_bin: &Path, opts: &GatewayServiceOpts, log_path: &Path) -> String {
+    let bin = antre_bin.display();
     let log = log_path.display();
 
     let mut exec_args = format!("{bin} --log-level {}", opts.log_level);
@@ -414,7 +414,7 @@ fn generate_systemd_unit(moltis_bin: &Path, opts: &GatewayServiceOpts, log_path:
 
     format!(
         r#"[Unit]
-Description=Moltis Gateway
+Description=Antre Gateway
 After=network-online.target
 Wants=network-online.target
 
@@ -490,17 +490,17 @@ fn restart_linux_service() -> Result<()> {
 }
 
 fn portable_service_not_installed_message() -> &'static str {
-    "service not installed; systemd --user is unavailable, so run `moltis service install` to use the portable supervisor"
+    "service not installed; systemd --user is unavailable, so run `antre service install` to use the portable supervisor"
 }
 
-fn install_systemd(moltis_bin: &Path, opts: &GatewayServiceOpts, log_path: &Path) -> Result<()> {
+fn install_systemd(antre_bin: &Path, opts: &GatewayServiceOpts, log_path: &Path) -> Result<()> {
     let unit_path = systemd_unit_path()?;
 
     let _ = Command::new("systemctl")
         .args(["--user", "stop", SYSTEMD_UNIT])
         .output();
 
-    let unit = generate_systemd_unit(moltis_bin, opts, log_path);
+    let unit = generate_systemd_unit(antre_bin, opts, log_path);
 
     if let Some(parent) = unit_path.parent() {
         fs::create_dir_all(parent)?;
@@ -541,7 +541,7 @@ fn status_systemd() -> Result<ServiceStatus> {
     let output_text = command_output_text(&output);
     if systemd_unavailable_output(&output_text) {
         return Ok(ServiceStatus::Unknown(
-            "systemd --user is unavailable; run `moltis service install` to use the portable supervisor".into(),
+            "systemd --user is unavailable; run `antre service install` to use the portable supervisor".into(),
         ));
     }
 
@@ -650,23 +650,23 @@ fn systemd_unavailable_output(output: &str) -> bool {
 // ── Linux portable process supervisor ──────────────────────────────────────
 
 fn process_service_supervisor_path() -> Result<PathBuf> {
-    Ok(moltis_config::data_dir().join("moltis-service-supervisor.sh"))
+    Ok(antre_config::data_dir().join("antre-service-supervisor.sh"))
 }
 
 fn process_service_pid_path() -> Result<PathBuf> {
-    Ok(moltis_config::data_dir().join("moltis-service.pid"))
+    Ok(antre_config::data_dir().join("antre-service.pid"))
 }
 
 fn process_service_child_pid_path() -> Result<PathBuf> {
-    Ok(moltis_config::data_dir().join("moltis.pid"))
+    Ok(antre_config::data_dir().join("antre.pid"))
 }
 
 fn process_service_stop_path() -> Result<PathBuf> {
-    Ok(moltis_config::data_dir().join("moltis-service.stop"))
+    Ok(antre_config::data_dir().join("antre-service.stop"))
 }
 
 fn install_process_service(
-    moltis_bin: &Path,
+    antre_bin: &Path,
     opts: &GatewayServiceOpts,
     log_path: &Path,
 ) -> Result<()> {
@@ -677,7 +677,7 @@ fn install_process_service(
         fs::create_dir_all(parent)?;
     }
 
-    let script = generate_process_supervisor_script(moltis_bin, opts, log_path)?;
+    let script = generate_process_supervisor_script(antre_bin, opts, log_path)?;
     fs::write(&supervisor_path, script)?;
 
     #[cfg(unix)]
@@ -801,16 +801,16 @@ fn wait_for_process_service_start() -> Result<()> {
 
     anyhow::bail!(
         "portable supervisor did not start; check logs with `tail -f {}`",
-        moltis_config::data_dir().join("moltis.log").display()
+        antre_config::data_dir().join("antre.log").display()
     )
 }
 
 fn generate_process_supervisor_script(
-    moltis_bin: &Path,
+    antre_bin: &Path,
     opts: &GatewayServiceOpts,
     log_path: &Path,
 ) -> Result<String> {
-    let data_dir = moltis_config::data_dir();
+    let data_dir = antre_config::data_dir();
     let supervisor_pid_path = process_service_pid_path()?;
     let child_pid_path = process_service_child_pid_path()?;
     let stop_path = process_service_stop_path()?;
@@ -835,7 +835,7 @@ fn generate_process_supervisor_script(
         r#"#!/bin/sh
 set -u
 
-MOLTIS_BIN={bin}
+ANTRE_BIN={bin}
 DATA_DIR={data_dir}
 LOG_FILE={log}
 SUPERVISOR_PID_FILE={supervisor_pid}
@@ -859,7 +859,7 @@ cleanup() {{
 trap cleanup INT TERM
 
 while [ ! -e "$STOP_FILE" ]; do
-  RUST_LOG=info "$MOLTIS_BIN" {args} >> "$LOG_FILE" 2>&1 &
+  RUST_LOG=info "$ANTRE_BIN" {args} >> "$LOG_FILE" 2>&1 &
   child="$!"
   printf '%s\n' "$child" > "$CHILD_PID_FILE"
   wait "$child"
@@ -870,14 +870,14 @@ while [ ! -e "$STOP_FILE" ]; do
     break
   fi
 
-  printf '%s\n' "moltis exited with status $status; restarting in $RESTART_DELAY seconds" >> "$LOG_FILE"
+  printf '%s\n' "antre exited with status $status; restarting in $RESTART_DELAY seconds" >> "$LOG_FILE"
   sleep "$RESTART_DELAY" &
   wait "$!"
 done
 
 rm -f "$SUPERVISOR_PID_FILE" "$CHILD_PID_FILE" "$STOP_FILE"
 "#,
-        bin = shell_quote(&moltis_bin.display().to_string()),
+        bin = shell_quote(&antre_bin.display().to_string()),
         args = command_args,
         data_dir = shell_quote(&data_dir.display().to_string()),
         log = shell_quote(&log_path.display().to_string()),
@@ -961,38 +961,38 @@ mod tests {
 
     #[test]
     fn launchd_plist_basic() {
-        let bin = PathBuf::from("/opt/homebrew/bin/moltis");
+        let bin = PathBuf::from("/opt/homebrew/bin/antre");
         let opts = GatewayServiceOpts {
             bind: None,
             port: None,
             log_level: "info".into(),
         };
-        let log = PathBuf::from("/tmp/moltis.log");
+        let log = PathBuf::from("/tmp/antre.log");
 
         let plist = generate_launchd_plist(&bin, &opts, &log);
 
         assert!(plist.starts_with("<?xml"));
-        assert!(plist.contains("org.moltis.gateway"));
-        assert!(plist.contains("/opt/homebrew/bin/moltis"));
+        assert!(plist.contains("ai.antre.gateway"));
+        assert!(plist.contains("/opt/homebrew/bin/antre"));
         assert!(plist.contains("--log-level"));
         assert!(plist.contains("info"));
         assert!(plist.contains("<key>RunAtLoad</key>"));
         assert!(plist.contains("<key>KeepAlive</key>"));
-        assert!(plist.contains("/tmp/moltis.log"));
+        assert!(plist.contains("/tmp/antre.log"));
         assert!(plist.contains("</plist>"));
-        // Args should NOT include a "gateway" subcommand — just `moltis` directly.
+        // Args should NOT include a "gateway" subcommand — just `antre` directly.
         assert!(!plist.contains("<string>gateway</string>"));
     }
 
     #[test]
     fn launchd_plist_with_bind_and_port() {
-        let bin = PathBuf::from("/usr/local/bin/moltis");
+        let bin = PathBuf::from("/usr/local/bin/antre");
         let opts = GatewayServiceOpts {
             bind: Some("0.0.0.0".into()),
             port: Some(8080),
             log_level: "debug".into(),
         };
-        let log = PathBuf::from("/tmp/moltis.log");
+        let log = PathBuf::from("/tmp/antre.log");
 
         let plist = generate_launchd_plist(&bin, &opts, &log);
 
@@ -1006,13 +1006,13 @@ mod tests {
 
     #[test]
     fn launchd_plist_omits_optional_flags() {
-        let bin = PathBuf::from("/usr/local/bin/moltis");
+        let bin = PathBuf::from("/usr/local/bin/antre");
         let opts = GatewayServiceOpts {
             bind: None,
             port: None,
             log_level: "info".into(),
         };
-        let log = PathBuf::from("/tmp/moltis.log");
+        let log = PathBuf::from("/tmp/antre.log");
 
         let plist = generate_launchd_plist(&bin, &opts, &log);
 
@@ -1022,36 +1022,36 @@ mod tests {
 
     #[test]
     fn systemd_unit_basic() {
-        let bin = PathBuf::from("/usr/bin/moltis");
+        let bin = PathBuf::from("/usr/bin/antre");
         let opts = GatewayServiceOpts {
             bind: None,
             port: None,
             log_level: "info".into(),
         };
-        let log = PathBuf::from("/var/log/moltis.log");
+        let log = PathBuf::from("/var/log/antre.log");
 
         let unit = generate_systemd_unit(&bin, &opts, &log);
 
         assert!(unit.contains("[Unit]"));
         assert!(unit.contains("[Service]"));
         assert!(unit.contains("[Install]"));
-        assert!(unit.contains("Moltis Gateway"));
-        assert!(unit.contains("/usr/bin/moltis --log-level info"));
+        assert!(unit.contains("Antre Gateway"));
+        assert!(unit.contains("/usr/bin/antre --log-level info"));
         assert!(unit.contains("Restart=on-failure"));
         assert!(unit.contains("RestartSec=10"));
-        assert!(unit.contains("/var/log/moltis.log"));
+        assert!(unit.contains("/var/log/antre.log"));
         assert!(unit.contains("WantedBy=default.target"));
     }
 
     #[test]
     fn systemd_unit_with_bind_and_port() {
-        let bin = PathBuf::from("/usr/bin/moltis");
+        let bin = PathBuf::from("/usr/bin/antre");
         let opts = GatewayServiceOpts {
             bind: Some("0.0.0.0".into()),
             port: Some(9090),
             log_level: "warn".into(),
         };
-        let log = PathBuf::from("/tmp/moltis.log");
+        let log = PathBuf::from("/tmp/antre.log");
 
         let unit = generate_systemd_unit(&bin, &opts, &log);
 
@@ -1062,13 +1062,13 @@ mod tests {
 
     #[test]
     fn systemd_unit_omits_optional_flags() {
-        let bin = PathBuf::from("/usr/bin/moltis");
+        let bin = PathBuf::from("/usr/bin/antre");
         let opts = GatewayServiceOpts {
             bind: None,
             port: None,
             log_level: "info".into(),
         };
-        let log = PathBuf::from("/tmp/moltis.log");
+        let log = PathBuf::from("/tmp/antre.log");
 
         let unit = generate_systemd_unit(&bin, &opts, &log);
 
@@ -1098,7 +1098,7 @@ mod tests {
 
     #[test]
     fn parses_linux_proc_stat_state() {
-        assert_eq!(linux_proc_stat_state("123 (moltis) S 1 2 3"), Some('S'));
+        assert_eq!(linux_proc_stat_state("123 (antre) S 1 2 3"), Some('S'));
         assert_eq!(
             linux_proc_stat_state("123 (name with spaces) Z 1 2 3"),
             Some('Z')
@@ -1108,23 +1108,23 @@ mod tests {
 
     #[test]
     fn process_supervisor_script_runs_gateway_with_flags() {
-        let bin = PathBuf::from("/opt/moltis bin/moltis");
+        let bin = PathBuf::from("/opt/antre bin/antre");
         let opts = GatewayServiceOpts {
             bind: Some("0.0.0.0".into()),
             port: Some(9090),
             log_level: "debug".into(),
         };
-        let log = PathBuf::from("/tmp/moltis service.log");
+        let log = PathBuf::from("/tmp/antre service.log");
 
         let script = generate_process_supervisor_script(&bin, &opts, &log).unwrap();
 
-        assert!(script.contains("MOLTIS_BIN='/opt/moltis bin/moltis'"));
+        assert!(script.contains("ANTRE_BIN='/opt/antre bin/antre'"));
         assert!(script.contains(
-            "RUST_LOG=info \"$MOLTIS_BIN\" '--log-level' 'debug' '--bind' '0.0.0.0' '--port' '9090'"
+            "RUST_LOG=info \"$ANTRE_BIN\" '--log-level' 'debug' '--bind' '0.0.0.0' '--port' '9090'"
         ));
-        assert!(script.contains("LOG_FILE='/tmp/moltis service.log'"));
+        assert!(script.contains("LOG_FILE='/tmp/antre service.log'"));
         assert!(script.contains("RESTART_DELAY=10"));
-        assert!(!script.contains("MOLTIS_ARGS="));
+        assert!(!script.contains("ANTRE_ARGS="));
     }
 
     #[test]

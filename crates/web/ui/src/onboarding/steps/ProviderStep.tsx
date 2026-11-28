@@ -862,7 +862,7 @@ export function ProviderStep({ onNext, onBack }: { onNext: () => void; onBack?: 
 				setError((res?.error as { message?: string })?.message || "Failed to save model preferences.");
 				return false;
 			}
-			if (modelIds.length > 0) localStorage.setItem("moltis-model", modelIds[0]);
+			if (modelIds.length > 0) localStorage.setItem("antre-model", modelIds[0]);
 			setValidationResults((prev) => ({ ...prev, [providerName]: { ok: true, message: null } }));
 			closeAll();
 			refreshProviders();
@@ -906,7 +906,7 @@ export function ProviderStep({ onNext, onBack }: { onNext: () => void; onBack?: 
 						return;
 					}
 					await sendRpc("providers.save_models", { provider: providerName, models: [modelVal] });
-					localStorage.setItem("moltis-model", modelVal);
+					localStorage.setItem("antre-model", modelVal);
 				}
 				setValidationResults((prev) => ({ ...prev, [providerName]: { ok: true, message: null } }));
 				setConfiguring(null);

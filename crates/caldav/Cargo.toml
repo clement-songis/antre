@@ -1,10 +1,12 @@
 [package]
 edition.workspace    = true
-name                 = "moltis-caldav"
+name                 = "antre-caldav"
 repository.workspace = true
 version.workspace    = true
 
 [dependencies]
+antre-agents  = { workspace = true }
+antre-config  = { workspace = true }
 anyhow        = { workspace = true }
 async-trait   = { workspace = true }
 http          = { workspace = true }
@@ -13,8 +15,6 @@ hyper-rustls  = { workspace = true }
 hyper-util    = { workspace = true }
 icalendar     = { workspace = true }
 libdav        = { workspace = true }
-moltis-agents = { workspace = true }
-moltis-config = { workspace = true }
 secrecy       = { workspace = true }
 serde         = { workspace = true }
 serde_json    = { workspace = true }

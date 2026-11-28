@@ -8,7 +8,7 @@ test.describe("App shell", () => {
 		const pageErrors = watchPageErrors(page);
 		await page.setViewportSize({ width: 1280, height: 860 });
 		await navigateAndWait(page, "/");
-		await page.evaluate(() => localStorage.removeItem("moltis-sidebar-collapsed"));
+		await page.evaluate(() => localStorage.removeItem("antre-sidebar-collapsed"));
 		await page.reload();
 		await expectPageContentMounted(page);
 

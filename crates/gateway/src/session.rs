@@ -11,21 +11,21 @@ use {
 };
 
 use {
-    moltis_common::hooks::HookRegistry,
-    moltis_projects::ProjectStore,
-    moltis_sessions::{
+    antre_common::hooks::HookRegistry,
+    antre_projects::ProjectStore,
+    antre_sessions::{
         message::PersistedMessage, metadata::SqliteSessionMetadata, state_store::SessionStateStore,
         store::SessionStore,
     },
-    moltis_tools::sandbox::SandboxRouter,
+    antre_tools::sandbox::SandboxRouter,
 };
 
 #[cfg(feature = "voice")]
-use moltis_voice::{AudioFormat, TtsProviderId};
+use antre_voice::{AudioFormat, TtsProviderId};
 
 #[allow(unused_imports)]
 #[cfg(feature = "fs-tools")]
-use moltis_tools::fs::FsState;
+use antre_tools::fs::FsState;
 
 #[allow(unused_imports)]
 use crate::{
@@ -53,9 +53,9 @@ const UI_HISTORY_TRIM_STEP: usize = 50;
 
 fn resolve_hook_channel_binding(
     session_key: &str,
-    session_entry: Option<&moltis_sessions::metadata::SessionEntry>,
-) -> Option<moltis_common::hooks::ChannelBinding> {
-    let binding = match moltis_channels::resolve_session_channel_binding(
+    session_entry: Option<&antre_sessions::metadata::SessionEntry>,
+) -> Option<antre_common::hooks::ChannelBinding> {
+    let binding = match antre_channels::resolve_session_channel_binding(
         session_key,
         session_entry.and_then(|entry| entry.channel_binding.as_deref()),
     ) {
@@ -66,7 +66,7 @@ fn resolve_hook_channel_binding(
                 session = %session_key,
                 "failed to parse channel_binding JSON; falling back to web"
             );
-            moltis_channels::web_session_channel_binding()
+            antre_channels::web_session_channel_binding()
         },
     };
     (!binding.is_empty()).then_some(binding)
@@ -82,7 +82,7 @@ pub(crate) async fn dispatch_command_hook(
     action: &str,
     sender_id: Option<&str>,
 ) {
-    let payload = moltis_common::hooks::HookPayload::Command {
+    let payload = antre_common::hooks::HookPayload::Command {
         session_key: session_key.to_string(),
         action: action.to_string(),
         sender_id: sender_id.map(str::to_string),
@@ -190,7 +190,7 @@ fn message_text(msg: &Value) -> Option<String> {
 
 #[cfg(feature = "voice")]
 fn sanitize_tts_text(text: &str) -> String {
-    moltis_voice::tts::sanitize_text_for_tts(text).to_string()
+    antre_voice::tts::sanitize_text_for_tts(text).to_string()
 }
 
 /// Truncate a string to `max` chars, appending "…" if truncated.
@@ -391,7 +391,7 @@ async fn tool_result_image_for_share(
         (image_mime_type(filename).to_string(), bytes)
     };
 
-    let full_meta = moltis_media::image_ops::get_image_metadata(&full_bytes).ok()?;
+    let full_meta = antre_media::image_ops::get_image_metadata(&full_bytes).ok()?;
     let full_asset = SharedImageAsset {
         data_url: build_image_data_url(&full_mime, &full_bytes),
         width: full_meta.width,
@@ -401,7 +401,7 @@ async fn tool_result_image_for_share(
     let needs_preview_resize = full_meta.width > SHARE_PREVIEW_MAX_IMAGE_WIDTH
         || full_meta.height > SHARE_PREVIEW_MAX_IMAGE_HEIGHT;
     let preview_bytes = if needs_preview_resize {
-        moltis_media::image_ops::resize_image(
+        antre_media::image_ops::resize_image(
             &full_bytes,
             SHARE_PREVIEW_MAX_IMAGE_WIDTH,
             SHARE_PREVIEW_MAX_IMAGE_HEIGHT,
@@ -410,7 +410,7 @@ async fn tool_result_image_for_share(
     } else {
         full_bytes.clone()
     };
-    let preview_meta = moltis_media::image_ops::get_image_metadata(&preview_bytes).ok()?;
+    let preview_meta = antre_media::image_ops::get_image_metadata(&preview_bytes).ok()?;
     let preview_mime = sniff_image_mime(&preview_bytes, &full_mime);
     let preview_asset = SharedImageAsset {
         data_url: build_image_data_url(&preview_mime, &preview_bytes),

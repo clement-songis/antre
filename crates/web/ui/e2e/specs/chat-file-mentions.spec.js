@@ -27,7 +27,7 @@ test.describe("@file mentions", () => {
 		});
 		await expectRpcOk(page, "sessions.patch", { key: "main", projectId: PROJECT_ID });
 		await page.evaluate((id) => {
-			const session = window.__moltis_stores.sessionStore.getByKey("main");
+			const session = window.__antre_stores.sessionStore.getByKey("main");
 			if (session) session.projectId = id;
 		}, PROJECT_ID);
 	});

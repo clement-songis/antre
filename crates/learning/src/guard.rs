@@ -252,7 +252,7 @@ fn check_new_skill(name: &str, content: &str, ctx: &GuardContext) -> Option<Stri
     if let Some(problem) = new_skill_name_problem(name) {
         return Some(problem);
     }
-    let meta = match moltis_skills::parse::parse_metadata(content, Path::new(name)) {
+    let meta = match antre_skills::parse::parse_metadata(content, Path::new(name)) {
         Ok(meta) => meta,
         Err(error) => return Some(format!("SKILL.md frontmatter is invalid: {error}")),
     };

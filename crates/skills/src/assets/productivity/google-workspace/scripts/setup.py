@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Google Workspace OAuth2 setup for Moltis.
+"""Google Workspace OAuth2 setup for Antre.
 
 Fully non-interactive — designed to be driven by the agent via terminal commands.
 The agent mediates between this script and the user (works on CLI, Telegram, Discord, etc.)
@@ -29,15 +29,15 @@ import sys
 import tempfile
 from pathlib import Path
 
-def get_moltis_home() -> Path:
-    configured = os.getenv("MOLTIS_DATA_DIR") or os.getenv("HERMES_HOME")
-    return Path(configured).expanduser() if configured else Path.home() / ".moltis"
+def get_antre_home() -> Path:
+    configured = os.getenv("ANTRE_DATA_DIR") or os.getenv("HERMES_HOME")
+    return Path(configured).expanduser() if configured else Path.home() / ".antre"
 
 
-MOLTIS_HOME = get_moltis_home()
-TOKEN_PATH = MOLTIS_HOME / "google_token.json"
-CLIENT_SECRET_PATH = MOLTIS_HOME / "google_client_secret.json"
-PENDING_AUTH_PATH = MOLTIS_HOME / "google_oauth_pending.json"
+ANTRE_HOME = get_antre_home()
+TOKEN_PATH = ANTRE_HOME / "google_token.json"
+CLIENT_SECRET_PATH = ANTRE_HOME / "google_client_secret.json"
+PENDING_AUTH_PATH = ANTRE_HOME / "google_oauth_pending.json"
 
 SCOPES = [
     "https://www.googleapis.com/auth/gmail.readonly",
@@ -113,7 +113,7 @@ def _format_missing_scopes(missing_scopes: list[str]) -> str:
     return (
         "Token is valid but missing required Google Workspace scopes:\n"
         f"{bullets}\n"
-        "Run the Google Workspace setup again from this same Moltis data directory to refresh consent."
+        "Run the Google Workspace setup again from this same Antre data directory to refresh consent."
     )
 
 
@@ -204,7 +204,7 @@ def check_auth():
 
 
 def store_client_secret(path: str):
-    """Copy and validate client_secret.json to the Moltis data directory."""
+    """Copy and validate client_secret.json to the Antre data directory."""
     src = Path(path).expanduser().resolve()
     if not src.exists():
         print(f"ERROR: File not found: {src}")
@@ -366,7 +366,7 @@ def exchange_auth_code(code: str):
     _write_private_json(TOKEN_PATH, token_payload)
     PENDING_AUTH_PATH.unlink(missing_ok=True)
     print(f"OK: Authenticated. Token saved to {TOKEN_PATH}")
-    print(f"Moltis token location: {TOKEN_PATH}")
+    print(f"Antre token location: {TOKEN_PATH}")
 
 
 def revoke():
@@ -402,7 +402,7 @@ def revoke():
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Google Workspace OAuth setup for Moltis")
+    parser = argparse.ArgumentParser(description="Google Workspace OAuth setup for Antre")
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--check", action="store_true", help="Check if auth is valid (exit 0=yes, 1=no)")
     group.add_argument("--client-secret", metavar="PATH", help="Store OAuth client_secret.json")

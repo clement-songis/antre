@@ -1,6 +1,6 @@
-//! A backend with no Moltis behind it.
+//! A backend with no Antre behind it.
 //!
-//! Useful for smoke-testing a client's handshake (`moltis acp --echo`) and as
+//! Useful for smoke-testing a client's handshake (`antre acp --echo`) and as
 //! the fixture the protocol tests drive, so protocol coverage does not require
 //! standing up a gateway.
 

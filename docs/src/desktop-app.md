@@ -1,38 +1,38 @@
 # Desktop App
 
-Moltis Desktop is a native client written in Rust with
-[gpui](https://gpui.rs). It **connects to a running moltis daemon** instead of
+Antre Desktop is a native client written in Rust with
+[gpui](https://gpui.rs). It **connects to a running antre daemon** instead of
 embedding one: quit the app and the daemon keeps answering your channels, cron
 jobs and other clients. It can connect to the daemon on this computer or to
 remote daemons.
 
 ```mermaid
 flowchart LR
-    App[Moltis Desktop] -- "WSS /ws/chat + API key" --> Local[(moltis on this computer)]
-    App -- "HTTPS (LAN, Tailscale)" --> Remote[(moltis on another machine)]
-    App -- "ssh -L → 127.0.0.1:port" --> Tunnel[(moltis behind SSH)]
+    App[Antre Desktop] -- "WSS /ws/chat + API key" --> Local[(antre on this computer)]
+    App -- "HTTPS (LAN, Tailscale)" --> Remote[(antre on another machine)]
+    App -- "ssh -L → 127.0.0.1:port" --> Tunnel[(antre behind SSH)]
 ```
 
 ## Installing
 
-Each release attaches `moltis-desktop-<version>-macos.app.zip`: a universal
-(Apple silicon and Intel), signed and notarized app. It **includes the moltis
+Each release attaches `antre-desktop-<version>-macos.app.zip`: a universal
+(Apple silicon and Intel), signed and notarized app. It **includes the antre
 daemon**, so nothing else needs to be installed: unzip it, move
-**Moltis Desktop** to Applications and open it. The first time, the app
+**Antre Desktop** to Applications and open it. The first time, the app
 installs its daemon as a background service and connects.
 
-For Linux, each release attaches `moltis-desktop-<version>-x86_64.AppImage` and
-`moltis-desktop-<version>-aarch64.AppImage`, also with the daemon inside:
+For Linux, each release attaches `antre-desktop-<version>-x86_64.AppImage` and
+`antre-desktop-<version>-aarch64.AppImage`, also with the daemon inside:
 
 ```bash
-chmod +x moltis-desktop-*.AppImage
-./moltis-desktop-*.AppImage
+chmod +x antre-desktop-*.AppImage
+./antre-desktop-*.AppImage
 ```
 
 It runs on X11 and Wayland and needs a Vulkan driver, `libxkbcommon` and
 `fontconfig`, which desktop distributions install by default. An AppImage is
 mounted at a new temporary path on every launch, so the app copies its daemon
-to `~/.moltis/bin/moltis` and runs the service from there.
+to `~/.antre/bin/antre` and runs the service from there.
 
 ## Building it
 
@@ -63,30 +63,30 @@ sudo apt-get install libxkbcommon-dev libxkbcommon-x11-dev libwayland-dev \
 ## Connecting
 
 On start the app connects to the last server you used, or to the daemon
-configured on this computer (found through `moltis.toml`, honouring
-`MOLTIS_CONFIG_DIR`). On a clean installation, **This computer** uses the
+configured on this computer (found through `antre.toml`, honouring
+`ANTRE_CONFIG_DIR`). On a clean installation, **This computer** uses the
 default local configuration, and when no daemon answers the app asks **Where
-should Moltis run?**:
+should Antre run?**:
 
-- **On this computer** installs moltis as a background service and connects
+- **On this computer** installs antre as a background service and connects
   as soon as it is up.
 - **On another computer** opens the **Add a server** form, to connect over
   HTTPS or an SSH tunnel. Nothing is installed locally, so you can use the app
   with a remote daemon only.
 
 Once a service is installed, the app starts it again without asking when it
-finds it stopped. It starts the service as installed (`moltis service
+finds it stopped. It starts the service as installed (`antre service
 restart`), so a daemon you installed with Homebrew or cargo keeps its binary
 and options. The app only reinstalls a service that points at a copy of the
 app that was moved or deleted. The **Servers** screen (`⌘⇧S`, or click the server name at
 the bottom of the sidebar) lists:
 
 - **This computer**: the local daemon, run as a background service
-  (`moltis service install`: a launchd agent on macOS, a systemd user unit on
+  (`antre service install`: a launchd agent on macOS, a systemd user unit on
   Linux, or a small supervisor script where systemd is unavailable). It uses
-  the `moltis` binary shipped inside the app, or else the one on your `PATH`.
+  the `antre` binary shipped inside the app, or else the one on your `PATH`.
   The service keeps running after the app quits and starts at login;
-  `moltis service uninstall` removes it.
+  `antre service uninstall` removes it.
   - If you move or delete the app, the service is left pointing at a path
     that no longer exists; the next launch reinstalls it from the app's new
     location. A daemon you installed another way (Homebrew, cargo) is never
@@ -95,11 +95,11 @@ the bottom of the sidebar) lists:
     app. A banner offers **Restart daemon**; the app never restarts it
     unasked, since it may be busy.
 - **Saved servers**: added by URL (direct HTTPS) or as an SSH tunnel.
-- **Nearby**: daemons advertising `_moltis._tcp` over Bonjour/mDNS.
+- **Nearby**: daemons advertising `_antre._tcp` over Bonjour/mDNS.
 
 ### Direct (HTTPS)
 
-Enter `https://host:port`. Moltis daemons serve a certificate from their own
+Enter `https://host:port`. Antre daemons serve a certificate from their own
 certificate authority, so the first connection shows the certificate's SHA-256
 fingerprint. Compare it with the daemon's before trusting it; the app then
 pins it. If the certificate later changes, the app stops and asks again.
@@ -130,7 +130,7 @@ Finish the setup (set a password) on any daemon you reach over SSH.
 The first time a daemon asks for credentials, sign in with its password. The
 app exchanges it for a scoped API key (`operator.read`, `operator.write`,
 `operator.approvals`, never `operator.admin`) labelled
-"Moltis Desktop (hostname)", stores the key in the system keychain and forgets
+"Antre Desktop (hostname)", stores the key in the system keychain and forgets
 the password. Revoke it any time in the web UI under **Settings → Security**.
 
 Daemons secured only with passkeys: create an API key in the web UI and paste
@@ -167,13 +167,13 @@ from the **Web** menu (`⌘,` opens settings).
 
 ## Protocol
 
-The app speaks the WebSocket RPC protocol v4 through the `moltis-client`
-crate, which is also what `moltis-ctl` uses. Typed payloads (chat events,
-sessions, models, approvals) are defined in `moltis-protocol` and shared with
+The app speaks the WebSocket RPC protocol v4 through the `antre-client`
+crate, which is also what `antre-ctl` uses. Typed payloads (chat events,
+sessions, models, approvals) are defined in `antre-protocol` and shared with
 the daemon.
 
 ## Troubleshooting
 
-- Logs: run with `MOLTIS_DESKTOP_LOG=debug`.
+- Logs: run with `ANTRE_DESKTOP_LOG=debug`.
 - Screenshots for bug reports: build with `--features capture` and set
-  `MOLTIS_DESKTOP_CAPTURE=/path/to/shot.png`.
+  `ANTRE_DESKTOP_CAPTURE=/path/to/shot.png`.

@@ -209,8 +209,8 @@ pub fn parse_server_config(
     })
 }
 
-impl From<&moltis_config::schema::McpServerEntry> for McpServerConfig {
-    fn from(entry: &moltis_config::schema::McpServerEntry) -> Self {
+impl From<&antre_config::schema::McpServerEntry> for McpServerConfig {
+    fn from(entry: &antre_config::schema::McpServerEntry) -> Self {
         Self {
             command: entry.command.clone(),
             args: entry.args.clone(),
@@ -735,7 +735,7 @@ mod tests {
 
     #[test]
     fn converts_toml_entry_with_trust_and_sampling() {
-        let entry: moltis_config::schema::McpServerEntry =
+        let entry: antre_config::schema::McpServerEntry =
             serde_json::from_value(serde_json::json!({
                 "transport": "streamable-http",
                 "url": "https://mcp.example.com",

@@ -1,28 +1,28 @@
 [package]
 description       = "Background learning loop: post-conversation review, skill curator, mutation ledger and write-approval staging"
 edition.workspace = true
-name              = "moltis-learning"
+name              = "antre-learning"
 version.workspace = true
 
 [dependencies]
-async-trait    = { workspace = true }
-hex            = { workspace = true }
-moltis-config  = { workspace = true }
-moltis-metrics = { optional = true, workspace = true }
-moltis-skills  = { workspace = true }
-serde          = { workspace = true }
-serde_json     = { workspace = true }
-sha2           = { workspace = true }
-similar        = { workspace = true }
-thiserror      = { workspace = true }
-time           = { features = ["formatting", "macros", "parsing", "serde"], workspace = true }
-tokio          = { features = ["fs", "sync"], workspace = true }
-tracing        = { optional = true, workspace = true }
-uuid           = { workspace = true }
+antre-config  = { workspace = true }
+antre-metrics = { optional = true, workspace = true }
+antre-skills  = { workspace = true }
+async-trait   = { workspace = true }
+hex           = { workspace = true }
+serde         = { workspace = true }
+serde_json    = { workspace = true }
+sha2          = { workspace = true }
+similar       = { workspace = true }
+thiserror     = { workspace = true }
+time          = { features = ["formatting", "macros", "parsing", "serde"], workspace = true }
+tokio         = { features = ["fs", "sync"], workspace = true }
+tracing       = { optional = true, workspace = true }
+uuid          = { workspace = true }
 
 [features]
 default = ["metrics", "tracing"]
-metrics = ["dep:moltis-metrics"]
+metrics = ["dep:antre-metrics"]
 tracing = ["dep:tracing"]
 
 [dev-dependencies]

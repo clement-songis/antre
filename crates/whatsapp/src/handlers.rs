@@ -8,7 +8,7 @@ use {
     whatsapp_rust::client::Client,
 };
 
-use moltis_channels::{
+use antre_channels::{
     ChannelAttachment, ChannelEvent, ChannelMessageKind, ChannelMessageMeta, ChannelReplyTarget,
     ChannelType,
     config_view::ChannelConfigView,
@@ -188,9 +188,9 @@ async fn handle_message(
     accounts: &AccountStateMap,
 ) {
     #[cfg(feature = "metrics")]
-    moltis_metrics::counter!(
-        moltis_metrics::channels::MESSAGES_RECEIVED_TOTAL,
-        moltis_metrics::labels::CHANNEL => "whatsapp"
+    antre_metrics::counter!(
+        antre_metrics::channels::MESSAGES_RECEIVED_TOTAL,
+        antre_metrics::labels::CHANNEL => "whatsapp"
     )
     .increment(1);
 
@@ -561,7 +561,7 @@ async fn handle_photo(
                 .map(|document| vec![document]);
             }
 
-            let (final_data, media_type) = match moltis_media::image_ops::optimize_for_llm(
+            let (final_data, media_type) = match antre_media::image_ops::optimize_for_llm(
                 &image_data,
                 None,
             ) {

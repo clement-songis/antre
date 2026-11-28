@@ -143,7 +143,7 @@ fn legacy_memory_embedding_fields_warn_but_do_not_error() {
 [memory]
 embedding_provider = "custom"
 embedding_model = "intfloat/multilingual-e5-small"
-embedding_base_url = "http://moltis-embeddings:7997/v1"
+embedding_base_url = "http://antre-embeddings:7997/v1"
 embedding_dimensions = 384
 "#;
     let result = validate_toml_str(toml);
@@ -285,7 +285,7 @@ enable_self_improvement = false
 
 #[test]
 fn memory_lifecycle_fields_default_to_true() {
-    let config: MoltisConfig = toml::from_str("").unwrap();
+    let config: AntreConfig = toml::from_str("").unwrap();
     assert!(
         config.memory.enable_prefetch,
         "enable_prefetch should default true"

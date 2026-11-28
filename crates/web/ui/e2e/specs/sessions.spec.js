@@ -110,7 +110,7 @@ test.describe("Session management", () => {
 		await page.clock.pauseAt(new Date(2026, 6, 23, 23, 59, 59, 500));
 
 		const expected = await page.evaluate(() => {
-			const store = window.__moltis_stores?.sessionStore;
+			const store = window.__antre_stores?.sessionStore;
 			if (!store) throw new Error("session store unavailable");
 
 			const timestampForDaysAgo = (daysAgo, hour) => {
@@ -539,7 +539,7 @@ test.describe("Session management", () => {
 		await expect.poll(() => page.url(), { timeout: 10_000 }).not.toBe(createdUrl);
 		await expectRpcOk(page, "chat.clear", { sessionKey: "main" });
 		await expect
-			.poll(() => page.evaluate(() => window.__moltis_stores?.sessionStore?.getByKey?.("main")?.messageCount || 0))
+			.poll(() => page.evaluate(() => window.__antre_stores?.sessionStore?.getByKey?.("main")?.messageCount || 0))
 			.toBe(0);
 
 		const deleteBtn = await sessionMenuItem(page, "Delete session");
@@ -594,7 +594,7 @@ test.describe("Session management", () => {
 		});
 
 		await page.evaluate(() => {
-			const fetchSessions = window.__moltis_modules?.sessions?.fetchSessions;
+			const fetchSessions = window.__antre_modules?.sessions?.fetchSessions;
 			if (typeof fetchSessions !== "function") throw new Error("fetchSessions unavailable");
 			fetchSessions();
 		});
@@ -603,7 +603,7 @@ test.describe("Session management", () => {
 		const sessionKey = `e2e-stale-list-${Date.now()}`;
 		await expectRpcOk(page, "sessions.switch", { key: sessionKey });
 		await page.evaluate((key) => {
-			const store = window.__moltis_stores?.sessionStore;
+			const store = window.__antre_stores?.sessionStore;
 			if (!store) throw new Error("session store unavailable");
 			const originalSetAll = store.setAll;
 			window.__staleListRemovedSession = false;
@@ -645,7 +645,7 @@ test.describe("Session management", () => {
 		await waitForWsConnected(page);
 
 		await page.evaluate(() => {
-			const store = window.__moltis_stores?.sessionStore;
+			const store = window.__antre_stores?.sessionStore;
 			if (!store) throw new Error("session store unavailable");
 			store.setShowArchivedSessions(false);
 		});
@@ -694,7 +694,7 @@ test.describe("Session management", () => {
 			sessions.switchSession(key);
 		}, sessionKey);
 		await expect
-			.poll(() => page.evaluate(() => window.__moltis_stores?.sessionStore?.refreshInProgressKey?.value || ""))
+			.poll(() => page.evaluate(() => window.__antre_stores?.sessionStore?.refreshInProgressKey?.value || ""))
 			.toBe(sessionKey);
 
 		// Trigger thinking state via system-event
@@ -721,7 +721,7 @@ test.describe("Session management", () => {
 		await expect(thinkingIndicator).toContainText("Newer realtime thinking", { timeout: 5_000 });
 		await setSwitchRpcSendMode(page, "release");
 		await expect
-			.poll(() => page.evaluate(() => window.__moltis_stores?.sessionStore?.refreshInProgressKey?.value || ""))
+			.poll(() => page.evaluate(() => window.__antre_stores?.sessionStore?.refreshInProgressKey?.value || ""))
 			.toBe("");
 
 		// The delayed snapshot must not clear the newer run state.
@@ -876,7 +876,7 @@ test.describe("Session management", () => {
 			.poll(
 				() =>
 					page.evaluate(() => {
-						const store = window.__moltis_stores?.sessionStore;
+						const store = window.__antre_stores?.sessionStore;
 						const main = store?.getByKey?.("main");
 						if (!main) return null;
 						return {
@@ -956,16 +956,16 @@ test.describe("Session management", () => {
 		await waitForWsConnected(page);
 
 		await createSession(page);
-		const parentKey = await page.evaluate(() => window.__moltis_stores?.sessionStore?.activeSessionKey?.value);
+		const parentKey = await page.evaluate(() => window.__antre_stores?.sessionStore?.activeSessionKey?.value);
 		const forkBtn = await sessionMenuItem(page, "Fork session");
 		await expect(forkBtn).toBeVisible({ timeout: 10_000 });
 		await forkBtn.click();
 		await expect
-			.poll(() => page.evaluate(() => window.__moltis_stores?.sessionStore?.activeSessionKey?.value), {
+			.poll(() => page.evaluate(() => window.__antre_stores?.sessionStore?.activeSessionKey?.value), {
 				timeout: 10_000,
 			})
 			.not.toBe(parentKey);
-		const childKey = await page.evaluate(() => window.__moltis_stores?.sessionStore?.activeSessionKey?.value);
+		const childKey = await page.evaluate(() => window.__antre_stores?.sessionStore?.activeSessionKey?.value);
 
 		const parentRow = page.locator(`#sessionList .session-item[data-session-key="${parentKey}"]`);
 		const childRow = page.locator(`#sessionList .session-item[data-session-key="${childKey}"]`);
@@ -985,7 +985,7 @@ test.describe("Session management", () => {
 		await toggle.click();
 		await expect(childRow).toBeVisible();
 		await expect
-			.poll(() => page.evaluate(() => window.__moltis_stores?.sessionStore?.activeSessionKey?.value))
+			.poll(() => page.evaluate(() => window.__antre_stores?.sessionStore?.activeSessionKey?.value))
 			.toBe("main");
 		await page.reload();
 		await waitForWsConnected(page);
@@ -1040,7 +1040,7 @@ test.describe("Session management", () => {
 			.poll(
 				() =>
 					page.evaluate(() => {
-						const store = window.__moltis_stores?.sessionStore;
+						const store = window.__antre_stores?.sessionStore;
 						const session = store?.activeSession?.value;
 						if (!session) return false;
 						session.forkPoint = 3;
@@ -1267,7 +1267,7 @@ test.describe("Session management", () => {
 			.poll(
 				() =>
 					page.evaluate(async (key) => {
-						var store = window.__moltis_stores?.sessionStore;
+						var store = window.__antre_stores?.sessionStore;
 						if (!store) return 1;
 						if (!store.getByKey(key)) return 0;
 						// Session still in store — kick a manual refresh

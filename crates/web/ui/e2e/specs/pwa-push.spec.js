@@ -19,14 +19,14 @@ async function clearNotifications(worker) {
 
 async function installNotificationHarness(worker) {
 	await worker.evaluate(() => {
-		self.__moltisNotifications = [];
+		self.__antreNotifications = [];
 		Object.defineProperty(self.registration, "getNotifications", {
 			configurable: true,
 			value: ({ tag } = {}) =>
 				Promise.resolve(
 					tag
-						? self.__moltisNotifications.filter((notification) => notification.tag === tag)
-						: [...self.__moltisNotifications],
+						? self.__antreNotifications.filter((notification) => notification.tag === tag)
+						: [...self.__antreNotifications],
 				),
 		});
 		Object.defineProperty(self.registration, "showNotification", {
@@ -35,15 +35,15 @@ async function installNotificationHarness(worker) {
 				if (options.silent === true && Object.hasOwn(options, "vibrate")) {
 					return Promise.reject(new TypeError("silent notifications cannot specify vibrate"));
 				}
-				self.__moltisNotifications = self.__moltisNotifications.filter((existing) => existing.tag !== options.tag);
+				self.__antreNotifications = self.__antreNotifications.filter((existing) => existing.tag !== options.tag);
 				const notification = {
 					title,
 					...options,
 					close() {
-						self.__moltisNotifications = self.__moltisNotifications.filter((candidate) => candidate !== notification);
+						self.__antreNotifications = self.__antreNotifications.filter((candidate) => candidate !== notification);
 					},
 				};
-				self.__moltisNotifications.push(notification);
+				self.__antreNotifications.push(notification);
 				return Promise.resolve();
 			},
 		});
@@ -56,10 +56,10 @@ async function seedNotifications(worker, notifications) {
 			const notification = {
 				...seed,
 				close() {
-					self.__moltisNotifications = self.__moltisNotifications.filter((candidate) => candidate !== notification);
+					self.__antreNotifications = self.__antreNotifications.filter((candidate) => candidate !== notification);
 				},
 			};
-			self.__moltisNotifications.push(notification);
+			self.__antreNotifications.push(notification);
 		}
 	}, notifications);
 }
@@ -69,27 +69,27 @@ async function installBadgeHarness(worker) {
 		Object.defineProperty(navigator, "setAppBadge", {
 			configurable: true,
 			value: (count) => {
-				self.__moltisBadgeCount = count;
+				self.__antreBadgeCount = count;
 				return Promise.resolve();
 			},
 		});
 		Object.defineProperty(navigator, "clearAppBadge", {
 			configurable: true,
 			value: () => {
-				self.__moltisBadgeCount = 0;
+				self.__antreBadgeCount = 0;
 				return Promise.resolve();
 			},
 		});
-		const cache = await caches.open("moltis-state");
-		await cache.put("/__moltis__/installed", new Response("1"));
+		const cache = await caches.open("antre-state");
+		await cache.put("/__antre__/installed", new Response("1"));
 	});
 }
 
 async function installPushManagerHarness(page, options = {}) {
 	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: the browser harness models native subscription persistence modes.
 	await page.addInitScript((config) => {
-		const persistedEndpoint = config.persistAcrossReload ? sessionStorage.getItem("__moltisPushHarnessEndpoint") : null;
-		const sharedEndpointKey = "__moltisPushHarnessSharedEndpoint";
+		const persistedEndpoint = config.persistAcrossReload ? sessionStorage.getItem("__antrePushHarnessEndpoint") : null;
+		const sharedEndpointKey = "__antrePushHarnessSharedEndpoint";
 		const keyBytes = config.applicationServerKey || [1, 2, 3];
 		const makeSubscription = (endpoint, applicationServerKey = keyBytes) => {
 			const subscription = {
@@ -99,9 +99,9 @@ async function installPushManagerHarness(page, options = {}) {
 					return new Uint8Array([4, 5, 6]).buffer;
 				},
 				unsubscribe() {
-					window.__moltisPushHarness.unsubscribeCount += 1;
-					if (window.__moltisPushHarness.current === subscription) window.__moltisPushHarness.current = null;
-					if (config.persistAcrossReload) sessionStorage.removeItem("__moltisPushHarnessEndpoint");
+					window.__antrePushHarness.unsubscribeCount += 1;
+					if (window.__antrePushHarness.current === subscription) window.__antrePushHarness.current = null;
+					if (config.persistAcrossReload) sessionStorage.removeItem("__antrePushHarnessEndpoint");
 					if (config.sharedAcrossTabs && localStorage.getItem(sharedEndpointKey) === endpoint) {
 						localStorage.removeItem(sharedEndpointKey);
 					}
@@ -122,7 +122,7 @@ async function installPushManagerHarness(page, options = {}) {
 			config.endpoint;
 		const initialKey = persistedEndpoint ? [1, 2, 3] : keyBytes;
 
-		window.__moltisPushHarness = {
+		window.__antrePushHarness = {
 			current: initialEndpoint ? makeSubscription(initialEndpoint, initialKey) : null,
 			freshEndpoint: config.freshEndpoint || "https://push.example.com/fresh",
 			freshEndpoints: config.freshEndpoints || [],
@@ -130,7 +130,7 @@ async function installPushManagerHarness(page, options = {}) {
 			unsubscribeCount: 0,
 			getSubscriptionCount: 0,
 		};
-		if (config.enabled) localStorage.setItem("moltis-push-enabled", "1");
+		if (config.enabled) localStorage.setItem("antre-push-enabled", "1");
 		Object.defineProperty(Notification, "permission", {
 			configurable: true,
 			get: () => "granted",
@@ -142,27 +142,27 @@ async function installPushManagerHarness(page, options = {}) {
 		Object.defineProperty(PushManager.prototype, "getSubscription", {
 			configurable: true,
 			value: () => {
-				window.__moltisPushHarness.getSubscriptionCount += 1;
+				window.__antrePushHarness.getSubscriptionCount += 1;
 				if (config.sharedAcrossTabs) {
 					const endpoint = localStorage.getItem(sharedEndpointKey);
 					return Promise.resolve(endpoint ? makeSubscription(endpoint) : null);
 				}
-				return Promise.resolve(window.__moltisPushHarness.current);
+				return Promise.resolve(window.__antrePushHarness.current);
 			},
 		});
 		Object.defineProperty(PushManager.prototype, "subscribe", {
 			configurable: true,
 			value: (subscribeOptions) => {
-				window.__moltisPushHarness.subscribeCount += 1;
+				window.__antrePushHarness.subscribeCount += 1;
 				const applicationServerKey = Array.from(new Uint8Array(subscribeOptions.applicationServerKey));
 				const endpoint =
-					window.__moltisPushHarness.freshEndpoints[window.__moltisPushHarness.subscribeCount - 1] ||
-					window.__moltisPushHarness.freshEndpoint;
+					window.__antrePushHarness.freshEndpoints[window.__antrePushHarness.subscribeCount - 1] ||
+					window.__antrePushHarness.freshEndpoint;
 				const subscription = makeSubscription(endpoint, applicationServerKey);
-				window.__moltisPushHarness.current = subscription;
+				window.__antrePushHarness.current = subscription;
 				if (config.sharedAcrossTabs) localStorage.setItem(sharedEndpointKey, endpoint);
 				if (config.persistAcrossReload) {
-					sessionStorage.setItem("__moltisPushHarnessEndpoint", subscription.endpoint);
+					sessionStorage.setItem("__antrePushHarnessEndpoint", subscription.endpoint);
 				}
 				return Promise.resolve(subscription);
 			},
@@ -210,7 +210,7 @@ async function deliverPush(page, context, payload) {
 
 async function readPushMarker(page) {
 	return await page.evaluate(async () => {
-		const response = await (await caches.open("moltis-state")).match("/__moltis__/push-rotation-pending");
+		const response = await (await caches.open("antre-state")).match("/__antre__/push-rotation-pending");
 		return response ? await response.json() : null;
 	});
 }
@@ -344,11 +344,11 @@ test.describe("service worker", () => {
 	test("disables worker-side rotation when the server reports revocation", async ({ page, context }) => {
 		const worker = await getActiveWorker(page, context);
 		const result = await worker.evaluate(async () => {
-			const cache = await caches.open("moltis-state");
+			const cache = await caches.open("antre-state");
 			await Promise.all([
-				cache.put("/__moltis__/push-enabled", new Response("1")),
-				cache.delete("/__moltis__/push-disabled"),
-				cache.delete("/__moltis__/push-rotation-pending"),
+				cache.put("/__antre__/push-enabled", new Response("1")),
+				cache.delete("/__antre__/push-disabled"),
+				cache.delete("/__antre__/push-rotation-pending"),
 			]);
 			let unsubscribeCount = 0;
 			let requestBody;
@@ -383,9 +383,9 @@ test.describe("service worker", () => {
 				self.fetch = originalFetch;
 			}
 			return {
-				disabled: Boolean(await cache.match("/__moltis__/push-disabled")),
-				enabled: Boolean(await cache.match("/__moltis__/push-enabled")),
-				pending: Boolean(await cache.match("/__moltis__/push-rotation-pending")),
+				disabled: Boolean(await cache.match("/__antre__/push-disabled")),
+				enabled: Boolean(await cache.match("/__antre__/push-enabled")),
+				pending: Boolean(await cache.match("/__antre__/push-rotation-pending")),
 				requestBody,
 				unsubscribeCount,
 			};
@@ -408,11 +408,11 @@ test.describe("service worker", () => {
 	test("preserves the earliest replacement across consecutive worker rotations", async ({ page, context }) => {
 		const worker = await getActiveWorker(page, context);
 		const result = await worker.evaluate(async () => {
-			const cache = await caches.open("moltis-state");
+			const cache = await caches.open("antre-state");
 			await Promise.all([
-				cache.put("/__moltis__/push-enabled", new Response("1")),
-				cache.delete("/__moltis__/push-disabled"),
-				cache.delete("/__moltis__/push-rotation-pending"),
+				cache.put("/__antre__/push-enabled", new Response("1")),
+				cache.delete("/__antre__/push-disabled"),
+				cache.delete("/__antre__/push-rotation-pending"),
 			]);
 			const requests = [];
 			const originalFetch = self.fetch;
@@ -445,7 +445,7 @@ test.describe("service worker", () => {
 			} finally {
 				self.fetch = originalFetch;
 			}
-			const marker = await cache.match("/__moltis__/push-rotation-pending");
+			const marker = await cache.match("/__antre__/push-rotation-pending");
 			return { requests, marker: marker ? await marker.json() : null };
 		});
 
@@ -467,12 +467,12 @@ test.describe("service worker", () => {
 	test("worker rotation preserves explicit revival authorization", async ({ page, context }) => {
 		const worker = await getActiveWorker(page, context);
 		const request = await worker.evaluate(async () => {
-			const cache = await caches.open("moltis-state");
+			const cache = await caches.open("antre-state");
 			await Promise.all([
-				cache.put("/__moltis__/push-enabled", new Response("1")),
-				cache.delete("/__moltis__/push-disabled"),
+				cache.put("/__antre__/push-enabled", new Response("1")),
+				cache.delete("/__antre__/push-disabled"),
 				cache.put(
-					"/__moltis__/push-rotation-pending",
+					"/__antre__/push-rotation-pending",
 					new Response(JSON.stringify({ replaces: "https://push.example.com/revoked", revive: true })),
 				),
 			]);
@@ -525,7 +525,7 @@ test.describe("service worker", () => {
 		await installNotificationHarness(worker);
 
 		await deliverPush(page, context, {
-			title: "moltis",
+			title: "antre",
 			body: "Silent result",
 			notificationId: "silent-result",
 			sessionKey: "silent-test",
@@ -535,8 +535,8 @@ test.describe("service worker", () => {
 		await expect
 			.poll(() =>
 				worker.evaluate(() =>
-					self.__moltisNotifications
-						.filter((notification) => notification.tag === "moltis:session:silent-test")
+					self.__antreNotifications
+						.filter((notification) => notification.tag === "antre:session:silent-test")
 						.map((notification) => ({
 							silent: notification.silent,
 							body: notification.body,
@@ -552,17 +552,17 @@ test.describe("service worker", () => {
 		await clearNotifications(worker);
 		await installNotificationHarness(worker);
 		await worker.evaluate(async () => {
-			const cache = await caches.open("moltis-state");
-			const response = await cache.match("/__moltis__/push-notification-order");
+			const cache = await caches.open("antre-state");
+			const response = await cache.match("/__antre__/push-notification-order");
 			const orders = response ? await response.json() : {};
 			delete orders["ordered-chat"];
-			await cache.put("/__moltis__/push-notification-order", new Response(JSON.stringify(orders)));
+			await cache.put("/__antre__/push-notification-order", new Response(JSON.stringify(orders)));
 		});
 
 		await deliverPush(page, context, { body: "Newer", sessionKey: "ordered-chat", order: 20 });
 		await expect
 			.poll(() =>
-				worker.evaluate(() => self.__moltisNotifications.some((notification) => notification.body === "Newer")),
+				worker.evaluate(() => self.__antreNotifications.some((notification) => notification.body === "Newer")),
 			)
 			.toBe(true);
 		await clearNotifications(worker);
@@ -570,14 +570,14 @@ test.describe("service worker", () => {
 		await deliverPush(page, context, { body: "Queue drained", sessionKey: "order-sentinel" });
 		await expect
 			.poll(() =>
-				worker.evaluate(() => self.__moltisNotifications.some((notification) => notification.body === "Queue drained")),
+				worker.evaluate(() => self.__antreNotifications.some((notification) => notification.body === "Queue drained")),
 			)
 			.toBe(true);
 
 		const result = await worker.evaluate(async () => {
-			const marker = await (await caches.open("moltis-state")).match("/__moltis__/push-notification-order");
+			const marker = await (await caches.open("antre-state")).match("/__antre__/push-notification-order");
 			return {
-				bodies: self.__moltisNotifications.map((notification) => notification.body),
+				bodies: self.__antreNotifications.map((notification) => notification.body),
 				orders: marker ? await marker.json() : {},
 			};
 		});
@@ -608,7 +608,7 @@ test.describe("service worker", () => {
 		await expect
 			.poll(() =>
 				worker.evaluate(() =>
-					self.__moltisNotifications.map((notification) => ({
+					self.__antreNotifications.map((notification) => ({
 						body: notification.body,
 						count: notification.data.count,
 						tag: notification.tag,
@@ -619,10 +619,10 @@ test.describe("service worker", () => {
 				{
 					body: "Newest result\n… and 2 earlier messages",
 					count: 3,
-					tag: "moltis:session:legacy-chat",
+					tag: "antre:session:legacy-chat",
 				},
 			]);
-		await expect.poll(() => worker.evaluate(() => self.__moltisBadgeCount)).toBe(3);
+		await expect.poll(() => worker.evaluate(() => self.__antreBadgeCount)).toBe(3);
 	});
 
 	test("clears legacy-tagged notifications by their stored session", async ({ page, context }) => {
@@ -643,14 +643,14 @@ test.describe("service worker", () => {
 		await expect
 			.poll(() =>
 				worker.evaluate(() =>
-					self.__moltisNotifications.map((notification) => ({
+					self.__antreNotifications.map((notification) => ({
 						count: notification.data.count,
 						sessionKey: notification.data.sessionKey,
 					})),
 				),
 			)
 			.toEqual([{ count: 1, sessionKey: "other-chat" }]);
-		await expect.poll(() => worker.evaluate(() => self.__moltisBadgeCount)).toBe(1);
+		await expect.poll(() => worker.evaluate(() => self.__antreBadgeCount)).toBe(1);
 	});
 
 	for (const eventType of ["notificationclick", "notificationclose"]) {
@@ -665,7 +665,7 @@ test.describe("service worker", () => {
 			]);
 
 			const result = await worker.evaluate(async (type) => {
-				const notification = self.__moltisNotifications.find((candidate) => candidate.tag === "legacy-lagging");
+				const notification = self.__antreNotifications.find((candidate) => candidate.tag === "legacy-lagging");
 				notification.close = () => {
 					// Simulate the browser retaining a just-closed notification briefly.
 				};
@@ -679,8 +679,8 @@ test.describe("service worker", () => {
 				self.dispatchEvent(event);
 				await Promise.all(pending);
 				return {
-					badge: self.__moltisBadgeCount,
-					storedCount: self.__moltisNotifications.reduce((sum, candidate) => sum + (candidate.data.count || 1), 0),
+					badge: self.__antreBadgeCount,
+					storedCount: self.__antreNotifications.reduce((sum, candidate) => sum + (candidate.data.count || 1), 0),
 				};
 			}, eventType);
 
@@ -698,14 +698,14 @@ test.describe("service worker", () => {
 		await installBadgeHarness(worker);
 		await seedNotifications(worker, [
 			{
-				tag: "moltis:session:modern-chat",
+				tag: "antre:session:modern-chat",
 				data: { sessionKey: "modern-chat", notificationId: "new", count: 1 },
 			},
 		]);
 
 		const badge = await worker.evaluate(async () => {
 			const closing = {
-				tag: "moltis:session:modern-chat",
+				tag: "antre:session:modern-chat",
 				data: { sessionKey: "modern-chat", notificationId: "old", count: 1 },
 			};
 			const pending = [];
@@ -716,7 +716,7 @@ test.describe("service worker", () => {
 			});
 			self.dispatchEvent(event);
 			await Promise.all(pending);
-			return self.__moltisBadgeCount;
+			return self.__antreBadgeCount;
 		});
 
 		expect(badge).toBe(1);
@@ -751,42 +751,42 @@ test.describe("service worker", () => {
 			Object.defineProperty(navigator, "setAppBadge", {
 				configurable: true,
 				value: (count) => {
-					self.__moltisBadgeCount = count;
+					self.__antreBadgeCount = count;
 					return Promise.resolve();
 				},
 			});
 			Object.defineProperty(navigator, "clearAppBadge", {
 				configurable: true,
 				value: () => {
-					self.__moltisBadgeCount = 0;
+					self.__antreBadgeCount = 0;
 					return Promise.resolve();
 				},
 			});
-			const cache = await caches.open("moltis-state");
-			await cache.put("/__moltis__/installed", new Response("1"));
+			const cache = await caches.open("antre-state");
+			await cache.put("/__antre__/installed", new Response("1"));
 		});
 
 		await deliverPush(page, context, { body: "First", notificationId: "badge-a", sessionKey: "badge-a" });
 		await deliverPush(page, context, { body: "Second", notificationId: "badge-b", sessionKey: "badge-b" });
-		await expect.poll(() => worker.evaluate(() => self.__moltisBadgeCount)).toBe(2);
+		await expect.poll(() => worker.evaluate(() => self.__antreBadgeCount)).toBe(2);
 		await page.evaluate(() => {
 			history.pushState(null, "", "/settings");
 			window.dispatchEvent(new PopStateEvent("popstate"));
 		});
 		await expect(page).toHaveURL(/\/settings(?:\/profile)?$/);
-		await expect.poll(() => worker.evaluate(() => self.__moltisBadgeCount)).toBe(2);
+		await expect.poll(() => worker.evaluate(() => self.__antreBadgeCount)).toBe(2);
 
 		await page.evaluate(async () => {
 			const registration = await navigator.serviceWorker.ready;
 			registration.active?.postMessage({ type: "CLEAR_NOTIFICATIONS", sessionKey: "badge-a" });
 		});
-		await expect.poll(() => worker.evaluate(() => self.__moltisBadgeCount)).toBe(1);
+		await expect.poll(() => worker.evaluate(() => self.__antreBadgeCount)).toBe(1);
 	});
 
 	test("acknowledges notification routing without reloading the SPA", async ({ page }) => {
 		await navigateAndWait(page, "/settings");
 		const result = await page.evaluate(async () => {
-			window.__moltisNavigationMarker = "still-loaded";
+			window.__antreNavigationMarker = "still-loaded";
 			const channel = new MessageChannel();
 			const acknowledged = new Promise((resolve) => {
 				channel.port1.onmessage = (event) => resolve(event.data?.handled === true);
@@ -800,7 +800,7 @@ test.describe("service worker", () => {
 			return {
 				acknowledged: await acknowledged,
 				pathname: window.location.pathname,
-				marker: window.__moltisNavigationMarker,
+				marker: window.__antreNavigationMarker,
 			};
 		});
 
@@ -893,7 +893,7 @@ test.describe("push settings", () => {
 		await expect.poll(() => readPushMarker(page)).toEqual({ revive: true });
 		await page.evaluate(() => window.dispatchEvent(new Event("focus")));
 		await expect
-			.poll(() => page.evaluate(() => window.__moltisPushHarness.current?.endpoint))
+			.poll(() => page.evaluate(() => window.__antrePushHarness.current?.endpoint))
 			.toBe("https://push.example.com/revival-c");
 		await expect.poll(() => readPushMarker(page)).toBeNull();
 		expect(requests).toEqual([
@@ -916,13 +916,13 @@ test.describe("push settings", () => {
 		await mockPushApi(page, { presenceStatus: 410, requests });
 		await navigateAndWait(page, "/chats");
 
-		await expect.poll(() => page.evaluate(() => localStorage.getItem("moltis-push-enabled"))).toBe("0");
-		await expect.poll(() => page.evaluate(() => window.__moltisPushHarness.unsubscribeCount)).toBe(1);
+		await expect.poll(() => page.evaluate(() => localStorage.getItem("antre-push-enabled"))).toBe("0");
+		await expect.poll(() => page.evaluate(() => window.__antrePushHarness.unsubscribeCount)).toBe(1);
 		const state = await page.evaluate(async () => {
-			const cache = await caches.open("moltis-state");
+			const cache = await caches.open("antre-state");
 			return {
-				disabled: Boolean(await cache.match("/__moltis__/push-disabled")),
-				pending: Boolean(await cache.match("/__moltis__/push-rotation-pending")),
+				disabled: Boolean(await cache.match("/__antre__/push-disabled")),
+				pending: Boolean(await cache.match("/__antre__/push-rotation-pending")),
 			};
 		});
 		expect(state).toEqual({ disabled: true, pending: false });
@@ -966,18 +966,18 @@ test.describe("push settings", () => {
 		await expect(revivalPage.getByRole("button", { name: "Disable push notifications" })).toBeVisible();
 		await expect.poll(() => readPushMarker(revivalPage)).toBeNull();
 
-		const readsBeforeRevocation = await page.evaluate(() => window.__moltisPushHarness.getSubscriptionCount);
+		const readsBeforeRevocation = await page.evaluate(() => window.__antrePushHarness.getSubscriptionCount);
 		await stalePresenceRoute.fulfill({ status: 410, body: "" });
 		await expect
-			.poll(() => page.evaluate(() => window.__moltisPushHarness.getSubscriptionCount))
+			.poll(() => page.evaluate(() => window.__antrePushHarness.getSubscriptionCount))
 			.toBeGreaterThan(readsBeforeRevocation);
 		await expect
 			.poll(() =>
 				revivalPage.evaluate(async () => ({
-					endpoint: localStorage.getItem("__moltisPushHarnessSharedEndpoint"),
-					enabled: localStorage.getItem("moltis-push-enabled"),
+					endpoint: localStorage.getItem("__antrePushHarnessSharedEndpoint"),
+					enabled: localStorage.getItem("antre-push-enabled"),
 					generation: Number.parseInt(
-						await (await (await caches.open("moltis-state")).match("/__moltis__/push-intent-generation")).text(),
+						await (await (await caches.open("antre-state")).match("/__antre__/push-intent-generation")).text(),
 						10,
 					),
 				})),
@@ -1009,16 +1009,16 @@ test.describe("push settings", () => {
 		await navigateAndWait(page, "/chats");
 		requests.length = 0;
 		await page.evaluate(async () => {
-			localStorage.setItem("moltis-push-enabled", "1");
-			await navigator.locks.request("moltis-push-state", async () => {
-				const cache = await caches.open("moltis-state");
-				await cache.put("/__moltis__/push-disabled", new Response("1"));
-				await cache.delete("/__moltis__/push-enabled");
+			localStorage.setItem("antre-push-enabled", "1");
+			await navigator.locks.request("antre-push-state", async () => {
+				const cache = await caches.open("antre-state");
+				await cache.put("/__antre__/push-disabled", new Response("1"));
+				await cache.delete("/__antre__/push-enabled");
 			});
 		});
 
 		await page.reload();
-		await expect.poll(() => page.evaluate(() => window.__moltisPushHarness.unsubscribeCount)).toBe(1);
+		await expect.poll(() => page.evaluate(() => window.__antrePushHarness.unsubscribeCount)).toBe(1);
 		expect(requests).toEqual([]);
 	});
 
@@ -1033,7 +1033,7 @@ test.describe("push settings", () => {
 		await navigateAndWait(page, "/chats");
 
 		await expect
-			.poll(() => page.evaluate(() => window.__moltisPushHarness.current?.endpoint))
+			.poll(() => page.evaluate(() => window.__antrePushHarness.current?.endpoint))
 			.toBe("https://push.example.com/fresh");
 		await expect.poll(() => readPushMarker(page)).toBeNull();
 		expect(requests[0]).toMatchObject({
@@ -1041,7 +1041,7 @@ test.describe("push settings", () => {
 			replaces: "https://push.example.com/unknown",
 			revive: false,
 		});
-		expect(await page.evaluate(() => window.__moltisPushHarness.unsubscribeCount)).toBe(1);
+		expect(await page.evaluate(() => window.__antrePushHarness.unsubscribeCount)).toBe(1);
 	});
 
 	test("retries failed VAPID rotation with the fresh endpoint and original replacement", async ({ page, context }) => {
@@ -1086,8 +1086,8 @@ test.describe("push settings", () => {
 			}),
 		]);
 		const state = await page.evaluate(async () => ({
-			currentEndpoint: window.__moltisPushHarness.current?.endpoint,
-			pending: Boolean(await (await caches.open("moltis-state")).match("/__moltis__/push-rotation-pending")),
+			currentEndpoint: window.__antrePushHarness.current?.endpoint,
+			pending: Boolean(await (await caches.open("antre-state")).match("/__antre__/push-rotation-pending")),
 		}));
 		expect(state).toEqual({ currentEndpoint: "https://push.example.com/rotated", pending: false });
 	});

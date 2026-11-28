@@ -2,7 +2,7 @@
 
 use std::time::Duration;
 
-use moltis_config::schema::DeliveryConfig;
+use antre_config::schema::DeliveryConfig;
 
 /// Fraction of the delay added or removed at random, so deliveries that
 /// failed together do not all retry in the same instant.

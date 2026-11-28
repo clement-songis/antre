@@ -101,11 +101,11 @@ impl LocalGgufEmbeddingProvider {
         Ok(model_path)
     }
 
-    /// Default cache directory: `~/.moltis/models/`.
+    /// Default cache directory: `~/.antre/models/`.
     pub fn default_cache_dir() -> PathBuf {
-        directories::ProjectDirs::from("", "", "moltis")
+        directories::ProjectDirs::from("", "", "antre")
             .map(|d: directories::ProjectDirs| d.data_dir().join("models"))
-            .unwrap_or_else(|| PathBuf::from(".moltis/models"))
+            .unwrap_or_else(|| PathBuf::from(".antre/models"))
     }
 }
 
@@ -249,7 +249,7 @@ mod tests {
     /// Exercises the real default GGUF without making the 300 MB artifact a CI dependency.
     ///
     /// Run with:
-    /// `MOLTIS_TEST_LOCAL_MODEL=/path/to/model.gguf cargo test -p moltis-memory \
+    /// `ANTRE_TEST_LOCAL_MODEL=/path/to/model.gguf cargo test -p antre-memory \
     ///   --features local-embeddings real_default_model_handles_context_edges_and_indexing \
     ///   -- --ignored`
     #[tokio::test(flavor = "multi_thread")]
@@ -260,8 +260,8 @@ mod tests {
             store_sqlite::SqliteMemoryStore,
         };
 
-        let model_path = std::env::var("MOLTIS_TEST_LOCAL_MODEL")
-            .expect("MOLTIS_TEST_LOCAL_MODEL must point to the default EmbeddingGemma GGUF");
+        let model_path = std::env::var("ANTRE_TEST_LOCAL_MODEL")
+            .expect("ANTRE_TEST_LOCAL_MODEL must point to the default EmbeddingGemma GGUF");
         let backend = LlamaBackend::init().expect("llama backend should initialize");
         let model = LlamaModel::load_from_file(
             &backend,

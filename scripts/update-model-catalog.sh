@@ -20,7 +20,7 @@ done
 
 curl -fsSL --max-time 120 -o "$work/api.json" "$url"
 cp "$snapshot" "$work/previous.json.gz"
-summary="$(cargo run --quiet -p moltis-model-catalog --bin pack-models-dev -- \
+summary="$(cargo run --quiet -p antre-model-catalog --bin pack-models-dev -- \
   "$work/api.json" "$snapshot" --diff "$work/previous.json.gz")"
 echo "$summary"
 if [ -n "$diff_out" ]; then

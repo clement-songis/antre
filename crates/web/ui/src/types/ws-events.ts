@@ -1,6 +1,6 @@
 // ── WebSocket event types (discriminated union) ──────────────
 
-/** All WebSocket event names emitted by the moltis gateway. */
+/** All WebSocket event names emitted by the antre gateway. */
 export enum WsEventName {
 	Chat = "chat",
 	Error = "error",
@@ -286,7 +286,7 @@ export interface WsEventPayloadMap {
 	[WsEventName.Delivery]: DeliveryPayload;
 }
 
-/** Outcome of one channel delivery attempt (mirrors `delivery_event` in moltis-chat). */
+/** Outcome of one channel delivery attempt (mirrors `delivery_event` in antre-chat). */
 export interface DeliveryPayload {
 	id: number;
 	sessionKey: string;

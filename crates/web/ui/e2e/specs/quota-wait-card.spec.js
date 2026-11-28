@@ -11,7 +11,7 @@ test.describe("quota wait card", () => {
 	test("shows the reset countdown and cancels the parked run", async ({ page }) => {
 		const pageErrors = watchPageErrors(page);
 		await page.evaluate(() => {
-			var ui = window.__moltis_modules["chat-ui"];
+			var ui = window.__antre_modules["chat-ui"];
 			ui.chatAddErrorCard({
 				icon: "⏳",
 				title: "Waiting for quota",

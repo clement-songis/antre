@@ -42,7 +42,7 @@ pub(super) fn register(reg: &mut MethodRegistry) {
         Box::new(|ctx| {
             Box::pin(async move {
                 let agent_id = resolve_session_agent_id_for_ctx(&ctx).await;
-                let identity = moltis_config::schema::AgentIdentity {
+                let identity = antre_config::schema::AgentIdentity {
                     name: ctx
                         .params
                         .get("name")
@@ -59,7 +59,7 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                         .and_then(|v| v.as_str())
                         .map(String::from),
                 };
-                moltis_config::save_identity_for_agent(&agent_id, &identity)
+                antre_config::save_identity_for_agent(&agent_id, &identity)
                     .map_err(|e| ErrorShape::new(error_codes::UNAVAILABLE, e.to_string()))?;
                 // Handle soul if present.
                 if let Some(soul_val) = ctx.params.get("soul") {
@@ -191,12 +191,12 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                         obj.insert(
                             "identity_fields".to_string(),
                             serde_json::json!(
-                                moltis_config::load_identity_for_agent(&id).unwrap_or_default()
+                                antre_config::load_identity_for_agent(&id).unwrap_or_default()
                             ),
                         );
                         obj.insert(
                             "soul".to_string(),
-                            serde_json::json!(moltis_config::load_soul_for_agent(&id)),
+                            serde_json::json!(antre_config::load_soul_for_agent(&id)),
                         );
                         obj.insert(
                             "default_id".to_string(),
@@ -399,7 +399,7 @@ pub(super) fn register(reg: &mut MethodRegistry) {
             Box::new(|ctx| {
                 Box::pin(async move {
                     let agent_id = resolve_requested_agent_id(&ctx, &ctx.params).await?;
-                    let identity = moltis_config::schema::AgentIdentity {
+                    let identity = antre_config::schema::AgentIdentity {
                         name: ctx
                             .params
                             .get("name")
@@ -416,7 +416,7 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                             .and_then(|v| v.as_str())
                             .map(String::from),
                     };
-                    moltis_config::save_identity_for_agent(&agent_id, &identity)
+                    antre_config::save_identity_for_agent(&agent_id, &identity)
                         .map_err(|e| ErrorShape::new(error_codes::UNAVAILABLE, e.to_string()))?;
                     // Handle soul if present.
                     if let Some(soul_val) = ctx.params.get("soul") {
@@ -483,7 +483,7 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                     let agent_id = resolve_requested_agent_id(&ctx, &ctx.params).await?;
                     let limit_chars = workspace_file_limit_chars(&ctx);
                     let mut files: Vec<serde_json::Value> = Vec::new();
-                    let root = moltis_config::agent_workspace_dir(&agent_id);
+                    let root = antre_config::agent_workspace_dir(&agent_id);
                     let root_exists = root.exists();
                     if root_exists {
                         list_agent_workspace_files_recursively(&root, &root, &mut files);
@@ -500,7 +500,7 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                             continue;
                         }
                         let agent_path = root.join(file_name);
-                        let root_path = moltis_config::data_dir().join(file_name);
+                        let root_path = antre_config::data_dir().join(file_name);
                         if !agent_path.exists() && root_path.exists() {
                             let mut entry = serde_json::json!({
                                 "path": file_name,
@@ -590,7 +590,7 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                         .to_string();
 
                     let full_path =
-                        moltis_config::agent_workspace_dir(&agent_id).join(&relative_path);
+                        antre_config::agent_workspace_dir(&agent_id).join(&relative_path);
                     if let Some(parent) = full_path.parent() {
                         std::fs::create_dir_all(parent).map_err(|e| {
                             ErrorShape::new(error_codes::UNAVAILABLE, e.to_string())
@@ -617,29 +617,29 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                             "missing 'id' or 'agent_id' parameter",
                         )
                     })?;
-                    let config = moltis_config::discover_and_load_readonly();
+                    let config = antre_config::discover_and_load_readonly();
                     let toml_str = match config.agents.presets.get(&id) {
                         Some(preset) => toml::to_string_pretty(preset).unwrap_or_default(),
                         None => String::new(),
                     };
                     let provenance =
-                        moltis_config::defaults::compute_preset_provenance(&config.agents);
+                        antre_config::defaults::compute_preset_provenance(&config.agents);
                     let source = provenance
                         .iter()
                         .find(|p| p.id == id)
                         .map(|p| p.source)
-                        .unwrap_or(moltis_config::defaults::ConfigSource::Custom);
+                        .unwrap_or(antre_config::defaults::ConfigSource::Custom);
                     // Return structured fields alongside TOML for UI controls.
                     let preset_fields = config.agents.presets.get(&id).map(|p| {
                         let mcp = match &p.mcp {
-                            moltis_config::schema::PresetMcpPolicy::All => serde_json::json!({
+                            antre_config::schema::PresetMcpPolicy::All => serde_json::json!({
                                 "mode": "all"
                             }),
-                            moltis_config::schema::PresetMcpPolicy::Allow(servers) => serde_json::json!({
+                            antre_config::schema::PresetMcpPolicy::Allow(servers) => serde_json::json!({
                                 "mode": "allow",
                                 "servers": servers.iter().map(|s| s.as_str()).collect::<Vec<&str>>()
                             }),
-                            moltis_config::schema::PresetMcpPolicy::Deny(servers) => serde_json::json!({
+                            antre_config::schema::PresetMcpPolicy::Deny(servers) => serde_json::json!({
                                 "mode": "deny",
                                 "servers": servers.iter().map(|s| s.as_str()).collect::<Vec<&str>>()
                             }),
@@ -678,10 +678,10 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                     })?;
                     validate_preset_id(&id)?;
                     reject_toml_backed_preset_update(&id)?;
-                    let config = moltis_config::discover_and_load_readonly();
+                    let config = antre_config::discover_and_load_readonly();
                     let preset =
                         preset_from_rpc_params(&id, &ctx.params, config.agents.presets.get(&id))?;
-                    let path = moltis_config::agent_defs::write_user_agent_def(&id, &preset)
+                    let path = antre_config::agent_defs::write_user_agent_def(&id, &preset)
                         .map_err(|e| ErrorShape::new(error_codes::UNAVAILABLE, e.to_string()))?;
                     refresh_agents_config(&ctx).await;
                     Ok(serde_json::json!({
@@ -703,9 +703,9 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                         )
                     })?;
                     validate_preset_id(&id)?;
-                    let config = moltis_config::discover_and_load_readonly();
+                    let config = antre_config::discover_and_load_readonly();
                     if let Some(existing) = config.agents.presets.get(&id)
-                        && !moltis_config::schema::is_default_agent_preset(&id, existing)
+                        && !antre_config::schema::is_default_agent_preset(&id, existing)
                     {
                         return Err(ErrorShape::new(
                             error_codes::INVALID_REQUEST,
@@ -713,7 +713,7 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                         ));
                     }
                     let preset = preset_from_rpc_params(&id, &ctx.params, None)?;
-                    let path = moltis_config::agent_defs::write_user_agent_def(&id, &preset)
+                    let path = antre_config::agent_defs::write_user_agent_def(&id, &preset)
                         .map_err(|e| ErrorShape::new(error_codes::UNAVAILABLE, e.to_string()))?;
                     refresh_agents_config(&ctx).await;
                     Ok(serde_json::json!({
@@ -735,7 +735,7 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                         )
                     })?;
                     validate_preset_id(&id)?;
-                    let deleted = moltis_config::agent_defs::delete_user_agent_def(&id)
+                    let deleted = antre_config::agent_defs::delete_user_agent_def(&id)
                         .map_err(|e| ErrorShape::new(error_codes::UNAVAILABLE, e.to_string()))?;
                     refresh_agents_config(&ctx).await;
                     Ok(serde_json::json!({ "ok": true, "id": id, "deleted": deleted }))
@@ -760,8 +760,8 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                         .to_string();
 
                     // Parse the TOML as a partial AgentPreset to validate it
-                    let partial: moltis_config::AgentPreset = if toml_str.trim().is_empty() {
-                        moltis_config::AgentPreset::default()
+                    let partial: antre_config::AgentPreset = if toml_str.trim().is_empty() {
+                        antre_config::AgentPreset::default()
                     } else {
                         toml::from_str(&toml_str).map_err(|e| {
                             ErrorShape::new(
@@ -771,8 +771,8 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                         })?
                     };
 
-                    // Write to moltis.toml using update_config
-                    moltis_config::update_config(|cfg| {
+                    // Write to antre.toml using update_config
+                    antre_config::update_config(|cfg| {
                         if toml_str.trim().is_empty() {
                             cfg.agents.presets.remove(&id);
                         } else {
@@ -800,7 +800,7 @@ pub(super) fn register(reg: &mut MethodRegistry) {
 
                     // Refresh in-memory agents_config if available
                     if let Some(ref agents_config) = ctx.state.services.agents_config {
-                        let fresh = moltis_config::discover_and_load();
+                        let fresh = antre_config::discover_and_load();
                         let mut guard = agents_config.write().await;
                         *guard = fresh.agents;
                     }
@@ -813,9 +813,9 @@ pub(super) fn register(reg: &mut MethodRegistry) {
             "agents.presets_list",
             Box::new(|ctx| {
                 Box::pin(async move {
-                    let config = moltis_config::discover_and_load_readonly();
+                    let config = antre_config::discover_and_load_readonly();
                     let toml_config =
-                        moltis_config::discover_and_load_readonly_without_agent_defs();
+                        antre_config::discover_and_load_readonly_without_agent_defs();
                     let persona_ids: std::collections::HashSet<String> =
                         if let Some(ref store) = ctx.state.services.agent_persona_store {
                             store
@@ -830,7 +830,7 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                         };
 
                     let all_provenance =
-                        moltis_config::defaults::compute_preset_provenance(&config.agents);
+                        antre_config::defaults::compute_preset_provenance(&config.agents);
                     let config_only: Vec<serde_json::Value> = config
                         .agents
                         .presets
@@ -838,18 +838,18 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                         .filter(|(name, _)| !persona_ids.contains(*name))
                         .map(|(name, preset)| {
                             let toml_str = toml::to_string_pretty(preset).unwrap_or_default();
-                            let markdown_path = moltis_config::data_dir()
+                            let markdown_path = antre_config::data_dir()
                                 .join("agents")
                                 .join(format!("{name}.md"));
                             let markdown_backed = markdown_path.exists();
                             let toml_backed = toml_config.agents.presets.get(name).is_some_and(|existing| {
-                                !moltis_config::schema::is_default_agent_preset(name, existing)
+                                !antre_config::schema::is_default_agent_preset(name, existing)
                             });
                             let provenance = all_provenance
                                 .iter()
                                 .find(|p| &p.id == name)
                                 .map(|p| p.source)
-                                .unwrap_or(moltis_config::defaults::ConfigSource::Custom);
+                                .unwrap_or(antre_config::defaults::ConfigSource::Custom);
                             serde_json::json!({
                                 "id": name,
                                 "name": preset.identity.name.as_deref().unwrap_or(name),
@@ -897,8 +897,8 @@ fn validate_preset_id(id: &str) -> Result<(), ErrorShape> {
 fn preset_from_rpc_params(
     id: &str,
     params: &serde_json::Value,
-    base: Option<&moltis_config::AgentPreset>,
-) -> Result<moltis_config::AgentPreset, ErrorShape> {
+    base: Option<&antre_config::AgentPreset>,
+) -> Result<antre_config::AgentPreset, ErrorShape> {
     if let Some(toml_str) = params.get("toml").and_then(|value| value.as_str())
         && !toml_str.trim().is_empty()
     {
@@ -973,19 +973,19 @@ fn preset_from_rpc_params(
 
 #[cfg(feature = "agent")]
 fn reject_toml_backed_preset_update(id: &str) -> Result<(), ErrorShape> {
-    let config = moltis_config::discover_and_load_readonly_without_agent_defs();
+    let config = antre_config::discover_and_load_readonly_without_agent_defs();
     if let Some(existing) = config.agents.presets.get(id)
-        && !moltis_config::schema::is_default_agent_preset(id, existing)
+        && !antre_config::schema::is_default_agent_preset(id, existing)
     {
         return Err(ErrorShape::new(
             error_codes::INVALID_REQUEST,
             format!(
-                "preset '{id}' is defined in moltis.toml; edit moltis.toml or remove that preset before using Web UI markdown overrides"
+                "preset '{id}' is defined in antre.toml; edit antre.toml or remove that preset before using Web UI markdown overrides"
             ),
         ));
     }
 
-    let markdown_path = moltis_config::data_dir()
+    let markdown_path = antre_config::data_dir()
         .join("agents")
         .join(format!("{id}.md"));
     if markdown_path.exists() {
@@ -1027,8 +1027,8 @@ fn parse_preset_param_error(message: String) -> ErrorShape {
 }
 
 #[cfg(feature = "agent")]
-fn parse_mcp_policy_param(params: &serde_json::Value) -> moltis_config::schema::PresetMcpPolicy {
-    use moltis_config::schema::{McpServerId, PresetMcpPolicy};
+fn parse_mcp_policy_param(params: &serde_json::Value) -> antre_config::schema::PresetMcpPolicy {
+    use antre_config::schema::{McpServerId, PresetMcpPolicy};
     let mode = params
         .get("mcp_mode")
         .and_then(|v| v.as_str())
@@ -1047,7 +1047,7 @@ fn parse_mcp_policy_param(params: &serde_json::Value) -> moltis_config::schema::
 #[cfg(feature = "agent")]
 async fn refresh_agents_config(ctx: &MethodContext) {
     if let Some(ref agents_config) = ctx.state.services.agents_config {
-        let fresh = moltis_config::discover_and_load();
+        let fresh = antre_config::discover_and_load();
         let mut guard = agents_config.write().await;
         *guard = fresh.agents;
     }

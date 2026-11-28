@@ -11,7 +11,7 @@ use std::{
 };
 
 use {
-    moltis_service_traits::{ServiceError, ServiceResult},
+    antre_service_traits::{ServiceError, ServiceResult},
     serde_json::Value,
     tokio::sync::oneshot,
 };

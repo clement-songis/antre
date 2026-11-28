@@ -10,16 +10,16 @@ use std::{
 };
 
 use {
-    moltis_config::schema::ToolMode,
+    antre_config::schema::ToolMode,
     serde_json::Value,
     tokio::sync::{Mutex, RwLock, mpsc},
     tracing::{debug, info, warn},
 };
 
 use {
-    moltis_agents::{runner::RunnerEvent, tool_registry::ToolRegistry},
-    moltis_providers::model_id::split_reasoning_suffix,
-    moltis_sessions::{PersistedMessage, store::SessionStore},
+    antre_agents::{runner::RunnerEvent, tool_registry::ToolRegistry},
+    antre_providers::model_id::split_reasoning_suffix,
+    antre_sessions::{PersistedMessage, store::SessionStore},
 };
 
 use crate::{
@@ -139,15 +139,15 @@ const FINAL_CHANNEL_STREAM_TIMEOUT: Duration = Duration::from_secs(30);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) struct ChannelReplyTargetKey {
-    channel_type: moltis_channels::ChannelType,
+    channel_type: antre_channels::ChannelType,
     account_id: String,
     chat_id: String,
     message_id: Option<String>,
     thread_id: Option<String>,
 }
 
-impl From<&moltis_channels::ChannelReplyTarget> for ChannelReplyTargetKey {
-    fn from(target: &moltis_channels::ChannelReplyTarget) -> Self {
+impl From<&antre_channels::ChannelReplyTarget> for ChannelReplyTargetKey {
+    fn from(target: &antre_channels::ChannelReplyTarget) -> Self {
         Self {
             channel_type: target.channel_type,
             account_id: target.account_id.clone(),
@@ -159,7 +159,7 @@ impl From<&moltis_channels::ChannelReplyTarget> for ChannelReplyTargetKey {
 }
 
 struct ChannelStreamWorker {
-    sender: moltis_channels::StreamSender,
+    sender: antre_channels::StreamSender,
     receives_progress_deltas: bool,
     receives_task_updates: bool,
 }
@@ -199,12 +199,12 @@ impl Drop for AbortOnDropTask {
 /// during long-running tool execution before the first text delta arrives.
 /// Stream-dedup only applies after at least one delta has been sent.
 pub(crate) struct ChannelStreamDispatcher {
-    outbound: Arc<dyn moltis_channels::plugin::ChannelStreamOutbound>,
-    targets: Vec<moltis_channels::ChannelReplyTarget>,
+    outbound: Arc<dyn antre_channels::plugin::ChannelStreamOutbound>,
+    targets: Vec<antre_channels::ChannelReplyTarget>,
     workers: Vec<ChannelStreamWorker>,
     tasks: Vec<AbortOnDropTask>,
     completed: Arc<Mutex<HashSet<ChannelReplyTargetKey>>>,
-    feedback: Option<Arc<moltis_channels::FeedbackService>>,
+    feedback: Option<Arc<antre_channels::FeedbackService>>,
     session_key: String,
     trace_correlation_key: String,
     started: bool,
@@ -221,7 +221,7 @@ impl ChannelStreamDispatcher {
         trace_correlation_key: &str,
     ) -> Option<Self> {
         let outbound = state.channel_stream_outbound()?;
-        let targets: Vec<moltis_channels::ChannelReplyTarget> = state
+        let targets: Vec<antre_channels::ChannelReplyTarget> = state
             .peek_channel_replies(session_key)
             .await
             .into_iter()
@@ -343,7 +343,7 @@ impl ChannelStreamDispatcher {
         self.sent_final_delta.store(true, Ordering::Release);
         self.ensure_started().await;
         self.send_to_workers(
-            moltis_channels::StreamEvent::Delta(delta.to_string()),
+            antre_channels::StreamEvent::Delta(delta.to_string()),
             "delta",
         )
         .await;
@@ -354,7 +354,7 @@ impl ChannelStreamDispatcher {
             return;
         }
         self.ensure_started().await;
-        let event = moltis_channels::StreamEvent::ProgressDelta(delta.to_string());
+        let event = antre_channels::StreamEvent::ProgressDelta(delta.to_string());
         for worker in &self.workers {
             if worker.receives_progress_deltas && worker.sender.send(event.clone()).await.is_err() {
                 debug!("channel stream progress delta dropped: worker closed");
@@ -364,9 +364,9 @@ impl ChannelStreamDispatcher {
 
     pub(crate) async fn send_task_update(
         &mut self,
-        mut update: moltis_channels::plugin::ChannelTaskUpdate,
+        mut update: antre_channels::plugin::ChannelTaskUpdate,
     ) {
-        use moltis_channels::plugin::ChannelTaskStatus;
+        use antre_channels::plugin::ChannelTaskStatus;
 
         self.ensure_started().await;
         let source_id = update.id.clone();
@@ -380,7 +380,7 @@ impl ChannelStreamDispatcher {
                 self.active_tasks.remove(&source_id);
             },
         }
-        let event = moltis_channels::StreamEvent::TaskUpdate(update);
+        let event = antre_channels::StreamEvent::TaskUpdate(update);
         for worker in &self.workers {
             if worker.receives_task_updates && worker.sender.send(event.clone()).await.is_err() {
                 debug!("channel stream task update dropped: worker closed");
@@ -398,7 +398,7 @@ impl ChannelStreamDispatcher {
         id
     }
 
-    async fn send_to_workers(&mut self, event: moltis_channels::StreamEvent, label: &str) {
+    async fn send_to_workers(&mut self, event: antre_channels::StreamEvent, label: &str) {
         for worker in &self.workers {
             if worker.sender.send(event.clone()).await.is_err() {
                 debug!("channel stream {label} dropped: worker closed");
@@ -421,18 +421,18 @@ impl ChannelStreamDispatcher {
     async fn finish_inner(&mut self) {
         let unfinished = std::mem::take(&mut self.active_tasks);
         for (id, title) in unfinished {
-            self.send_task_update(moltis_channels::plugin::ChannelTaskUpdate {
+            self.send_task_update(antre_channels::plugin::ChannelTaskUpdate {
                 id,
                 title,
-                status: moltis_channels::plugin::ChannelTaskStatus::Error,
+                status: antre_channels::plugin::ChannelTaskStatus::Error,
             })
             .await;
         }
-        self.send_terminal(moltis_channels::StreamEvent::Done).await;
+        self.send_terminal(antre_channels::StreamEvent::Done).await;
         self.join_workers().await;
     }
 
-    async fn send_terminal(&mut self, event: moltis_channels::StreamEvent) {
+    async fn send_terminal(&mut self, event: antre_channels::StreamEvent) {
         if self.workers.is_empty() {
             return;
         }
@@ -690,8 +690,8 @@ pub(crate) async fn run_explicit_shell_command(
         String::new(),
         String::new(),
         UsageSnapshot::new(
-            moltis_agents::model::Usage::default(),
-            Some(moltis_agents::model::Usage::default()),
+            antre_agents::model::Usage::default(),
+            Some(antre_agents::model::Usage::default()),
         ),
         started.elapsed().as_millis() as u64,
         user_message_index + 3, // +1 tool call assistant, +1 tool result, +1 final assistant
@@ -709,8 +709,8 @@ pub(crate) async fn run_explicit_shell_command(
     let mut output = build_assistant_turn_output(
         final_text,
         UsageSnapshot::new(
-            moltis_agents::model::Usage::default(),
-            Some(moltis_agents::model::Usage::default()),
+            antre_agents::model::Usage::default(),
+            Some(antre_agents::model::Usage::default()),
         ),
         started.elapsed().as_millis() as u64,
         None,
@@ -728,7 +728,7 @@ pub(crate) async fn run_explicit_shell_command(
 /// - `Native` — provider handles tool schemas via API (OpenAI function calling, etc.)
 /// - `Text` — tools are described in the prompt; the runner parses tool calls from text
 /// - `Off` — no tools at all
-pub(crate) fn effective_tool_mode(provider: &dyn moltis_agents::model::LlmProvider) -> ToolMode {
+pub(crate) fn effective_tool_mode(provider: &dyn antre_agents::model::LlmProvider) -> ToolMode {
     match provider.tool_mode() {
         Some(ToolMode::Native) => ToolMode::Native,
         Some(ToolMode::Text) => ToolMode::Text,
@@ -746,8 +746,8 @@ pub(crate) fn effective_tool_mode(provider: &dyn moltis_agents::model::LlmProvid
 pub(crate) async fn compact_session(
     store: &Arc<SessionStore>,
     session_key: &str,
-    config: &moltis_config::CompactionConfig,
-    provider: Option<&dyn moltis_agents::model::LlmProvider>,
+    config: &antre_config::CompactionConfig,
+    provider: Option<&dyn antre_agents::model::LlmProvider>,
     max_tool_result_bytes: usize,
 ) -> error::Result<compaction_run::CompactionOutcome> {
     let history = store
@@ -783,7 +783,7 @@ mod tests {
         receives_progress_deltas: bool,
         receives_task_updates: bool,
         claims_stream_delivery: bool,
-        events: Arc<Mutex<Vec<moltis_channels::StreamEvent>>>,
+        events: Arc<Mutex<Vec<antre_channels::StreamEvent>>>,
         reporting_calls: std::sync::atomic::AtomicUsize,
     }
 
@@ -804,14 +804,14 @@ mod tests {
     }
 
     #[async_trait]
-    impl moltis_channels::ChannelStreamOutbound for ClosureFinalizingOutbound {
+    impl antre_channels::ChannelStreamOutbound for ClosureFinalizingOutbound {
         async fn send_stream(
             &self,
             _account_id: &str,
             _to: &str,
             _reply_to: Option<&str>,
-            mut stream: moltis_channels::StreamReceiver,
-        ) -> moltis_channels::Result<()> {
+            mut stream: antre_channels::StreamReceiver,
+        ) -> antre_channels::Result<()> {
             let dropped = self.dropped.lock().await.take();
             let _notice = DropNotice(dropped);
             if let Some(started) = self.started.lock().await.take() {
@@ -820,7 +820,7 @@ mod tests {
             while let Some(event) = stream.recv().await {
                 if matches!(
                     event,
-                    moltis_channels::StreamEvent::Done | moltis_channels::StreamEvent::Error(_)
+                    antre_channels::StreamEvent::Done | antre_channels::StreamEvent::Error(_)
                 ) {
                     return Ok(());
                 }
@@ -840,16 +840,16 @@ mod tests {
     }
 
     #[async_trait]
-    impl moltis_channels::ChannelStreamOutbound for TerminalCheckingOutbound {
+    impl antre_channels::ChannelStreamOutbound for TerminalCheckingOutbound {
         async fn send_stream(
             &self,
             _account_id: &str,
             _to: &str,
             _reply_to: Option<&str>,
-            mut stream: moltis_channels::StreamReceiver,
-        ) -> moltis_channels::Result<()> {
+            mut stream: antre_channels::StreamReceiver,
+        ) -> antre_channels::Result<()> {
             while let Some(event) = stream.recv().await {
-                if matches!(event, moltis_channels::StreamEvent::Done) {
+                if matches!(event, antre_channels::StreamEvent::Done) {
                     self.final_observed_after_terminal.store(
                         self.terminal_runs.read().await.contains("run-1"),
                         Ordering::SeqCst,
@@ -870,19 +870,19 @@ mod tests {
     }
 
     #[async_trait]
-    impl moltis_channels::ChannelStreamOutbound for RecordingStreamOutbound {
+    impl antre_channels::ChannelStreamOutbound for RecordingStreamOutbound {
         async fn send_stream(
             &self,
             _account_id: &str,
             _to: &str,
             _reply_to: Option<&str>,
-            mut stream: moltis_channels::StreamReceiver,
-        ) -> moltis_channels::Result<()> {
+            mut stream: antre_channels::StreamReceiver,
+        ) -> antre_channels::Result<()> {
             while let Some(event) = stream.recv().await {
                 self.events.lock().await.push(event.clone());
                 if matches!(
                     event,
-                    moltis_channels::StreamEvent::Done | moltis_channels::StreamEvent::Error(_)
+                    antre_channels::StreamEvent::Done | antre_channels::StreamEvent::Error(_)
                 ) {
                     break;
                 }
@@ -895,8 +895,8 @@ mod tests {
             account_id: &str,
             to: &str,
             reply_to: Option<&str>,
-            stream: moltis_channels::StreamReceiver,
-        ) -> moltis_channels::Result<Vec<String>> {
+            stream: antre_channels::StreamReceiver,
+        ) -> antre_channels::Result<Vec<String>> {
             self.reporting_calls.fetch_add(1, Ordering::SeqCst);
             self.send_stream(account_id, to, reply_to, stream).await?;
             Ok(vec!["stream-message".into()])
@@ -923,11 +923,11 @@ mod tests {
         }
     }
 
-    fn channel_target() -> moltis_channels::ChannelReplyTarget {
-        moltis_channels::ChannelReplyTarget {
+    fn channel_target() -> antre_channels::ChannelReplyTarget {
+        antre_channels::ChannelReplyTarget {
             direct_chat: false,
             ack_message_id: None,
-            channel_type: moltis_channels::ChannelType::Telegram,
+            channel_type: antre_channels::ChannelType::Telegram,
             account_id: "bot".into(),
             chat_id: "chat".into(),
             message_id: Some("msg".into()),
@@ -936,7 +936,7 @@ mod tests {
     }
 
     fn dispatcher_with(
-        outbound: Arc<dyn moltis_channels::ChannelStreamOutbound>,
+        outbound: Arc<dyn antre_channels::ChannelStreamOutbound>,
     ) -> ChannelStreamDispatcher {
         ChannelStreamDispatcher {
             outbound,
@@ -955,15 +955,15 @@ mod tests {
         }
     }
 
-    fn event_kinds(events: &[moltis_channels::StreamEvent]) -> Vec<&'static str> {
+    fn event_kinds(events: &[antre_channels::StreamEvent]) -> Vec<&'static str> {
         events
             .iter()
             .map(|event| match event {
-                moltis_channels::StreamEvent::Delta(_) => "delta",
-                moltis_channels::StreamEvent::ProgressDelta(_) => "progress",
-                moltis_channels::StreamEvent::TaskUpdate(_) => "task",
-                moltis_channels::StreamEvent::Done => "done",
-                moltis_channels::StreamEvent::Error(_) => "error",
+                antre_channels::StreamEvent::Delta(_) => "delta",
+                antre_channels::StreamEvent::ProgressDelta(_) => "progress",
+                antre_channels::StreamEvent::TaskUpdate(_) => "task",
+                antre_channels::StreamEvent::Done => "done",
+                antre_channels::StreamEvent::Error(_) => "error",
             })
             .collect()
     }
@@ -1049,27 +1049,27 @@ mod tests {
         let mut dispatcher = dispatcher_with(outbound);
 
         dispatcher
-            .send_task_update(moltis_channels::plugin::ChannelTaskUpdate {
+            .send_task_update(antre_channels::plugin::ChannelTaskUpdate {
                 id: "call-1".into(),
                 title: "web_search".into(),
-                status: moltis_channels::plugin::ChannelTaskStatus::InProgress,
+                status: antre_channels::plugin::ChannelTaskStatus::InProgress,
             })
             .await;
         dispatcher.finish().await;
 
         let events = events.lock().await;
         assert_eq!(event_kinds(&events), vec!["task", "task", "done"]);
-        let Some(moltis_channels::StreamEvent::TaskUpdate(update)) = events.get(1) else {
+        let Some(antre_channels::StreamEvent::TaskUpdate(update)) = events.get(1) else {
             panic!("expected terminal task update");
         };
-        let Some(moltis_channels::StreamEvent::TaskUpdate(started)) = events.first() else {
+        let Some(antre_channels::StreamEvent::TaskUpdate(started)) = events.first() else {
             panic!("expected starting task update");
         };
         assert_eq!(started.id, "task-1");
         assert_eq!(update.id, started.id);
         assert_eq!(
             update.status,
-            moltis_channels::plugin::ChannelTaskStatus::Error
+            antre_channels::plugin::ChannelTaskStatus::Error
         );
     }
 

@@ -4,9 +4,9 @@
 use std::sync::Arc;
 
 use {
+    antre_agents::tool_registry::AgentTool,
+    antre_common::hooks::{HookAction, HookEvent, HookHandler, HookPayload},
     async_trait::async_trait,
-    moltis_agents::tool_registry::AgentTool,
-    moltis_common::hooks::{HookAction, HookEvent, HookHandler, HookPayload},
     serde_json::Value,
 };
 
@@ -69,7 +69,7 @@ impl HookHandler for SharedHook {
         &self,
         event: HookEvent,
         payload: &HookPayload,
-    ) -> moltis_common::Result<HookAction> {
+    ) -> antre_common::Result<HookAction> {
         self.0.handle(event, payload).await
     }
 
@@ -77,7 +77,7 @@ impl HookHandler for SharedHook {
         &self,
         event: HookEvent,
         payload: &HookPayload,
-    ) -> moltis_common::Result<HookAction> {
+    ) -> antre_common::Result<HookAction> {
         self.0.handle_sync(event, payload)
     }
 }
@@ -170,14 +170,14 @@ impl ModHook {
         &self,
         event: HookEvent,
         answer: Result<Option<String>, String>,
-    ) -> moltis_common::Result<HookAction> {
+    ) -> antre_common::Result<HookAction> {
         let intercept = self.may_intercept(event);
         match answer {
             Ok(None) => Ok(HookAction::Continue),
             Ok(Some(json)) if intercept => serde_json::from_str(&json)
                 .map(HookAction::ModifyPayload)
                 .map_err(|error| {
-                    moltis_common::Error::message(format!(
+                    antre_common::Error::message(format!(
                         "mod hook `{}` returned invalid JSON: {error}",
                         self.name
                     ))
@@ -190,9 +190,9 @@ impl ModHook {
         }
     }
 
-    fn payload_json(payload: &HookPayload) -> moltis_common::Result<String> {
+    fn payload_json(payload: &HookPayload) -> antre_common::Result<String> {
         serde_json::to_string(payload)
-            .map_err(|error| moltis_common::Error::message(error.to_string()))
+            .map_err(|error| antre_common::Error::message(error.to_string()))
     }
 }
 
@@ -216,17 +216,17 @@ impl HookHandler for ModHook {
         &self,
         event: HookEvent,
         payload: &HookPayload,
-    ) -> moltis_common::Result<HookAction> {
+    ) -> antre_common::Result<HookAction> {
         let payload_json = Self::payload_json(payload)?;
         let component = Arc::clone(&self.component);
         let event_name = event.to_string();
         let answer =
             tokio::task::spawn_blocking(move || component.handle_hook(&event_name, &payload_json))
                 .await
-                .map_err(|error| moltis_common::Error::message(error.to_string()))?
+                .map_err(|error| antre_common::Error::message(error.to_string()))?
                 .map_err(|error| {
                     warn!(hook = %self.name, %error, "mod hook failed");
-                    moltis_common::Error::message(error.to_string())
+                    antre_common::Error::message(error.to_string())
                 })?;
         self.interpret(event, answer)
     }
@@ -237,12 +237,12 @@ impl HookHandler for ModHook {
         &self,
         event: HookEvent,
         payload: &HookPayload,
-    ) -> moltis_common::Result<HookAction> {
+    ) -> antre_common::Result<HookAction> {
         let payload_json = Self::payload_json(payload)?;
         let answer = self
             .component
             .handle_hook(&event.to_string(), &payload_json)
-            .map_err(|error| moltis_common::Error::message(error.to_string()))?;
+            .map_err(|error| antre_common::Error::message(error.to_string()))?;
         self.interpret(event, answer)
     }
 }

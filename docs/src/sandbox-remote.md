@@ -1,6 +1,6 @@
 # Remote Sandbox Backends
 
-When Docker is unavailable (cloud deploys, restricted environments), moltis can
+When Docker is unavailable (cloud deploys, restricted environments), antre can
 use remote sandbox backends to provide isolated command execution via cloud APIs.
 
 ## Available Backends
@@ -25,7 +25,7 @@ VERCEL_TOKEN=ver_your_token_here
 VERCEL_TEAM_ID=team_your_team_id    # optional but recommended
 ```
 
-Or configure in `moltis.toml`:
+Or configure in `antre.toml`:
 
 ```toml
 [tools.exec.sandbox]
@@ -67,7 +67,7 @@ DAYTONA_API_KEY=dyt_your_api_key_here
 DAYTONA_API_URL=https://app.daytona.io/api  # default, change for self-hosted
 ```
 
-Or configure in `moltis.toml`:
+Or configure in `antre.toml`:
 
 ```toml
 [tools.exec.sandbox]
@@ -95,7 +95,7 @@ DAYTONA_API_URL=https://daytona.your-server.local/api
 ```
 
 This gives you full control over the sandbox infrastructure while still
-using moltis's multi-backend routing and workspace sync.
+using antre's multi-backend routing and workspace sync.
 
 ### Getting Credentials
 
@@ -131,9 +131,9 @@ Firecracker backend boots microVMs directly using the Firecracker hypervisor.
 backend = "firecracker"
 
 firecracker_bin = "/usr/local/bin/firecracker"
-firecracker_kernel = "/opt/moltis/vmlinux"
-firecracker_rootfs = "/opt/moltis/rootfs.ext4"
-firecracker_ssh_key = "/opt/moltis/ssh_key"
+firecracker_kernel = "/opt/antre/vmlinux"
+firecracker_rootfs = "/opt/antre/rootfs.ext4"
+firecracker_ssh_key = "/opt/antre/ssh_key"
 firecracker_vcpus = 2
 firecracker_memory_mb = 512
 ```
@@ -148,7 +148,7 @@ firecracker_memory_mb = 512
 
 ## Auto-Detection
 
-When `backend = "auto"` (the default), moltis selects the sandbox backend
+When `backend = "auto"` (the default), antre selects the sandbox backend
 in this order:
 
 1. **Local**: Apple Container → Podman → Docker → (next)
@@ -166,12 +166,12 @@ allows different sessions to use different backends:
 ```
 
 Configure backends in the **Settings → Sandboxes → Remote sandbox backends**
-section of the web UI, or via environment variables and `moltis.toml`.
+section of the web UI, or via environment variables and `antre.toml`.
 
 ## Web UI Configuration
 
 Navigate to **Settings → Sandboxes** and scroll to the "Remote sandbox backends"
-section. Enter your API tokens and save — moltis will use them after restart.
+section. Enter your API tokens and save — antre will use them after restart.
 
 ## Package Provisioning
 

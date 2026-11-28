@@ -80,7 +80,7 @@ export function handleViewMessage(message: JsonRpcMessage, context: HostContext)
 				id,
 				result: {
 					protocolVersion: MCP_APPS_PROTOCOL_VERSION,
-					hostInfo: { name: "moltis", version: "1" },
+					hostInfo: { name: "antre", version: "1" },
 					hostCapabilities: {},
 					hostContext: {
 						theme: context.theme,

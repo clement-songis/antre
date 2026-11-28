@@ -9,15 +9,15 @@ use {
     tracing::{info, warn},
 };
 
-use moltis_agents::tool_registry::ToolRegistry;
+use antre_agents::tool_registry::ToolRegistry;
 
 use crate::services::{McpService, ServiceError, ServiceResult};
 
-// Re-export pure parsing functions that now live in moltis-mcp.
-pub(crate) use moltis_mcp::{merge_env_overrides, parse_server_config};
+// Re-export pure parsing functions that now live in antre-mcp.
+pub(crate) use antre_mcp::{merge_env_overrides, parse_server_config};
 
 // Re-export sync_mcp_tools from the dedicated bridge crate.
-pub(crate) use moltis_mcp_agent_bridge::sync_mcp_tools;
+pub(crate) use antre_mcp_agent_bridge::sync_mcp_tools;
 
 // ── Config parsing helper ───────────────────────────────────────────────────
 
@@ -26,18 +26,18 @@ pub(crate) use moltis_mcp_agent_bridge::sync_mcp_tools;
 
 /// Live MCP service delegating to `McpManager`.
 pub struct LiveMcpService {
-    manager: Arc<moltis_mcp::McpManager>,
+    manager: Arc<antre_mcp::McpManager>,
     /// Shared tool registry for syncing MCP tools into the agent loop.
     /// Set after construction via `set_tool_registry`.
     tool_registry: RwLock<Option<Arc<RwLock<ToolRegistry>>>>,
     config_env_overrides: HashMap<String, String>,
     credential_store: RwLock<Option<Arc<crate::auth::CredentialStore>>>,
-    elicitations: Arc<moltis_mcp::PendingElicitations>,
+    elicitations: Arc<antre_mcp::PendingElicitations>,
 }
 
 impl LiveMcpService {
     pub fn new(
-        manager: Arc<moltis_mcp::McpManager>,
+        manager: Arc<antre_mcp::McpManager>,
         config_env_overrides: HashMap<String, String>,
         credential_store: Option<Arc<crate::auth::CredentialStore>>,
     ) -> Self {
@@ -46,7 +46,7 @@ impl LiveMcpService {
             tool_registry: RwLock::new(None),
             config_env_overrides,
             credential_store: RwLock::new(credential_store),
-            elicitations: Arc::new(moltis_mcp::PendingElicitations::new(
+            elicitations: Arc::new(antre_mcp::PendingElicitations::new(
                 std::time::Duration::from_secs(300),
             )),
         }
@@ -55,12 +55,12 @@ impl LiveMcpService {
     /// Use a different elicitation timeout (`mcp.elicitation_timeout_secs`).
     #[must_use]
     pub fn with_elicitation_timeout(mut self, timeout: std::time::Duration) -> Self {
-        self.elicitations = Arc::new(moltis_mcp::PendingElicitations::new(timeout));
+        self.elicitations = Arc::new(antre_mcp::PendingElicitations::new(timeout));
         self
     }
 
     /// Pending elicitations, shared with the MCP host.
-    pub fn elicitations(&self) -> Arc<moltis_mcp::PendingElicitations> {
+    pub fn elicitations(&self) -> Arc<antre_mcp::PendingElicitations> {
         Arc::clone(&self.elicitations)
     }
 
@@ -79,7 +79,7 @@ impl LiveMcpService {
     }
 
     /// Access the underlying manager.
-    pub fn manager(&self) -> &Arc<moltis_mcp::McpManager> {
+    pub fn manager(&self) -> &Arc<antre_mcp::McpManager> {
         &self.manager
     }
 
@@ -152,7 +152,7 @@ impl McpService for LiveMcpService {
             Err(e) => {
                 if matches!(
                     e,
-                    moltis_mcp::Error::Manager(moltis_mcp::McpManagerError::OAuthRequired { .. })
+                    antre_mcp::Error::Manager(antre_mcp::McpManagerError::OAuthRequired { .. })
                 ) {
                     if let Some(uri) = redirect_uri {
                         let auth_url = self
@@ -218,7 +218,7 @@ impl McpService for LiveMcpService {
             Err(e) => {
                 if matches!(
                     e,
-                    moltis_mcp::Error::Manager(moltis_mcp::McpManagerError::OAuthRequired { .. })
+                    antre_mcp::Error::Manager(antre_mcp::McpManagerError::OAuthRequired { .. })
                 ) {
                     if let Some(uri) = redirect_uri {
                         let auth_url = self
@@ -488,12 +488,11 @@ impl McpService for LiveMcpService {
 
     async fn elicitation_resolve(&self, params: Value) -> ServiceResult {
         let id = required_str(&params, "requestId")?;
-        let result: moltis_mcp::protocol::ElicitResult =
-            serde_json::from_value(serde_json::json!({
-                "action": params.get("action").cloned().unwrap_or(Value::Null),
-                "content": params.get("content").cloned().filter(|v| !v.is_null()),
-            }))
-            .map_err(|_| "'action' must be accept, decline or cancel".to_string())?;
+        let result: antre_mcp::protocol::ElicitResult = serde_json::from_value(serde_json::json!({
+            "action": params.get("action").cloned().unwrap_or(Value::Null),
+            "content": params.get("content").cloned().filter(|v| !v.is_null()),
+        }))
+        .map_err(|_| "'action' must be accept, decline or cancel".to_string())?;
         self.elicitations
             .resolve(id, result)
             .await
@@ -512,7 +511,7 @@ impl McpService for LiveMcpService {
     }
 }
 
-fn service_error(error: moltis_mcp::Error) -> ServiceError {
+fn service_error(error: antre_mcp::Error) -> ServiceError {
     ServiceError::from(error.to_string())
 }
 

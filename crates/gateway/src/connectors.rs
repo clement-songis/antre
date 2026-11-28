@@ -8,17 +8,17 @@ use std::{
 };
 
 use {
-    dashmap::DashSet,
-    futures::StreamExt,
-    moltis_channels::ChannelRegistry,
-    moltis_connector_caldav::{CalDavAccountConfig, CalDavConnector, CalDavDatasetConfig},
-    moltis_connector_gmail::{GmailAccountConfig, GmailConnector, GmailDatasetConfig},
-    moltis_connector_himalaya::{HimalayaAccountConfig, HimalayaConnector, HimalayaDatasetConfig},
-    moltis_connectors::{
+    antre_channels::ChannelRegistry,
+    antre_connector_caldav::{CalDavAccountConfig, CalDavConnector, CalDavDatasetConfig},
+    antre_connector_gmail::{GmailAccountConfig, GmailConnector, GmailDatasetConfig},
+    antre_connector_himalaya::{HimalayaAccountConfig, HimalayaConnector, HimalayaDatasetConfig},
+    antre_connectors::{
         Account, AccountCreate, AccountUpdate, ConnectorError, ConnectorItem, ConnectorKind,
         ConnectorReader, Dataset, DatasetCreate, DatasetUpdate, ItemQuery, MAX_QUERY_LIMIT,
         ProjectionManifest, SqliteConnectorStore, SyncRun,
     },
+    dashmap::DashSet,
+    futures::StreamExt,
     secrecy::ExposeSecret,
     serde_json::Value,
     sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions, SqliteSynchronous},
@@ -47,11 +47,11 @@ use crate::connectors_planner::ConnectorPlanner;
 
 #[cfg(feature = "vault")]
 use {
-    moltis_secret_store::{
+    antre_secret_store::{
         decrypt_secret_fields, encrypt_secret_fields, has_encrypted_secret_fields,
         has_plaintext_secret_fields,
     },
-    moltis_vault::VaultStatus,
+    antre_vault::VaultStatus,
 };
 
 #[cfg(feature = "vault")]
@@ -76,13 +76,13 @@ pub enum ConnectorManagerError {
     #[error("connector service unavailable: {0}")]
     Unavailable(String),
     #[error("connector provider operation failed")]
-    Provider(#[source] moltis_connector_caldav::CalDavConnectorError),
+    Provider(#[source] antre_connector_caldav::CalDavConnectorError),
     #[error("Gmail connector operation failed")]
-    GmailProvider(#[source] moltis_connector_gmail::GmailConnectorError),
+    GmailProvider(#[source] antre_connector_gmail::GmailConnectorError),
     #[error("Himalaya connector operation failed")]
-    HimalayaProvider(#[source] moltis_connector_himalaya::HimalayaConnectorError),
+    HimalayaProvider(#[source] antre_connector_himalaya::HimalayaConnectorError),
     #[error("channel history operation failed")]
-    Channel(#[source] moltis_channels::Error),
+    Channel(#[source] antre_channels::Error),
     #[error("internal connector operation failed")]
     Internal(#[source] anyhow::Error),
 }
@@ -94,7 +94,7 @@ pub struct ConnectorManager {
     google_token_path: PathBuf,
     export_root: PathBuf,
     #[cfg(feature = "vault")]
-    vault: Option<Arc<moltis_vault::Vault>>,
+    vault: Option<Arc<antre_vault::Vault>>,
     active_dataset_ids: DashSet<String>,
     active_account_ids: DashSet<String>,
     account_mutations: Mutex<AccountMutationState>,
@@ -127,7 +127,7 @@ impl ConnectorManager {
     pub async fn open(
         data_dir: &Path,
         max_connections: u32,
-        #[cfg(feature = "vault")] vault: Option<Arc<moltis_vault::Vault>>,
+        #[cfg(feature = "vault")] vault: Option<Arc<antre_vault::Vault>>,
     ) -> Result<Self> {
         if max_connections == 0 {
             return Err(ConnectorManagerError::InvalidInput(
@@ -157,7 +157,7 @@ impl ConnectorManager {
             .await
             .map_err(|error| internal(error, "open connector database"))?;
         restrict_file_permissions(&db_path).await?;
-        moltis_connectors::run_migrations(&pool)
+        antre_connectors::run_migrations(&pool)
             .await
             .map_err(ConnectorManagerError::from)?;
 
@@ -195,7 +195,7 @@ impl ConnectorManager {
 
     pub fn configure_planner(
         &self,
-        registry: Arc<tokio::sync::RwLock<moltis_providers::ProviderRegistry>>,
+        registry: Arc<tokio::sync::RwLock<antre_providers::ProviderRegistry>>,
     ) -> Result<()> {
         self.planner
             .set(ConnectorPlanner::new(registry))
@@ -410,7 +410,7 @@ impl ConnectorManager {
                 || replacement.is_some())
         {
             return Err(ConnectorManagerError::InvalidInput(
-                "config-managed account fields must be changed in moltis.toml".to_owned(),
+                "config-managed account fields must be changed in antre.toml".to_owned(),
             ));
         }
         if existing.source_key.is_none() && authority_changed && replacement.is_none() {
@@ -459,7 +459,7 @@ impl ConnectorManager {
         let account = self.account_required(id).await?;
         if account.source_key.is_some() {
             return Err(ConnectorManagerError::InvalidInput(
-                "config-managed connector accounts must be removed from moltis.toml".to_owned(),
+                "config-managed connector accounts must be removed from antre.toml".to_owned(),
             ));
         }
         let datasets = self
@@ -1017,11 +1017,11 @@ impl ConnectorManager {
     #[cfg(feature = "vault")]
     pub async fn decrypt_credentials_and_disable_vault(
         &self,
-        vault: &moltis_vault::Vault,
+        vault: &antre_vault::Vault,
     ) -> Result<usize> {
         let mut mutation = self.account_mutations.lock().await;
         let changed = decrypt_credentials(&self.store, vault).await?;
-        moltis_config::update_config(|config| {
+        antre_config::update_config(|config| {
             config.auth.vault_enabled = false;
         })
         .map_err(|error| internal(error, "persist disabled connector vault encryption"))?;
@@ -1035,7 +1035,7 @@ impl ConnectorManager {
     #[cfg(feature = "vault")]
     pub async fn decrypt_all_credentials_at(
         data_dir: &Path,
-        vault: &moltis_vault::Vault,
+        vault: &antre_vault::Vault,
     ) -> Result<usize> {
         let db_path = data_dir.join("connectors.db");
         if !db_path.exists() {
@@ -1156,8 +1156,8 @@ impl ConnectorManager {
             .await
             .map_err(ConnectorManagerError::from)?;
         let (items, observations): (
-            Vec<moltis_connectors::ConnectorItemInput>,
-            Vec<moltis_connectors::SourceObservation>,
+            Vec<antre_connectors::ConnectorItemInput>,
+            Vec<antre_connectors::SourceObservation>,
         ) = match account.kind {
             ConnectorKind::Caldav => {
                 let account_config = self.runtime_account_config(&account.id).await?;
@@ -1364,7 +1364,7 @@ impl ConnectorManager {
 #[cfg(feature = "vault")]
 async fn decrypt_credentials(
     store: &SqliteConnectorStore,
-    vault: &moltis_vault::Vault,
+    vault: &antre_vault::Vault,
 ) -> Result<usize> {
     let mut changed = 0;
     for account in store
@@ -1403,18 +1403,18 @@ fn safe_sync_error(error: &ConnectorManagerError) -> &'static str {
     match error {
         ConnectorManagerError::Channel(_) => "Channel message history synchronization failed",
         ConnectorManagerError::Provider(
-            moltis_connector_caldav::CalDavConnectorError::NetworkSafety(_),
+            antre_connector_caldav::CalDavConnectorError::NetworkSafety(_),
         ) => "CalDAV server address was blocked by network safety policy",
-        ConnectorManagerError::Provider(moltis_connector_caldav::CalDavConnectorError::Client(
-            moltis_caldav::Error::Timeout(_),
+        ConnectorManagerError::Provider(antre_connector_caldav::CalDavConnectorError::Client(
+            antre_caldav::Error::Timeout(_),
         )) => "CalDAV server timed out",
-        ConnectorManagerError::Provider(moltis_connector_caldav::CalDavConnectorError::Client(
-            moltis_caldav::Error::Protocol(message),
+        ConnectorManagerError::Provider(antre_connector_caldav::CalDavConnectorError::Client(
+            antre_caldav::Error::Protocol(message),
         )) if message.contains("401") || message.contains("Unauthorized") => {
             "CalDAV authentication failed"
         },
-        ConnectorManagerError::Provider(moltis_connector_caldav::CalDavConnectorError::Client(
-            moltis_caldav::Error::Protocol(message),
+        ConnectorManagerError::Provider(antre_connector_caldav::CalDavConnectorError::Client(
+            antre_caldav::Error::Protocol(message),
         )) if message.contains("403") || message.contains("Forbidden") => {
             "CalDAV account does not have access to the requested calendars"
         },

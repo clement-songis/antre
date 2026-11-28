@@ -1,6 +1,6 @@
 # Windows Sandboxing (design note)
 
-Moltis has no OS-level sandbox backend on Windows yet. On a Windows desktop
+Antre has no OS-level sandbox backend on Windows yet. On a Windows desktop
 without Docker, commands fall back to the [restricted host](sandbox.md#restricted-host-sandbox),
 which isolates nothing and asks for approval on every command. This page
 records the options studied for a native backend with the same policy as
@@ -14,7 +14,7 @@ Same rules as the macOS and Linux backends:
 - system directories readable, not writable;
 - the workspace readable (`ro`) or writable (`rw`), the sandbox home and temp
   writable, everything else in the user profile unreadable;
-- Moltis secrets and credential stores denied even inside allowed roots;
+- Antre secrets and credential stores denied even inside allowed roots;
 - network: none, egress proxy only, or open;
 - the environment rebuilt from scratch;
 - the whole process tree killed on timeout.
@@ -82,7 +82,7 @@ the `internetClient` capability.
 
 - *Windows Sandbox* (Hyper-V disposable VM) is strong but heavy, only on
   Pro/Enterprise editions, and has no programmatic API beyond `.wsb` files.
-- *WSL 2* runs a Linux kernel: Moltis could run commands with bubblewrap
+- *WSL 2* runs a Linux kernel: Antre could run commands with bubblewrap
   inside the WSL distribution. Strong isolation, but it needs WSL installed and
   the workspace crosses the 9P file-sharing boundary, which is slow.
 

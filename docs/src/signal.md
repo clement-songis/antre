@@ -1,7 +1,7 @@
 # Signal
 
-Moltis can receive and send Signal messages through an external
-[`signal-cli`](https://github.com/AsamK/signal-cli) daemon. The Moltis process
+Antre can receive and send Signal messages through an external
+[`signal-cli`](https://github.com/AsamK/signal-cli) daemon. The Antre process
 talks to the daemon over local HTTP JSON-RPC for outbound messages and Server
 Sent Events for inbound messages.
 
@@ -11,13 +11,13 @@ Sent Events for inbound messages.
 Signal Network
       │
       ▼
-signal-cli daemon  ── HTTP JSON-RPC + SSE ──  moltis-signal
+signal-cli daemon  ── HTTP JSON-RPC + SSE ──  antre-signal
       │                                      │
-      └──────── linked Signal account ──────┴── Moltis Gateway
+      └──────── linked Signal account ──────┴── Antre Gateway
 ```
 
-Moltis does not embed libsignal directly. The Signal account, device link, and
-Signal protocol state stay inside signal-cli, which keeps the Moltis integration
+Antre does not embed libsignal directly. The Signal account, device link, and
+Signal protocol state stay inside signal-cli, which keeps the Antre integration
 smaller and avoids coupling releases to Signal's native protocol internals.
 
 ## Prerequisites
@@ -35,7 +35,7 @@ number. Keep the HTTP daemon reachable only from trusted local services.
 
 ## Configuration
 
-Add a `[channels.signal.<account-id>]` section to `moltis.toml`:
+Add a `[channels.signal.<account-id>]` section to `antre.toml`:
 
 ```toml
 [channels.signal.personal]
@@ -78,9 +78,9 @@ the agent as the user message. Any text sent with the note is kept as a
 caption above the transcript. The audio is also saved to the session media so
 it can be played back from the web UI.
 
-Moltis fetches the audio from the daemon with signal-cli's `getAttachment`
+Antre fetches the audio from the daemon with signal-cli's `getAttachment`
 JSON-RPC method, so the daemon does not need to share a filesystem with
-Moltis. Audio is recognized from the attachment content type (AAC/M4A, Ogg
+Antre. Audio is recognized from the attachment content type (AAC/M4A, Ogg
 Opus, MP3, WAV, WebM), falling back to the file extension.
 
 The sender always gets an answer:

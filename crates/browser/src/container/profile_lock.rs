@@ -18,7 +18,7 @@ pub(super) struct ProfileLock {
 
 impl ProfileLock {
     pub(super) fn acquire(dir: &Path) -> Result<Self> {
-        let lock_path = dir.join(".moltis.lock");
+        let lock_path = dir.join(".antre.lock");
         let file = OpenOptions::new()
             .create(true)
             .read(true)
@@ -30,7 +30,7 @@ impl ProfileLock {
         file.try_lock().map_err(|error| {
             let message = match error {
                 TryLockError::WouldBlock => format!(
-                    "browser profile at {} is already in use by another Moltis browser container",
+                    "browser profile at {} is already in use by another Antre browser container",
                     dir.display()
                 ),
                 TryLockError::Error(error) => format!(

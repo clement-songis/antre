@@ -7,14 +7,14 @@
 //! over a relay connection authenticated with
 //! [NIP-42](https://github.com/nostr-protocol/nips/blob/master/42.md).
 //!
-//! This module lets the Moltis Nostr channel join those groups, decide when to
+//! This module lets the Antre Nostr channel join those groups, decide when to
 //! respond, and post threaded replies. It speaks plain NIP-29 — the same wire
 //! protocol any NIP-29 client uses — so it works against Buzz relays and
 //! generic NIP-29 relays alike. Unlike DMs (`gift_wrap`), group messages are
 //! **not** encrypted; the relay enforces membership and authorization.
 
 use {
-    moltis_channels::gating::MentionMode,
+    antre_channels::gating::MentionMode,
     nostr_sdk::prelude::{
         Alphabet, Client, Event, EventBuilder, EventId, Kind, PublicKey, SingleLetterTag, Tag,
         TagKind,
@@ -144,7 +144,7 @@ impl std::fmt::Display for GroupDenied {
 /// hostile or buggy relay could inject text straight into the agent.
 ///
 /// An empty `joined` list therefore denies everything rather than allowing
-/// everything — the opposite of the `moltis_channels::gating::is_allowed`
+/// everything — the opposite of the `antre_channels::gating::is_allowed`
 /// convention used for optional allowlists, because here the list defines
 /// membership itself rather than filtering within it.
 pub fn check_group_access(group_id: &str, joined: &[String]) -> Result<(), GroupDenied> {
@@ -430,7 +430,7 @@ pub async fn delete_event(client: &Client, group_id: &str, target: EventId) -> R
 /// Render an acknowledgement emoji in the form NIP-25 expects.
 ///
 /// The reaction controller emits the channel-neutral glyph vocabulary
-/// ([`ack_emoji::ALL`](moltis_channels::activity::ack_emoji::ALL)) — 👀 on
+/// ([`ack_emoji::ALL`](antre_channels::activity::ack_emoji::ALL)) — 👀 on
 /// receipt, a phase glyph per tool, then ✅/❌ — and NIP-25 wants exactly that:
 /// the literal glyph (or `+`/`-`). Glyphs therefore pass through untouched.
 ///
@@ -730,7 +730,7 @@ mod tests {
     /// literal text fails here rather than in a channel.
     #[test]
     fn every_canonical_ack_emoji_reaches_nip25_unchanged() {
-        for glyph in moltis_channels::activity::ack_emoji::ALL {
+        for glyph in antre_channels::activity::ack_emoji::ALL {
             assert_eq!(
                 ack_emoji_glyph(glyph),
                 *glyph,

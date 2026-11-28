@@ -14,8 +14,8 @@ use {
 use crate::error::Error;
 
 use {
-    moltis_agents::tool_registry::AgentTool,
-    moltis_config::schema::{SearchProvider as ConfigSearchProvider, WebSearchConfig},
+    antre_agents::tool_registry::AgentTool,
+    antre_config::schema::{SearchProvider as ConfigSearchProvider, WebSearchConfig},
 };
 
 use crate::exec::EnvVarProvider;
@@ -321,10 +321,7 @@ impl WebSearchTool {
     /// Also picks up the API key from `FirecrawlConfig` if not already set.
     #[cfg(feature = "firecrawl")]
     #[must_use]
-    pub fn with_firecrawl_config(
-        mut self,
-        config: &moltis_config::schema::FirecrawlConfig,
-    ) -> Self {
+    pub fn with_firecrawl_config(mut self, config: &antre_config::schema::FirecrawlConfig) -> Self {
         if let SearchProvider::Firecrawl { ref mut base_url } = self.provider {
             if !config.base_url.trim().is_empty() {
                 *base_url = config.base_url.clone();
@@ -1198,7 +1195,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_env_value_with_provider_uses_runtime_env_values() {
-        let key = format!("MOLTIS_TEST_DYNAMIC_KEY_{}", std::process::id());
+        let key = format!("ANTRE_TEST_DYNAMIC_KEY_{}", std::process::id());
         let provider = Arc::new(MockEnvProvider {
             vars: vec![(key.clone(), "dynamic-value".to_string())],
         });

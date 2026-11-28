@@ -33,9 +33,9 @@ lint: lockfile-check
     #!/usr/bin/env bash
     set -euo pipefail
     if [ "$(uname -s)" = "Darwin" ]; then
-        cargo +{{nightly_toolchain}} clippy -Z unstable-options --workspace --all-targets --exclude moltis-providers --exclude moltis-gateway --exclude moltis-matrix --timings -- -D warnings
-        cargo +{{nightly_toolchain}} clippy -Z unstable-options -p moltis-providers --all-targets --features local-llm-metal --timings -- -D warnings
-        cargo +{{nightly_toolchain}} clippy -Z unstable-options -p moltis-gateway --all-targets --features local-llm-metal --timings -- -D warnings
+        cargo +{{nightly_toolchain}} clippy -Z unstable-options --workspace --all-targets --exclude antre-providers --exclude antre-gateway --exclude antre-matrix --timings -- -D warnings
+        cargo +{{nightly_toolchain}} clippy -Z unstable-options -p antre-providers --all-targets --features local-llm-metal --timings -- -D warnings
+        cargo +{{nightly_toolchain}} clippy -Z unstable-options -p antre-gateway --all-targets --features local-llm-metal --timings -- -D warnings
     else
         cargo +{{nightly_toolchain}} clippy -Z unstable-options --workspace --all-features --all-targets --timings -- -D warnings
     fi
@@ -64,12 +64,12 @@ codesign-debug:
     #!/usr/bin/env bash
     [ "$(uname -s)" = "Darwin" ] || exit 0
     [ -n "${MACOS_CODESIGN_IDENTITY:-}" ] || exit 0
-    id="${MACOS_CODESIGN_IDENTIFIER:-org.moltis.dev}"
+    id="${MACOS_CODESIGN_IDENTIFIER:-ai.antre.dev}"
     sign() { codesign --force --sign "$MACOS_CODESIGN_IDENTITY" --identifier "$id" "$1" 2>/dev/null || true; }
     # Main binary
-    if [ -f target/debug/moltis ]; then sign target/debug/moltis; fi
+    if [ -f target/debug/antre ]; then sign target/debug/antre; fi
     # Test binaries (Mach-O executables, skip .d/.fingerprint/dylib)
-    for bin in target/debug/deps/moltis*; do
+    for bin in target/debug/deps/antre*; do
         if [ -f "$bin" ] && [ -x "$bin" ] && [[ "$bin" != *.d ]]; then sign "$bin"; fi
     done
 
@@ -80,52 +80,52 @@ build: build-web-assets
 
 # Build in release mode
 build-release:
-    ./scripts/cargo-build-moltis.sh --release
+    ./scripts/cargo-build-antre.sh --release
 
 # Build embedded WASM guest tools and pre-compile to .cwasm for AOT loading.
 wasm-tools:
-    cargo build --target wasm32-wasip2 -p moltis-wasm-calc -p moltis-wasm-web-fetch -p moltis-wasm-web-search --release
-    cargo run -p moltis-wasm-precompile --release
+    cargo build --target wasm32-wasip2 -p antre-wasm-calc -p antre-wasm-web-fetch -p antre-wasm-web-search --release
+    cargo run -p antre-wasm-precompile --release
 
 # Build just the release WASM artifacts expected by embedded-wasm builds.
 build-wasm-artifacts: wasm-tools
-    @echo "Built target/wasm32-wasip2/release/{moltis_wasm_calc,moltis_wasm_web_fetch,moltis_wasm_web_search}.{wasm,cwasm}"
+    @echo "Built target/wasm32-wasip2/release/{antre_wasm_calc,antre_wasm_web_fetch,antre_wasm_web_search}.{wasm,cwasm}"
 
 # Build the demo mod and assemble an installable package in target/mods/word-stats.
 mod-demo:
-    cargo build --target wasm32-wasip2 -p moltis-mod-word-stats --release
+    cargo build --target wasm32-wasip2 -p antre-mod-word-stats --release
     rm -rf target/mods/word-stats
     mkdir -p target/mods/word-stats/server
-    cp examples/mods/word-stats/moltis-mod.toml target/mods/word-stats/
-    cp target/wasm32-wasip2/release/moltis_mod_word_stats.wasm target/mods/word-stats/server/word_stats.wasm
+    cp examples/mods/word-stats/antre-mod.toml target/mods/word-stats/
+    cp target/wasm32-wasip2/release/antre_mod_word_stats.wasm target/mods/word-stats/server/word_stats.wasm
     @echo "Install with: mods.install {\"path\": \"$(pwd)/target/mods/word-stats\"}"
 
 # Build release after ensuring embedded WASM artifacts are present.
 build-release-with-wasm: build-wasm-artifacts
-    ./scripts/cargo-build-moltis.sh --release
+    ./scripts/cargo-build-antre.sh --release
 
 # Run local dev server with workspace-local config/data dirs.
 dev-server:
-    cargo build --bin moltis
+    cargo build --bin antre
     just codesign-debug
-    MOLTIS_SLACK_API_BASE_URL_ALLOWLIST=localhost,127.0.0.1 MOLTIS_CONFIG_DIR=.moltis/config MOLTIS_DATA_DIR=.moltis/ cargo run --bin moltis
+    ANTRE_SLACK_API_BASE_URL_ALLOWLIST=localhost,127.0.0.1 ANTRE_CONFIG_DIR=.antre/config ANTRE_DATA_DIR=.antre/ cargo run --bin antre
 
 # Build Debian package for the current architecture
 deb: build-release build-wasm-artifacts
     bash ./scripts/stage-wasm-package-assets.sh target/release
-    cargo deb -p moltis --no-build
+    cargo deb -p antre --no-build
 
 # Build Debian package for amd64
 deb-amd64: build-wasm-artifacts
-    ./scripts/cargo-build-moltis.sh --release --target x86_64-unknown-linux-gnu
+    ./scripts/cargo-build-antre.sh --release --target x86_64-unknown-linux-gnu
     bash ./scripts/stage-wasm-package-assets.sh target/x86_64-unknown-linux-gnu/release
-    cargo deb -p moltis --no-build --target x86_64-unknown-linux-gnu
+    cargo deb -p antre --no-build --target x86_64-unknown-linux-gnu
 
 # Build Debian package for arm64
 deb-arm64: build-wasm-artifacts
-    ./scripts/cargo-build-moltis.sh --release --target aarch64-unknown-linux-gnu
+    ./scripts/cargo-build-antre.sh --release --target aarch64-unknown-linux-gnu
     bash ./scripts/stage-wasm-package-assets.sh target/aarch64-unknown-linux-gnu/release
-    cargo deb -p moltis --no-build --target aarch64-unknown-linux-gnu
+    cargo deb -p antre --no-build --target aarch64-unknown-linux-gnu
 
 # Build Debian packages for all architectures
 deb-all: deb-amd64 deb-arm64
@@ -134,15 +134,15 @@ deb-all: deb-amd64 deb-arm64
 arch-pkg: build-release
     #!/usr/bin/env bash
     set -euo pipefail
-    VERSION="${MOLTIS_VERSION:-$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)"/\1/')}"
+    VERSION="${ANTRE_VERSION:-$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)"/\1/')}"
     ARCH=$(uname -m)
     PKG_DIR="target/arch-pkg"
     rm -rf "$PKG_DIR"
     mkdir -p "$PKG_DIR/usr/bin"
-    cp target/release/moltis "$PKG_DIR/usr/bin/moltis"
-    chmod 755 "$PKG_DIR/usr/bin/moltis"
+    cp target/release/antre "$PKG_DIR/usr/bin/antre"
+    chmod 755 "$PKG_DIR/usr/bin/antre"
     cat > "$PKG_DIR/.PKGINFO" <<PKGINFO
-    pkgname = moltis
+    pkgname = antre
     pkgver = ${VERSION}-1
     pkgdesc = Personal AI gateway inspired by OpenClaw
     url = https://www.moltis.org/
@@ -150,22 +150,22 @@ arch-pkg: build-release
     license = MIT
     PKGINFO
     cd "$PKG_DIR"
-    fakeroot -- tar --zstd -cf "../../moltis-${VERSION}-1-${ARCH}.pkg.tar.zst" .PKGINFO usr/
-    echo "Built moltis-${VERSION}-1-${ARCH}.pkg.tar.zst"
+    fakeroot -- tar --zstd -cf "../../antre-${VERSION}-1-${ARCH}.pkg.tar.zst" .PKGINFO usr/
+    echo "Built antre-${VERSION}-1-${ARCH}.pkg.tar.zst"
 
 # Build Arch package for x86_64
 arch-pkg-x86_64:
     #!/usr/bin/env bash
     set -euo pipefail
-    ./scripts/cargo-build-moltis.sh --release --target x86_64-unknown-linux-gnu
-    VERSION="${MOLTIS_VERSION:-$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)"/\1/')}"
+    ./scripts/cargo-build-antre.sh --release --target x86_64-unknown-linux-gnu
+    VERSION="${ANTRE_VERSION:-$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)"/\1/')}"
     PKG_DIR="target/arch-pkg-x86_64"
     rm -rf "$PKG_DIR"
     mkdir -p "$PKG_DIR/usr/bin"
-    cp target/x86_64-unknown-linux-gnu/release/moltis "$PKG_DIR/usr/bin/moltis"
-    chmod 755 "$PKG_DIR/usr/bin/moltis"
+    cp target/x86_64-unknown-linux-gnu/release/antre "$PKG_DIR/usr/bin/antre"
+    chmod 755 "$PKG_DIR/usr/bin/antre"
     cat > "$PKG_DIR/.PKGINFO" <<PKGINFO
-    pkgname = moltis
+    pkgname = antre
     pkgver = ${VERSION}-1
     pkgdesc = Personal AI gateway inspired by OpenClaw
     url = https://www.moltis.org/
@@ -173,22 +173,22 @@ arch-pkg-x86_64:
     license = MIT
     PKGINFO
     cd "$PKG_DIR"
-    fakeroot -- tar --zstd -cf "../../moltis-${VERSION}-1-x86_64.pkg.tar.zst" .PKGINFO usr/
-    echo "Built moltis-${VERSION}-1-x86_64.pkg.tar.zst"
+    fakeroot -- tar --zstd -cf "../../antre-${VERSION}-1-x86_64.pkg.tar.zst" .PKGINFO usr/
+    echo "Built antre-${VERSION}-1-x86_64.pkg.tar.zst"
 
 # Build Arch package for aarch64
 arch-pkg-aarch64:
     #!/usr/bin/env bash
     set -euo pipefail
-    ./scripts/cargo-build-moltis.sh --release --target aarch64-unknown-linux-gnu
-    VERSION="${MOLTIS_VERSION:-$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)"/\1/')}"
+    ./scripts/cargo-build-antre.sh --release --target aarch64-unknown-linux-gnu
+    VERSION="${ANTRE_VERSION:-$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)"/\1/')}"
     PKG_DIR="target/arch-pkg-aarch64"
     rm -rf "$PKG_DIR"
     mkdir -p "$PKG_DIR/usr/bin"
-    cp target/aarch64-unknown-linux-gnu/release/moltis "$PKG_DIR/usr/bin/moltis"
-    chmod 755 "$PKG_DIR/usr/bin/moltis"
+    cp target/aarch64-unknown-linux-gnu/release/antre "$PKG_DIR/usr/bin/antre"
+    chmod 755 "$PKG_DIR/usr/bin/antre"
     cat > "$PKG_DIR/.PKGINFO" <<PKGINFO
-    pkgname = moltis
+    pkgname = antre
     pkgver = ${VERSION}-1
     pkgdesc = Personal AI gateway inspired by OpenClaw
     url = https://www.moltis.org/
@@ -196,8 +196,8 @@ arch-pkg-aarch64:
     license = MIT
     PKGINFO
     cd "$PKG_DIR"
-    fakeroot -- tar --zstd -cf "../../moltis-${VERSION}-1-aarch64.pkg.tar.zst" .PKGINFO usr/
-    echo "Built moltis-${VERSION}-1-aarch64.pkg.tar.zst"
+    fakeroot -- tar --zstd -cf "../../antre-${VERSION}-1-aarch64.pkg.tar.zst" .PKGINFO usr/
+    echo "Built antre-${VERSION}-1-aarch64.pkg.tar.zst"
 
 # Build Arch packages for all architectures
 arch-pkg-all: arch-pkg-x86_64 arch-pkg-aarch64
@@ -208,12 +208,12 @@ rpm: build-release
 
 # Build RPM package for x86_64
 rpm-x86_64:
-    ./scripts/cargo-build-moltis.sh --release --target x86_64-unknown-linux-gnu
+    ./scripts/cargo-build-antre.sh --release --target x86_64-unknown-linux-gnu
     cargo generate-rpm -p crates/cli --target x86_64-unknown-linux-gnu
 
 # Build RPM package for aarch64
 rpm-aarch64:
-    ./scripts/cargo-build-moltis.sh --release --target aarch64-unknown-linux-gnu
+    ./scripts/cargo-build-antre.sh --release --target aarch64-unknown-linux-gnu
     cargo generate-rpm -p crates/cli --target aarch64-unknown-linux-gnu
 
 # Build RPM packages for all architectures
@@ -223,39 +223,39 @@ rpm-all: rpm-x86_64 rpm-aarch64
 appimage: build-release
     #!/usr/bin/env bash
     set -euo pipefail
-    VERSION="${MOLTIS_VERSION:-$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)"/\1/')}"
+    VERSION="${ANTRE_VERSION:-$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)"/\1/')}"
     ARCH=$(uname -m)
-    APP_DIR="target/moltis.AppDir"
+    APP_DIR="target/antre.AppDir"
     rm -rf "$APP_DIR"
     mkdir -p "$APP_DIR/usr/bin"
-    cp target/release/moltis "$APP_DIR/usr/bin/moltis"
-    chmod 755 "$APP_DIR/usr/bin/moltis"
-    cat > "$APP_DIR/moltis.desktop" <<DESKTOP
+    cp target/release/antre "$APP_DIR/usr/bin/antre"
+    chmod 755 "$APP_DIR/usr/bin/antre"
+    cat > "$APP_DIR/antre.desktop" <<DESKTOP
     [Desktop Entry]
     Type=Application
-    Name=Moltis
-    Exec=moltis
-    Icon=moltis
+    Name=Antre
+    Exec=antre
+    Icon=antre
     Categories=Network;
     Terminal=true
     DESKTOP
-    cat > "$APP_DIR/moltis.svg" <<SVG
+    cat > "$APP_DIR/antre.svg" <<SVG
     <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256"><rect width="256" height="256" fill="#333"/><text x="128" y="140" font-size="120" text-anchor="middle" fill="white">M</text></svg>
     SVG
-    ln -sf moltis.svg "$APP_DIR/.DirIcon"
+    ln -sf antre.svg "$APP_DIR/.DirIcon"
     cat > "$APP_DIR/AppRun" <<'APPRUN'
     #!/bin/sh
     SELF=$(readlink -f "$0")
     HERE=${SELF%/*}
-    exec "$HERE/usr/bin/moltis" "$@"
+    exec "$HERE/usr/bin/antre" "$@"
     APPRUN
     chmod +x "$APP_DIR/AppRun"
     if [ ! -f target/appimagetool ]; then
         wget -q "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-${ARCH}.AppImage" -O target/appimagetool
         chmod +x target/appimagetool
     fi
-    ARCH=${ARCH} target/appimagetool --appimage-extract-and-run "$APP_DIR" "moltis-${VERSION}-${ARCH}.AppImage"
-    echo "Built moltis-${VERSION}-${ARCH}.AppImage"
+    ARCH=${ARCH} target/appimagetool --appimage-extract-and-run "$APP_DIR" "antre-${VERSION}-${ARCH}.AppImage"
+    echo "Built antre-${VERSION}-${ARCH}.AppImage"
 
 # Build Snap package
 snap:
@@ -263,7 +263,7 @@ snap:
 
 # Build Flatpak
 flatpak:
-    cd flatpak && flatpak-builder --repo=repo --force-clean builddir org.moltbot.Moltis.yml
+    cd flatpak && flatpak-builder --repo=repo --force-clean builddir org.moltbot.Antre.yml
 
 # Run all CI checks (format, lint, build, test)
 ci: format-check lint i18n-check build-web-assets build test
@@ -391,10 +391,10 @@ test:
 
 # Run contract test suites (channel, provider, memory, tools)
 contract-tests:
-    cargo test -p moltis-channels contract
-    cargo test -p moltis-providers contract
-    cargo test -p moltis-memory contract
-    cargo test -p moltis-tools contract
+    cargo test -p antre-channels contract
+    cargo test -p antre-providers contract
+    cargo test -p antre-memory contract
+    cargo test -p antre-tools contract
 
 # Verify locale key parity across frontend i18n bundles.
 i18n-check:
@@ -406,13 +406,13 @@ ui-e2e-install:
 
 # Run gateway web UI e2e tests (Playwright).
 ui-e2e:
-    cargo +{{nightly_toolchain}} build --bin moltis
+    cargo +{{nightly_toolchain}} build --bin antre
     just codesign-debug
     cd crates/web/ui && npm run e2e
 
 # Run gateway web UI e2e tests with headed browser.
 ui-e2e-headed:
-    cargo +{{nightly_toolchain}} build --bin moltis
+    cargo +{{nightly_toolchain}} build --bin antre
     just codesign-debug
     cd crates/web/ui && npm run e2e:headed
 
@@ -446,23 +446,23 @@ desktop-mockup file="" feedback="" capture="":
     feedback="$(absolute {{quote(feedback)}})"
     capture="$(absolute {{quote(capture)}})"
     cd apps/desktop
-    MOLTIS_MOCKUP_FILE="$file" cargo build --locked --features mockup
+    ANTRE_MOCKUP_FILE="$file" cargo build --locked --features mockup
     args=(--mockup)
     if [ -n "$feedback" ]; then args+=(--feedback "$feedback"); fi
     if [ -n "$capture" ]; then args+=(--capture "$capture"); fi
-    exec target/debug/moltis-desktop "${args[@]}"
+    exec target/debug/antre-desktop "${args[@]}"
 
-# Package "Moltis Desktop.app" (macOS) with the moltis daemon inside.
+# Package "Antre Desktop.app" (macOS) with the antre daemon inside.
 desktop-package-macos:
     ./scripts/package-desktop-macos.sh
 
-# Package the Moltis Desktop AppImage (Linux) with the moltis daemon inside.
+# Package the Antre Desktop AppImage (Linux) with the antre daemon inside.
 desktop-package-linux:
     ./scripts/package-desktop-linux.sh
 
-# Build "Moltis Desktop.app" with the moltis daemon inside (release) and open it.
+# Build "Antre Desktop.app" with the antre daemon inside (release) and open it.
 desktop-open-macos: desktop-package-macos
-    open "apps/desktop/target/bundle/Moltis Desktop.app"
+    open "apps/desktop/target/bundle/Antre Desktop.app"
 
 # Build Rust static library and generated C header for the macOS app.
 swift-build-rust:
@@ -490,7 +490,7 @@ swift-run: swift-build-rust swift-generate
 
 # Open generated project in Xcode.
 swift-open: swift-build-rust swift-generate
-    open apps/macos/Moltis.xcodeproj
+    open apps/macos/Antre.xcodeproj
 
 # Generate iOS app Xcode project.
 ios-generate:
@@ -498,13 +498,13 @@ ios-generate:
 
 # Generate Apollo GraphQL types for iOS.
 ios-graphql:
-    cargo run -p moltis-schema-export -- apps/ios/GraphQL/Schema/schema.graphqls
+    cargo run -p antre-schema-export -- apps/ios/GraphQL/Schema/schema.graphqls
     ./scripts/generate-ios-graphql.sh
 
 # Build iOS app (generic iOS destination, no signing).
 ios-build: ios-generate ios-graphql
     ./scripts/generate-ios-project.sh
-    xcodebuild -project apps/ios/Moltis.xcodeproj -scheme Moltis -configuration Debug -destination "generic/platform=iOS" CODE_SIGNING_ALLOWED=NO build
+    xcodebuild -project apps/ios/Antre.xcodeproj -scheme Antre -configuration Debug -destination "generic/platform=iOS" CODE_SIGNING_ALLOWED=NO build
 
 # Lint iOS app sources with SwiftLint.
 ios-lint:
@@ -513,15 +513,15 @@ ios-lint:
 # Open iOS project in Xcode (regenerates GraphQL types and project first).
 ios-open: ios-generate ios-graphql
     ./scripts/generate-ios-project.sh
-    open apps/ios/Moltis.xcodeproj
+    open apps/ios/Antre.xcodeproj
 
 # Build the APNS push relay.
 courier-build:
-    cargo build -p moltis-courier --release
+    cargo build -p antre-courier --release
 
 # Cross-compile courier for linux/x86_64.
 courier-cross:
-    cargo build -p moltis-courier --release --target x86_64-unknown-linux-gnu
+    cargo build -p antre-courier --release --target x86_64-unknown-linux-gnu
 
 # Deploy courier to remote server(s) via Ansible.
 courier-deploy:
@@ -529,7 +529,7 @@ courier-deploy:
 
 # Run the APNS push relay (dev).
 courier-run *ARGS:
-    cargo run -p moltis-courier -- {{ARGS}}
+    cargo run -p antre-courier -- {{ARGS}}
 
 # Serve the website locally with SSR partial injection (default 127.0.0.1:4000).
 website-dev:

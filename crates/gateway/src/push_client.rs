@@ -43,7 +43,7 @@ async fn resolve_endpoint(endpoint: &Uri) -> Result<ResolvedEndpoint, WebPushErr
             .map(|address| address.ip())
             .collect()
     };
-    if addresses.is_empty() || addresses.iter().any(moltis_common::ssrf::is_private_ip) {
+    if addresses.is_empty() || addresses.iter().any(antre_common::ssrf::is_private_ip) {
         return Err(WebPushError::InvalidUri);
     }
 

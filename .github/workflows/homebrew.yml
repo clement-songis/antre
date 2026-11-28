@@ -43,7 +43,7 @@ jobs:
           for i in $(seq 1 30); do
             COUNT=0
             for target in aarch64-apple-darwin x86_64-apple-darwin aarch64-unknown-linux-gnu x86_64-unknown-linux-gnu; do
-              ASSET="moltis-${VERSION}-${target}.tar.gz"
+              ASSET="antre-${VERSION}-${target}.tar.gz"
               URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/${ASSET}"
               if curl --silent --show-error --fail --location --head "$URL" >/dev/null; then
                 COUNT=$((COUNT + 1))
@@ -72,7 +72,7 @@ jobs:
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
 
           for target in aarch64-apple-darwin x86_64-apple-darwin aarch64-unknown-linux-gnu x86_64-unknown-linux-gnu; do
-            ASSET="moltis-${VERSION}-${target}.tar.gz"
+            ASSET="antre-${VERSION}-${target}.tar.gz"
             URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/${ASSET}"
             curl --silent --show-error --fail --location "$URL" -o "$ASSET"
             SHA=$(sha256sum "$ASSET" | cut -d' ' -f1)
@@ -84,14 +84,14 @@ jobs:
       - name: Checkout homebrew-tap
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
-          repository: moltis-org/homebrew-tap
+          repository: antre-ai/homebrew-tap
           token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
           persist-credentials: true
 
       - name: Update formula
         run: |
-          cat > Formula/moltis.rb <<RUBY
-          class Moltis < Formula
+          cat > Formula/antre.rb <<RUBY
+          class Antre < Formula
             desc "Personal AI gateway — one binary, multiple LLM providers"
             homepage "https://www.moltis.org/"
             license "MIT"
@@ -99,32 +99,32 @@ jobs:
 
             on_macos do
               if Hardware::CPU.arm?
-                url "https://github.com/moltis-org/moltis/releases/download/#{version}/moltis-#{version}-aarch64-apple-darwin.tar.gz"
+                url "https://github.com/antre-ai/antre/releases/download/#{version}/antre-#{version}-aarch64-apple-darwin.tar.gz"
                 sha256 "${SHA_aarch64_apple_darwin}"
               else
-                url "https://github.com/moltis-org/moltis/releases/download/#{version}/moltis-#{version}-x86_64-apple-darwin.tar.gz"
+                url "https://github.com/antre-ai/antre/releases/download/#{version}/antre-#{version}-x86_64-apple-darwin.tar.gz"
                 sha256 "${SHA_x86_64_apple_darwin}"
               end
             end
 
             on_linux do
               if Hardware::CPU.arm?
-                url "https://github.com/moltis-org/moltis/releases/download/#{version}/moltis-#{version}-aarch64-unknown-linux-gnu.tar.gz"
+                url "https://github.com/antre-ai/antre/releases/download/#{version}/antre-#{version}-aarch64-unknown-linux-gnu.tar.gz"
                 sha256 "${SHA_aarch64_unknown_linux_gnu}"
               else
-                url "https://github.com/moltis-org/moltis/releases/download/#{version}/moltis-#{version}-x86_64-unknown-linux-gnu.tar.gz"
+                url "https://github.com/antre-ai/antre/releases/download/#{version}/antre-#{version}-x86_64-unknown-linux-gnu.tar.gz"
                 sha256 "${SHA_x86_64_unknown_linux_gnu}"
               end
             end
 
             def install
-              libexec.install "moltis"
-              share.install "share/moltis"
-              (bin/"moltis").write_env_script libexec/"moltis", MOLTIS_SHARE_DIR: share/"moltis"
+              libexec.install "antre"
+              share.install "share/antre"
+              (bin/"antre").write_env_script libexec/"antre", ANTRE_SHARE_DIR: share/"antre"
             end
 
             test do
-              assert_match "moltis", shell_output("#{bin}/moltis --version")
+              assert_match "antre", shell_output("#{bin}/antre --version")
             end
           end
           RUBY
@@ -133,6 +133,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add Formula/moltis.rb
-          git commit -m "moltis ${VERSION}"
+          git add Formula/antre.rb
+          git commit -m "antre ${VERSION}"
           git push

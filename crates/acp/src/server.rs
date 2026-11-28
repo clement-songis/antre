@@ -1,4 +1,4 @@
-//! Transport wiring: run a [`MoltisAgent`] over a byte stream.
+//! Transport wiring: run a [`AntreAgent`] over a byte stream.
 //!
 //! # stdout is the wire
 //!
@@ -6,7 +6,7 @@
 //! stray `println!`, or a `tracing` subscriber whose writer defaults to stdout,
 //! corrupts the stream and the client disconnects with a parse error. Callers
 //! must point logging at stderr before calling [`run_stdio`] — see
-//! `moltis acp` in the CLI, and the `stdout_is_only_protocol_framing` test.
+//! `antre acp` in the CLI, and the `stdout_is_only_protocol_framing` test.
 
 use std::{io, rc::Rc, sync::Arc};
 
@@ -22,7 +22,7 @@ use {
     },
 };
 
-use crate::{agent::MoltisAgent, backend::AcpBackend};
+use crate::{agent::AntreAgent, backend::AcpBackend};
 
 /// Maximum size of one newline-delimited JSON-RPC message.
 pub const MAX_JSON_RPC_FRAME_BYTES: usize = 4 * 1024 * 1024;
@@ -50,7 +50,7 @@ where
     R: AsyncRead + Unpin + 'static,
     W: AsyncWrite + Unpin + 'static,
 {
-    let agent = Rc::new(MoltisAgent::new(Arc::clone(&backend)));
+    let agent = Rc::new(AntreAgent::new(Arc::clone(&backend)));
     let (connection, io_task) = acp::AgentSideConnection::new_with_limits(
         Rc::clone(&agent),
         output.compat_write(),

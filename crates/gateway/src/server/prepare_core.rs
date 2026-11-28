@@ -23,9 +23,9 @@ use {
         session::LiveSessionService,
         state::GatewayState,
     },
-    moltis_projects::ProjectStore,
-    moltis_providers::ProviderRegistry,
-    moltis_sessions::{
+    antre_projects::ProjectStore,
+    antre_providers::ProviderRegistry,
+    antre_sessions::{
         metadata::{SessionMetadata, SqliteSessionMetadata},
         session_events::SessionEventBus,
         store::SessionStore,
@@ -44,11 +44,11 @@ mod tool_registration;
 
 #[cfg(feature = "trusted-network")]
 fn apply_web_fetch_network_policy(
-    tool: moltis_tools::web_fetch::WebFetchTool,
+    tool: antre_tools::web_fetch::WebFetchTool,
     profile: CoreStartupProfile,
-    sandbox: &moltis_tools::sandbox::SandboxConfig,
-) -> moltis_tools::web_fetch::WebFetchTool {
-    if sandbox.network != moltis_network_filter::NetworkPolicy::Trusted {
+    sandbox: &antre_tools::sandbox::SandboxConfig,
+) -> antre_tools::web_fetch::WebFetchTool {
+    if sandbox.network != antre_network_filter::NetworkPolicy::Trusted {
         return tool;
     }
     let proxy = if profile.is_headless() {
@@ -110,24 +110,24 @@ pub async fn prepare_gateway_core_with_profile(
 
     // Apply directory overrides before loading config.
     if let Some(dir) = config_dir {
-        moltis_config::set_config_dir(dir);
+        antre_config::set_config_dir(dir);
     }
     if let Some(ref dir) = data_dir {
-        moltis_config::set_data_dir(dir.clone());
+        antre_config::set_data_dir(dir.clone());
     }
 
-    // Resolve auth from environment (MOLTIS_TOKEN / MOLTIS_PASSWORD).
-    let token = std::env::var("MOLTIS_TOKEN").ok();
-    let password = std::env::var("MOLTIS_PASSWORD").ok();
+    // Resolve auth from environment (ANTRE_TOKEN / ANTRE_PASSWORD).
+    let token = std::env::var("ANTRE_TOKEN").ok();
+    let password = std::env::var("ANTRE_PASSWORD").ok();
 
     // Cloud deploy platform — hides local-only providers (local-llm, ollama).
-    let deploy_platform = std::env::var("MOLTIS_DEPLOY_PLATFORM").ok();
+    let deploy_platform = std::env::var("ANTRE_DEPLOY_PLATFORM").ok();
     let resolved_auth = auth::resolve_auth(token, password.clone());
 
-    // Load config file (moltis.toml / .yaml / .json) if present.
+    // Load config file (antre.toml / .yaml / .json) if present.
     // Note: initialize_config() is called once at CLI startup (main.rs)
     // or by the swift-bridge before reaching here.
-    let mut config = moltis_config::discover_and_load();
+    let mut config = antre_config::discover_and_load();
     info!(
         offered_channels = ?config.channels.offered,
         "loaded offered channels from config"
@@ -139,13 +139,13 @@ pub async fn prepare_gateway_core_with_profile(
     let mut startup_mem_probe = StartupMemProbe::new();
     startup_mem_probe.checkpoint("prepare_gateway.start");
 
-    // CLI --no-tls / MOLTIS_NO_TLS overrides config file TLS setting, and
+    // CLI --no-tls / ANTRE_NO_TLS overrides config file TLS setting, and
     // `tls.loopback_http` serves plain HTTP on loopback binds.
     if no_tls || !config.tls.active_for_bind(bind) {
         config.tls.enabled = false;
     }
-    let behind_proxy = env_flag_enabled("MOLTIS_BEHIND_PROXY");
-    let allow_tls_behind_proxy = env_flag_enabled("MOLTIS_ALLOW_TLS_BEHIND_PROXY");
+    let behind_proxy = env_flag_enabled("ANTRE_BEHIND_PROXY");
+    let allow_tls_behind_proxy = env_flag_enabled("ANTRE_ALLOW_TLS_BEHIND_PROXY");
     #[cfg(feature = "tls")]
     let tls_enabled_for_gateway = config.tls.enabled;
     #[cfg(not(feature = "tls"))]
@@ -157,12 +157,12 @@ pub async fn prepare_gateway_core_with_profile(
     )?;
     if behind_proxy && tls_enabled_for_gateway && allow_tls_behind_proxy {
         warn!(
-            "MOLTIS_ALLOW_TLS_BEHIND_PROXY=true is set; ensure your proxy uses HTTPS upstream or TLS passthrough to avoid redirect loops"
+            "ANTRE_ALLOW_TLS_BEHIND_PROXY=true is set; ensure your proxy uses HTTPS upstream or TLS passthrough to avoid redirect loops"
         );
     }
     let base_provider_config = config.providers.clone();
 
-    // Migrate voice API keys from moltis.toml to the credential store on
+    // Migrate voice API keys from antre.toml to the credential store on
     // first run after upgrade.  This is idempotent — once keys are in the
     // store the TOML entries are cleared and subsequent runs are a no-op.
     #[cfg(feature = "voice")]
@@ -187,11 +187,11 @@ pub async fn prepare_gateway_core_with_profile(
     );
 
     // Another tool's credentials are read only with the user's consent.
-    moltis_providers::openai_codex::allow_codex_cli_tokens(
+    antre_providers::openai_codex::allow_codex_cli_tokens(
         config
             .providers
             .external_credentials
-            .contains(&moltis_config::schema::ExternalCredentialSource::CodexCli),
+            .contains(&antre_config::schema::ExternalCredentialSource::CodexCli),
     );
     let has_explicit_provider_settings =
         crate::provider_setup::has_explicit_provider_settings(&config.providers);
@@ -205,7 +205,7 @@ pub async fn prepare_gateway_core_with_profile(
         )
     };
 
-    let catalog_data_dir = moltis_config::data_dir();
+    let catalog_data_dir = antre_config::data_dir();
     super::model_catalog::init_model_catalog(&catalog_data_dir).await;
     super::model_catalog::spawn_catalog_refresh(&config.catalog, &catalog_data_dir);
 
@@ -217,7 +217,7 @@ pub async fn prepare_gateway_core_with_profile(
         ProviderRegistry::from_config_with_static_catalogs(
             &effective_providers,
             &config_env_overrides,
-            moltis_providers::extract_cw_overrides(&config.models),
+            antre_providers::extract_cw_overrides(&config.models),
         ),
     ));
     {
@@ -226,12 +226,12 @@ pub async fn prepare_gateway_core_with_profile(
     }
     let (provider_summary, providers_available_at_startup) = {
         let reg = registry.read().await;
-        tokio::spawn(moltis_providers::registry::run_context_probes(
+        tokio::spawn(antre_providers::registry::run_context_probes(
             effective_providers.clone(),
             reg.list_models()
                 .iter()
                 .map(|model| {
-                    let raw = moltis_providers::model_id::raw_model_id(&model.id).to_string();
+                    let raw = antre_providers::model_id::raw_model_id(&model.id).to_string();
                     (model.provider.clone(), raw)
                 })
                 .collect(),
@@ -246,9 +246,9 @@ pub async fn prepare_gateway_core_with_profile(
         (reg.provider_summary(), !reg.is_empty())
     };
     if !providers_available_at_startup {
-        let config_path = moltis_config::find_or_default_config_path();
-        let provider_keys_path = moltis_config::config_dir()
-            .unwrap_or_else(|| PathBuf::from(".moltis"))
+        let config_path = antre_config::find_or_default_config_path();
+        let provider_keys_path = antre_config::config_dir()
+            .unwrap_or_else(|| PathBuf::from(".antre"))
             .join("provider_keys.json");
         warn!(
             provider_summary = %provider_summary,
@@ -271,7 +271,7 @@ pub async fn prepare_gateway_core_with_profile(
             }
             crate::provider_setup::report_external_credentials(
                 &auto_detected_provider_sources,
-                &moltis_oauth::TokenStore::new(),
+                &antre_oauth::TokenStore::new(),
             );
         }
     }
@@ -314,7 +314,7 @@ pub async fn prepare_gateway_core_with_profile(
         approval_manager_from_config(&config).with_persisted_approvals(
             data_dir
                 .clone()
-                .unwrap_or_else(moltis_config::data_dir)
+                .unwrap_or_else(antre_config::data_dir)
                 .join("exec-approved-commands.json"),
         ),
     );
@@ -336,9 +336,9 @@ pub async fn prepare_gateway_core_with_profile(
     }
 
     // Wire live onboarding service.
-    let onboarding_config_path = moltis_config::find_or_default_config_path();
+    let onboarding_config_path = antre_config::find_or_default_config_path();
     let live_onboarding =
-        moltis_onboarding::service::LiveOnboardingService::new(onboarding_config_path);
+        antre_onboarding::service::LiveOnboardingService::new(onboarding_config_path);
     #[cfg(feature = "local-llm")]
     let local_llm_service: Option<Arc<crate::local_llm_setup::LiveLocalLlmService>> = {
         let svc = Arc::new(crate::local_llm_setup::LiveLocalLlmService::new(
@@ -353,7 +353,7 @@ pub async fn prepare_gateway_core_with_profile(
     #[cfg(feature = "voice")]
     {
         use crate::voice::{LiveSttService, LiveTtsService, SttServiceConfig};
-        services.tts = Arc::new(LiveTtsService::new(moltis_voice::TtsConfig::default()));
+        services.tts = Arc::new(LiveTtsService::new(antre_voice::TtsConfig::default()));
         services.stt = Arc::new(LiveSttService::new(SttServiceConfig::default()));
     }
 
@@ -379,7 +379,7 @@ pub async fn prepare_gateway_core_with_profile(
         deploy_platform.clone(),
     )
     .with_env_overrides(config_env_overrides.clone())
-    .with_global_cw_overrides(moltis_providers::extract_cw_overrides(&config.models))
+    .with_global_cw_overrides(antre_providers::extract_cw_overrides(&config.models))
     .with_error_parser(crate::chat_error::parse_chat_error)
     .with_callback_bind_addr(bind.to_string());
     provider_setup.set_priority_models(live_model_service.priority_models_handle());
@@ -391,18 +391,18 @@ pub async fn prepare_gateway_core_with_profile(
     let mcp_configured_count;
     let live_mcp: Arc<crate::mcp_service::LiveMcpService>;
     {
-        let mcp_registry_path = moltis_config::data_dir().join("mcp-servers.json");
-        let mcp_reg = moltis_mcp::McpRegistry::load(&mcp_registry_path).unwrap_or_default();
+        let mcp_registry_path = antre_config::data_dir().join("mcp-servers.json");
+        let mcp_reg = antre_mcp::McpRegistry::load(&mcp_registry_path).unwrap_or_default();
         let mut merged = mcp_reg;
         for (name, entry) in &config.mcp.servers {
             if !merged.servers.contains_key(name.as_str()) {
                 merged
                     .servers
-                    .insert(name.to_string(), moltis_mcp::McpServerConfig::from(entry));
+                    .insert(name.to_string(), antre_mcp::McpServerConfig::from(entry));
             }
         }
         mcp_configured_count = merged.servers.values().filter(|s| s.enabled).count();
-        let mcp_manager = Arc::new(moltis_mcp::McpManager::new_with_env_overrides(
+        let mcp_manager = Arc::new(antre_mcp::McpManager::new_with_env_overrides(
             merged,
             config_env_overrides.clone(),
             std::time::Duration::from_secs(config.mcp.request_timeout_secs.max(1)),
@@ -423,7 +423,7 @@ pub async fn prepare_gateway_core_with_profile(
     startup_mem_probe.checkpoint("services.core_wired");
 
     // Initialize data directory and SQLite database.
-    let data_dir = data_dir.unwrap_or_else(moltis_config::data_dir);
+    let data_dir = data_dir.unwrap_or_else(antre_config::data_dir);
     std::fs::create_dir_all(&data_dir).unwrap_or_else(|e| {
         panic!(
             "failed to create data directory {}: {e}",
@@ -431,11 +431,10 @@ pub async fn prepare_gateway_core_with_profile(
         )
     });
     services.files = Some(Arc::new(crate::files::LocalFilesService::new(
-        moltis_config::managed_files_dir(),
+        antre_config::managed_files_dir(),
     )?));
 
-    let config_dir_resolved =
-        moltis_config::config_dir().unwrap_or_else(|| PathBuf::from(".moltis"));
+    let config_dir_resolved = antre_config::config_dir().unwrap_or_else(|| PathBuf::from(".antre"));
     std::fs::create_dir_all(&config_dir_resolved).unwrap_or_else(|e| {
         panic!(
             "failed to create config directory {}: {e}",
@@ -445,7 +444,7 @@ pub async fn prepare_gateway_core_with_profile(
     log_startup_config_storage_diagnostics();
 
     log_persistence::spawn_startup_log_persistence(log_buffer.as_ref(), &data_dir);
-    let db_path = data_dir.join("moltis.db");
+    let db_path = data_dir.join("antre.db");
     let db_pool = {
         use {
             sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqliteSynchronous},
@@ -467,7 +466,7 @@ pub async fn prepare_gateway_core_with_profile(
             .max_connections(config.server.db_pool_max_connections)
             .connect_with(options)
             .await
-            .expect("failed to open moltis.db");
+            .expect("failed to open antre.db");
         debug!(
             path = %db_path.display(),
             db_exists,
@@ -478,19 +477,19 @@ pub async fn prepare_gateway_core_with_profile(
     };
 
     // Run database migrations from each crate in dependency order.
-    moltis_projects::run_migrations(&db_pool)
+    antre_projects::run_migrations(&db_pool)
         .await
         .expect("failed to run projects migrations");
-    moltis_sessions::run_migrations(&db_pool)
+    antre_sessions::run_migrations(&db_pool)
         .await
         .expect("failed to run sessions migrations");
-    moltis_cron::run_migrations(&db_pool)
+    antre_cron::run_migrations(&db_pool)
         .await
         .expect("failed to run cron migrations");
-    moltis_webhooks::run_migrations(&db_pool)
+    antre_webhooks::run_migrations(&db_pool)
         .await
         .expect("failed to run webhooks migrations");
-    moltis_delivery::run_migrations(&db_pool)
+    antre_delivery::run_migrations(&db_pool)
         .await
         .expect("failed to run delivery migrations");
     crate::run_migrations(&db_pool)
@@ -498,22 +497,22 @@ pub async fn prepare_gateway_core_with_profile(
         .expect("failed to run gateway migrations");
 
     #[cfg(feature = "vault")]
-    moltis_vault::run_migrations(&db_pool)
+    antre_vault::run_migrations(&db_pool)
         .await
         .expect("failed to run vault migrations");
 
-    moltis_skills::migration::migrate_plugins_to_skills(&data_dir).await;
+    antre_skills::migration::migrate_plugins_to_skills(&data_dir).await;
     startup_mem_probe.checkpoint("sqlite.migrations.complete");
 
     #[cfg(feature = "vault")]
-    let (vault, auto_unsealed_vault): (Option<Arc<moltis_vault::Vault>>, bool) = {
+    let (vault, auto_unsealed_vault): (Option<Arc<antre_vault::Vault>>, bool) = {
         if !config.auth.vault_enabled {
             crate::vault_lifecycle::set_vault_encryption_runtime_enabled(false);
             info!("vault disabled by auth.vault_enabled=false");
             (None, false)
         } else {
             crate::vault_lifecycle::set_vault_encryption_runtime_enabled(true);
-            match moltis_vault::Vault::new(db_pool.clone()).await {
+            match antre_vault::Vault::new(db_pool.clone()).await {
                 Ok(v) => {
                     info!(status = ?v.status().await, "vault ready");
                     let vault = Arc::new(v);
@@ -566,7 +565,7 @@ pub async fn prepare_gateway_core_with_profile(
     // that the credential store has been read, re-substitute so that TOML
     // values like `api_key = "${OPENROUTER_API_KEY}"` resolve against UI
     // env vars too.
-    config = moltis_config::resubstitute_config(&config, &runtime_env_overrides).unwrap_or_else(
+    config = antre_config::resubstitute_config(&config, &runtime_env_overrides).unwrap_or_else(
         |error| {
             warn!(%error, "failed to resubstitute config with runtime env overrides");
             config
@@ -593,30 +592,30 @@ pub async fn prepare_gateway_core_with_profile(
         });
     }
 
-    // If MOLTIS_PASSWORD is set and no password in DB yet, migrate it.
+    // If ANTRE_PASSWORD is set and no password in DB yet, migrate it.
     if let Some(ref pw) = password
         && !credential_store.is_setup_complete()
     {
-        info!("migrating MOLTIS_PASSWORD env var to credential store");
+        info!("migrating ANTRE_PASSWORD env var to credential store");
         if let Err(e) = credential_store.set_initial_password(pw).await {
             tracing::warn!("failed to migrate env password: {e}");
         }
     }
 
-    let message_log: Arc<dyn moltis_channels::message_log::MessageLog> = Arc::new(
+    let message_log: Arc<dyn antre_channels::message_log::MessageLog> = Arc::new(
         crate::message_log_store::SqliteMessageLog::new(db_pool.clone()),
     );
 
     // Migrate from projects.toml if it exists.
     let config_dir_for_migration =
-        moltis_config::config_dir().unwrap_or_else(|| PathBuf::from(".moltis"));
+        antre_config::config_dir().unwrap_or_else(|| PathBuf::from(".antre"));
     let projects_toml_path = config_dir_for_migration.join("projects.toml");
     if projects_toml_path.exists() {
         info!("migrating projects.toml to SQLite");
-        let old_store = moltis_projects::TomlProjectStore::new(projects_toml_path.clone());
-        let sqlite_store = moltis_projects::SqliteProjectStore::new(db_pool.clone());
+        let old_store = antre_projects::TomlProjectStore::new(projects_toml_path.clone());
+        let sqlite_store = antre_projects::SqliteProjectStore::new(db_pool.clone());
         if let Ok(projects) =
-            <moltis_projects::TomlProjectStore as ProjectStore>::list(&old_store).await
+            <antre_projects::TomlProjectStore as ProjectStore>::list(&old_store).await
         {
             for p in projects {
                 if let Err(e) = sqlite_store.upsert(p).await {
@@ -647,7 +646,7 @@ pub async fn prepare_gateway_core_with_profile(
 
     // Wire stores.
     let project_store: Arc<dyn ProjectStore> =
-        Arc::new(moltis_projects::SqliteProjectStore::new(db_pool.clone()));
+        Arc::new(antre_projects::SqliteProjectStore::new(db_pool.clone()));
     let session_store = Arc::new(SessionStore::new(sessions_dir));
     let event_bus_for_metadata = session_event_bus.clone();
     let session_metadata = Arc::new(SqliteSessionMetadata::with_event_bus(
@@ -655,7 +654,7 @@ pub async fn prepare_gateway_core_with_profile(
         event_bus_for_metadata,
     ));
     let session_share_store = Arc::new(crate::share_store::ShareStore::new(db_pool.clone()));
-    let session_state_store = Arc::new(moltis_sessions::state_store::SessionStateStore::new(
+    let session_state_store = Arc::new(antre_sessions::state_store::SessionStateStore::new(
         db_pool.clone(),
     ));
 
@@ -699,17 +698,17 @@ pub async fn prepare_gateway_core_with_profile(
     )));
 
     // Initialize cron service.
-    let cron_store: Arc<dyn moltis_cron::store::CronStore> =
-        match moltis_cron::store_file::FileStore::default_path() {
+    let cron_store: Arc<dyn antre_cron::store::CronStore> =
+        match antre_cron::store_file::FileStore::default_path() {
             Ok(fs) => Arc::new(fs),
             Err(e) => {
                 tracing::warn!("cron file store unavailable ({e}), using in-memory");
-                Arc::new(moltis_cron::store_memory::InMemoryStore::new())
+                Arc::new(antre_cron::store_memory::InMemoryStore::new())
             },
         };
 
     let sys_state = Arc::clone(&deferred_state);
-    let on_system_event: moltis_cron::service::SystemEventFn = Arc::new(move |text| {
+    let on_system_event: antre_cron::service::SystemEventFn = Arc::new(move |text| {
         let st = Arc::clone(&sys_state);
         tokio::spawn(async move {
             if let Some(state) = st.get() {
@@ -722,22 +721,22 @@ pub async fn prepare_gateway_core_with_profile(
         });
     });
 
-    let events_queue = moltis_cron::system_events::SystemEventsQueue::new();
+    let events_queue = antre_cron::system_events::SystemEventsQueue::new();
 
     let agent_state = Arc::clone(&deferred_state);
     let agent_events_queue = Arc::clone(&events_queue);
     let global_auto_prune_containers = config.cron.auto_prune_cron_containers;
-    let on_agent_turn: moltis_cron::service::AgentTurnFn = Arc::new(move |req| {
+    let on_agent_turn: antre_cron::service::AgentTurnFn = Arc::new(move |req| {
         let st = Arc::clone(&agent_state);
         let eq = Arc::clone(&agent_events_queue);
         Box::pin(async move {
             let state = st
                 .get()
-                .ok_or_else(|| moltis_cron::Error::message("gateway not ready"))?;
+                .ok_or_else(|| antre_cron::Error::message("gateway not ready"))?;
 
             let is_heartbeat_turn = matches!(
                 &req.session_target,
-                moltis_cron::types::SessionTarget::Named(name) if name == "heartbeat"
+                antre_cron::types::SessionTarget::Named(name) if name == "heartbeat"
             );
             let has_pending_events = is_heartbeat_turn && !eq.is_empty().await;
             if is_heartbeat_turn && !has_pending_events {
@@ -746,16 +745,16 @@ pub async fn prepare_gateway_core_with_profile(
                     .prompt
                     .as_deref()
                     .is_some_and(|p| !p.trim().is_empty());
-                let heartbeat_path = moltis_config::heartbeat_path();
+                let heartbeat_path = antre_config::heartbeat_path();
                 let heartbeat_file_exists = heartbeat_path.exists();
-                let heartbeat_md = moltis_config::load_heartbeat_md();
+                let heartbeat_md = antre_config::load_heartbeat_md();
                 if heartbeat_file_exists && heartbeat_md.is_none() && !has_prompt_override {
                     tracing::info!(
                         path = %heartbeat_path.display(),
                         "skipping heartbeat LLM turn: HEARTBEAT.md is empty"
                     );
-                    return Ok(moltis_cron::service::AgentTurnResult {
-                        output: moltis_cron::heartbeat::HEARTBEAT_OK.to_string(),
+                    return Ok(antre_cron::service::AgentTurnResult {
+                        output: antre_cron::heartbeat::HEARTBEAT_OK.to_string(),
                         input_tokens: None,
                         output_tokens: None,
                         session_key: None,
@@ -767,7 +766,7 @@ pub async fn prepare_gateway_core_with_profile(
             let chat = state.chat();
             let cron_turn_id = uuid::Uuid::new_v4().to_string();
             let session_key = match &req.session_target {
-                moltis_cron::types::SessionTarget::Named(name) => {
+                antre_cron::types::SessionTarget::Named(name) => {
                     format!("cron:{name}")
                 },
                 _ => format!("cron:{cron_turn_id}"),
@@ -775,7 +774,7 @@ pub async fn prepare_gateway_core_with_profile(
 
             if matches!(
                 req.session_target,
-                moltis_cron::types::SessionTarget::Named(_)
+                antre_cron::types::SessionTarget::Named(_)
             ) {
                 let _ = chat
                     .clear(serde_json::json!({ "_session_key": session_key }))
@@ -800,7 +799,7 @@ pub async fn prepare_gateway_core_with_profile(
                         event_count = events.len(),
                         "enriching heartbeat prompt with system events"
                     );
-                    moltis_cron::heartbeat::build_event_enriched_prompt(&events, &req.message)
+                    antre_cron::heartbeat::build_event_enriched_prompt(&events, &req.message)
                 }
             } else {
                 req.message.clone()
@@ -828,12 +827,12 @@ pub async fn prepare_gateway_core_with_profile(
             }
             if let Some(tool_choice) = req.tool_controls.tool_choice.clone() {
                 params["tool_choice"] = serde_json::to_value(tool_choice)
-                    .map_err(|e| moltis_cron::Error::message(e.to_string()))?;
+                    .map_err(|e| antre_cron::Error::message(e.to_string()))?;
             }
             let result = chat
                 .send_sync(params)
                 .await
-                .map_err(|e| moltis_cron::Error::message(e.to_string()));
+                .map_err(|e| antre_cron::Error::message(e.to_string()));
 
             let auto_prune = req
                 .sandbox
@@ -864,9 +863,9 @@ pub async fn prepare_gateway_core_with_profile(
                 .to_string();
             let delivery_text = if is_heartbeat_turn {
                 let hb_cfg = state.inner.read().await.heartbeat_config.clone();
-                moltis_cron::heartbeat::strip_heartbeat_token(
+                antre_cron::heartbeat::strip_heartbeat_token(
                     &text,
-                    moltis_cron::heartbeat::StripMode::Trim,
+                    antre_cron::heartbeat::StripMode::Trim,
                     hb_cfg.ack_max_chars,
                 )
                 .text
@@ -904,7 +903,7 @@ pub async fn prepare_gateway_core_with_profile(
                 .map(|error| error.to_string())
             };
 
-            Ok(moltis_cron::service::AgentTurnResult {
+            Ok(antre_cron::service::AgentTurnResult {
                 output: text,
                 input_tokens,
                 output_tokens,
@@ -915,20 +914,20 @@ pub async fn prepare_gateway_core_with_profile(
     });
 
     let deferred_for_cron = Arc::clone(&deferred_state);
-    let on_cron_notify: moltis_cron::service::NotifyFn =
-        Arc::new(move |notification: moltis_cron::types::CronNotification| {
+    let on_cron_notify: antre_cron::service::NotifyFn =
+        Arc::new(move |notification: antre_cron::types::CronNotification| {
             let state_opt = deferred_for_cron.get();
             let Some(state) = state_opt else {
                 return;
             };
             let (event, payload) = match &notification {
-                moltis_cron::types::CronNotification::Created { job } => {
+                antre_cron::types::CronNotification::Created { job } => {
                     ("cron.job.created", serde_json::json!({ "job": job }))
                 },
-                moltis_cron::types::CronNotification::Updated { job } => {
+                antre_cron::types::CronNotification::Updated { job } => {
                     ("cron.job.updated", serde_json::json!({ "job": job }))
                 },
-                moltis_cron::types::CronNotification::Removed { job_id } => {
+                antre_cron::types::CronNotification::Removed { job_id } => {
                     ("cron.job.removed", serde_json::json!({ "jobId": job_id }))
                 },
             };
@@ -942,14 +941,14 @@ pub async fn prepare_gateway_core_with_profile(
             });
         });
 
-    let rate_limit_config = moltis_cron::service::RateLimitConfig {
+    let rate_limit_config = antre_cron::service::RateLimitConfig {
         max_per_window: config.cron.rate_limit_max,
         window_ms: config.cron.rate_limit_window_secs * 1000,
     };
 
-    let default_cooldown_ms = moltis_cron::service::DEFAULT_WAKE_COOLDOWN_MS;
+    let default_cooldown_ms = antre_cron::service::DEFAULT_WAKE_COOLDOWN_MS;
     let wake_cooldown_ms =
-        match moltis_cron::parse::parse_duration_ms(&config.heartbeat.wake_cooldown) {
+        match antre_cron::parse::parse_duration_ms(&config.heartbeat.wake_cooldown) {
             Ok(ms) => ms,
             Err(e) => {
                 tracing::warn!(
@@ -963,7 +962,7 @@ pub async fn prepare_gateway_core_with_profile(
         };
 
     let cron_store_for_pruning = Arc::clone(&cron_store);
-    let cron_service = moltis_cron::service::CronService::with_events_queue(
+    let cron_service = antre_cron::service::CronService::with_events_queue(
         cron_store,
         on_system_event,
         on_agent_turn,
@@ -978,11 +977,11 @@ pub async fn prepare_gateway_core_with_profile(
     services = services.with_cron(live_cron);
 
     // Webhooks
-    let webhook_store_inner: Arc<dyn moltis_webhooks::store::WebhookStore> = Arc::new(
-        moltis_webhooks::store::SqliteWebhookStore::with_pool(db_pool.clone()),
+    let webhook_store_inner: Arc<dyn antre_webhooks::store::WebhookStore> = Arc::new(
+        antre_webhooks::store::SqliteWebhookStore::with_pool(db_pool.clone()),
     );
     #[cfg(feature = "vault")]
-    let webhook_store: Arc<dyn moltis_webhooks::store::WebhookStore> = Arc::new(
+    let webhook_store: Arc<dyn antre_webhooks::store::WebhookStore> = Arc::new(
         crate::webhooks::VaultWebhookStore::new(Arc::clone(&webhook_store_inner), vault.clone()),
     );
     #[cfg(not(feature = "vault"))]
@@ -994,26 +993,26 @@ pub async fn prepare_gateway_core_with_profile(
 
     // Build sandbox router from config.
     #[cfg_attr(not(feature = "trusted-network"), allow(unused_mut))]
-    let mut sandbox_config = moltis_tools::sandbox::SandboxConfig::from(&config.tools.exec.sandbox);
+    let mut sandbox_config = antre_tools::sandbox::SandboxConfig::from(&config.tools.exec.sandbox);
 
     // The trusted-network proxy binds before the sandbox backends are built,
     // so they route through the port it actually got (ephemeral unless
     // `proxy_port` is set; a fixed port kept two daemons from coexisting).
     #[cfg(feature = "trusted-network")]
     let (audit_tx, audit_rx) =
-        tokio::sync::mpsc::channel::<moltis_network_filter::NetworkAuditEntry>(1024);
+        tokio::sync::mpsc::channel::<antre_network_filter::NetworkAuditEntry>(1024);
     #[cfg(feature = "trusted-network")]
     let trusted_proxy = if !profile.is_headless()
-        && sandbox_config.network == moltis_network_filter::NetworkPolicy::Trusted
+        && sandbox_config.network == antre_network_filter::NetworkPolicy::Trusted
     {
         let domain_mgr = Arc::new(
-            moltis_network_filter::domain_approval::DomainApprovalManager::new(
+            antre_network_filter::domain_approval::DomainApprovalManager::new(
                 &sandbox_config.trusted_domains,
                 std::time::Duration::from_secs(30),
             ),
         );
         let requested_port = config.tools.exec.sandbox.proxy_port.unwrap_or(0);
-        match moltis_network_filter::proxy::NetworkProxyServer::bind(
+        match antre_network_filter::proxy::NetworkProxyServer::bind(
             ([0, 0, 0, 0], requested_port).into(),
             domain_mgr,
             Some(audit_tx.clone()),
@@ -1048,11 +1047,11 @@ pub async fn prepare_gateway_core_with_profile(
         .as_ref()
         .map(|s| s.expose_secret().as_str());
     if let Some(url) = upstream_proxy {
-        moltis_common::http_client::set_upstream_proxy(url);
-        let redacted = moltis_common::http_client::redact_proxy_url(url);
+        antre_common::http_client::set_upstream_proxy(url);
+        let redacted = antre_common::http_client::redact_proxy_url(url);
         info!(upstream_proxy = %redacted, "upstream proxy configured for providers and channels");
     }
-    moltis_providers::init_shared_http_client(upstream_proxy);
+    antre_providers::init_shared_http_client(upstream_proxy);
 
     // ── Trusted-network proxy + audit ────────────────────────────────────
     #[cfg(feature = "trusted-network")]
@@ -1068,7 +1067,7 @@ pub async fn prepare_gateway_core_with_profile(
         );
 
         let trusted = !profile.is_headless()
-            && sandbox_config.network == moltis_network_filter::NetworkPolicy::Trusted;
+            && sandbox_config.network == antre_network_filter::NetworkPolicy::Trusted;
         if let Some(proxy) = trusted_proxy {
             let (shutdown_tx, proxy_shutdown_rx) = tokio::sync::watch::channel(false);
             tokio::spawn(async move {
@@ -1081,11 +1080,11 @@ pub async fn prepare_gateway_core_with_profile(
                 proxy_url = %url,
                 "trusted-network proxy started, routing all HTTP tools through proxy"
             );
-            moltis_tools::init_shared_http_client(Some(&url));
+            antre_tools::init_shared_http_client(Some(&url));
             proxy_shutdown_tx = Some(shutdown_tx);
         } else if trusted {
             // The proxy failed to bind: fail closed rather than bypass policy.
-            moltis_tools::init_shared_http_client(Some("http://127.0.0.1:0"));
+            antre_tools::init_shared_http_client(Some("http://127.0.0.1:0"));
             proxy_shutdown_tx = None;
         } else {
             debug!(
@@ -1094,14 +1093,14 @@ pub async fn prepare_gateway_core_with_profile(
                 "trusted-network proxy not started"
             );
             if profile.is_headless()
-                && sandbox_config.network == moltis_network_filter::NetworkPolicy::Trusted
+                && sandbox_config.network == antre_network_filter::NetworkPolicy::Trusted
             {
                 // ACP has no domain-approval UI, so trusted-network mode must
                 // fail closed rather than bypass policy or bind a proxy port.
                 info!("trusted-network HTTP access disabled in headless mode");
-                moltis_tools::init_shared_http_client(Some("http://127.0.0.1:0"));
+                antre_tools::init_shared_http_client(Some("http://127.0.0.1:0"));
             } else {
-                moltis_tools::init_shared_http_client(upstream_proxy);
+                antre_tools::init_shared_http_client(upstream_proxy);
             }
             proxy_shutdown_tx = None;
         }
@@ -1115,7 +1114,7 @@ pub async fn prepare_gateway_core_with_profile(
 
     #[cfg(not(feature = "trusted-network"))]
     {
-        moltis_tools::init_shared_http_client(upstream_proxy);
+        antre_tools::init_shared_http_client(upstream_proxy);
     }
 
     // Spawn background sandbox tasks (image pre-build, host provisioning, container GC).
@@ -1190,7 +1189,7 @@ pub async fn prepare_gateway_core_with_profile(
         && config.tools.browser.enabled
         && !matches!(
             sandbox_router.config().mode,
-            moltis_tools::sandbox::SandboxMode::Off
+            antre_tools::sandbox::SandboxMode::Off
         )
         && sandbox_router.backend_name() != "none"
     {
@@ -1213,7 +1212,7 @@ pub async fn prepare_gateway_core_with_profile(
                 .await;
             }
 
-            match moltis_browser::container::ensure_image(&sandbox_image) {
+            match antre_browser::container::ensure_image(&sandbox_image) {
                 Ok(()) => {
                     info!(image = %sandbox_image, "browser container image ready");
                     if let Some(state) = deferred_for_browser.get() {
@@ -1340,7 +1339,7 @@ pub async fn prepare_gateway_core_with_profile(
 
     #[cfg(feature = "fs-tools")]
     let shared_fs_state = if config.tools.fs.track_reads {
-        Some(moltis_tools::fs::new_fs_state(
+        Some(antre_tools::fs::new_fs_state(
             config.tools.fs.must_read_before_write,
         ))
     } else {

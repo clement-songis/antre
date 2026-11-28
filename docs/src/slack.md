@@ -1,6 +1,6 @@
 # Slack
 
-Moltis can connect to Slack as a bot, letting you chat with your agent from any
+Antre can connect to Slack as a bot, letting you chat with your agent from any
 Slack workspace. The integration supports both **Socket Mode** (default, no
 public URL needed) and **Events API** (webhook-based).
 
@@ -15,7 +15,7 @@ public URL needed) and **Events API** (webhook-based).
                    │  or HTTP POST (Events API)
                    ▼
 ┌──────────────────────────────────────────────────────┐
-│                moltis-slack crate                     │
+│                antre-slack crate                     │
 │  ┌────────────┐  ┌────────────┐  ┌────────────────┐  │
 │  │  Handler   │  │  Outbound  │  │     Plugin     │  │
 │  │ (inbound)  │  │ (replies)  │  │  (lifecycle)   │  │
@@ -24,7 +24,7 @@ public URL needed) and **Events API** (webhook-based).
                    │
                    ▼
 ┌──────────────────────────────────────────────────────┐
-│                 Moltis Gateway                        │
+│                 Antre Gateway                        │
 │         (chat dispatch, tools, memory)                │
 └──────────────────────────────────────────────────────┘
 ```
@@ -36,7 +36,7 @@ requiring a publicly reachable endpoint.
 
 ## Prerequisites
 
-Before configuring Moltis, create a Slack app:
+Before configuring Antre, create a Slack app:
 
 1. Go to [api.slack.com/apps](https://api.slack.com/apps) and click **Create New App**
 2. Choose **From scratch**, name the app, and select your workspace
@@ -60,8 +60,8 @@ Before configuring Moltis, create a Slack app:
    | Multiparty direct messages (MPIMs) | `mpim:history` | `message.mpim` |
 
    Both entries in a row are required: the history scope permits access, while
-   the `message.*` event delivers new messages to Moltis. Private channels and
-   MPIMs are handled as channels by Moltis, so `group_policy`, `mention_mode`,
+   the `message.*` event delivers new messages to Antre. Private channels and
+   MPIMs are handled as channels by Antre, so `group_policy`, `mention_mode`,
    and `channel_allowlist` apply to them.
 6. Click **Install to Workspace** and copy the **Bot User OAuth Token** (`xoxb-...`)
 7. For Socket Mode (recommended):
@@ -74,13 +74,13 @@ Before configuring Moltis, create a Slack app:
 
 ```admonish warning
 The bot token and app token are secrets — treat them like passwords. Never
-commit them to version control. Moltis stores them with `secrecy::Secret` and
+commit them to version control. Antre stores them with `secrecy::Secret` and
 redacts them from logs.
 ```
 
 ## Configuration
 
-Add a `[channels.slack.<account-id>]` section to your `moltis.toml`:
+Add a `[channels.slack.<account-id>]` section to your `antre.toml`:
 
 ```toml
 [channels.slack.my-bot]
@@ -204,7 +204,7 @@ direct chats.
 ### Events API Mode
 
 Set these Request URLs in your Slack app (replace `<id>` with the account ID you
-configured in Moltis):
+configured in Antre):
 
 | Slack setting | URL |
 |---------------|-----|
@@ -212,7 +212,7 @@ configured in Moltis):
 | Interactivity & Shortcuts | `https://your-host/api/channels/slack/<id>/interactions` |
 | Slash Commands | `https://your-host/api/channels/slack/<id>/commands` |
 
-These endpoints are reachable without a Moltis session — Slack cannot present
+These endpoints are reachable without a Antre session — Slack cannot present
 one — and instead verify Slack's request signature (HMAC) and timestamp before
 doing any work.
 
@@ -226,12 +226,12 @@ connection_mode = "events_api"
 signing_secret = "abc123..."
 ```
 
-This requires your Moltis instance to be reachable from the internet (or use
+This requires your Antre instance to be reachable from the internet (or use
 [Tailscale Funnel](configuration.md#tailscale-integration)).
 
 ### Slack-Compatible Proxies
 
-Moltis normally talks to Slack at `https://slack.com/api`. For testing, local
+Antre normally talks to Slack at `https://slack.com/api`. For testing, local
 development, or Slack-compatible gateways, set `api_base_url`:
 
 ```toml
@@ -242,7 +242,7 @@ api_base_url = "https://proxy.example/api"
 connection_mode = "socket_mode"
 ```
 
-For Socket Mode, Moltis calls `apps.connections.open` on this endpoint and
+For Socket Mode, Antre calls `apps.connections.open` on this endpoint and
 connects to the WebSocket URL returned by that API.
 
 The endpoint must be a public HTTP(S) URL. Localhost, private-network,
@@ -255,11 +255,11 @@ resolve is rejected too (validation fails closed).
 #### Allowing internal hosts
 
 If you deliberately front Slack with a proxy on an internal host, an operator can
-allow specific hosts back in with the `MOLTIS_SLACK_API_BASE_URL_ALLOWLIST`
+allow specific hosts back in with the `ANTRE_SLACK_API_BASE_URL_ALLOWLIST`
 environment variable — a comma-separated list of exact hostnames or IPs:
 
 ```sh
-MOLTIS_SLACK_API_BASE_URL_ALLOWLIST="proxy.internal,127.0.0.1"
+ANTRE_SLACK_API_BASE_URL_ALLOWLIST="proxy.internal,127.0.0.1"
 ```
 
 Only hosts on this list bypass the private-address guard, and matching is on the
@@ -286,7 +286,7 @@ Slack uses the same gating system as Telegram, Discord, and other channels.
 
 When `dm_policy = "allowlist"` and `otp_self_approval = true`, unknown DM users
 receive a verification prompt. The PIN is visible to the bot owner in the web UI
-under **Channels → Senders**. After a correct PIN reply, Moltis adds the sender's
+under **Channels → Senders**. After a correct PIN reply, Antre adds the sender's
 Slack user ID, such as `U0123456789`, to the account allowlist.
 
 ### Group Policy
@@ -332,20 +332,20 @@ The `edit_in_place` mode throttles updates to `edit_throttle_ms` milliseconds
 (default: 500) to avoid Slack API rate limits.
 
 Native mode calls those three methods directly at `api_base_url` with the bot
-token and requires a thread target. With `thread_replies = false`, Moltis falls
-back to top-level edit-in-place streaming instead. For threaded replies, Moltis
+token and requires a thread target. With `thread_replies = false`, Antre falls
+back to top-level edit-in-place streaming instead. For threaded replies, Antre
 does not probe whether the Slack app, workspace, or compatible proxy supports
 the native methods, and a native API failure does not switch an active stream to
 edit-in-place mode. The completed reply still falls back to normal delivery when
-the native stream fails. Moltis first tries to stop and delete the partial native
+the native stream fails. Antre first tries to stop and delete the partial native
 message so the fallback does not duplicate content already accepted by Slack. If
-Slack cannot delete it, Moltis retains that message with a visible streaming-error
+Slack cannot delete it, Antre retains that message with a visible streaming-error
 notice and retries the stop after draining the remaining response. Only after
-Slack confirms the stream is stopped does Moltis replace the retained message
+Slack confirms the stream is stopped does Antre replace the retained message
 with the complete text through `chat.update`. If Slack still cannot stop or update
-the message, Moltis makes a final deletion attempt. A successful deletion preserves
+the message, Antre makes a final deletion attempt. A successful deletion preserves
 normal fallback delivery; if deletion also fails after Slack confirmed the stop,
-Moltis retains the terminal failure notice and suppresses duplicate fallback
+Antre retains the terminal failure notice and suppresses duplicate fallback
 content.
 Responses too large for Slack's update limit are replaced by the visible error
 notice instead of a misleading partial answer.
@@ -353,7 +353,7 @@ notice instead of a misleading partial answer.
 Native requests send standard Markdown unchanged through Slack's `markdown_text`
 field and use `edit_throttle_ms`. Tool calls appear in the same streamed message
 as Slack plan/task cards. Cards show only the tool name and lifecycle state
-(`in_progress`, `complete`, or `error`); Moltis does not send tool arguments,
+(`in_progress`, `complete`, or `error`); Antre does not send tool arguments,
 reasoning, paths, commands, or raw tool results to the card. Parallel calls are
 tracked by their stable tool-call IDs, and unfinished calls are marked as errors
 before the stream closes. When `rich_blocks = true`, rich rendering takes
@@ -369,7 +369,7 @@ in the channel.
 
 ## Acknowledgment Reactions
 
-Because Slack bots cannot show a typing indicator, Moltis acknowledges messages
+Because Slack bots cannot show a typing indicator, Antre acknowledges messages
 with emoji reactions so you know your message was received and is being worked
 on:
 
@@ -397,7 +397,7 @@ block the reply.
 ## Reaction Triggers
 
 With `reaction_triggers = true`, when a user adds an emoji reaction to a message,
-Moltis routes it into the agent as a synthetic message (threaded under the
+Antre routes it into the agent as a synthetic message (threaded under the
 reacted message so the agent sees the original content as context). This enables
 flows like "react ✅ to approve" or "react 👍 to continue".
 
@@ -430,7 +430,7 @@ messages are unaffected.
 - Check `dm_policy` — if set to `"allowlist"`, make sure your Slack user ID
   is in `allowlist`
 - Ensure the bot has been invited to channels you want it to respond in
-- Look at logs: `RUST_LOG=moltis_slack=debug moltis`
+- Look at logs: `RUST_LOG=antre_slack=debug antre`
 
 ### Bot doesn't respond in channels
 

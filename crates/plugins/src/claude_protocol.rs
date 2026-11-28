@@ -11,14 +11,14 @@ use {
 
 use {
     crate::hooks::{HookAction, HookEvent, HookPayload},
-    moltis_common::{Error as HookError, Result as HookResult},
+    antre_common::{Error as HookError, Result as HookResult},
 };
 
 /// Which wire format a shell hook speaks.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum HookProtocol {
-    /// Moltis format: exit 1 blocks, `{"action":"modify","data":…}` modifies.
+    /// Antre format: exit 1 blocks, `{"action":"modify","data":…}` modifies.
     #[default]
     Native,
     /// Claude Code format: exit 2 blocks, Claude decision JSON on stdout.

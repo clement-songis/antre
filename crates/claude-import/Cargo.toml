@@ -1,16 +1,16 @@
 [package]
-description       = "Import data from Claude Code and Claude Desktop into Moltis"
+description       = "Import data from Claude Code and Claude Desktop into Antre"
 edition.workspace = true
 license.workspace = true
-name              = "moltis-claude-import"
+name              = "antre-claude-import"
 version.workspace = true
 
 [dependencies]
-dirs-next          = { workspace = true }
-moltis-import-core = { workspace = true }
-serde              = { workspace = true }
-serde_json         = { workspace = true }
-tracing            = { workspace = true }
+antre-import-core = { workspace = true }
+dirs-next         = { workspace = true }
+serde             = { workspace = true }
+serde_json        = { workspace = true }
+tracing           = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }

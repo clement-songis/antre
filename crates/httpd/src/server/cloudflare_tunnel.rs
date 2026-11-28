@@ -11,8 +11,8 @@ use std::{
 
 #[cfg(feature = "cloudflare-tunnel")]
 use {
-    moltis_config::schema::CloudflareTunnelConfig,
-    moltis_gateway::{auth_webauthn::SharedWebAuthnRegistry, state::GatewayState},
+    antre_config::schema::CloudflareTunnelConfig,
+    antre_gateway::{auth_webauthn::SharedWebAuthnRegistry, state::GatewayState},
     secrecy::ExposeSecret,
     tokio::{
         io::AsyncBufReadExt,
@@ -132,7 +132,7 @@ impl CloudflareTunnelController {
             .hostname
             .as_ref()
             .map(|host| format!("https://{host}"));
-        let passkey_warning = moltis_gateway::server::sync_runtime_webauthn_host_and_notice(
+        let passkey_warning = antre_gateway::server::sync_runtime_webauthn_host_and_notice(
             &self.gateway,
             self.webauthn_registry.as_ref(),
             config.hostname.as_deref(),
@@ -257,7 +257,7 @@ pub fn startup_lines(
 mod tests {
     use std::sync::Arc;
 
-    use moltis_gateway::{auth, services::GatewayServices, state::GatewayState};
+    use antre_gateway::{auth, services::GatewayServices, state::GatewayState};
 
     use super::*;
 
@@ -289,8 +289,8 @@ mod tests {
     async fn exited_active_tunnel_clears_runtime_status() -> crate::error::Result<()> {
         let runtime = Arc::new(tokio::sync::RwLock::new(Some(
             CloudflareTunnelRuntimeStatus {
-                public_url: Some("https://moltis.example.com".to_string()),
-                hostname: Some("moltis.example.com".to_string()),
+                public_url: Some("https://antre.example.com".to_string()),
+                hostname: Some("antre.example.com".to_string()),
                 passkey_warning: None,
             },
         )));
@@ -316,13 +316,13 @@ mod tests {
     #[test]
     fn startup_lines_reports_url_warning_and_errors() {
         let status = CloudflareTunnelRuntimeStatus {
-            public_url: Some("https://moltis.example.com".to_string()),
-            hostname: Some("moltis.example.com".to_string()),
+            public_url: Some("https://antre.example.com".to_string()),
+            hostname: Some("antre.example.com".to_string()),
             passkey_warning: Some("register passkey origin".to_string()),
         };
 
         assert_eq!(startup_lines(Some(&status), None), vec![
-            "cloudflare tunnel: https://moltis.example.com".to_string(),
+            "cloudflare tunnel: https://antre.example.com".to_string(),
             "cloudflare tunnel note: register passkey origin".to_string(),
         ]);
         assert_eq!(startup_lines(None, Some("boom")), vec![

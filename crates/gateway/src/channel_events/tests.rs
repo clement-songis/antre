@@ -2,7 +2,7 @@
 
 use {super::*, crate::channel_events::commands::formatting::unique_providers};
 
-use moltis_channels::ChannelType;
+use antre_channels::ChannelType;
 
 #[test]
 fn channel_event_serialization() {
@@ -130,7 +130,7 @@ fn shell_mode_rewrite_skips_peek_and_stop() {
 /// have it run.
 #[test]
 fn explicit_shell_command_detects_forms_the_runner_executes() {
-    use moltis_agents::runner::explicit_shell_command;
+    use antre_agents::runner::explicit_shell_command;
 
     assert_eq!(explicit_shell_command("/sh pwd").as_deref(), Some("pwd"));
     assert_eq!(
@@ -153,7 +153,7 @@ fn explicit_shell_command_detects_forms_the_runner_executes() {
 
 #[test]
 fn explicit_shell_command_ignores_ordinary_chat() {
-    use moltis_agents::runner::explicit_shell_command;
+    use antre_agents::runner::explicit_shell_command;
 
     assert!(explicit_shell_command("hello there").is_none());
     assert!(explicit_shell_command("/sh").is_none());
@@ -222,12 +222,12 @@ fn discord_dm_forwarded_by_adapter_is_direct_and_guild_stays_shared() {
         &guild
     ));
     assert!(is_channel_command_authorized(
-        moltis_channels::commands::CommandPrivilege::OperatorDirect,
+        antre_channels::commands::CommandPrivilege::OperatorDirect,
         ChannelSenderRole::Operator,
         &dm
     ));
     assert!(!is_channel_command_authorized(
-        moltis_channels::commands::CommandPrivilege::OperatorDirect,
+        antre_channels::commands::CommandPrivilege::OperatorDirect,
         ChannelSenderRole::Operator,
         &guild
     ));
@@ -294,13 +294,13 @@ fn command_authorization_matches_privilege_and_conversation_scope() {
         ..direct.clone()
     };
 
-    for command in moltis_channels::commands::all_commands() {
+    for command in antre_channels::commands::all_commands() {
         let privilege = command.privilege();
         assert_eq!(
             is_channel_command_authorized(privilege, ChannelSenderRole::Guest, &direct),
             matches!(
                 privilege,
-                moltis_channels::commands::CommandPrivilege::Public
+                antre_channels::commands::CommandPrivilege::Public
             ),
             "guest direct-chat authorization drifted for /{}",
             command.name
@@ -309,7 +309,7 @@ fn command_authorization_matches_privilege_and_conversation_scope() {
             is_channel_command_authorized(privilege, ChannelSenderRole::Operator, &shared),
             matches!(
                 privilege,
-                moltis_channels::commands::CommandPrivilege::Public
+                antre_channels::commands::CommandPrivilege::Public
             ),
             "operator shared-chat authorization drifted for /{}",
             command.name
@@ -436,7 +436,7 @@ fn public_audience_tools_require_explicit_registration() {
 #[cfg(feature = "telegram")]
 #[test]
 fn telegram_config_controls_shared_turn_tool_ceiling() {
-    use moltis_channels::config_view::ChannelConfigView;
+    use antre_channels::config_view::ChannelConfigView;
 
     for (settings, audience_lifted, tools_lifted) in [
         (serde_json::json!({}), false, false),
@@ -456,7 +456,7 @@ fn telegram_config_controls_shared_turn_tool_ceiling() {
             true,
         ),
     ] {
-        let config: moltis_telegram::config::TelegramAccountConfig =
+        let config: antre_telegram::config::TelegramAccountConfig =
             serde_json::from_value(settings).unwrap();
         let view: &dyn ChannelConfigView = &config;
         for (chat_id, role) in [
@@ -475,7 +475,7 @@ fn telegram_config_controls_shared_turn_tool_ceiling() {
             };
             assert!(!is_trusted_channel_turn(role, &target));
             assert!(!is_channel_command_authorized(
-                moltis_channels::commands::CommandPrivilege::OperatorDirect,
+                antre_channels::commands::CommandPrivilege::OperatorDirect,
                 role,
                 &target,
             ));

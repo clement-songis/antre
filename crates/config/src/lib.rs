@@ -1,7 +1,7 @@
 //! Configuration loading, validation, env substitution, and legacy migration.
 //!
-//! Config files: `moltis.toml`, `moltis.yaml`, or `moltis.json`
-//! Searched in `./` then `~/.config/moltis/`.
+//! Config files: `antre.toml`, `antre.yaml`, or `antre.json`
+//! Searched in `./` then `~/.config/antre/`.
 //!
 //! Supports `${ENV_VAR}` substitution in all string values.
 
@@ -58,19 +58,20 @@ pub use {
     },
     schema::{
         AgentIdentity, AgentMemoryWriteMode, AgentPreset, AgentRuntimeLimitSource,
-        AgentRuntimeLimits, AgentsConfig, AuthConfig, CacheRetention, CalDavAccountConfig,
-        CalDavConfig, ChannelToolPolicyOverride, ChannelsConfig, ChatConfig, CodeIndexTomlConfig,
-        CompactionConfig, CompactionMode, ContentCaptureMode, DatadogSettings, FeedbackSettings,
-        GeoLocation, GroupToolPolicy, HeartbeatConfig, HomeAssistantAccountConfig,
-        HomeAssistantConfig, InstrumentationConfig, LangfuseSettings, LearningConfig,
-        LearningCuratorConfig, LearningReviewConfig, MemoryBackend, MemoryCitationsMode,
-        MemoryProvider, MemoryReranker, MemoryScope, MemorySearchMergeStrategy, MemoryStyle,
-        MessageQueueMode, ModePreset, ModesConfig, MoltisConfig, NgrokConfig, OpenBrowser,
-        OtlpSettings, PresetMemoryConfig, PresetToolPolicy, PromptMemoryMode, ResolvedIdentity,
-        SessionAccessPolicyConfig, SessionExportMode, Timezone, ToolMode, ToolPolicyConfig,
-        ToolRegistryMode, UserProfile, UserProfileWriteMode, VoiceConfig, VoiceElevenLabsConfig,
-        VoiceOpenAiConfig, VoiceSttConfig, VoiceSttProvider, VoiceTtsConfig, VoiceTtsProvider,
-        VoiceWhisperConfig, VoiceWhisperLocalConfig, WireApi, parse_byte_size,
+        AgentRuntimeLimits, AgentsConfig, AntreConfig, AuthConfig, CacheRetention,
+        CalDavAccountConfig, CalDavConfig, ChannelToolPolicyOverride, ChannelsConfig, ChatConfig,
+        CodeIndexTomlConfig, CompactionConfig, CompactionMode, ContentCaptureMode, DatadogSettings,
+        FeedbackSettings, GeoLocation, GroupToolPolicy, HeartbeatConfig,
+        HomeAssistantAccountConfig, HomeAssistantConfig, InstrumentationConfig, LangfuseSettings,
+        LearningConfig, LearningCuratorConfig, LearningReviewConfig, MemoryBackend,
+        MemoryCitationsMode, MemoryProvider, MemoryReranker, MemoryScope,
+        MemorySearchMergeStrategy, MemoryStyle, MessageQueueMode, ModePreset, ModesConfig,
+        NgrokConfig, OpenBrowser, OtlpSettings, PresetMemoryConfig, PresetToolPolicy,
+        PromptMemoryMode, ResolvedIdentity, SessionAccessPolicyConfig, SessionExportMode, Timezone,
+        ToolMode, ToolPolicyConfig, ToolRegistryMode, UserProfile, UserProfileWriteMode,
+        VoiceConfig, VoiceElevenLabsConfig, VoiceOpenAiConfig, VoiceSttConfig, VoiceSttProvider,
+        VoiceTtsConfig, VoiceTtsProvider, VoiceWhisperConfig, VoiceWhisperLocalConfig, WireApi,
+        parse_byte_size,
     },
     validate::{Diagnostic, Severity, ValidationResult},
 };

@@ -5,7 +5,7 @@ use super::{FilesError, FilesResult};
 pub(crate) const MAX_LOGICAL_PATH_BYTES: usize = 4096;
 pub(crate) const MAX_COMPONENT_BYTES: usize = 255;
 pub(crate) const MAX_PATH_DEPTH: usize = 64;
-pub(crate) const TEMP_NAME_PREFIX: &str = ".moltis-upload-";
+pub(crate) const TEMP_NAME_PREFIX: &str = ".antre-upload-";
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct LogicalPath {

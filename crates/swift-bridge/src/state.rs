@@ -6,8 +6,8 @@ use std::{
 };
 
 use {
-    moltis_providers::ProviderRegistry,
-    moltis_sessions::{
+    antre_providers::ProviderRegistry,
+    antre_sessions::{
         metadata::SqliteSessionMetadata, session_events::SessionEventBus, store::SessionStore,
     },
 };
@@ -21,7 +21,7 @@ pub(crate) struct BridgeState {
     pub registry: RwLock<ProviderRegistry>,
     pub session_store: SessionStore,
     pub session_metadata: SqliteSessionMetadata,
-    pub credential_store: Arc<moltis_gateway::auth::CredentialStore>,
+    pub credential_store: Arc<antre_gateway::auth::CredentialStore>,
     pub sandbox_default_image_override: RwLock<Option<String>>,
 }
 
@@ -31,7 +31,7 @@ impl BridgeState {
         init_swift_bridge_test_dirs();
 
         // Initialize config directory (write defaults, compact, persist port).
-        moltis_config::initialize_config();
+        antre_config::initialize_config();
 
         emit_log(
             "INFO",
@@ -47,7 +47,7 @@ impl BridgeState {
         let registry = build_registry();
 
         // Initialize persistent session storage (JSONL message files).
-        let data_dir = moltis_config::data_dir();
+        let data_dir = antre_config::data_dir();
         let sessions_dir = data_dir.join("sessions");
         if let Err(e) = std::fs::create_dir_all(&sessions_dir) {
             emit_log(
@@ -58,31 +58,31 @@ impl BridgeState {
         }
         let session_store = SessionStore::new(sessions_dir);
 
-        // Open the shared SQLite database (same moltis.db used by the gateway).
+        // Open the shared SQLite database (same antre.db used by the gateway).
         // WAL mode + synchronous=NORMAL avoids multi-second write contention.
-        let db_path = data_dir.join("moltis.db");
+        let db_path = data_dir.join("antre.db");
         let db_pool = runtime.block_on(async {
             use {
                 sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqliteSynchronous},
                 std::str::FromStr,
             };
             let opts = SqliteConnectOptions::from_str(&format!("sqlite:{}", db_path.display()))
-                .expect("invalid moltis.db path")
+                .expect("invalid antre.db path")
                 .create_if_missing(true)
                 .journal_mode(SqliteJournalMode::Wal)
                 .synchronous(SqliteSynchronous::Normal);
             let pool = sqlx::SqlitePool::connect_with(opts)
                 .await
-                .unwrap_or_else(|e| panic!("failed to open moltis.db: {e}"));
+                .unwrap_or_else(|e| panic!("failed to open antre.db: {e}"));
             // Run migrations so the sessions table exists even if the gateway
             // hasn't been started yet. Order: projects first (FK dependency).
-            if let Err(e) = moltis_projects::run_migrations(&pool).await {
+            if let Err(e) = antre_projects::run_migrations(&pool).await {
                 emit_log("WARN", "bridge", &format!("projects migration: {e}"));
             }
-            if let Err(e) = moltis_sessions::run_migrations(&pool).await {
+            if let Err(e) = antre_sessions::run_migrations(&pool).await {
                 emit_log("WARN", "bridge", &format!("sessions migration: {e}"));
             }
-            if let Err(e) = moltis_gateway::run_migrations(&pool).await {
+            if let Err(e) = antre_gateway::run_migrations(&pool).await {
                 emit_log("WARN", "bridge", &format!("gateway migration: {e}"));
             }
             pool
@@ -92,12 +92,11 @@ impl BridgeState {
         let credential_store = runtime.block_on(async {
             // Keep vault metadata up to date so env var encryption status works
             // even when the full gateway server is not running.
-            if let Err(e) = moltis_gateway::auth::moltis_vault::run_migrations(&db_pool).await {
+            if let Err(e) = antre_gateway::auth::antre_vault::run_migrations(&db_pool).await {
                 emit_log("WARN", "bridge", &format!("vault migration: {e}"));
             }
 
-            let vault = match moltis_gateway::auth::moltis_vault::Vault::new(db_pool.clone()).await
-            {
+            let vault = match antre_gateway::auth::antre_vault::Vault::new(db_pool.clone()).await {
                 Ok(vault) => Some(Arc::new(vault)),
                 Err(e) => {
                     emit_log("WARN", "bridge", &format!("vault init failed: {e}"));
@@ -105,9 +104,9 @@ impl BridgeState {
                 },
             };
 
-            match moltis_gateway::auth::CredentialStore::with_vault(
+            match antre_gateway::auth::CredentialStore::with_vault(
                 db_pool.clone(),
-                &moltis_config::discover_and_load().auth,
+                &antre_config::discover_and_load().auth,
                 vault,
             )
             .await
@@ -135,7 +134,7 @@ fn init_swift_bridge_test_dirs() {
 
     TEST_DIRS_INIT.get_or_init(|| {
         let base = std::env::temp_dir().join(format!(
-            "moltis-swift-bridge-tests-{}-{}",
+            "antre-swift-bridge-tests-{}-{}",
             std::process::id(),
             uuid::Uuid::new_v4().simple()
         ));
@@ -149,17 +148,17 @@ fn init_swift_bridge_test_dirs() {
             panic!("failed to create swift-bridge test data dir: {error}");
         }
 
-        moltis_config::set_config_dir(config_dir);
-        moltis_config::set_data_dir(data_dir);
+        antre_config::set_config_dir(config_dir);
+        antre_config::set_data_dir(data_dir);
     });
 }
 
 pub(crate) fn build_registry() -> ProviderRegistry {
-    let config = moltis_config::discover_and_load();
+    let config = antre_config::discover_and_load();
     let env_overrides = config.env.clone();
-    let key_store = moltis_provider_setup::KeyStore::new();
+    let key_store = antre_provider_setup::KeyStore::new();
     let effective =
-        moltis_provider_setup::config_with_saved_keys(&config.providers, &key_store, &[]);
+        antre_provider_setup::config_with_saved_keys(&config.providers, &key_store, &[]);
     #[cfg(test)]
     {
         ProviderRegistry::from_config_with_static_catalogs(
@@ -173,7 +172,7 @@ pub(crate) fn build_registry() -> ProviderRegistry {
         ProviderRegistry::from_env_with_config_and_overrides(
             &effective,
             &env_overrides,
-            moltis_providers::extract_cw_overrides(&config.models),
+            antre_providers::extract_cw_overrides(&config.models),
         )
     }
 }
@@ -189,7 +188,7 @@ pub(crate) struct HttpdHandle {
     pub addr: SocketAddr,
     /// Gateway state -- used for abort/peek FFI calls and kept alive while
     /// the server is running.
-    pub state: std::sync::Arc<moltis_gateway::state::GatewayState>,
+    pub state: std::sync::Arc<antre_gateway::state::GatewayState>,
 }
 
 /// Global server handle -- `None` when stopped, `Some` when running.

@@ -1,19 +1,19 @@
 [build]
-image = 'ghcr.io/moltis-org/moltis:20261023.01'
+image = 'ghcr.io/antre-ai/antre:20261023.01'
 
 [env]
-MOLTIS_BEHIND_PROXY    = 'true'
-MOLTIS_CONFIG_DIR      = '/data/config'
-MOLTIS_DATA_DIR        = '/data'
-MOLTIS_DEPLOY_PLATFORM = 'flyio'
-MOLTIS_NO_TLS          = 'true'
+ANTRE_BEHIND_PROXY    = 'true'
+ANTRE_CONFIG_DIR      = '/data/config'
+ANTRE_DATA_DIR        = '/data'
+ANTRE_DEPLOY_PLATFORM = 'flyio'
+ANTRE_NO_TLS          = 'true'
 
 [processes]
 app = '--bind 0.0.0.0 --port 8080 --no-tls'
 
 [[mounts]]
 destination = '/data'
-source      = 'moltis_data'
+source      = 'antre_data'
 
 [http_service]
 auto_start_machines  = true

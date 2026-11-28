@@ -1,4 +1,4 @@
-//! Import a `.tar.gz` archive into a Moltis instance.
+//! Import a `.tar.gz` archive into a Antre instance.
 
 use std::{
     collections::{HashMap, HashSet},
@@ -222,7 +222,7 @@ async fn process_archive_into_dirs<R: Read>(
             .take()
             .unwrap_or(entry.path()?.to_path_buf());
 
-        // Strip the top-level prefix directory (moltis-backup-YYYYMMDD-HHMMSS/).
+        // Strip the top-level prefix directory (antre-backup-YYYYMMDD-HHMMSS/).
         let stripped = strip_archive_prefix(&raw_path);
 
         // Validate path safety — reject traversal attacks.
@@ -378,21 +378,21 @@ async fn process_archive_into_dirs<R: Read>(
     // ── Merge SQLite databases ───────────────────────────────────────
     if !opts.dry_run {
         for (archive_path, data) in &db_snapshots {
-            if archive_path == "db/moltis.db" {
-                match merge_moltis_db(data_dir, data, opts.conflict).await {
+            if archive_path == "db/antre.db" {
+                match merge_antre_db(data_dir, data, opts.conflict).await {
                     Ok(counts) => {
                         for (table, n) in &counts {
                             if *n > 0 {
                                 imported.push(ImportedItem {
                                     category: "database".into(),
-                                    path: format!("moltis.db/{table}"),
+                                    path: format!("antre.db/{table}"),
                                     action: format!("merged {n} rows"),
                                 });
                             }
                         }
                     },
                     Err(e) => {
-                        warnings.push(format!("failed to merge moltis.db: {e}"));
+                        warnings.push(format!("failed to merge antre.db: {e}"));
                     },
                 }
             } else if archive_path == "db/memory.db" {
@@ -559,7 +559,7 @@ fn record_action(
 const MAX_MANAGED_PATH_DEPTH: usize = 64;
 const MAX_MANAGED_PATH_BYTES: usize = 4096;
 const MAX_MANAGED_COMPONENT_BYTES: usize = 255;
-const MANAGED_TEMP_PREFIX: &str = ".moltis-upload-";
+const MANAGED_TEMP_PREFIX: &str = ".antre-upload-";
 
 fn record_managed_entry_shape(
     components: &[String],
@@ -846,7 +846,7 @@ fn commit_managed_temp(
     Ok(())
 }
 
-/// Tables to merge from the imported moltis.db, in dependency order.
+/// Tables to merge from the imported antre.db, in dependency order.
 /// Auth tables are intentionally excluded.
 const MERGE_TABLES: &[&str] = &[
     "projects",
@@ -860,13 +860,13 @@ const MERGE_TABLES: &[&str] = &[
     "message_log",
 ];
 
-/// Merge rows from an imported moltis.db into the live database.
-async fn merge_moltis_db(
+/// Merge rows from an imported antre.db into the live database.
+async fn merge_antre_db(
     data_dir: &Path,
     imported_data: &[u8],
     conflict: ConflictStrategy,
 ) -> anyhow::Result<Vec<(String, u64)>> {
-    let live_db = data_dir.join("moltis.db");
+    let live_db = data_dir.join("antre.db");
     if !live_db.exists() {
         // No live DB — just write the imported one directly.
         std::fs::write(&live_db, imported_data)?;
@@ -875,7 +875,7 @@ async fn merge_moltis_db(
 
     // Write imported data to a temporary file, with a drop guard so it is
     // cleaned up even if an error occurs during the merge sequence.
-    let import_path = data_dir.join("moltis.db.import-tmp");
+    let import_path = data_dir.join("antre.db.import-tmp");
     std::fs::write(&import_path, imported_data)?;
     let _guard = TempFileGuard(import_path.clone());
 
@@ -990,8 +990,8 @@ mod tests {
 
     #[test]
     fn safe_path_rejects_traversal() {
-        assert!(is_safe_path(Path::new("config/moltis.toml")));
-        assert!(is_safe_path(Path::new("db/moltis.db")));
+        assert!(is_safe_path(Path::new("config/antre.toml")));
+        assert!(is_safe_path(Path::new("db/antre.db")));
         assert!(!is_safe_path(Path::new("../etc/passwd")));
         assert!(!is_safe_path(Path::new("/absolute/path")));
         assert!(!is_safe_path(Path::new("config/../../etc/passwd")));
@@ -999,9 +999,9 @@ mod tests {
 
     #[test]
     fn strip_prefix_works() {
-        let path = Path::new("moltis-backup-20260501-143022/config/moltis.toml");
+        let path = Path::new("antre-backup-20260501-143022/config/antre.toml");
         let stripped = strip_archive_prefix(path);
-        assert_eq!(stripped, Path::new("config/moltis.toml"));
+        assert_eq!(stripped, Path::new("config/antre.toml"));
     }
 
     #[test]
@@ -1019,7 +1019,7 @@ mod tests {
             .join("/");
         assert!(validate_managed_archive_path(Path::new(&deep_path)).is_err());
         assert!(
-            validate_managed_archive_path(Path::new("notes/.moltis-upload-pending.tmp")).is_err()
+            validate_managed_archive_path(Path::new("notes/.antre-upload-pending.tmp")).is_err()
         );
     }
 

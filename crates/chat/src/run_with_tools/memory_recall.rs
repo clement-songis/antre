@@ -2,7 +2,7 @@
 use std::time::Instant;
 
 /// Format recalled context, escaping XML metacharacters to prevent prompt injection.
-pub(crate) fn format_recalled_context(results: &[moltis_memory::search::SearchResult]) -> String {
+pub(crate) fn format_recalled_context(results: &[antre_memory::search::SearchResult]) -> String {
     if results.is_empty() {
         return String::new();
     }
@@ -27,7 +27,7 @@ pub(crate) fn format_recalled_context(results: &[moltis_memory::search::SearchRe
 
 #[cfg(feature = "metrics")]
 pub(super) fn record_prefetch_metric(status: &'static str, start: Instant) {
-    use moltis_metrics::{counter, histogram, labels, memory as mem_metrics};
+    use antre_metrics::{counter, histogram, labels, memory as mem_metrics};
     counter!(mem_metrics::PREFETCH_TOTAL, labels::STATUS => status).increment(1);
     histogram!(mem_metrics::PREFETCH_DURATION_SECONDS).record(start.elapsed().as_secs_f64());
 }

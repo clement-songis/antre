@@ -48,7 +48,7 @@ impl LiveChatService {
              private context. Clear the binding to restore full access."
         );
 
-        match serde_json::from_str::<moltis_channels::ChannelReplyTarget>(binding_json) {
+        match serde_json::from_str::<antre_channels::ChannelReplyTarget>(binding_json) {
             Ok(target) => {
                 params["channel"]["channel_type"] =
                     Value::String(target.channel_type.as_str().to_string());

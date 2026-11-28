@@ -40,7 +40,7 @@ fn build_schema(dimension: u32) -> Result<CollectionSchema> {
     // search without scanning every document. `SearchQuery::fts` targets this
     // field for keyword-only retrieval.
     let fts_params = IndexParams::fts(None, None, None)?;
-    CollectionSchema::builder("moltis_chunks")
+    CollectionSchema::builder("antre_chunks")
         .add_field(FieldSchema::new("id", DataType::String, false, 0)?)
         .add_field(FieldSchema::new("path", DataType::String, false, 0)?)
         .add_field(FieldSchema::new("source", DataType::String, false, 0)?)
@@ -233,7 +233,7 @@ pub fn open_or_create_collection(db_path: &Path, dimension: Option<u32>) -> Resu
 }
 
 pub const META_DOC_SOURCE: &str = "__meta__";
-const META_DOC_PK: &str = "__moltis_dim_meta__";
+const META_DOC_PK: &str = "__antre_dim_meta__";
 
 pub fn write_dimension_meta(collection: &Collection, dimension: u32) -> Result<()> {
     let mut doc = Doc::new().context("failed to create zvec meta doc")?;
@@ -417,7 +417,7 @@ mod tests {
     #[test]
     fn test_build_schema_default_dim() {
         let schema = build_schema(DEFAULT_VECTOR_DIM).unwrap();
-        assert_eq!(schema.name(), "moltis_chunks");
+        assert_eq!(schema.name(), "antre_chunks");
     }
 
     #[test]

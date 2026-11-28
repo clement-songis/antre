@@ -76,7 +76,7 @@ fn finish(mut response: Response, policy: &str) -> Response {
 
 fn not_found() -> Response {
     #[cfg(feature = "metrics")]
-    moltis_metrics::counter!(moltis_metrics::canvas::REQUESTS_REJECTED_TOTAL).increment(1);
+    antre_metrics::counter!(antre_metrics::canvas::REQUESTS_REJECTED_TOTAL).increment(1);
     finish(
         (StatusCode::NOT_FOUND, "not found").into_response(),
         ASSET_POLICY,
@@ -168,7 +168,7 @@ async fn serve_design_file(
         Err(error) => return error_response(&error),
     };
     #[cfg(feature = "metrics")]
-    moltis_metrics::histogram!(moltis_metrics::canvas::CONTENT_SIZE_BYTES)
+    antre_metrics::histogram!(antre_metrics::canvas::CONTENT_SIZE_BYTES)
         .record(file.bytes.len() as f64);
     let policy = if file.is_html {
         let design_path = format!("/d/{token}/");
@@ -199,7 +199,7 @@ async fn serve_design_file(
         );
     }
     #[cfg(feature = "metrics")]
-    moltis_metrics::histogram!(moltis_metrics::canvas::PAGE_SERVE_DURATION_SECONDS)
+    antre_metrics::histogram!(antre_metrics::canvas::PAGE_SERVE_DURATION_SECONDS)
         .record(started.elapsed().as_secs_f64());
     response
 }

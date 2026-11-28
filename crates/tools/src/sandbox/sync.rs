@@ -67,7 +67,7 @@ pub async fn sync_in(
         "sync-in: uploading workspace"
     );
 
-    let tar_path = "/tmp/moltis-sync-in.tar.gz";
+    let tar_path = "/tmp/antre-sync-in.tar.gz";
     let sandbox_workspace = shell_single_quote(sandbox_workspace);
     backend.write_file(id, tar_path, &tar_bytes).await?;
 
@@ -125,7 +125,7 @@ pub async fn sync_out(
     );
 
     // Create tarball in sandbox.
-    let tar_path = "/tmp/moltis-sync-out.tar.gz";
+    let tar_path = "/tmp/antre-sync-out.tar.gz";
     let tar_cmd = format!("tar -czf {tar_path} -C {sandbox_workspace_shell} .");
     let tar_result = backend.exec(id, &tar_cmd, &opts).await?;
     if tar_result.exit_code != 0 {
@@ -191,14 +191,14 @@ pub fn resolve_sync_workspace(
     };
 
     // The workspace is tarred and patched by this process, so it needs the
-    // path as Moltis sees it. The Docker host translation
+    // path as Antre sees it. The Docker host translation
     // (`host_visible_path`) is only for bind mounts given to a local daemon.
     if let Some(path) = guest_visible_sandbox_home_persistence_host_dir(config, id) {
         return Some(path);
     }
     // Fallback: dedicated sync directory for isolated backends.
     Some(
-        moltis_config::data_dir()
+        antre_config::data_dir()
             .join("sandbox")
             .join("sync")
             .join(sanitize_path_component(&id.key)),
@@ -823,21 +823,21 @@ mod tests {
     }
 
     /// Sync tars and patches the workspace from this process: the path must
-    /// be the one Moltis sees, never the Docker-host translation, and
+    /// be the one Antre sees, never the Docker-host translation, and
     /// resolving it must not shell out to a container runtime.
     #[test]
     fn sync_workspace_ignores_docker_host_translation() {
         use crate::sandbox::types::{HomePersistence, SandboxConfig};
 
         let config = SandboxConfig {
-            host_data_dir: Some(PathBuf::from("/host/moltis-data")),
+            host_data_dir: Some(PathBuf::from("/host/antre-data")),
             home_persistence: HomePersistence::Shared,
             ..SandboxConfig::default()
         };
         let path = resolve_sync_workspace(&config, &sync_id("s1")).unwrap();
         assert_eq!(
             path,
-            moltis_config::data_dir()
+            antre_config::data_dir()
                 .join("sandbox")
                 .join("home")
                 .join("shared")
@@ -855,7 +855,7 @@ mod tests {
         let path = resolve_sync_workspace(&config, &sync_id("a/b")).unwrap();
         assert_eq!(
             path,
-            moltis_config::data_dir()
+            antre_config::data_dir()
                 .join("sandbox")
                 .join("sync")
                 .join("a-b")

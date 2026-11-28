@@ -1,11 +1,11 @@
 //! Import skills from Hermes.
 //!
-//! Hermes skills use the same SKILL.md format as Moltis, so this is a
+//! Hermes skills use the same SKILL.md format as Antre, so this is a
 //! straightforward directory copy.
 
 use std::path::Path;
 
-use moltis_import_core::{report::CategoryReport, skills::copy_skill_dirs};
+use antre_import_core::{report::CategoryReport, skills::copy_skill_dirs};
 
 use crate::detect::HermesDetection;
 
@@ -31,7 +31,7 @@ pub fn discover_skills(detection: &HermesDetection) -> Vec<(String, std::path::P
         .collect()
 }
 
-/// Import skills from Hermes into Moltis.
+/// Import skills from Hermes into Antre.
 pub fn import_skills(detection: &HermesDetection, dest_skills_dir: &Path) -> CategoryReport {
     let skills = discover_skills(detection);
     let sources: Vec<(String, &Path)> = skills
@@ -45,7 +45,7 @@ pub fn import_skills(detection: &HermesDetection, dest_skills_dir: &Path) -> Cat
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
-    use {super::*, moltis_import_core::report::ImportStatus};
+    use {super::*, antre_import_core::report::ImportStatus};
 
     fn make_detection(home: &Path) -> HermesDetection {
         HermesDetection {

@@ -2,17 +2,17 @@
 //! ingestion of images and documents for the agent.
 
 use {
-    async_trait::async_trait,
-    futures::future::join_all,
-    moltis_channels::{
+    antre_channels::{
         ChannelAttachment, ChannelDocumentFile, ChannelEventSink, ChannelReplyTarget,
         InboundMediaDownloader, InboundMediaSource,
     },
-    moltis_media::documents::{
+    antre_media::documents::{
         build_document_body, build_saved_document_filename, extract_pdf_document_content,
         extract_text_document_content, format_document_label, is_pdf_document_type,
         normalize_media_type,
     },
+    async_trait::async_trait,
+    futures::future::join_all,
     serde::Deserialize,
     serde_json::Value,
 };
@@ -60,7 +60,7 @@ impl InboundMediaDownloader for SignalAttachmentDownloader<'_> {
         &self,
         source: &InboundMediaSource,
         max_bytes: usize,
-    ) -> moltis_channels::Result<Vec<u8>> {
+    ) -> antre_channels::Result<Vec<u8>> {
         match source {
             InboundMediaSource::AttachmentId { id } => {
                 self.client
@@ -73,7 +73,7 @@ impl InboundMediaDownloader for SignalAttachmentDownloader<'_> {
                     )
                     .await
             },
-            _ => Err(moltis_channels::Error::invalid_input(
+            _ => Err(antre_channels::Error::invalid_input(
                 "Signal downloader received unsupported media source",
             )),
         }
@@ -92,7 +92,7 @@ impl SignalAttachment {
         reported
             .or_else(|| {
                 let (_, ext) = self.filename.as_deref()?.rsplit_once('.')?;
-                moltis_media::mime::mime_from_extension(&ext.to_ascii_lowercase())
+                antre_media::mime::mime_from_extension(&ext.to_ascii_lowercase())
                     .map(ToString::to_string)
             })
             .unwrap_or_else(|| FALLBACK_MEDIA_TYPE.to_string())
@@ -241,7 +241,7 @@ async fn ingest_one(
 }
 
 fn prepare_image(data: Vec<u8>, media_type: String, account_id: &str) -> ChannelAttachment {
-    match moltis_media::image_ops::optimize_for_llm(&data, None) {
+    match antre_media::image_ops::optimize_for_llm(&data, None) {
         Ok(optimized) => ChannelAttachment {
             media_type: optimized.media_type,
             data: optimized.data,

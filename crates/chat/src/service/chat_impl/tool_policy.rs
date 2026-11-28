@@ -15,9 +15,9 @@ use std::sync::Arc;
 
 use {serde_json::Value, tokio::sync::RwLock};
 
-use moltis_agents::tool_registry::{ToolAudience, ToolRegistry};
+use antre_agents::tool_registry::{ToolAudience, ToolRegistry};
 
-use moltis_tools::policy::ToolPolicy;
+use antre_tools::policy::ToolPolicy;
 
 use crate::service::types::QueuedMessage;
 
@@ -172,7 +172,7 @@ pub(crate) fn split_by_request_security_context(
 mod tests {
     use super::*;
 
-    use {async_trait::async_trait, moltis_agents::tool_registry::AgentTool};
+    use {antre_agents::tool_registry::AgentTool, async_trait::async_trait};
 
     struct StubTool(&'static str);
 
@@ -355,7 +355,7 @@ mod tests {
         const SEND_ASYNC: &str = include_str!("send.rs");
 
         assert!(
-            SEND_ASYNC.contains("moltis_agents::runner::explicit_shell_command"),
+            SEND_ASYNC.contains("antre_agents::runner::explicit_shell_command"),
             "send.rs must detect `/sh` with the same predicate the gateway \
              authorizes on and the runner executes on"
         );
@@ -364,13 +364,13 @@ mod tests {
         // or it bypasses the ceiling without taking the shell path.
         for input in ["/sh ls", "  /sh ls", "/SH ls", "/sh@mybot ls"] {
             assert!(
-                moltis_agents::runner::explicit_shell_command(input).is_some(),
+                antre_agents::runner::explicit_shell_command(input).is_some(),
                 "{input} must be recognized as an explicit shell command"
             );
         }
         for input in ["explain what /sh does", "/shell ls", "/sh", "/sh   "] {
             assert!(
-                moltis_agents::runner::explicit_shell_command(input).is_none(),
+                antre_agents::runner::explicit_shell_command(input).is_none(),
                 "{input} must not be treated as an explicit shell command"
             );
         }

@@ -166,12 +166,12 @@ fn parse_model_entry(entry: &serde_json::Value) -> Option<DiscoveredModel> {
         .get("shutdown_date")
         .and_then(serde_json::Value::as_str)
         .and_then(crate::live_metadata::parse_date);
-    model = model.with_metadata(moltis_model_catalog::ModelSpec {
+    model = model.with_metadata(antre_model_catalog::ModelSpec {
         display_name: crate::live_metadata::api_name(model_id, display_name),
         context_window,
         retires_at,
-        status: retires_at.map(|_| moltis_model_catalog::ModelStatus::Deprecated),
-        ..moltis_model_catalog::ModelSpec::default()
+        status: retires_at.map(|_| antre_model_catalog::ModelStatus::Deprecated),
+        ..antre_model_catalog::ModelSpec::default()
     });
 
     Some(model)

@@ -1,6 +1,6 @@
 # Learning Loop
 
-Moltis can learn from finished conversations. After a busy session, a cheap
+Antre can learn from finished conversations. After a busy session, a cheap
 model reads the chat and proposes changes to your personal skills and memory.
 A curator keeps the skill library small by aging out skills you no longer use.
 Every change is recorded in a ledger, and you can undo any single change.
@@ -51,7 +51,7 @@ skill that was loaded, patch another skill whose class of task fits, add a
 topical `references/`, `templates/` or `scripts/` file to a skill, or create a
 new class-level skill. Facts about your environment go to `MEMORY.md`;
 preferences about you go to `memory/user-preferences.md`. `USER.md` is never
-touched, because Moltis manages it from your settings.
+touched, because Antre manages it from your settings.
 
 ### Which model
 
@@ -173,14 +173,14 @@ Each change broadcasts a `learning` event with a `kind` (`review`, `approved`,
 
 With the `metrics` feature, the loop records:
 
-- `moltis_learning_reviews_total{success}` and
-  `moltis_learning_review_duration_seconds`;
-- `moltis_learning_proposals_total{kind}`, where `kind` is applied, staged,
+- `antre_learning_reviews_total{success}` and
+  `antre_learning_review_duration_seconds`;
+- `antre_learning_proposals_total{kind}`, where `kind` is applied, staged,
   refused, duplicate or failed;
-- `moltis_learning_decisions_total{operation}` and
-  `moltis_learning_rollbacks_total`;
-- `moltis_learning_curator_runs_total{variant}` and
-  `moltis_learning_curator_transitions_total{kind}`.
+- `antre_learning_decisions_total{operation}` and
+  `antre_learning_rollbacks_total`;
+- `antre_learning_curator_runs_total{variant}` and
+  `antre_learning_curator_transitions_total{kind}`.
 
 ## Credits
 

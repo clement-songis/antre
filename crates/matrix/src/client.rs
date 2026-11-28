@@ -16,7 +16,7 @@ use {
     tracing::{info, instrument, warn},
 };
 
-use moltis_channels::{Error as ChannelError, Result as ChannelResult};
+use antre_channels::{Error as ChannelError, Result as ChannelResult};
 
 use crate::{
     config::{MatrixAccountConfig, MatrixAuthMode, MatrixOwnershipMode},
@@ -140,7 +140,7 @@ pub(crate) fn auth_mode(config: &MatrixAccountConfig) -> ChannelResult<AuthMode>
                     .as_ref()
                     .map(|secret| secret.expose_secret().trim())
                     .unwrap_or_default();
-                if password.is_empty() || password == moltis_common::secret_serde::REDACTED {
+                if password.is_empty() || password == antre_common::secret_serde::REDACTED {
                     return Err(ChannelError::invalid_input(
                         "password is required when auth_mode is \"password\"",
                     ));
@@ -149,8 +149,7 @@ pub(crate) fn auth_mode(config: &MatrixAccountConfig) -> ChannelResult<AuthMode>
             },
             MatrixAuthMode::AccessToken => {
                 let access_token = config.access_token.expose_secret().trim();
-                if access_token.is_empty() || access_token == moltis_common::secret_serde::REDACTED
-                {
+                if access_token.is_empty() || access_token == antre_common::secret_serde::REDACTED {
                     return Err(ChannelError::invalid_input(
                         "access_token is required when auth_mode is \"access_token\"",
                     ));
@@ -162,7 +161,7 @@ pub(crate) fn auth_mode(config: &MatrixAccountConfig) -> ChannelResult<AuthMode>
 
     // Backward-compatible auto-detection from credentials.
     let access_token = config.access_token.expose_secret().trim();
-    if !access_token.is_empty() && access_token != moltis_common::secret_serde::REDACTED {
+    if !access_token.is_empty() && access_token != antre_common::secret_serde::REDACTED {
         return Ok(AuthMode::AccessToken);
     }
 
@@ -171,7 +170,7 @@ pub(crate) fn auth_mode(config: &MatrixAccountConfig) -> ChannelResult<AuthMode>
         .as_ref()
         .map(|secret| secret.expose_secret().trim())
         .unwrap_or_default();
-    if password.is_empty() || password == moltis_common::secret_serde::REDACTED {
+    if password.is_empty() || password == antre_common::secret_serde::REDACTED {
         return Err(ChannelError::invalid_input(
             "either access_token or password is required",
         ));
@@ -395,7 +394,7 @@ pub(crate) async fn sync_once_and_spawn_loop(
         guard
             .get(account_id)
             .map(|state| state.config.clone())
-            .filter(|config| config.ownership_mode == MatrixOwnershipMode::MoltisOwned)
+            .filter(|config| config.ownership_mode == MatrixOwnershipMode::AntreOwned)
             .map(|config| async move {
                 maybe_take_matrix_account_ownership(client, account_id, &config).await
             })
@@ -417,8 +416,8 @@ pub(crate) async fn sync_once_and_spawn_loop(
         };
         // Notify the UI that the channel status changed (ownership result).
         if let Some(sink) = event_sink {
-            sink.emit(moltis_channels::ChannelEvent::StatusChanged {
-                channel_type: moltis_channels::ChannelType::Matrix,
+            sink.emit(antre_channels::ChannelEvent::StatusChanged {
+                channel_type: antre_channels::ChannelType::Matrix,
                 account_id: account_id.to_string(),
             })
             .await;
@@ -451,7 +450,7 @@ fn ensure_store_path(account_id: &str) -> ChannelResult<PathBuf> {
 }
 
 fn store_path(account_id: &str) -> PathBuf {
-    moltis_config::data_dir()
+    antre_config::data_dir()
         .join("matrix")
         .join(account_store_component(account_id))
 }
@@ -496,7 +495,7 @@ fn resolved_device_id(account_id: &str, configured_device_id: Option<&str>) -> S
         .map(str::trim)
         .filter(|device_id| !device_id.is_empty())
         .map(str::to_string)
-        .unwrap_or_else(|| format!("moltis_{}", account_store_component(account_id)))
+        .unwrap_or_else(|| format!("antre_{}", account_store_component(account_id)))
 }
 
 fn configured_device_id(configured_device_id: Option<&str>) -> Option<String> {
@@ -744,10 +743,7 @@ mod tests {
         let session = access_token_session("matrix:org/test bot", &cfg, &identity);
 
         assert_eq!(session.meta.user_id.as_str(), "@bot:example.com");
-        assert_eq!(
-            session.meta.device_id.as_str(),
-            "moltis_matrix-org-test-bot"
-        );
+        assert_eq!(session.meta.device_id.as_str(), "antre_matrix-org-test-bot");
     }
 
     #[test]
@@ -766,12 +762,12 @@ mod tests {
     #[test]
     fn resolved_device_id_prefers_configured_value() {
         assert_eq!(
-            resolved_device_id("matrix-org", Some("MOLTISBOT")),
-            "MOLTISBOT"
+            resolved_device_id("matrix-org", Some("ANTREBOT")),
+            "ANTREBOT"
         );
         assert_eq!(
             resolved_device_id("matrix-org", Some("   ")),
-            "moltis_matrix-org"
+            "antre_matrix-org"
         );
     }
 
@@ -779,15 +775,15 @@ mod tests {
     fn resolved_device_id_is_stable_without_config() {
         assert_eq!(
             resolved_device_id("matrix:org/test bot", None),
-            "moltis_matrix-org-test-bot"
+            "antre_matrix-org-test-bot"
         );
     }
 
     #[test]
     fn configured_device_id_ignores_blank_values() {
         assert_eq!(
-            configured_device_id(Some("MOLTISBOT")),
-            Some("MOLTISBOT".into())
+            configured_device_id(Some("ANTREBOT")),
+            Some("ANTREBOT".into())
         );
         assert_eq!(configured_device_id(Some("   ")), None);
         assert_eq!(configured_device_id(None), None);

@@ -1,6 +1,6 @@
 (version 1)
 
-; Base Seatbelt profile for the Moltis OS sandbox.
+; Base Seatbelt profile for the Antre OS sandbox.
 ; Adapted from OpenAI Codex (codex-rs/sandboxing, Apache-2.0), itself inspired
 ; by Chromium's macOS sandbox policies. Filesystem and network grants are
 ; appended per session by seatbelt.rs.

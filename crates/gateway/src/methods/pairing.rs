@@ -1,4 +1,4 @@
-use moltis_protocol::{ErrorShape, error_codes};
+use antre_protocol::{ErrorShape, error_codes};
 
 use crate::broadcast::{BroadcastOpts, broadcast};
 
@@ -591,9 +591,9 @@ mod tests {
             services::GatewayServices,
             state::GatewayState,
         },
+        antre_protocol::ResponseFrame,
         base64::Engine,
         ed25519_dalek::{Signer, SigningKey},
-        moltis_protocol::ResponseFrame,
     };
 
     fn test_state() -> std::sync::Arc<GatewayState> {

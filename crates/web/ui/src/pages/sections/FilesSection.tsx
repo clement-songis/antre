@@ -669,9 +669,9 @@ export function FilesSection(): VNode {
 			onDragLeave={onDragLeave}
 			onDrop={onDrop}
 		>
-			<SectionHeading title="Files" subtitle="Manage files shared with Moltis and its sandboxes." />
+			<SectionHeading title="Files" subtitle="Manage files shared with Antre and its sandboxes." />
 			<p className="max-w-3xl text-xs leading-relaxed text-[var(--muted)]">
-				Files are available locally through <code>MOLTIS_FILES_DIR</code> and inside sandboxes at{" "}
+				Files are available locally through <code>ANTRE_FILES_DIR</code> and inside sandboxes at{" "}
 				<code>/home/sandbox/files</code>. This browser shows relative paths only and never exposes the host path.
 			</p>
 

@@ -2,16 +2,16 @@ use std::sync::Arc;
 
 use {
     super::common::{DeliveredMessage, RecordingChannelOutbound, cron_delivery_request},
+    antre_channels::{ChannelReplyTarget, ChannelType},
+    antre_common::types::ReplyPayload,
+    antre_sessions::{metadata::SqliteSessionMetadata, store::SessionStore},
     async_trait::async_trait,
-    moltis_channels::{ChannelReplyTarget, ChannelType},
-    moltis_common::types::ReplyPayload,
-    moltis_sessions::{metadata::SqliteSessionMetadata, store::SessionStore},
     sqlx::sqlite::SqlitePoolOptions,
 };
 
 struct CronHistoryFixture {
     _directory: tempfile::TempDir,
-    registry: Arc<moltis_channels::ChannelRegistry>,
+    registry: Arc<antre_channels::ChannelRegistry>,
     metadata: Arc<SqliteSessionMetadata>,
     store: Arc<SessionStore>,
 }
@@ -31,7 +31,7 @@ impl CronHistoryFixture {
         let metadata = Arc::new(SqliteSessionMetadata::new(pool));
         let directory = tempfile::tempdir().unwrap();
         let store = Arc::new(SessionStore::new(directory.path().to_path_buf()));
-        let registry = Arc::new(moltis_channels::ChannelRegistry::new());
+        let registry = Arc::new(antre_channels::ChannelRegistry::new());
         registry.index_account(account_id, channel_type.as_str());
         Self {
             _directory: directory,
@@ -93,15 +93,15 @@ fn whatsapp_target(chat_id: &str) -> ChannelReplyTarget {
 struct FailingChannelOutbound;
 
 #[async_trait]
-impl moltis_channels::ChannelOutbound for FailingChannelOutbound {
+impl antre_channels::ChannelOutbound for FailingChannelOutbound {
     async fn send_text(
         &self,
         _account_id: &str,
         _to: &str,
         _text: &str,
         _reply_to: Option<&str>,
-    ) -> moltis_channels::Result<()> {
-        Err(moltis_channels::Error::unavailable("test delivery failure"))
+    ) -> antre_channels::Result<()> {
+        Err(antre_channels::Error::unavailable("test delivery failure"))
     }
 
     async fn send_media(
@@ -110,7 +110,7 @@ impl moltis_channels::ChannelOutbound for FailingChannelOutbound {
         _to: &str,
         _payload: &ReplyPayload,
         _reply_to: Option<&str>,
-    ) -> moltis_channels::Result<()> {
+    ) -> antre_channels::Result<()> {
         Ok(())
     }
 }
@@ -122,14 +122,14 @@ struct RemappingChannelOutbound {
 }
 
 #[async_trait]
-impl moltis_channels::ChannelOutbound for RemappingChannelOutbound {
+impl antre_channels::ChannelOutbound for RemappingChannelOutbound {
     async fn send_text(
         &self,
         _account_id: &str,
         _to: &str,
         _text: &str,
         _reply_to: Option<&str>,
-    ) -> moltis_channels::Result<()> {
+    ) -> antre_channels::Result<()> {
         self.metadata
             .set_active_session(
                 self.target.channel_type.as_str(),
@@ -148,7 +148,7 @@ impl moltis_channels::ChannelOutbound for RemappingChannelOutbound {
         _to: &str,
         _reply: &ReplyPayload,
         _reply_to: Option<&str>,
-    ) -> moltis_channels::Result<()> {
+    ) -> antre_channels::Result<()> {
         Ok(())
     }
 }
@@ -159,7 +159,7 @@ async fn maybe_deliver_cron_output_sends_to_configured_channel() {
     let req = cron_delivery_request();
 
     crate::server::helpers::maybe_deliver_cron_output(
-        Some(outbound.clone() as Arc<dyn moltis_channels::ChannelOutbound>),
+        Some(outbound.clone() as Arc<dyn antre_channels::ChannelOutbound>),
         &req,
         "Daily digest ready",
         None,
@@ -182,7 +182,7 @@ async fn maybe_deliver_cron_output_skips_blank_messages() {
     let req = cron_delivery_request();
 
     crate::server::helpers::maybe_deliver_cron_output(
-        Some(outbound.clone() as Arc<dyn moltis_channels::ChannelOutbound>),
+        Some(outbound.clone() as Arc<dyn antre_channels::ChannelOutbound>),
         &req,
         "   ",
         None,
@@ -200,7 +200,7 @@ async fn maybe_deliver_cron_output_skips_when_deliver_is_false() {
     req.deliver = false;
 
     crate::server::helpers::maybe_deliver_cron_output(
-        Some(outbound.clone() as Arc<dyn moltis_channels::ChannelOutbound>),
+        Some(outbound.clone() as Arc<dyn antre_channels::ChannelOutbound>),
         &req,
         "should not be sent",
         None,
@@ -225,7 +225,7 @@ async fn maybe_deliver_cron_output_fails_when_no_outbound_is_configured() {
 #[tokio::test]
 async fn maybe_deliver_cron_output_propagates_channel_failure() {
     let req = cron_delivery_request();
-    let outbound: Arc<dyn moltis_channels::ChannelOutbound> = Arc::new(FailingChannelOutbound);
+    let outbound: Arc<dyn antre_channels::ChannelOutbound> = Arc::new(FailingChannelOutbound);
 
     let error = crate::server::helpers::maybe_deliver_cron_output(
         Some(outbound),
@@ -249,7 +249,7 @@ async fn bare_whatsapp_number_delivery_is_recorded_once_in_bound_conversation() 
 
     for _ in 0..2 {
         crate::server::helpers::maybe_deliver_cron_output(
-            Some(outbound.clone() as Arc<dyn moltis_channels::ChannelOutbound>),
+            Some(outbound.clone() as Arc<dyn antre_channels::ChannelOutbound>),
             &req,
             "Services total R$ 1.042,30",
             Some(&history),
@@ -265,10 +265,10 @@ async fn bare_whatsapp_number_delivery_is_recorded_once_in_bound_conversation() 
     assert_eq!(messages[0]["content"], "Services total R$ 1.042,30");
     assert_eq!(messages[0]["run_id"], "cron-delivery:run-1");
     assert_eq!(messages[0]["channel"]["private_context"], false);
-    let llm_history = moltis_agents::model::values_to_chat_messages(&messages);
+    let llm_history = antre_agents::model::values_to_chat_messages(&messages);
     assert!(matches!(
         &llm_history[0],
-        moltis_agents::model::ChatMessage::Assistant { content: Some(content), .. }
+        antre_agents::model::ChatMessage::Assistant { content: Some(content), .. }
             if content == "Services total R$ 1.042,30"
     ));
     assert_eq!(
@@ -328,7 +328,7 @@ async fn delivered_output_does_not_fail_when_history_cannot_be_written() {
     let req = cron_delivery_request();
 
     crate::server::helpers::maybe_deliver_cron_output(
-        Some(outbound.clone() as Arc<dyn moltis_channels::ChannelOutbound>),
+        Some(outbound.clone() as Arc<dyn antre_channels::ChannelOutbound>),
         &req,
         "The recipient received this",
         Some(&history),
@@ -356,7 +356,7 @@ async fn delivery_without_an_existing_bound_session_stays_out_of_history() {
     let history = fixture.history("unbound-run");
 
     crate::server::helpers::maybe_deliver_cron_output(
-        Some(outbound.clone() as Arc<dyn moltis_channels::ChannelOutbound>),
+        Some(outbound.clone() as Arc<dyn antre_channels::ChannelOutbound>),
         &req,
         "Delivered without a conversation",
         Some(&history),
@@ -387,7 +387,7 @@ async fn delivery_is_isolated_to_the_exact_recipient() {
     let history = fixture.history("isolated-run");
 
     crate::server::helpers::maybe_deliver_cron_output(
-        Some(outbound as Arc<dyn moltis_channels::ChannelOutbound>),
+        Some(outbound as Arc<dyn antre_channels::ChannelOutbound>),
         &req,
         "Only the intended recipient saw this",
         Some(&history),
@@ -430,7 +430,7 @@ async fn stale_mapping_to_another_recipient_fails_closed() {
     let history = fixture.history("stale-mapping-run");
 
     crate::server::helpers::maybe_deliver_cron_output(
-        Some(outbound.clone() as Arc<dyn moltis_channels::ChannelOutbound>),
+        Some(outbound.clone() as Arc<dyn antre_channels::ChannelOutbound>),
         &req,
         "Delivered, but never written into another recipient's history",
         Some(&history),
@@ -465,7 +465,7 @@ async fn binding_is_revalidated_after_the_external_send() {
     let history = fixture.history("remapped-run");
 
     crate::server::helpers::maybe_deliver_cron_output(
-        Some(outbound as Arc<dyn moltis_channels::ChannelOutbound>),
+        Some(outbound as Arc<dyn antre_channels::ChannelOutbound>),
         &req,
         "Delivered while the binding changed",
         Some(&history),
@@ -506,7 +506,7 @@ async fn same_target_session_remap_during_send_is_not_recorded() {
     let history = fixture.history("same-target-remap-run");
 
     crate::server::helpers::maybe_deliver_cron_output(
-        Some(outbound as Arc<dyn moltis_channels::ChannelOutbound>),
+        Some(outbound as Arc<dyn antre_channels::ChannelOutbound>),
         &req,
         "Delivered while the active session changed",
         Some(&history),
@@ -545,7 +545,7 @@ async fn telegram_delivery_is_isolated_to_the_exact_topic() {
     let history = fixture.history("topic-run");
 
     crate::server::helpers::maybe_deliver_cron_output(
-        Some(outbound as Arc<dyn moltis_channels::ChannelOutbound>),
+        Some(outbound as Arc<dyn antre_channels::ChannelOutbound>),
         &req,
         "Topic-only report",
         Some(&history),
@@ -568,7 +568,7 @@ async fn default_bound_conversation_is_used_without_an_active_override() {
     let history = fixture.history("default-run");
 
     crate::server::helpers::maybe_deliver_cron_output(
-        Some(outbound as Arc<dyn moltis_channels::ChannelOutbound>),
+        Some(outbound as Arc<dyn antre_channels::ChannelOutbound>),
         &req,
         "Default conversation report",
         Some(&history),

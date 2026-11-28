@@ -11,9 +11,9 @@
 use std::{collections::HashSet, time::Duration};
 
 use {
+    antre_agents::model::{ChatMessage, CompletionResponse, LlmProvider, StreamEvent, ToolCall},
+    antre_providers::openai::OpenAiProvider,
     futures::StreamExt,
-    moltis_agents::model::{ChatMessage, CompletionResponse, LlmProvider, StreamEvent, ToolCall},
-    moltis_providers::openai::OpenAiProvider,
     secrecy::{ExposeSecret, Secret},
 };
 
@@ -132,7 +132,7 @@ async fn stream_with_retries(
     unreachable!("bounded retry loop returns or panics")
 }
 
-/// Tool schema in moltis-internal flat format.
+/// Tool schema in antre-internal flat format.
 fn weather_tool() -> serde_json::Value {
     serde_json::json!({
         "name": "get_weather",

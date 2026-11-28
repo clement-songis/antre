@@ -1,65 +1,65 @@
 [package]
 edition.workspace    = true
-name                 = "moltis-web"
+name                 = "antre-web"
 repository.workspace = true
 version.workspace    = true
 
 [dependencies]
-askama          = { workspace = true }
-axum            = { workspace = true }
-axum-extra      = { features = ["cookie"], workspace = true }
-base64          = { workspace = true }
-chrono          = { features = ["serde"], workspace = true }
-futures         = { workspace = true }
-gix             = { workspace = true }
-include_dir     = { optional = true, workspace = true }
-moltis-auth     = { workspace = true }
-moltis-channels = { workspace = true }
-moltis-config   = { workspace = true }
-moltis-cron     = { workspace = true }
-moltis-gateway  = { workspace = true }
-moltis-httpd    = { workspace = true }
-moltis-media    = { workspace = true }
-moltis-skills   = { workspace = true }
-moltis-tools    = { workspace = true }
-portable-pty    = { workspace = true }
-secrecy         = { workspace = true }
-serde           = { workspace = true }
-serde_json      = { workspace = true }
-sysinfo         = { workspace = true }
-thiserror       = { workspace = true }
-tokio           = { workspace = true }
-tokio-util      = { workspace = true }
-tracing         = { workspace = true }
-url             = { workspace = true }
-uuid            = { workspace = true }
-which           = { workspace = true }
+antre-auth     = { workspace = true }
+antre-channels = { workspace = true }
+antre-config   = { workspace = true }
+antre-cron     = { workspace = true }
+antre-gateway  = { workspace = true }
+antre-httpd    = { workspace = true }
+antre-media    = { workspace = true }
+antre-skills   = { workspace = true }
+antre-tools    = { workspace = true }
+askama         = { workspace = true }
+axum           = { workspace = true }
+axum-extra     = { features = ["cookie"], workspace = true }
+base64         = { workspace = true }
+chrono         = { features = ["serde"], workspace = true }
+futures        = { workspace = true }
+gix            = { workspace = true }
+include_dir    = { optional = true, workspace = true }
+portable-pty   = { workspace = true }
+secrecy        = { workspace = true }
+serde          = { workspace = true }
+serde_json     = { workspace = true }
+sysinfo        = { workspace = true }
+thiserror      = { workspace = true }
+tokio          = { workspace = true }
+tokio-util     = { workspace = true }
+tracing        = { workspace = true }
+url            = { workspace = true }
+uuid           = { workspace = true }
+which          = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }
 
 [features]
-agent              = ["moltis-gateway/agent"]
-bundled-skills     = ["moltis-skills/bundled-skills"]
-canvas             = ["moltis-httpd/canvas"]
-cloudflare-tunnel  = ["moltis-httpd/cloudflare-tunnel"]
-connectors         = ["moltis-gateway/connectors", "moltis-httpd/connectors"]
+agent              = ["antre-gateway/agent"]
+bundled-skills     = ["antre-skills/bundled-skills"]
+canvas             = ["antre-httpd/canvas"]
+cloudflare-tunnel  = ["antre-httpd/cloudflare-tunnel"]
+connectors         = ["antre-gateway/connectors", "antre-httpd/connectors"]
 default            = ["embedded-assets"]
 embedded-assets    = ["dep:include_dir"]
-graphql            = ["moltis-gateway/graphql", "moltis-httpd/graphql"]
-mdns               = ["moltis-httpd/mdns"]
-metrics            = ["moltis-httpd/metrics"]
-mods               = ["moltis-gateway/mods"]
-netbird            = ["moltis-httpd/netbird"]
-ngrok              = ["moltis-httpd/ngrok"]
-push-notifications = ["moltis-httpd/push-notifications"]
-slack              = ["moltis-httpd/slack"]
-tailscale          = ["moltis-httpd/tailscale"]
-tls                = ["moltis-httpd/tls"]
-trusted-network    = ["moltis-httpd/trusted-network"]
-vault              = ["moltis-httpd/vault"]
-voice              = ["moltis-gateway/voice"]
-web-ui             = ["moltis-httpd/web-ui"]
+graphql            = ["antre-gateway/graphql", "antre-httpd/graphql"]
+mdns               = ["antre-httpd/mdns"]
+metrics            = ["antre-httpd/metrics"]
+mods               = ["antre-gateway/mods"]
+netbird            = ["antre-httpd/netbird"]
+ngrok              = ["antre-httpd/ngrok"]
+push-notifications = ["antre-httpd/push-notifications"]
+slack              = ["antre-httpd/slack"]
+tailscale          = ["antre-httpd/tailscale"]
+tls                = ["antre-httpd/tls"]
+trusted-network    = ["antre-httpd/trusted-network"]
+vault              = ["antre-httpd/vault"]
+voice              = ["antre-gateway/voice"]
+web-ui             = ["antre-httpd/web-ui"]
 
 [lints]
 workspace = true

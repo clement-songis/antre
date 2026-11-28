@@ -74,12 +74,12 @@ impl OsSandboxKind {
         };
         format!(
             "{mechanism}: system read-only, writes limited to the sandbox home, temp and \
-             writable workspace, user home and Moltis secrets hidden, {network}"
+             writable workspace, user home and Antre secrets hidden, {network}"
         )
     }
 
     /// Detect a usable OS sandbox on this host by running a trivial command
-    /// under it. Fails when the mechanism is missing or cannot nest (Moltis
+    /// under it. Fails when the mechanism is missing or cannot nest (Antre
     /// already running inside a sandbox, user namespaces disabled).
     #[must_use]
     pub fn detect() -> Option<Self> {
@@ -185,13 +185,13 @@ pub struct OsSandboxDirs {
 }
 
 impl OsSandboxDirs {
-    /// The running Moltis instance's directories.
+    /// The running Antre instance's directories.
     #[must_use]
-    pub fn from_moltis_config() -> Self {
+    pub fn from_antre_config() -> Self {
         Self {
-            data_dir: moltis_config::data_dir(),
-            config_dir: moltis_config::config_dir(),
-            user_home: moltis_config::home_dir(),
+            data_dir: antre_config::data_dir(),
+            config_dir: antre_config::config_dir(),
+            user_home: antre_config::home_dir(),
         }
     }
 }
@@ -207,7 +207,7 @@ pub struct OsSandbox {
 impl OsSandbox {
     #[must_use]
     pub fn new(config: SandboxConfig, kind: OsSandboxKind) -> Self {
-        Self::with_dirs(config, kind, OsSandboxDirs::from_moltis_config())
+        Self::with_dirs(config, kind, OsSandboxDirs::from_antre_config())
     }
 
     #[must_use]
@@ -466,12 +466,12 @@ mod tests {
     #[test]
     fn os_sandbox_routes_through_the_configured_proxy_port() {
         let config = SandboxConfig {
-            network: moltis_network_filter::NetworkPolicy::Trusted,
+            network: antre_network_filter::NetworkPolicy::Trusted,
             proxy_port: 45678,
             ..Default::default()
         };
         let dirs = OsSandboxDirs {
-            data_dir: PathBuf::from("/tmp/moltis-data"),
+            data_dir: PathBuf::from("/tmp/antre-data"),
             config_dir: None,
             user_home: None,
         };

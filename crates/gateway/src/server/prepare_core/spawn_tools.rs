@@ -4,9 +4,9 @@
 use std::sync::{Arc, OnceLock, Weak};
 
 use {
-    moltis_agents::{model::LlmProvider, tool_registry::ToolRegistry},
-    moltis_providers::ProviderRegistry,
-    moltis_tools::spawn_agent_tasks::SpawnTaskStore,
+    antre_agents::{model::LlmProvider, tool_registry::ToolRegistry},
+    antre_providers::ProviderRegistry,
+    antre_tools::spawn_agent_tasks::SpawnTaskStore,
 };
 
 use crate::{
@@ -37,7 +37,7 @@ impl BackgroundAnnouncer {
     fn callback(
         &self,
         store: &Arc<SpawnTaskStore>,
-    ) -> Option<moltis_tools::spawn_agent::OnBackgroundComplete> {
+    ) -> Option<antre_tools::spawn_agent::OnBackgroundComplete> {
         if !self.enabled {
             return None;
         }
@@ -71,26 +71,26 @@ pub(super) fn register_spawn_tools(
     registry: &Arc<tokio::sync::RwLock<ProviderRegistry>>,
     default_provider: Arc<dyn LlmProvider>,
     state: &Arc<GatewayState>,
-    agents_config: Arc<tokio::sync::RwLock<moltis_config::AgentsConfig>>,
+    agents_config: Arc<tokio::sync::RwLock<antre_config::AgentsConfig>>,
     announcer: &BackgroundAnnouncer,
 ) {
     let spawn_task_store = Arc::new(SpawnTaskStore::default());
     tool_registry.register(Box::new(
-        moltis_tools::spawn_agent_tasks::SpawnStatusTool::new(Arc::clone(&spawn_task_store)),
+        antre_tools::spawn_agent_tasks::SpawnStatusTool::new(Arc::clone(&spawn_task_store)),
     ));
     tool_registry.register(Box::new(
-        moltis_tools::spawn_agent_tasks::SpawnResultTool::new(Arc::clone(&spawn_task_store)),
+        antre_tools::spawn_agent_tasks::SpawnResultTool::new(Arc::clone(&spawn_task_store)),
     ));
     tool_registry.register(Box::new(
-        moltis_tools::spawn_agent_tasks::SpawnListTool::new(Arc::clone(&spawn_task_store)),
+        antre_tools::spawn_agent_tasks::SpawnListTool::new(Arc::clone(&spawn_task_store)),
     ));
     tool_registry.register(Box::new(
-        moltis_tools::spawn_agent_tasks::SpawnCancelTool::new(Arc::clone(&spawn_task_store)),
+        antre_tools::spawn_agent_tasks::SpawnCancelTool::new(Arc::clone(&spawn_task_store)),
     ));
     let base_tools = Arc::new(tool_registry.clone_without(&[]));
     let state_for_spawn = Arc::clone(state);
-    let on_spawn_event: moltis_tools::spawn_agent::OnSpawnEvent = Arc::new(move |event| {
-        use moltis_agents::runner::RunnerEvent;
+    let on_spawn_event: antre_tools::spawn_agent::OnSpawnEvent = Arc::new(move |event| {
+        use antre_agents::runner::RunnerEvent;
         let state = Arc::clone(&state_for_spawn);
         let payload = match &event {
             RunnerEvent::SubAgentStart { task, model, depth } => {
@@ -121,7 +121,7 @@ pub(super) fn register_spawn_tools(
             broadcast(&state, "chat", payload, BroadcastOpts::default()).await;
         });
     });
-    let spawn_tool = moltis_tools::spawn_agent::SpawnAgentTool::new(
+    let spawn_tool = antre_tools::spawn_agent::SpawnAgentTool::new(
         Arc::clone(registry),
         default_provider,
         base_tools,

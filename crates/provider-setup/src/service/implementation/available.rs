@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use serde_json::Value;
 
-use moltis_service_traits::ServiceResult;
+use antre_service_traits::ServiceResult;
 
 use {
     super::LiveProviderSetupService,

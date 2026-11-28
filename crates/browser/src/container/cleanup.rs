@@ -35,7 +35,7 @@ pub(super) fn quarantine_profile_lock(
         container_id,
         backend = backend.cli(),
         profile_dir = profile_dir.map(|path| path.display().to_string()),
-        "browser container cleanup could not be confirmed; retaining profile lock until Moltis exits"
+        "browser container cleanup could not be confirmed; retaining profile lock until Antre exits"
     );
     QUARANTINED_PROFILE_LOCKS
         .get_or_init(|| Mutex::new(Vec::new()))

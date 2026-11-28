@@ -11,7 +11,7 @@ import type { RpcResponse } from "./types";
 declare global {
 	interface Window {
 		webkitAudioContext?: typeof AudioContext;
-		__moltisTestRpcTimeoutMs?: number;
+		__antreTestRpcTimeoutMs?: number;
 	}
 }
 
@@ -229,7 +229,7 @@ function extractAsciiTables(s: string): { text: string; tables: string[] } {
 	for (let i = 0; i < lines.length; ) {
 		const asciiTable = parseAsciiTable(lines, i);
 		if (asciiTable) {
-			out.push(`@@MOLTIS_ASCII_TABLE_${tables.length}@@`);
+			out.push(`@@ANTRE_ASCII_TABLE_${tables.length}@@`);
 			tables.push(asciiTable.html);
 			i = asciiTable.next;
 			continue;
@@ -277,7 +277,7 @@ markedInstance.use({ extensions: [mathBlockExtension, mathInlineExtension] });
 const RPC_TIMEOUT_MS = 5_000;
 
 function rpcTimeoutMs(requested?: number): number {
-	if (typeof window.__moltisTestRpcTimeoutMs === "number") return window.__moltisTestRpcTimeoutMs;
+	if (typeof window.__antreTestRpcTimeoutMs === "number") return window.__antreTestRpcTimeoutMs;
 	if (typeof requested === "number") return requested;
 	// server.rpc_timeout_ms via gon; ignore a misconfigured 0/negative.
 	const configured = gon.get("rpc_timeout_ms");
@@ -289,7 +289,7 @@ export function renderMarkdown(raw: string): string {
 	// Re-insert after marked is done so the HTML doesn't get escaped.
 	const { text, tables } = extractAsciiTables(raw);
 	let result = markedInstance.parse(text) as string;
-	result = result.replace(/@@MOLTIS_ASCII_TABLE_(\d+)@@/g, (_: string, idx: string) => tables[Number(idx)] || "");
+	result = result.replace(/@@ANTRE_ASCII_TABLE_(\d+)@@/g, (_: string, idx: string) => tables[Number(idx)] || "");
 	return result.trimEnd();
 }
 

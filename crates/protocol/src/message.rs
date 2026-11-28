@@ -309,7 +309,7 @@ impl PersistedMessage {
     ///
     /// Prefer [`Self::tool_result_with_run_id`]. A message without a `run_id`
     /// cannot be attributed to a run, so run-scoped history filtering (see
-    /// `filter_public_history` in `moltis-chat`) drops it — which would orphan
+    /// `filter_public_history` in `antre-chat`) drops it — which would orphan
     /// the paired assistant `tool_calls` entry and make the history invalid for
     /// most providers.
     pub fn tool_result(

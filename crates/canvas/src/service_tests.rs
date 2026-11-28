@@ -292,7 +292,7 @@ async fn public_url_overrides_origin() {
     let service = CanvasService::new(CanvasServiceParts {
         data_dir: tmp.path().to_path_buf(),
         pool: test_pool().await,
-        settings: CanvasSettings::from(&moltis_config::schema::CanvasConfig {
+        settings: CanvasSettings::from(&antre_config::schema::CanvasConfig {
             public_url: Some("https://designs.example.com/".into()),
             script_sources: vec!["https://ok.example.com".into(), "bad".into()],
             ..Default::default()
@@ -355,12 +355,7 @@ async fn serve_file_respects_scope_and_size() {
         service.serve_file(&claims, "big.bin").await.unwrap_err(),
         Error::TooLarge { .. }
     ));
-    assert!(
-        service
-            .serve_file(&claims, "../../moltis.db")
-            .await
-            .is_err()
-    );
+    assert!(service.serve_file(&claims, "../../antre.db").await.is_err());
 }
 
 #[tokio::test]

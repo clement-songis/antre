@@ -1,11 +1,11 @@
 # Compaction
 
-When a chat session fills up the model's context window, Moltis compacts the
+When a chat session fills up the model's context window, Antre compacts the
 conversation so the agent can keep working. Compaction replaces (or rewrites)
 older messages with a summary so the retry fits inside the context budget.
 
 The **compaction mode** you choose controls the cost/fidelity trade-off:
-faster and free, or slower and higher quality. Moltis supports four modes
+faster and free, or slower and higher quality. Antre supports four modes
 out of the box.
 
 ## Why compaction matters
@@ -157,7 +157,7 @@ behaviour).
 
 ## Configuration
 
-All compaction settings live under `[chat.compaction]` in `moltis.toml`:
+All compaction settings live under `[chat.compaction]` in `antre.toml`:
 
 ```toml
 [chat.compaction]
@@ -169,7 +169,7 @@ tail_budget_ratio = 0.20            # Tail size as fraction of threshold_percent
 tool_prune_char_threshold = 200     # Middle tool results longer than this get placeholder-replaced.
 summary_model = "openrouter/google/gemini-3.8-flash"   # RESERVED — see note below.
 max_summary_tokens = 4096           # RESERVED — see note below.
-show_settings_hint = true           # Show "Change chat.compaction.mode in moltis.toml…" footer.
+show_settings_hint = true           # Show "Change chat.compaction.mode in antre.toml…" footer.
 ```
 
 ### Hiding the settings hint
@@ -177,7 +177,7 @@ show_settings_hint = true           # Show "Change chat.compaction.mode in molti
 By default, every compaction notice (web UI compact card and channel
 messages) includes a short footer pointing at the config key:
 
-> *Change `chat.compaction.mode` in `moltis.toml` (or the web UI settings
+> *Change `chat.compaction.mode` in `antre.toml` (or the web UI settings
 > panel) to pick a different compaction strategy.*
 
 Once you know the setting exists, this becomes noise. Set:
@@ -229,7 +229,7 @@ next request counts the stored history as well as the last turn's usage, so
 switching a long session to a model with a smaller window compacts before the
 next request instead of failing with `context_window_exceeded`.
 
-When no source knows a model's window, Moltis budgets with a conservative
+When no source knows a model's window, Antre budgets with a conservative
 128 K default and the context meter shows `?` and "context window unknown"
 rather than a percentage of a guess. Set the size with
 `[models.<id>] context_window = …` or a provider-scoped override.
@@ -241,7 +241,7 @@ tail-budget math inside recency-preserving and structured modes.
 ### Picking a summary model
 
 > ⚠️ **`summary_model` / `max_summary_tokens` are reserved for a
-> follow-up** — beads issue **moltis-8me**. They're present in the
+> follow-up** — beads issue **antre-8me**. They're present in the
 > config schema so you can start setting them today, but the
 > `structured` and `llm_replace` strategies currently **ignore** them
 > and always use the session's primary provider. Setting either field
@@ -275,11 +275,11 @@ just like the pre-PR behaviour did.
 
 ## Tracking issues
 
-- Epic: **moltis-dxw** — pluggable compaction modes
-- **moltis-g37** — config scaffolding, docs, `llm_replace` mode ✓
-- **moltis-h0c** — `recency_preserving` mode ✓
-- **moltis-aff** — `structured` mode ✓
-- **moltis-8me** — auxiliary-model subsystem for cheap summary models *(follow-up, lets users route compaction to a cheap auxiliary model instead of the session's primary model)*
+- Epic: **antre-dxw** — pluggable compaction modes
+- **antre-g37** — config scaffolding, docs, `llm_replace` mode ✓
+- **antre-h0c** — `recency_preserving` mode ✓
+- **antre-aff** — `structured` mode ✓
+- **antre-8me** — auxiliary-model subsystem for cheap summary models *(follow-up, lets users route compaction to a cheap auxiliary model instead of the session's primary model)*
 
 ## Further reading
 

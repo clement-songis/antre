@@ -118,10 +118,10 @@ fn parse_model_entry(entry: &serde_json::Value) -> Option<super::super::Discover
     )
     .with_created_at(created_at);
 
-    let model = model.with_metadata(moltis_model_catalog::ModelSpec {
+    let model = model.with_metadata(antre_model_catalog::ModelSpec {
         display_name: crate::live_metadata::api_name(model_id, display_name),
         context_window: capabilities.map(|caps| caps.context_window),
-        ..moltis_model_catalog::ModelSpec::default()
+        ..antre_model_catalog::ModelSpec::default()
     });
     Some(match capabilities {
         Some(capabilities) => model.with_capabilities(capabilities),

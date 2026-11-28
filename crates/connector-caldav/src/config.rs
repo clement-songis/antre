@@ -126,23 +126,23 @@ impl CalDavAccountConfig {
         let addresses = tokio::net::lookup_host((host, port))
             .await
             .map_err(|error| {
-                CalDavConnectorError::NetworkSafety(moltis_common::Error::message(format!(
+                CalDavConnectorError::NetworkSafety(antre_common::Error::message(format!(
                     "DNS resolution failed for {host}: {error}"
                 )))
             })?
             .collect::<Vec<_>>();
         if addresses.is_empty() {
             return Err(CalDavConnectorError::NetworkSafety(
-                moltis_common::Error::message(format!("DNS resolution failed for {host}")),
+                antre_common::Error::message(format!("DNS resolution failed for {host}")),
             ));
         }
         if !self.allow_private_network
             && let Some(address) = addresses
                 .iter()
-                .find(|address| moltis_common::ssrf::is_private_ip(&address.ip()))
+                .find(|address| antre_common::ssrf::is_private_ip(&address.ip()))
         {
             return Err(CalDavConnectorError::NetworkSafety(
-                moltis_common::Error::message(format!(
+                antre_common::Error::message(format!(
                     "SSRF blocked: {host} resolves to non-global IP {}",
                     address.ip()
                 )),

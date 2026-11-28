@@ -61,31 +61,31 @@ async fn test_exec_echo() {
 }
 
 #[test]
-fn host_exec_injects_the_resolved_moltis_data_dir() {
-    let mut env = vec![("MOLTIS_DATA_DIR".to_owned(), "stale".to_owned())];
-    inject_moltis_data_dir(&mut env, true);
+fn host_exec_injects_the_resolved_antre_data_dir() {
+    let mut env = vec![("ANTRE_DATA_DIR".to_owned(), "stale".to_owned())];
+    inject_antre_data_dir(&mut env, true);
 
     assert_eq!(env, vec![(
-        "MOLTIS_DATA_DIR".to_owned(),
-        moltis_config::data_dir().to_string_lossy().into_owned(),
+        "ANTRE_DATA_DIR".to_owned(),
+        antre_config::data_dir().to_string_lossy().into_owned(),
     )]);
 }
 
 #[test]
 fn host_exec_injects_the_resolved_managed_files_dir() {
-    let mut env = vec![("MOLTIS_FILES_DIR".to_owned(), "stale".to_owned())];
-    inject_moltis_files_dir(
+    let mut env = vec![("ANTRE_FILES_DIR".to_owned(), "stale".to_owned())];
+    inject_antre_files_dir(
         &mut env,
         Some(
-            moltis_config::managed_files_dir()
+            antre_config::managed_files_dir()
                 .to_string_lossy()
                 .into_owned(),
         ),
     );
 
     assert_eq!(env, vec![(
-        "MOLTIS_FILES_DIR".to_owned(),
-        moltis_config::managed_files_dir()
+        "ANTRE_FILES_DIR".to_owned(),
+        antre_config::managed_files_dir()
             .to_string_lossy()
             .into_owned(),
     )]);
@@ -94,18 +94,18 @@ fn host_exec_injects_the_resolved_managed_files_dir() {
 #[test]
 fn sandbox_exec_injects_the_guest_managed_files_dir() {
     let mut env = Vec::new();
-    inject_moltis_files_dir(&mut env, Some(crate::sandbox::SANDBOX_FILES_DIR.to_owned()));
+    inject_antre_files_dir(&mut env, Some(crate::sandbox::SANDBOX_FILES_DIR.to_owned()));
 
     assert_eq!(env, vec![(
-        "MOLTIS_FILES_DIR".to_owned(),
+        "ANTRE_FILES_DIR".to_owned(),
         crate::sandbox::SANDBOX_FILES_DIR.to_owned(),
     )]);
 }
 
 #[test]
 fn unsupported_sandbox_omits_the_managed_files_dir() {
-    let mut env = vec![("MOLTIS_FILES_DIR".to_owned(), "stale".to_owned())];
-    inject_moltis_files_dir(&mut env, None);
+    let mut env = vec![("ANTRE_FILES_DIR".to_owned(), "stale".to_owned())];
+    inject_antre_files_dir(&mut env, None);
     assert!(env.is_empty());
 }
 
@@ -701,10 +701,10 @@ fn test_is_container_not_running_exec_error() {
     ));
     // notFound errors from get/inspect failures
     assert!(is_container_not_running_exec_error(
-        "Error: notFound: \"get failed: container moltis-sandbox-main not found\""
+        "Error: notFound: \"get failed: container antre-sandbox-main not found\""
     ));
     assert!(is_container_not_running_exec_error(
-        "container not found: moltis-sandbox-session-abc"
+        "container not found: antre-sandbox-session-abc"
     ));
     assert!(!is_container_not_running_exec_error(
         "permission denied: operation not permitted"

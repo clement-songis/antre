@@ -3,7 +3,7 @@
 use std::time::Duration;
 
 use {
-    moltis_channels::{ChannelReplyTarget, ChannelType},
+    antre_channels::{ChannelReplyTarget, ChannelType},
     time::OffsetDateTime,
 };
 

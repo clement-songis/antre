@@ -194,7 +194,7 @@ mod tests {
     fn registers_only_with_a_key_or_the_fallback() {
         use {
             super::super::WebSearchTool,
-            moltis_config::schema::{SearchProvider, WebSearchConfig},
+            antre_config::schema::{SearchProvider, WebSearchConfig},
             std::collections::HashMap,
         };
 

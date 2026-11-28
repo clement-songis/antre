@@ -1,8 +1,8 @@
-//! The daemon configured on this machine, found through `moltis.toml`.
+//! The daemon configured on this machine, found through `antre.toml`.
 
 use std::path::{Path, PathBuf};
 
-use moltis_config::MoltisConfig;
+use antre_config::AntreConfig;
 
 use crate::{endpoint::Endpoint, error::Result, tls::TlsTrust};
 
@@ -14,15 +14,15 @@ pub struct LocalDaemon {
 }
 
 /// Read the local configuration without creating or changing anything.
-/// `None` when moltis was never set up on this machine.
+/// `None` when antre was never set up on this machine.
 #[must_use]
 pub fn local_daemon() -> Option<LocalDaemon> {
-    let config_path = moltis_config::find_or_default_config_path();
+    let config_path = antre_config::find_or_default_config_path();
     if !config_path.exists() {
         return None;
     }
-    let config = moltis_config::discover_and_load_readonly();
-    let config_dir = moltis_config::config_dir()?;
+    let config = antre_config::discover_and_load_readonly();
+    let config_dir = antre_config::config_dir()?;
     let endpoint = endpoint_for(&config, &config_dir).ok()?;
     Some(LocalDaemon {
         endpoint,
@@ -31,7 +31,7 @@ pub fn local_daemon() -> Option<LocalDaemon> {
 }
 
 /// Where a daemon running with `config` can be reached from this machine.
-pub fn endpoint_for(config: &MoltisConfig, config_dir: &Path) -> Result<Endpoint> {
+pub fn endpoint_for(config: &AntreConfig, config_dir: &Path) -> Result<Endpoint> {
     let host = connect_host(&config.server.bind);
     let port = config.server.port;
     if !config.tls.enabled {
@@ -71,8 +71,8 @@ fn connect_host(bind: &str) -> String {
 mod tests {
     use super::*;
 
-    fn config(bind: &str, port: u16, tls: bool) -> MoltisConfig {
-        let mut config = MoltisConfig::default();
+    fn config(bind: &str, port: u16, tls: bool) -> AntreConfig {
+        let mut config = AntreConfig::default();
         config.server.bind = bind.into();
         config.server.port = port;
         config.tls.enabled = tls;

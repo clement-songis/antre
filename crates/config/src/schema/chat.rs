@@ -24,7 +24,7 @@ pub struct ChatConfig {
     pub workspace_file_max_chars: usize,
     /// Command run before each turn to generate additional prompt context.
     ///
-    /// Stdout is appended to project context for normal Moltis chat runs and
+    /// Stdout is appended to project context for normal Antre chat runs and
     /// external-agent context snapshots. Failures are logged and ignored.
     #[serde(default)]
     pub context_command: Option<String>,
@@ -272,7 +272,7 @@ pub struct CompactionConfig {
     /// Provider-qualified model identifier reserved for the auxiliary-
     /// model subsystem (e.g. `"openrouter/google/gemini-3.8-flash"`).
     ///
-    /// **Not wired yet** — tracked by beads issue `moltis-8me`. Until
+    /// **Not wired yet** — tracked by beads issue `antre-8me`. Until
     /// that lands, `structured` and `llm_replace` always use the
     /// session's primary provider regardless of this value. If you set
     /// it today the strategy emits a one-shot WARN naming the field
@@ -284,14 +284,14 @@ pub struct CompactionConfig {
     /// Maximum output tokens reserved for LLM summary calls. Set to `0`
     /// to accept the provider default. Default: `4096`.
     ///
-    /// **Not wired yet** — tracked by beads issue `moltis-8me`. Until
+    /// **Not wired yet** — tracked by beads issue `antre-8me`. Until
     /// that lands, the streaming summary call runs with whatever the
     /// provider's default max-tokens is. Setting this to a non-default
     /// value triggers the same one-shot WARN as `summary_model`.
     #[serde(default = "default_compaction_max_summary_tokens")]
     pub max_summary_tokens: u32,
 
-    /// Whether the "Change `chat.compaction.mode` in moltis.toml…" hint
+    /// Whether the "Change `chat.compaction.mode` in antre.toml…" hint
     /// is included in compaction broadcasts and channel notices. After
     /// you've seen it a few times it tends to become noise; set this to
     /// `false` to strip the hint from future compaction notifications
@@ -305,7 +305,7 @@ fn default_compaction_threshold() -> f32 {
     // Matches the pre-PR-#653 hardcoded auto-compact trigger of 95 % of
     // the context window so existing deploys see no change in trigger
     // behaviour when they upgrade. Users who want earlier compaction
-    // should lower this explicitly in moltis.toml.
+    // should lower this explicitly in antre.toml.
     0.95
 }
 

@@ -1,4 +1,4 @@
-//! Import OpenClaw sessions to Moltis format.
+//! Import OpenClaw sessions to Antre format.
 //!
 //! OpenClaw sessions live at either:
 //! - `~/.openclaw/agents/<id>/agent/openclaw-agent.sqlite` (current releases,
@@ -6,7 +6,7 @@
 //! - `~/.openclaw/agents/<id>/sessions/<key>.jsonl` (legacy layout), or
 //! - `~/.openclaw/agents/<id>/agent/sessions/<key>.jsonl` (newer JSONL layout).
 //!
-//! Moltis sessions live at `<data_dir>/sessions/<safe-key>.jsonl` with metadata
+//! Antre sessions live at `<data_dir>/sessions/<safe-key>.jsonl` with metadata
 //! in `metadata.json`.
 
 pub(crate) mod sqlite;
@@ -32,7 +32,7 @@ use crate::{
     },
 };
 
-/// Minimal session metadata for the Moltis `metadata.json` index.
+/// Minimal session metadata for the Antre `metadata.json` index.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ImportedSessionEntry {
     pub id: String,
@@ -59,10 +59,10 @@ pub struct ImportedSessionEntry {
     pub version: u64,
 }
 
-/// A converted Moltis message (matches `PersistedMessage` serde format).
+/// A converted Antre message (matches `PersistedMessage` serde format).
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "role", rename_all = "lowercase")]
-enum MoltisMessage {
+enum AntreMessage {
     System {
         content: String,
         #[serde(skip_serializing_if = "Option::is_none")]
@@ -94,12 +94,12 @@ enum MoltisMessage {
 ///
 /// In addition to converting transcripts, this also generates markdown
 /// transcripts in `memory_sessions_dir` (typically `<data>/memory/sessions/`)
-/// so that imported conversations are searchable by the Moltis memory system.
+/// so that imported conversations are searchable by the Antre memory system.
 ///
 /// Each agent's `agent/openclaw-agent.sqlite` database is read first; JSONL
 /// files whose session ID was already found there are skipped.
 ///
-/// `agent_id_mapping` maps OpenClaw agent IDs to Moltis agent IDs. If empty,
+/// `agent_id_mapping` maps OpenClaw agent IDs to Antre agent IDs. If empty,
 /// agent IDs are used as-is (backward compatible for single-agent installs).
 pub fn import_sessions(
     detection: &OpenClawDetection,
@@ -125,7 +125,7 @@ pub fn import_sessions(
     let mut agents = Vec::new();
     let mut parents = ParentIndex::default();
     for openclaw_agent_id in &detection.agent_ids {
-        let moltis_agent_id = agent_id_mapping
+        let antre_agent_id = agent_id_mapping
             .get(openclaw_agent_id.as_str())
             .cloned()
             .unwrap_or_else(|| openclaw_agent_id.clone());
@@ -133,7 +133,7 @@ pub fn import_sessions(
 
         let sqlite = sqlite::AgentSessions::load(&mut importer, &agent_dir, openclaw_agent_id);
         if let Some(sqlite) = &sqlite {
-            sqlite.index_parents(&moltis_agent_id, &mut parents);
+            sqlite.index_parents(&antre_agent_id, &mut parents);
         }
         let jsonl_index = resolve_agent_sessions_dir(&agent_dir)
             .map(|dir| load_session_label_map(&dir))
@@ -143,26 +143,26 @@ pub fn import_sessions(
             if sqlite.as_ref().is_some_and(|db| db.has_window(session_id)) {
                 continue;
             }
-            parents.insert(&entry.logical_key, dest_key(&moltis_agent_id, session_id));
+            parents.insert(&entry.logical_key, dest_key(&antre_agent_id, session_id));
         }
         agents.push((
             openclaw_agent_id,
-            moltis_agent_id,
+            antre_agent_id,
             agent_dir,
             sqlite,
             jsonl_index,
         ));
     }
 
-    for (openclaw_agent_id, moltis_agent_id, agent_dir, sqlite, jsonl_index) in agents {
+    for (openclaw_agent_id, antre_agent_id, agent_dir, sqlite, jsonl_index) in agents {
         let sqlite_session_ids = sqlite
-            .map(|sqlite| sqlite.import(&mut importer, &moltis_agent_id, &parents))
+            .map(|sqlite| sqlite.import(&mut importer, &antre_agent_id, &parents))
             .unwrap_or_default();
         import_agent_jsonl_sessions(
             &mut importer,
             &agent_dir,
             openclaw_agent_id,
-            &moltis_agent_id,
+            &antre_agent_id,
             &jsonl_index,
             &parents,
             &sqlite_session_ids,
@@ -176,7 +176,7 @@ fn import_agent_jsonl_sessions(
     importer: &mut SessionImporter<'_>,
     agent_dir: &Path,
     openclaw_agent_id: &str,
-    moltis_agent_id: &str,
+    antre_agent_id: &str,
     session_index: &HashMap<String, JsonlIndexEntry>,
     parents: &ParentIndex,
     already_imported: &HashSet<String>,
@@ -213,7 +213,7 @@ fn import_agent_jsonl_sessions(
                 let prefix_len = 8.min(stem.len());
                 format!("OpenClaw: {}", &stem[..prefix_len])
             });
-        let dest_key = dest_key(moltis_agent_id, stem);
+        let dest_key = dest_key(antre_agent_id, stem);
         let parent_key = index_entry
             .and_then(|entry| entry.parent_key.as_deref())
             .and_then(|parent| parents.resolve(parent))
@@ -222,7 +222,7 @@ fn import_agent_jsonl_sessions(
         importer.import_one(
             SessionSource {
                 dest_key,
-                moltis_agent_id,
+                antre_agent_id,
                 label,
                 source_line_count: count_lines(&path),
                 archived: false,
@@ -240,16 +240,16 @@ fn import_agent_jsonl_sessions(
     }
 }
 
-/// Where one OpenClaw session comes from and how it is labelled in Moltis.
+/// Where one OpenClaw session comes from and how it is labelled in Antre.
 pub(crate) struct SessionSource<'a> {
     pub(crate) dest_key: String,
-    pub(crate) moltis_agent_id: &'a str,
+    pub(crate) antre_agent_id: &'a str,
     pub(crate) label: String,
     /// Size of the source (JSONL lines or SQLite events), used to skip
     /// sessions that did not grow since the previous import.
     pub(crate) source_line_count: u32,
     pub(crate) archived: bool,
-    /// Moltis key of the parent session, for subagent and child sessions.
+    /// Antre key of the parent session, for subagent and child sessions.
     pub(crate) parent_key: Option<String>,
     /// Human-readable source location for error messages.
     pub(crate) description: String,
@@ -302,7 +302,7 @@ impl<'a> SessionImporter<'a> {
     ) {
         let dest_key = source.dest_key;
         let dest_file =
-            moltis_sessions::store::SessionStore::new(self.dest_sessions_dir.to_path_buf())
+            antre_sessions::store::SessionStore::new(self.dest_sessions_dir.to_path_buf())
                 .history_path_for(&dest_key);
         if let Some(parent) = dest_file.parent()
             && let Err(error) = std::fs::create_dir_all(parent)
@@ -368,8 +368,7 @@ impl<'a> SessionImporter<'a> {
         };
 
         // Set agent_id for non-default agents
-        let agent_id =
-            (source.moltis_agent_id != "main").then(|| source.moltis_agent_id.to_string());
+        let agent_id = (source.antre_agent_id != "main").then(|| source.antre_agent_id.to_string());
 
         self.entries.push(ImportedSessionEntry {
             id,
@@ -459,11 +458,11 @@ fn load_session_label_map(sessions_dir: &Path) -> HashMap<String, JsonlIndexEntr
         .collect()
 }
 
-fn dest_key(moltis_agent_id: &str, session_id: &str) -> String {
-    format!("oc:{moltis_agent_id}:{session_id}")
+fn dest_key(antre_agent_id: &str, session_id: &str) -> String {
+    format!("oc:{antre_agent_id}:{session_id}")
 }
 
-/// Moltis key of each OpenClaw logical session key, so a child session can
+/// Antre key of each OpenClaw logical session key, so a child session can
 /// point at its parent. The first registration wins: SQLite conversations
 /// are registered before JSONL files.
 #[derive(Default)]
@@ -556,7 +555,7 @@ struct TranscriptEntry {
     content: String,
 }
 
-/// Writes converted Moltis messages while collecting stats.
+/// Writes converted Antre messages while collecting stats.
 pub(crate) struct SessionSink {
     dest_file: std::io::BufWriter<std::fs::File>,
     stats: ConvertStats,
@@ -632,7 +631,7 @@ fn convert_message(
     msg: &crate::types::OpenClawMessage,
     timestamp_ms: Option<u64>,
     stats: &mut ConvertStats,
-) -> Option<MoltisMessage> {
+) -> Option<AntreMessage> {
     let content = msg.content.as_ref().map(OpenClawContent::as_text)?;
     if content.is_empty() {
         return None;
@@ -658,15 +657,15 @@ fn convert_message(
     }
 
     match msg.role {
-        OpenClawRole::System => Some(MoltisMessage::System {
+        OpenClawRole::System => Some(AntreMessage::System {
             content,
             created_at: Some(created_at),
         }),
-        OpenClawRole::User => Some(MoltisMessage::User {
+        OpenClawRole::User => Some(AntreMessage::User {
             content,
             created_at: Some(created_at),
         }),
-        OpenClawRole::Assistant => Some(MoltisMessage::Assistant {
+        OpenClawRole::Assistant => Some(AntreMessage::Assistant {
             content,
             created_at: Some(created_at),
             model: None,
@@ -674,7 +673,7 @@ fn convert_message(
         }),
         OpenClawRole::Tool | OpenClawRole::ToolResult => {
             let tool_call_id = msg.tool_use_id.clone().unwrap_or_default();
-            Some(MoltisMessage::Tool {
+            Some(AntreMessage::Tool {
                 tool_call_id,
                 content,
                 created_at: Some(created_at),
@@ -765,7 +764,7 @@ fn truncate_preview(text: &str, max_chars: usize) -> String {
 /// Write a markdown transcript of a session for memory search indexing.
 ///
 /// The file is placed in `memory/sessions/` and includes all user/assistant
-/// messages so they become searchable by the Moltis memory system.
+/// messages so they become searchable by the Antre memory system.
 fn write_transcript(
     dir: &Path,
     dest_key: &str,

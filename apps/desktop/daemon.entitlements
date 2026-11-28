@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<!-- Entitlements of the moltis daemon bundled in Moltis Desktop.app. Under the
+<!-- Entitlements of the antre daemon bundled in Antre Desktop.app. Under the
      hardened runtime (required for notarization) wasmtime cannot map the
      precompiled WASM tools as executable without these. -->
 <plist version="1.0">

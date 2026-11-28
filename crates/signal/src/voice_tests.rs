@@ -1,11 +1,11 @@
 use std::sync::Mutex;
 
 use {
-    async_trait::async_trait,
-    moltis_channels::{
+    antre_channels::{
         ChannelEvent, ChannelEventSink, ChannelMessageMeta, ChannelReplyTarget, Error,
         InboundMediaDownloader, InboundMediaSource, Result,
     },
+    async_trait::async_trait,
     serde_json::json,
 };
 

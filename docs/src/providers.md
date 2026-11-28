@@ -1,6 +1,6 @@
 # LLM Providers
 
-Moltis supports multiple LLM providers through a trait-based architecture.
+Antre supports multiple LLM providers through a trait-based architecture.
 Configure providers through the web UI or directly in configuration files.
 
 ## Available Providers
@@ -29,7 +29,7 @@ Configure providers through the web UI or directly in configuration files.
 ### Hosted OpenAI-compatible providers
 
 These hosts and routers are one table entry each. Models come from the
-provider's `/models` endpoint; when it is unavailable, Moltis lists the
+provider's `/models` endpoint; when it is unavailable, Antre lists the
 provider's active chat models from the bundled model catalog. Strict tool
 schemas and the message `name` field are off by default, because these
 hosts proxy many backends.
@@ -204,7 +204,7 @@ catalog is discovered from the endpoint.
 
 ### Via Web UI (Recommended)
 
-1. Open Moltis in your browser.
+1. Open Antre in your browser.
 2. Go to **Settings** → **Providers**.
 3. Choose a provider card.
 4. Complete OAuth or enter your API key.
@@ -212,7 +212,7 @@ catalog is discovered from the endpoint.
 
 ### Via Configuration Files
 
-Configure providers in `moltis.toml`:
+Configure providers in `antre.toml`:
 
 ```toml
 [providers]
@@ -306,7 +306,7 @@ setup_token = "${ANTHROPIC_OAUTH_TOKEN}"
 The token can also be set through the `ANTHROPIC_OAUTH_TOKEN` environment
 variable, and an `sk-ant-oat…` value passed as `api_key`/`ANTHROPIC_API_KEY` is
 detected automatically. Tokens imported from an OpenClaw installation by
-`moltis import` (the `anthropic` entry of `oauth_tokens.json`) are used as a
+`antre import` (the `anthropic` entry of `oauth_tokens.json`) are used as a
 fallback when nothing else is configured.
 
 Additional Claude accounts belong in separate `custom-*` instances with
@@ -317,7 +317,7 @@ accounts.
 Because Anthropic only accepts subscription tokens for Claude Code traffic,
 these requests authenticate with `Authorization: Bearer` and identify as the
 Claude Code CLI (headers and system-prompt identity, the same request shape
-OpenClaw uses). Setup-tokens are long-lived but not refreshed by Moltis: when
+OpenClaw uses). Setup-tokens are long-lived but not refreshed by Antre: when
 one expires, run `claude setup-token` again and replace it.
 
 ### OpenAI
@@ -337,7 +337,7 @@ models = ["deepseek-flash", "deepseek-v4-pro"]
 
 Both have a 1M-token context window. Flash supports images; Pro is text-only.
 DeepSeek still accepts `deepseek-v4-flash` as a legacy alias for the current
-Flash model. When reasoning effort is configured, Moltis explicitly enables
+Flash model. When reasoning effort is configured, Antre explicitly enables
 thinking and maps minimal/low to `low`, medium/high/extra-high to `high`, and
 max to `max`. Reasoning is replayed on prior assistant turns, including answers
 without tool calls, when available. See the [model list](https://api-docs.deepseek.com/quick_start/pricing)
@@ -359,7 +359,7 @@ models = ["glm-5.3", "glm-5.3-flash", "glm-5.3-flashx"]
 Use the separate `zai-code` provider and `Z_CODE_API_KEY` for Coding Plan
 credentials. Model access depends on the endpoint and plan; FlashX is not
 currently included in the Coding Plan. GLM-5.3 requires thinking to stay enabled;
-Moltis maps configured effort to the supported `low`, `high`, and `max` levels
+Antre maps configured effort to the supported `low`, `high`, and `max` levels
 and preserves returned reasoning. See [Z.AI pricing](https://docs.z.ai/guides/overview/pricing)
 and the [GLM-5.3 migration guide](https://docs.z.ai/guides/overview/migrate-to-glm-new).
 
@@ -377,7 +377,7 @@ model IDs to one of these current models to avoid HTTP 404 errors.
 
 The built-in MiniMax provider preserves Flash reasoning across tool calls for
 both streaming chat and non-streaming spawned agents. Simple tool calls may
-omit reasoning; Moltis replays it only when the provider actually returns it.
+omit reasoning; Antre replays it only when the provider actually returns it.
 
 ```toml
 [providers.minimax]
@@ -410,7 +410,7 @@ The adapter appends `/v1/messages` to the configured base URL. Keep the
 
 NEAR AI Cloud exposes an OpenAI-compatible chat completions API with a public
 model catalog that includes TEE and attestation metadata.
-The API accepts OpenAI-compatible tool schemas. Moltis currently keeps tool and
+The API accepts OpenAI-compatible tool schemas. Antre currently keeps tool and
 reasoning capabilities disabled for auto-discovered NEAR AI Cloud models pending
 validation of the catalog's feature metadata against the adapter.
 
@@ -438,9 +438,9 @@ OpenAI Codex uses OAuth-based access.
 2. Click **Connect** and complete the auth flow.
 3. Choose a Codex model.
 
-**Already logged in with the Codex CLI?** Moltis detects `~/.codex/auth.json`
+**Already logged in with the Codex CLI?** Antre detects `~/.codex/auth.json`
 but never reads or copies it on its own. Either copy those tokens once with
-the `providers.import_external` RPC (`{"source": "codex-cli"}`), or let Moltis
+the `providers.import_external` RPC (`{"source": "codex-cli"}`), or let Antre
 read the Codex CLI's file live (it then follows the CLI's token refreshes):
 
 ```toml
@@ -448,7 +448,7 @@ read the Codex CLI's file live (it then follows the CLI's token refreshes):
 external_credentials = ["codex-cli"]
 ```
 
-If the browser cannot reach `localhost:1455`, Moltis now supports a manual
+If the browser cannot reach `localhost:1455`, Antre now supports a manual
 fallback in both **Settings** and **Onboarding**: paste the callback URL (or
 `code#state`) into the OAuth panel and submit it.
 
@@ -459,10 +459,10 @@ cannot reach the server, authenticate via the CLI instead:
 
 ~~~bash
 # Docker
-docker exec -it moltis moltis auth login --provider openai-codex
+docker exec -it antre antre auth login --provider openai-codex
 
 # Fly.io
-fly ssh console -C "moltis auth login --provider openai-codex"
+fly ssh console -C "antre auth login --provider openai-codex"
 ~~~
 
 The CLI opens a browser on your machine and handles the callback locally. If
@@ -499,7 +499,7 @@ so it works from the web UI without extra port configuration. If you prefer the
 CLI:
 
 ~~~bash
-docker exec -it moltis moltis auth login --provider github-copilot
+docker exec -it antre antre auth login --provider github-copilot
 ~~~
 ```
 
@@ -507,20 +507,20 @@ docker exec -it moltis moltis auth login --provider github-copilot
 Requires an active GitHub Copilot subscription.
 ```
 
-Moltis discovers Copilot models from GitHub's `/models` endpoint when possible.
+Antre discovers Copilot models from GitHub's `/models` endpoint when possible.
 If GitHub returns non-secret model limit metadata such as `context_window`,
-`context_length`, or `max_input_tokens`, Moltis uses it for context-window
-display and auto-compaction thresholds. Otherwise Moltis falls back to built-in
+`context_length`, or `max_input_tokens`, Antre uses it for context-window
+display and auto-compaction thresholds. Otherwise Antre falls back to built-in
 model heuristics. Fast-mode Claude variants are kept at the standard Claude
 window unless GitHub documents a larger limit for that variant.
 
-To inspect the redacted live model metadata Moltis can see:
+To inspect the redacted live model metadata Antre can see:
 
 ```bash
-moltis providers inspect github-copilot
+antre providers inspect github-copilot
 ```
 
-If GitHub changes a model limit before Moltis has updated heuristics, override it
+If GitHub changes a model limit before Antre has updated heuristics, override it
 in config:
 
 ```toml
@@ -562,7 +562,7 @@ Local LLM runs GGUF models directly on your machine.
 - **Per session**: Use the model selector in the chat UI.
 - **Per message**: Use `/model <name>` in chat.
 - **Global defaults**: Use `[providers].offered`, provider `models = [...]`, and
-  `[chat].priority_models` in `moltis.toml`.
+  `[chat].priority_models` in `antre.toml`.
 
 ## Troubleshooting
 

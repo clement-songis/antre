@@ -7,8 +7,8 @@ use crate::{auth_webauthn::SharedWebAuthnRegistry, state::GatewayState};
 // ── OpenClaw detection / import ──────────────────────────────────────────────
 
 #[cfg(feature = "openclaw-import")]
-fn detect_openclaw_with_startup_logs() -> Option<moltis_openclaw_import::OpenClawDetection> {
-    match moltis_openclaw_import::detect() {
+fn detect_openclaw_with_startup_logs() -> Option<antre_openclaw_import::OpenClawDetection> {
+    match antre_openclaw_import::detect() {
         Some(detection) => {
             info!(
                 openclaw_home = %detection.home_dir.display(),
@@ -81,7 +81,7 @@ fn spawn_openclaw_background_init(data_dir: PathBuf) {
                 .join("agent")
                 .join("sessions");
             if sessions_dir.is_dir() {
-                match moltis_openclaw_import::watcher::ImportWatcher::start(sessions_dir) {
+                match antre_openclaw_import::watcher::ImportWatcher::start(sessions_dir) {
                     Ok((_watcher, mut rx)) => {
                         info!("openclaw: session watcher started");
                         let watcher_data_dir = data_dir;
@@ -94,7 +94,7 @@ fn spawn_openclaw_background_init(data_dir: PathBuf) {
                                 tokio::select! {
                                     Some(_event) = rx.recv() => {
                                         debug!("openclaw: session change detected, running incremental import");
-                                        let report = moltis_openclaw_import::import_sessions_only(
+                                        let report = antre_openclaw_import::import_sessions_only(
                                             &detection, &watcher_data_dir,
                                         );
                                         if report.items_imported > 0 || report.items_updated > 0 {
@@ -108,7 +108,7 @@ fn spawn_openclaw_background_init(data_dir: PathBuf) {
                                     }
                                     _ = interval.tick() => {
                                         debug!("openclaw: periodic session sync");
-                                        let report = moltis_openclaw_import::import_sessions_only(
+                                        let report = antre_openclaw_import::import_sessions_only(
                                             &detection, &watcher_data_dir,
                                         );
                                         if report.items_imported > 0 || report.items_updated > 0 {
@@ -145,16 +145,16 @@ pub fn start_openclaw_background_tasks(data_dir: PathBuf) {
 
 fn spawn_post_listener_warmups(
     browser_service: Arc<dyn crate::services::BrowserService>,
-    browser_tool: Option<Arc<dyn moltis_agents::tool_registry::AgentTool>>,
+    browser_tool: Option<Arc<dyn antre_agents::tool_registry::AgentTool>>,
 ) {
     // Warm the container CLI OnceLock off the async worker threads.
     tokio::task::spawn_blocking(|| {
-        let cli = moltis_tools::sandbox::container_cli();
+        let cli = antre_tools::sandbox::container_cli();
         debug!(cli, "container CLI detected");
     });
 
-    if !super::helpers::env_flag_enabled("MOLTIS_BROWSER_WARMUP") {
-        debug!("startup browser warmup disabled (set MOLTIS_BROWSER_WARMUP=1 to enable)");
+    if !super::helpers::env_flag_enabled("ANTRE_BROWSER_WARMUP") {
+        debug!("startup browser warmup disabled (set ANTRE_BROWSER_WARMUP=1 to enable)");
         return;
     }
 
@@ -171,7 +171,7 @@ fn spawn_post_listener_warmups(
 /// Start browser warmup after the transport listener is ready.
 pub fn start_browser_warmup_after_listener(
     browser_service: Arc<dyn crate::services::BrowserService>,
-    browser_tool: Option<Arc<dyn moltis_agents::tool_registry::AgentTool>>,
+    browser_tool: Option<Arc<dyn antre_agents::tool_registry::AgentTool>>,
 ) {
     spawn_post_listener_warmups(browser_service, browser_tool);
 }
@@ -270,7 +270,7 @@ pub async fn sync_runtime_webauthn_host_and_notice(
 
 #[cfg(feature = "openclaw-import")]
 pub fn openclaw_detected_for_ui() -> bool {
-    moltis_openclaw_import::detect().is_some()
+    antre_openclaw_import::detect().is_some()
 }
 
 #[cfg(not(feature = "openclaw-import"))]
@@ -280,7 +280,7 @@ pub fn openclaw_detected_for_ui() -> bool {
 
 #[cfg(feature = "claude-import")]
 pub fn claude_detected_for_ui() -> bool {
-    moltis_claude_import::detect::detect().is_some()
+    antre_claude_import::detect::detect().is_some()
 }
 
 #[cfg(not(feature = "claude-import"))]
@@ -290,7 +290,7 @@ pub fn claude_detected_for_ui() -> bool {
 
 #[cfg(feature = "codex-import")]
 pub fn codex_detected_for_ui() -> bool {
-    moltis_codex_import::detect::detect().is_some()
+    antre_codex_import::detect::detect().is_some()
 }
 
 #[cfg(not(feature = "codex-import"))]
@@ -300,7 +300,7 @@ pub fn codex_detected_for_ui() -> bool {
 
 #[cfg(feature = "hermes-import")]
 pub fn hermes_detected_for_ui() -> bool {
-    moltis_hermes_import::detect::detect().is_some()
+    antre_hermes_import::detect::detect().is_some()
 }
 
 #[cfg(not(feature = "hermes-import"))]
@@ -311,7 +311,7 @@ pub fn hermes_detected_for_ui() -> bool {
 #[cfg(feature = "local-llm")]
 #[must_use]
 pub fn local_llama_cpp_bytes_for_ui() -> u64 {
-    moltis_providers::local_llm::loaded_llama_model_bytes()
+    antre_providers::local_llm::loaded_llama_model_bytes()
 }
 
 #[cfg(not(feature = "local-llm"))]

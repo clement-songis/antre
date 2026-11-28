@@ -6,7 +6,7 @@
 use std::{sync::Arc, time::Duration};
 
 use {
-    moltis_mcp::{
+    antre_mcp::{
         ClientSetup, HostContext, McpClient, McpClientTrait, McpServerConfig, ServerPolicy,
         protocol::Root, registry::TransportType, remote::ResolvedRemoteConfig,
         sse_transport::SseTransport, types::ToolContent,

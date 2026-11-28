@@ -1,4 +1,4 @@
-# Contributing to Moltis
+# Contributing to Antre
 
 Thanks for contributing. This project is a local-first AI gateway written in Rust, and we welcome fixes, features, docs improvements, and test coverage.
 
@@ -26,8 +26,8 @@ Prerequisites:
 Quick start:
 
 ```bash
-git clone https://github.com/moltis-org/moltis.git
-cd moltis
+git clone https://github.com/antre-ai/antre.git
+cd antre
 cargo build
 cargo run
 ```

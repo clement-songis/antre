@@ -1,9 +1,9 @@
 use {
-    moltis_channels::{
+    antre_channels::{
         config_view::ChannelConfigView,
         gating::{DmPolicy, GroupPolicy, MentionMode},
     },
-    moltis_common::secret_serde,
+    antre_common::secret_serde,
     secrecy::Secret,
     serde::{Deserialize, Serialize, ser::SerializeStruct},
     std::collections::HashMap,
@@ -164,7 +164,7 @@ pub struct MsTeamsAccountConfig {
     /// Show welcome text in group chats when bot is added (default: false).
     pub group_welcome_card: bool,
 
-    /// Bot display name for welcome cards. Falls back to "Moltis".
+    /// Bot display name for welcome cards. Falls back to "Antre".
     #[serde(skip_serializing_if = "Option::is_none")]
     pub bot_name: Option<String>,
 

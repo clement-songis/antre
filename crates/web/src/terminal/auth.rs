@@ -1,17 +1,17 @@
 use std::sync::Arc;
 
-/// Locality detection lives in `moltis_auth::locality` — the single source
+/// Locality detection lives in `antre_auth::locality` — the single source
 /// of truth for the three-tier auth model's "is this connection local?"
 /// question. This used to be a separate copy of the same logic in this file,
 /// which silently fell out of sync with the real implementation (it never
-/// picked up `MOLTIS_TRUST_DOCKER_LOOPBACK`, so the terminal WebSocket
+/// picked up `ANTRE_TRUST_DOCKER_LOOPBACK`, so the terminal WebSocket
 /// handler kept rejecting Docker-loopback connections the global auth gate
 /// had already accepted). Re-export instead of duplicating.
-pub(crate) use moltis_auth::locality::is_local_connection;
+pub(crate) use antre_auth::locality::is_local_connection;
 
 pub(crate) async fn websocket_header_authenticated(
     headers: &axum::http::HeaderMap,
-    credential_store: Option<&Arc<moltis_gateway::auth::CredentialStore>>,
+    credential_store: Option<&Arc<antre_gateway::auth::CredentialStore>>,
     is_local: bool,
 ) -> bool {
     let Some(store) = credential_store else {
@@ -19,8 +19,8 @@ pub(crate) async fn websocket_header_authenticated(
     };
 
     matches!(
-        moltis_httpd::auth_middleware::check_auth(store, headers, is_local).await,
-        moltis_httpd::auth_middleware::AuthResult::Allowed(_)
+        antre_httpd::auth_middleware::check_auth(store, headers, is_local).await,
+        antre_httpd::auth_middleware::AuthResult::Allowed(_)
     )
 }
 
@@ -66,7 +66,7 @@ pub(crate) fn is_same_origin(origin: &str, host: &str) -> bool {
     let hh = strip_port(host);
 
     // Normalise loopback variants so 127.0.0.1 == localhost == ::1.
-    // Subdomains of .localhost (e.g. moltis.localhost) are also loopback per RFC 6761.
+    // Subdomains of .localhost (e.g. antre.localhost) are also loopback per RFC 6761.
     let is_loopback =
         |h: &str| matches!(h, "localhost" | "127.0.0.1" | "::1") || h.ends_with(".localhost");
 

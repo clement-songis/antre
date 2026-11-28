@@ -1,13 +1,13 @@
 # Sandbox Backends
 
-Moltis runs LLM-generated commands inside a sandbox to protect your host
+Antre runs LLM-generated commands inside a sandbox to protect your host
 system. The sandbox backend controls which isolation technology is used:
 containers or VMs when a runtime is installed, otherwise the operating
 system's own sandbox (Seatbelt on macOS, bubblewrap on Linux).
 
 ## Backend Selection
 
-Configure in `moltis.toml`:
+Configure in `antre.toml`:
 
 ```toml
 [tools.exec.sandbox]
@@ -22,7 +22,7 @@ backend = "auto"          # default — picks the best available
 # backend = "restricted-host"  # env clearing + rlimits only
 ```
 
-With `"auto"` (the default), Moltis picks the strongest available backend:
+With `"auto"` (the default), Antre picks the strongest available backend:
 
 | Priority | Backend           | Platform | Isolation          |
 |----------|-------------------|----------|--------------------|
@@ -37,10 +37,10 @@ With `"auto"` (the default), Moltis picks the strongest available backend:
 The active backend and what it protects are logged at startup, for example:
 
 ```text
-INFO sandbox backend: OS sandbox backend="seatbelt" protection="macOS Seatbelt: system read-only, writes limited to the sandbox home, temp and writable workspace, user home and Moltis secrets hidden, network only through the egress proxy on 127.0.0.1:18791"
+INFO sandbox backend: OS sandbox backend="seatbelt" protection="macOS Seatbelt: system read-only, writes limited to the sandbox home, temp and writable workspace, user home and Antre secrets hidden, network only through the egress proxy on 127.0.0.1:18791"
 ```
 
-When Moltis falls back to the restricted host it logs a warning, because
+When Antre falls back to the restricted host it logs a warning, because
 commands then run unconfined and need approval.
 
 The WASM backend (`backend = "wasm"`) is not in the auto-detect chain because
@@ -80,7 +80,7 @@ container --version
 container run --rm ubuntu echo "hello from VM"
 ```
 
-Once installed, restart `moltis gateway` — the startup banner will show
+Once installed, restart `antre gateway` — the startup banner will show
 `sandbox: apple-container backend`.
 
 ## Podman
@@ -111,21 +111,21 @@ podman --version
 podman run --rm docker.io/library/ubuntu echo "hello from podman"
 ```
 
-Once installed, restart `moltis gateway` — the startup banner will show
+Once installed, restart `antre gateway` — the startup banner will show
 `sandbox: podman backend`. All Docker hardening flags (see below) apply
 identically to Podman containers.
 
-If Moltis runs under systemd, rootless Podman must be allowed to create user
-namespaces and access the Moltis user's container storage. For the bundled
-system unit, install `deploy/moltis-podman.conf` as
-`/etc/systemd/system/moltis.service.d/podman.conf`. It disables
+If Antre runs under systemd, rootless Podman must be allowed to create user
+namespaces and access the Antre user's container storage. For the bundled
+system unit, install `deploy/antre-podman.conf` as
+`/etc/systemd/system/antre.service.d/podman.conf`. It disables
 `NoNewPrivileges` and places Podman's home and runtime state outside the paths
 hidden by `ProtectHome`. Without those accommodations, Podman can fail with
 `cannot clone: Operation not permitted` and `Error: cannot re-exec process` even
 when the same `podman run ...` command works from an interactive shell.
 
-Moltis supports using Podman as the sandbox backend. Running `podman run ...`
-from inside an already sandboxed Moltis container is different and is blocked by
+Antre supports using Podman as the sandbox backend. Running `podman run ...`
+from inside an already sandboxed Antre container is different and is blocked by
 the default hardened sandbox, which drops capabilities and sets
 `no-new-privileges` inside the container.
 
@@ -152,8 +152,8 @@ packages = ["ca-certificates", "curl", "podman"]
 
 Before using `allow_host_podman`, start the Podman API socket. For a CLI-installed
 user service, run `systemctl --user enable --now podman.socket`. For the bundled
-system service, install `deploy/moltis-podman-api.service` as documented in
-[VPS Deployment](deploy-vps.md). Moltis verifies that the configured path is a
+system service, install `deploy/antre-podman-api.service` as documented in
+[VPS Deployment](deploy-vps.md). Antre verifies that the configured path is a
 live Unix socket and fails sandbox startup if it is unavailable. The mount also
 disables SELinux label separation so the container can access the socket.
 
@@ -173,7 +173,7 @@ Install from https://docs.docker.com/get-docker/
 
 ### Docker/Podman Hardening
 
-Docker and Podman containers launched by Moltis include the following security
+Docker and Podman containers launched by Antre include the following security
 hardening flags by default:
 
 | Flag | Effect |
@@ -193,14 +193,14 @@ The `--read-only` flag is applied only to prebuilt sandbox images (where
 packages are already baked in). Non-prebuilt images need a writable root
 filesystem for `apt-get` provisioning on first start.
 
-When `allow_nested_podman = true` and the backend is Podman, Moltis starts the
+When `allow_nested_podman = true` and the backend is Podman, Antre starts the
 sandbox with `--privileged` and does not apply `--cap-drop ALL`,
 `--security-opt no-new-privileges`, or `--read-only`. This is required for
 nested container runtimes but materially reduces the security boundary.
 
 The `/sys` tmpfs overlays prevent host hardware metadata (serial numbers, disk
 models, LUKS UUIDs) from being visible inside the container. Note that
-`tools.fs.deny_paths` only restricts Moltis file-access tools — these kernel
+`tools.fs.deny_paths` only restricts Antre file-access tools — these kernel
 filesystem masks prevent leakage via shell commands as well.
 
 > **Podman note:** The sysfs tmpfs overlays are applied on Docker only. Podman's
@@ -226,7 +226,7 @@ The WASM sandbox has two execution tiers:
 `dirname`.
 
 These operate on a sandboxed directory tree, translating guest paths (e.g.
-`/home/sandbox/file.txt`) to host paths under `~/.moltis/sandbox/wasm/<id>/`.
+`/home/sandbox/file.txt`) to host paths under `~/.antre/sandbox/wasm/<id>/`.
 Paths outside the sandbox root are rejected.
 
 Basic shell features are supported: `&&`, `||`, `;` sequences, `$VAR`
@@ -241,7 +241,7 @@ preopened directories, fuel metering, epoch interruption, and captured I/O.
 ### Filesystem Isolation
 
 ```
-~/.moltis/sandbox/wasm/<session-key>/
+~/.antre/sandbox/wasm/<session-key>/
   home/        preopened as /home/sandbox (rw)
   tmp/         preopened as /tmp (rw)
 ```
@@ -299,13 +299,13 @@ default. To build without Wasmtime (saves ~30 MB binary size):
 cargo build --release --no-default-features --features lightweight
 ```
 
-When the feature is disabled and the config requests `backend = "wasm"`, Moltis
+When the feature is disabled and the config requests `backend = "wasm"`, Antre
 falls back to `restricted-host` with a warning.
 
 ## OS Sandbox (Seatbelt / bubblewrap)
 
 When no container runtime is available, desktops still get kernel-enforced
-isolation without installing anything: Moltis runs each command on the host
+isolation without installing anything: Antre runs each command on the host
 under a per-session policy enforced by the operating system.
 
 | Platform | Mechanism | Requirement |
@@ -314,9 +314,9 @@ under a per-session policy enforced by the operating system.
 | Linux | [bubblewrap](https://github.com/containers/bubblewrap) (user, mount, PID, IPC, UTS and network namespaces) | `bwrap` installed and unprivileged user namespaces enabled |
 | Windows | not available yet, see [Windows sandboxing](sandbox-windows.md) | — |
 
-Moltis probes the mechanism at startup by running a trivial command under it.
+Antre probes the mechanism at startup by running a trivial command under it.
 If the probe fails (missing `bwrap`, user namespaces disabled by the
-distribution, or Moltis itself already running inside a sandbox), the next
+distribution, or Antre itself already running inside a sandbox), the next
 backend in the chain is used.
 
 ### Policy
@@ -332,16 +332,16 @@ Both platforms apply the same deny-by-default policy:
 | Temp | read-write `data_dir()/sandbox/os/<session>/tmp`, exported as `TMPDIR` and removed at cleanup. On Linux `/tmp` is a private tmpfs |
 | Everything else | denied: the user's home directory, other users' files, the system temp directories |
 
-Some paths stay denied even inside an allowed root: Moltis secrets in the
+Some paths stay denied even inside an allowed root: Antre secrets in the
 data directory (`credentials.json`, `provider_keys.json`, OAuth token files,
-`mcp-servers.json`, `moltis.toml`, `.env`, `logs/`, `browser/`, and every
+`mcp-servers.json`, `antre.toml`, `.env`, `logs/`, `browser/`, and every
 `*.db`/`*.sqlite` file with its WAL and journal), the config directory, and
 credential stores under `$HOME` (`.ssh`, `.gnupg`, `.aws`, `.azure`, `.kube`,
 `.docker`, `.netrc`, `.npmrc`, `.pypirc`, `.git-credentials`,
 `.config/gcloud`, `.config/gh`, `Library/Keychains`, `Library/Cookies`).
 These denies also apply when you grant extra paths.
 
-Entries that Moltis loads or runs on the host stay read-only even with
+Entries that Antre loads or runs on the host stay read-only even with
 `workspace_mount = "rw"`, so a sandboxed command cannot plant code that runs
 outside the sandbox: `hooks/`, `disabled_hooks.json`, `plugins/`,
 `plugins-manifest.json`, `installed-skills/`, `bundled-skills/`,
@@ -349,8 +349,8 @@ outside the sandbox: `hooks/`, `disabled_hooks.json`, `plugins/`,
 
 The environment is never inherited: commands get a fixed `PATH`,
 `HOME` pointing to the sandbox home, `TMPDIR`, `LANG=C.UTF-8`,
-`MOLTIS_SANDBOX=os`, proxy variables in `trusted` mode, and the environment
-variables you configured in Moltis. `LD_*` and `DYLD_*` variables are
+`ANTRE_SANDBOX=os`, proxy variables in `trusted` mode, and the environment
+variables you configured in Antre. `LD_*` and `DYLD_*` variables are
 dropped so nothing runs in the launcher before the policy applies.
 
 Because the policy is kernel-enforced, commands in the OS sandbox do not need
@@ -383,10 +383,10 @@ listed above stay denied even when a parent directory is granted.
 ### Limitations
 
 - Seatbelt (`sandbox-exec`) is deprecated by Apple but still shipped and used
-  by Chrome, Codex and other agent tools; Moltis only trusts
+  by Chrome, Codex and other agent tools; Antre only trusts
   `/usr/bin/sandbox-exec`.
-- Seatbelt cannot nest: if Moltis runs inside another Seatbelt sandbox (for
-  example a sandboxed terminal), the probe fails and Moltis falls back.
+- Seatbelt cannot nest: if Antre runs inside another Seatbelt sandbox (for
+  example a sandboxed terminal), the probe fails and Antre falls back.
 - bubblewrap needs unprivileged user namespaces. Ubuntu 24.04 and later
   restrict them through AppArmor; install the distribution's `bwrap` profile
   or allow them with `sysctl kernel.apparmor_restrict_unprivileged_userns=0`.
@@ -398,7 +398,7 @@ listed above stay denied even when a parent directory is granted.
 - Resource limits use `ulimit` like the restricted host, except that the
   process count limit is only applied when `pids_max` is set: the kernel
   counts every process of your user, not just the sandboxed ones.
-- No image building — `moltis sandbox build` returns immediately.
+- No image building — `antre sandbox build` returns immediately.
 
 ## Restricted Host Sandbox
 
@@ -430,7 +430,7 @@ environment is cleared, so the LLM tool can still pass required variables.
 - No filesystem isolation — commands run on the host filesystem
 - No network isolation — commands can make network requests
 - `ulimit` enforcement is best-effort
-- No image building — `moltis sandbox build` returns immediately
+- No image building — `antre sandbox build` returns immediately
 
 For production use with untrusted workloads, prefer Apple Container or Docker.
 
@@ -442,14 +442,14 @@ recommended** for untrusted workloads.
 
 ## Failover Chain
 
-Moltis wraps the primary sandbox backend with automatic failover:
+Antre wraps the primary sandbox backend with automatic failover:
 
 - **Apple Container → Podman/Docker → OS sandbox → Restricted Host**: if Apple
   Container enters a corrupted state (stale metadata, missing config, VM boot
-  failure), Moltis fails over to Podman or Docker. If neither is available, it
+  failure), Antre fails over to Podman or Docker. If neither is available, it
   uses Seatbelt, and restricted-host only when Seatbelt is unusable.
 - **Docker → Restricted Host**: if Docker loses its daemon connection during a
-  session, Moltis fails over to the restricted-host sandbox.
+  session, Antre fails over to the restricted-host sandbox.
 
 Failover is sticky for the lifetime of the gateway process — once triggered,
 all subsequent commands use the fallback backend. Restart the gateway to retry
@@ -485,7 +485,7 @@ home_persistence = "session"   # "off", "session", or "shared" (default)
 - `shared`: mount one shared host folder to `/home/sandbox` for all sessions
   (defaults to `data_dir()/sandbox/home/shared`, or `shared_home_dir` if set)
 
-Moltis stores persisted homes under `data_dir()/sandbox/home/`. Per-session
+Antre stores persisted homes under `data_dir()/sandbox/home/`. Per-session
 folder names are opaque, collision-resistant identifiers; do not derive or
 depend on them directly. The `shared` mode is intentionally visible to every
 sandbox session and is not a session-isolation boundary. Use `session` or `off`
@@ -500,7 +500,7 @@ manually.
 
 ## Managed Files mount
 
-[Managed Files](managed-files.md) use a separate mount from the Moltis
+[Managed Files](managed-files.md) use a separate mount from the Antre
 workspace and sandbox home:
 
 ```toml
@@ -516,8 +516,8 @@ this mount.
 Although `/home/sandbox/files` is below the home path, it is an independent
 mount. `home_persistence = "shared"` does not enable Managed Files, and changing
 `managed_files_mount` does not change how sandbox caches, credentials, or other
-home files persist. Moltis advertises the effective path and mount mode to the
-agent and sets `MOLTIS_FILES_DIR` for `exec`.
+home files persist. Antre advertises the effective path and mount mode to the
+agent and sets `ANTRE_FILES_DIR` for `exec`.
 
 The default `ro` mode prevents a sandboxed command from changing Managed Files,
 but every agent session whose tool and channel policy permits reads sees the
@@ -526,15 +526,15 @@ before storing sensitive data.
 
 ## Docker-in-Docker workspace mounts
 
-When Moltis runs inside a container and launches Docker-backed sandboxes via a
+When Antre runs inside a container and launches Docker-backed sandboxes via a
 mounted container socket, the sandbox bind mount source must be a host-visible
-path. Moltis auto-detects this by inspecting the parent container's mounts. If
+path. Antre auto-detects this by inspecting the parent container's mounts. If
 that lookup fails or you want to pin the value explicitly, set
 `host_data_dir`:
 
 ```toml
 [tools.exec.sandbox]
-host_data_dir = "/srv/moltis/data"
+host_data_dir = "/srv/antre/data"
 ```
 
 This remaps sandbox workspace mounts and default sandbox persistence paths from

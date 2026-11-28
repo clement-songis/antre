@@ -18,7 +18,7 @@ mod tests;
 use std::time::Duration;
 
 use {
-    moltis_channels::{Error as ChannelError, Result},
+    antre_channels::{Error as ChannelError, Result},
     teloxide::{prelude::*, types::ReplyParameters},
 };
 

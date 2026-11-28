@@ -1,9 +1,9 @@
 use {
     super::{ProviderRegistry, registration::openai_builtin_capabilities},
     crate::openai::ResponsesWebSocketPolicy,
+    antre_agents::model::{ChatMessage, ToolCall},
+    antre_config::schema::{ProviderEntry, ProvidersConfig},
     anyhow::Context as _,
-    moltis_agents::model::{ChatMessage, ToolCall},
-    moltis_config::schema::{ProviderEntry, ProvidersConfig},
     secrecy::Secret,
     serde_json::Value,
     std::{
@@ -18,7 +18,7 @@ const FIREWORKS_KIMI_ROUTER: &str = "accounts/fireworks/routers/kimi-k2p5-turbo"
 
 #[test]
 fn reasoning_provider_id_round_trips_and_replaces_suffix() -> anyhow::Result<()> {
-    use {moltis_agents::model::ReasoningEffort, std::sync::Arc};
+    use {antre_agents::model::ReasoningEffort, std::sync::Arc};
 
     let mut registry = ProviderRegistry::empty();
     registry.register(
@@ -356,7 +356,7 @@ fn custom_anthropic_setup_token_is_skipped_without_opt_in() {
     config
         .providers
         .insert("custom-anthropic-sub".into(), ProviderEntry {
-            wire_api: moltis_config::WireApi::Anthropic,
+            wire_api: antre_config::WireApi::Anthropic,
             setup_token: Some(Secret::new("sk-ant-oat01-sub".into())),
             models: vec!["claude-opus-5-5".into()],
             ..ProviderEntry::default()
@@ -385,7 +385,7 @@ async fn custom_anthropic_provider_registers_with_setup_token() -> anyhow::Resul
     config
         .providers
         .insert("custom-anthropic-healabs".into(), ProviderEntry {
-            wire_api: moltis_config::WireApi::Anthropic,
+            wire_api: antre_config::WireApi::Anthropic,
             setup_token: Some(Secret::new("sk-ant-oat01-healabs".into())),
             base_url: Some(base_url),
             models: vec!["claude-opus-5-5".into()],
@@ -433,7 +433,7 @@ async fn custom_anthropic_provider_uses_plain_api_key_without_identity() -> anyh
     config
         .providers
         .insert("custom-anthropic-paid".into(), ProviderEntry {
-            wire_api: moltis_config::WireApi::Anthropic,
+            wire_api: antre_config::WireApi::Anthropic,
             api_key: Some(Secret::new("sk-ant-api03-paid".into())),
             base_url: Some(base_url),
             models: vec!["claude-opus-5-5".into()],
@@ -482,17 +482,17 @@ async fn keyless_static_custom_provider_sends_configured_headers() -> anyhow::Re
     let mut config = ProvidersConfig::default();
     config.providers.insert("custom-box".into(), ProviderEntry {
         base_url: Some(format!("{}/v1", server.url())),
-        catalog: moltis_model_catalog::CatalogMode::Static,
+        catalog: antre_model_catalog::CatalogMode::Static,
         headers: HashMap::from([("User-Agent".to_string(), "claude-code/2.1.280".to_string())]),
         models: vec![
-            moltis_model_catalog::ModelEntry::Spec(Box::new(moltis_model_catalog::ModelSpec {
+            antre_model_catalog::ModelEntry::Spec(Box::new(antre_model_catalog::ModelSpec {
                 display_name: Some("Box Chat".into()),
                 context_window: Some(32_768),
-                ..moltis_model_catalog::ModelSpec::new("box-chat")
+                ..antre_model_catalog::ModelSpec::new("box-chat")
             })),
-            moltis_model_catalog::ModelEntry::Spec(Box::new(moltis_model_catalog::ModelSpec {
-                kind: Some(moltis_model_catalog::ModelKind::Embedding),
-                ..moltis_model_catalog::ModelSpec::new("box-embed")
+            antre_model_catalog::ModelEntry::Spec(Box::new(antre_model_catalog::ModelSpec {
+                kind: Some(antre_model_catalog::ModelKind::Embedding),
+                ..antre_model_catalog::ModelSpec::new("box-embed")
             })),
         ],
         ..ProviderEntry::default()

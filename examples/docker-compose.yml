@@ -1,39 +1,39 @@
-# Moltis Docker Compose example
+# Antre Docker Compose example
 #
 # Usage:
 #   docker compose up -d
 #   open https://localhost:13131
 #
-# For an unattended first boot, set MOLTIS_PASSWORD, MOLTIS_PROVIDER, and
-# MOLTIS_API_KEY in the service environment below.
+# For an unattended first boot, set ANTRE_PASSWORD, ANTRE_PROVIDER, and
+# ANTRE_API_KEY in the service environment below.
 #
 # On first launch, a setup code is printed to the logs:
-#   docker compose logs moltis
+#   docker compose logs antre
 #
 # Configuration and data are stored in local directories:
-#   ./config - moltis.toml, credentials.json, mcp-servers.json
+#   ./config - antre.toml, credentials.json, mcp-servers.json
 #   ./data   - databases, sessions, memory files
 #
 # IMPORTANT — first run on a fresh checkout: Docker auto-creates ./config
-# and ./data as root:root the first time it bind-mounts them. Moltis runs
+# and ./data as root:root the first time it bind-mounts them. Antre runs
 # as a non-root user inside the container, so the very first `docker
 # compose up` can fail with "unable to open database file" before that
 # user can write to them. Fix it once, before starting the container:
 #
 #   mkdir -p ./config ./data
-#   docker compose run --rm --user root --entrypoint chown moltis \
-#     -R moltis:moltis /home/moltis/.config /home/moltis/.moltis
+#   docker compose run --rm --user root --entrypoint chown antre \
+#     -R antre:antre /home/antre/.config /home/antre/.antre
 #   docker compose up -d
 #
-# (Using the image's own `moltis` username rather than a hardcoded UID
+# (Using the image's own `antre` username rather than a hardcoded UID
 # keeps this working even if the image's UID assignment ever changes.)
 #
 # For Podman, see the rootless/rootful socket paths below.
 
 services:
-  moltis:
-    image: ghcr.io/moltis-org/moltis:latest
-    container_name: moltis
+  antre:
+    image: ghcr.io/antre-ai/antre:latest
+    container_name: antre
     restart: unless-stopped
     ports:
       - "13131:13131"
@@ -41,15 +41,15 @@ services:
       - "1455:1455"   # OAuth callback (OpenAI Codex, etc.)
     environment:
       # Uncomment for unattended setup.
-      # MOLTIS_PASSWORD: change-me
-      # MOLTIS_PROVIDER: openai
-      # MOLTIS_API_KEY: sk-...
+      # ANTRE_PASSWORD: change-me
+      # ANTRE_PROVIDER: openai
+      # ANTRE_API_KEY: sk-...
     volumes:
       # Configuration files (editable from host)
-      - ./config:/home/moltis/.config/moltis
+      - ./config:/home/antre/.config/antre
 
       # Data directory (databases, sessions, memory)
-      - ./data:/home/moltis/.moltis
+      - ./data:/home/antre/.antre
 
       # Docker socket for sandbox command execution
       # Without this, the agent cannot run shell commands in isolated containers

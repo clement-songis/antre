@@ -11,7 +11,7 @@ use std::{
 
 use serde::Serialize;
 
-pub type SamplingConfig = moltis_config::schema::McpSamplingConfig;
+pub type SamplingConfig = antre_config::schema::McpSamplingConfig;
 
 /// Key used for requests that arrive outside any chat session.
 const NO_SESSION: &str = "*";

@@ -29,7 +29,7 @@ async function chatEvent(page, payload) {
 /** Answer the listed RPCs locally with the given payloads. */
 async function mockRpcs(page, table) {
 	await page.evaluate((responses) => {
-		const state = window.__moltis_modules.state;
+		const state = window.__antre_modules.state;
 		const ws = state.ws;
 		if (!window.__rpcOriginalSend) window.__rpcOriginalSend = ws.send.bind(ws);
 		ws.send = (raw) => {
@@ -55,7 +55,7 @@ test.describe("Chat strings follow the locale", () => {
 
 	test.afterEach(async ({ page }) => {
 		await page.evaluate(() => {
-			const ws = window.__moltis_modules?.state?.ws;
+			const ws = window.__antre_modules?.state?.ws;
 			if (ws && window.__rpcOriginalSend) ws.send = window.__rpcOriginalSend;
 		});
 	});

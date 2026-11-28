@@ -6,22 +6,22 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use {async_trait::async_trait, moltis_service_traits::ChatService, serde_json::Value};
+use {antre_service_traits::ChatService, async_trait::async_trait, serde_json::Value};
 
 use crate::runtime::ChatRuntime;
 
 pub(crate) struct TestRuntime {
     chat: Arc<dyn ChatService>,
-    outbound: Option<Arc<dyn moltis_channels::ChannelOutbound>>,
-    outbox: Option<Arc<moltis_delivery::Outbox>>,
+    outbound: Option<Arc<dyn antre_channels::ChannelOutbound>>,
+    outbox: Option<Arc<antre_delivery::Outbox>>,
     /// Every broadcast, in order.
     pub(crate) broadcasts: Mutex<Vec<(String, Value)>>,
     /// Channel acknowledgment activity reported per run.
-    pub(crate) activities: Mutex<Vec<(String, moltis_channels::ChannelActivity)>>,
-    replies: Mutex<HashMap<String, Vec<moltis_channels::ChannelReplyTarget>>>,
-    tts: moltis_service_traits::NoopTtsService,
-    project: moltis_service_traits::NoopProjectService,
-    mcp: moltis_service_traits::NoopMcpService,
+    pub(crate) activities: Mutex<Vec<(String, antre_channels::ChannelActivity)>>,
+    replies: Mutex<HashMap<String, Vec<antre_channels::ChannelReplyTarget>>>,
+    tts: antre_service_traits::NoopTtsService,
+    project: antre_service_traits::NoopProjectService,
+    mcp: antre_service_traits::NoopMcpService,
 }
 
 #[async_trait]
@@ -36,7 +36,7 @@ impl ChatRuntime for TestRuntime {
     async fn push_channel_reply(
         &self,
         session_key: &str,
-        target: moltis_channels::ChannelReplyTarget,
+        target: antre_channels::ChannelReplyTarget,
     ) {
         self.replies
             .lock()
@@ -49,7 +49,7 @@ impl ChatRuntime for TestRuntime {
     async fn drain_channel_replies(
         &self,
         session_key: &str,
-    ) -> Vec<moltis_channels::ChannelReplyTarget> {
+    ) -> Vec<antre_channels::ChannelReplyTarget> {
         self.replies
             .lock()
             .unwrap_or_else(|e| e.into_inner())
@@ -60,7 +60,7 @@ impl ChatRuntime for TestRuntime {
     async fn peek_channel_replies(
         &self,
         session_key: &str,
-    ) -> Vec<moltis_channels::ChannelReplyTarget> {
+    ) -> Vec<antre_channels::ChannelReplyTarget> {
         self.replies
             .lock()
             .unwrap_or_else(|e| e.into_inner())
@@ -72,7 +72,7 @@ impl ChatRuntime for TestRuntime {
     async fn note_channel_activity(
         &self,
         activity_id: &str,
-        activity: moltis_channels::ChannelActivity,
+        activity: antre_channels::ChannelActivity,
     ) {
         self.activities
             .lock()
@@ -100,15 +100,15 @@ impl ChatRuntime for TestRuntime {
         "test"
     }
 
-    fn sandbox_router(&self) -> Option<&Arc<moltis_tools::sandbox::SandboxRouter>> {
+    fn sandbox_router(&self) -> Option<&Arc<antre_tools::sandbox::SandboxRouter>> {
         None
     }
 
-    fn memory_manager(&self) -> Option<&moltis_memory::runtime::DynMemoryRuntime> {
+    fn memory_manager(&self) -> Option<&antre_memory::runtime::DynMemoryRuntime> {
         None
     }
 
-    async fn cached_location(&self) -> Option<moltis_config::GeoLocation> {
+    async fn cached_location(&self) -> Option<antre_config::GeoLocation> {
         None
     }
 
@@ -123,27 +123,27 @@ impl ChatRuntime for TestRuntime {
         (None, None)
     }
 
-    fn channel_outbound(&self) -> Option<Arc<dyn moltis_channels::ChannelOutbound>> {
+    fn channel_outbound(&self) -> Option<Arc<dyn antre_channels::ChannelOutbound>> {
         self.outbound.clone()
     }
 
-    fn delivery_outbox(&self) -> Option<Arc<moltis_delivery::Outbox>> {
+    fn delivery_outbox(&self) -> Option<Arc<antre_delivery::Outbox>> {
         self.outbox.clone()
     }
 
-    fn channel_stream_outbound(&self) -> Option<Arc<dyn moltis_channels::ChannelStreamOutbound>> {
+    fn channel_stream_outbound(&self) -> Option<Arc<dyn antre_channels::ChannelStreamOutbound>> {
         None
     }
 
-    fn tts_service(&self) -> &dyn moltis_service_traits::TtsService {
+    fn tts_service(&self) -> &dyn antre_service_traits::TtsService {
         &self.tts
     }
 
-    fn project_service(&self) -> &dyn moltis_service_traits::ProjectService {
+    fn project_service(&self) -> &dyn antre_service_traits::ProjectService {
         &self.project
     }
 
-    fn mcp_service(&self) -> &dyn moltis_service_traits::McpService {
+    fn mcp_service(&self) -> &dyn antre_service_traits::McpService {
         &self.mcp
     }
 
@@ -183,21 +183,21 @@ impl TestRuntime {
             broadcasts: Mutex::new(Vec::new()),
             activities: Mutex::new(Vec::new()),
             replies: Mutex::new(HashMap::new()),
-            tts: moltis_service_traits::NoopTtsService,
-            project: moltis_service_traits::NoopProjectService,
-            mcp: moltis_service_traits::NoopMcpService,
+            tts: antre_service_traits::NoopTtsService,
+            project: antre_service_traits::NoopProjectService,
+            mcp: antre_service_traits::NoopMcpService,
         }
     }
 
     pub(crate) fn with_outbound(
         mut self,
-        outbound: Arc<dyn moltis_channels::ChannelOutbound>,
+        outbound: Arc<dyn antre_channels::ChannelOutbound>,
     ) -> Self {
         self.outbound = Some(outbound);
         self
     }
 
-    pub(crate) fn with_outbox(mut self, outbox: Arc<moltis_delivery::Outbox>) -> Self {
+    pub(crate) fn with_outbox(mut self, outbox: Arc<antre_delivery::Outbox>) -> Self {
         self.outbox = Some(outbox);
         self
     }

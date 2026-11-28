@@ -1,6 +1,6 @@
 //! TLS trust for daemon connections.
 //!
-//! Moltis daemons usually serve a certificate signed by their own local CA.
+//! Antre daemons usually serve a certificate signed by their own local CA.
 //! A client can trust that CA's PEM (local daemon, read from disk), pin the
 //! server certificate's SHA-256 fingerprint after the user confirmed it (trust
 //! on first use, like SSH host keys), or rely on the platform trust store.

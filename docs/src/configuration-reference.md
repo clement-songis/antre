@@ -4,7 +4,7 @@
 
 >
 
-> Every valid `moltis.toml` option, organized by domain.
+> Every valid `antre.toml` option, organized by domain.
 
 > Types: `string`, `bool`, `integer`, `float`, `array`, `map`, `optional`, `enum(...)`.
 
@@ -143,7 +143,7 @@ Gateway server configuration.
 | `db_pool_max_connections` | integer | `5` | Maximum number of SQLite pool connections. Lower values reduce memory usage for personal gateways. |
 | `rpc_timeout_ms` | integer | `5000` | Milliseconds the web UI waits for a WebSocket RPC reply before failing with a `TIMEOUT` error. |
 | `shiki_cdn_url` | optional string | — | Base URL for the Shiki syntax-highlighting library loaded by the web UI. Defaults to `https://esm.sh/shiki@3.2.1?bundle` when unset. |
-| `terminal_enabled` | bool | `true` | Enable or disable the host terminal in the web UI. Set to `false` to prevent an unsandboxed shell. The `MOLTIS_TERMINAL_DISABLED` env var (`1` or `true`) takes precedence. |
+| `terminal_enabled` | bool | `true` | Enable or disable the host terminal in the web UI. Set to `false` to prevent an unsandboxed shell. The `ANTRE_TERMINAL_DISABLED` env var (`1` or `true`) takes precedence. |
 
 
 ### `auth` — AuthConfig
@@ -167,7 +167,7 @@ TLS configuration for the gateway HTTPS server.
 | `cert_path` | optional string | — | Path to a custom server certificate (PEM). Overrides auto-generation. |
 | `key_path` | optional string | — | Path to a custom server private key (PEM). Overrides auto-generation. |
 | `ca_cert_path` | optional string | — | Path to the CA certificate (PEM) used for trust instructions. |
-| `public_ip` | optional string | — | Public IPv4 or IPv6 address to include as an IP SAN in auto-generated certificates. Use this for direct `https://<public-ip>` access after trusting Moltis' local CA. |
+| `public_ip` | optional string | — | Public IPv4 or IPv6 address to include as an IP SAN in auto-generated certificates. Use this for direct `https://<public-ip>` access after trusting Antre' local CA. |
 | `http_redirect_port` | optional integer | — | Port for the plain-HTTP redirect/CA-download server. Defaults to the gateway port + 1 when not set. |
 
 
@@ -268,7 +268,7 @@ Agent identity (name, emoji, theme).
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| `name` | optional string | — | Agent display name. Falls back to `"moltis"` when unset. |
+| `name` | optional string | — | Agent display name. Falls back to `"antre"` when unset. |
 | `emoji` | optional string | — | Agent emoji icon. |
 | `theme` | optional string | — | Agent theme identifier. |
 
@@ -312,7 +312,7 @@ User profile collected during onboarding.
 | `tool_prune_char_threshold` | integer | `200` | Tool-result content longer than this is replaced with a placeholder in the collapsed middle region. |
 | `summary_model` | optional string | `null` | Provider-qualified model for LLM summary calls (e.g. `"openrouter/google/gemini-3.8-flash"`). ⚠️ **Not yet implemented** — setting this field triggers a warning. |
 | `max_summary_tokens` | integer | `4096` | Maximum output tokens for LLM summary calls. `0` accepts provider default. ⚠️ **Not yet implemented** — has no effect. |
-| `show_settings_hint` | bool | `true` | Whether the "Change `chat.compaction.mode` in moltis.toml…" hint is included in compaction notifications. |
+| `show_settings_hint` | bool | `true` | Whether the "Change `chat.compaction.mode` in antre.toml…" hint is included in compaction notifications. |
 
 ### `chat.quota_wait` — QuotaWaitConfig
 
@@ -381,7 +381,7 @@ Channel replies are saved to an outbox, retried with exponential backoff, and re
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| `scope` | enum: `user`, `project`, `local` | `"user"` | Memory scope: `user` stores in `~/.moltis/agent-memory/<preset>/`, `project` in `.moltis/agent-memory/<preset>/`, `local` in `.moltis/agent-memory-local/<preset>/`. |
+| `scope` | enum: `user`, `project`, `local` | `"user"` | Memory scope: `user` stores in `~/.antre/agent-memory/<preset>/`, `project` in `.antre/agent-memory/<preset>/`, `local` in `.antre/agent-memory-local/<preset>/`. |
 | `max_lines` | integer | `200` | Maximum lines to load from `MEMORY.md`. |
 
 ### `modes` — ModesConfig
@@ -477,7 +477,7 @@ Background [learning loop](learning.md): a post-conversation review, a skill cur
 | `scope` | string | `"session"` | Container lifetime (`"session"` or `"per-command"`). |
 | `workspace_mount` | string | `"ro"` | Workspace mount mode (`"ro"`, `"rw"`, `"none"`). |
 | `managed_files_mount` | enum: `"none"`, `"ro"`, `"rw"` | `"ro"` | Access to Managed Files at `/home/sandbox/files` in supported local container sandboxes. `none` disables the mount, `ro` allows reads, and `rw` allows mutations. Initially supported by Docker, Podman, and Apple Container; not yet by WASM or remote backends. |
-| `host_data_dir` | optional string | `null` | Host-visible path for Moltis `data_dir()` when creating sandbox or browser containers from inside another container. |
+| `host_data_dir` | optional string | `null` | Host-visible path for Antre `data_dir()` when creating sandbox or browser containers from inside another container. |
 | `home_persistence` | enum: `"off"`, `"session"`, `"shared"` | `"shared"` | Persistence strategy for `/home/sandbox` in sandbox containers. |
 | `shared_home_dir` | optional string | `null` | Host directory for shared `/home/sandbox` persistence. Relative paths resolved against `data_dir()`. |
 | `image` | optional string | `null` | Docker/Podman image for sandbox containers. |
@@ -562,7 +562,7 @@ Default `tool_overrides` entries:
 | `low_memory_threshold_mb` | integer | `2048` | System RAM threshold (MB) below which memory-saving Chrome flags are injected (0 to disable). |
 | `persist_profile` | bool | `true` | Persist Chrome user profile (cookies, auth, local storage) across sessions. |
 | `profile_dir` | optional string | `null` | Custom path for persistent Chrome profile directory. Implies `persist_profile = true`. |
-| `container_host` | string | `"127.0.0.1"` | Hostname/IP to connect to the browser container from the host. Use `"host.docker.internal"` when Moltis runs inside Docker. |
+| `container_host` | string | `"127.0.0.1"` | Hostname/IP to connect to the browser container from the host. Use `"host.docker.internal"` when Antre runs inside Docker. |
 | `browserless_api_version` | enum: `"v1"`, `"v2"` | `"v1"` | Browserless API compatibility mode for websocket endpoints. |
 | `screenshot_each_step` | bool | `false` | Opt-in: auto-capture a screenshot after each state-changing action (navigate, click, type, scroll, …) — on both success and failure — and attach it to that action's result, enabling a per-step screenshot timeline in chat clients. Ignored by renderless browsers. |
 
@@ -832,7 +832,7 @@ Each channel account (`channels.<channel_type>.<account_name>`) is an arbitrary 
 |-----|------|---------|-------------|
 | `style` | enum (`hybrid`, `prompt-only`, `search-only`, `off`) | `"hybrid"` | High-level memory orchestration style. |
 | `agent_write_mode` | enum (`hybrid`, `prompt-only`, `search-only`, `off`) | `"hybrid"` | Where agent-authored memory writes are allowed to land. |
-| `user_profile_write_mode` | enum (`explicit-and-auto`, `explicit-only`, `off`) | `"explicit-and-auto"` | How Moltis writes the managed `USER.md` profile surface. |
+| `user_profile_write_mode` | enum (`explicit-and-auto`, `explicit-only`, `off`) | `"explicit-and-auto"` | How Antre writes the managed `USER.md` profile surface. |
 | `backend` | enum (`builtin`, `qmd`, `zvec`) | `"builtin"` | Memory backend used for search, retrieval, and indexing. |
 | `provider` | optional enum (`local`, `ollama`, `openai`, `custom`) | *auto-detect* | Embedding provider. Alias: `embedding_provider`. |
 | `disable_rag` | bool | `false` | Disable RAG embeddings and force keyword-only memory search. |
@@ -848,7 +848,7 @@ Each channel account (`channels.<channel_type>.<account_name>`) is an arbitrary 
 | `search_merge_strategy` | enum (`rrf`, `linear`) | `"rrf"` | Merge strategy for hybrid search results. |
 | `session_export` | enum (`off`, `on-new-or-reset`) | `"on-new-or-reset"` | How session transcripts are exported into searchable memory. |
 | `qmd` | map (see `memory.qmd`) | `{}` | QMD-specific configuration (only used when backend = `"qmd"`). |
-| `db_path` | optional string | — | Zvec collection directory path (only used when `backend = "zvec"`). Resolved relative to the Moltis data directory. |
+| `db_path` | optional string | — | Zvec collection directory path (only used when `backend = "zvec"`). Resolved relative to the Antre data directory. |
 | `vector_weight` | float | `0.7` | Weight for vector similarity in hybrid search (0.0–1.0). |
 | `keyword_weight` | float | `0.3` | Weight for keyword/FTS similarity in hybrid search (0.0–1.0). |
 
@@ -982,7 +982,7 @@ Each channel account (`channels.<channel_type>.<account_name>`) is an arbitrary 
 | `offered` | array of string | `[]` | Allowlist of enabled providers (also controls web UI pickers). Empty = all enabled. |
 | `show_legacy_models` | bool | `false` | Show models older than one year in the chat model selector. |
 | `allow_claude_subscription_tokens` | bool | `false` | Accept `claude setup-token` subscription credentials for Anthropic providers. Off by default because Anthropic's terms may not allow subscription OAuth in third-party apps; setup-tokens are ignored with a warning until enabled. |
-| `external_credentials` | array of string | `[]` | Other tools' credentials Moltis may read live. Only `"codex-cli"` (`~/.codex/auth.json`) today. Empty = detected but never read or copied. |
+| `external_credentials` | array of string | `[]` | Other tools' credentials Antre may read live. Only `"codex-cli"` (`~/.codex/auth.json`) today. Empty = detected but never read or copied. |
 | `<name>` | `ProviderEntry` (see below) | — | Provider-specific settings keyed by provider name. |
 
 ### `providers.<name>` — ProviderEntry
@@ -1262,7 +1262,7 @@ Where the [model catalog](model-catalog.md) refreshes its models.dev data.
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | `binary_path` | optional string | `null` | Path to whisper-cli binary. If not set, looks in `PATH` |
-| `model_path` | optional string | `null` | Path to the GGML model file (e.g. `"~/.moltis/models/ggml-base.en.bin"`) |
+| `model_path` | optional string | `null` | Path to the GGML model file (e.g. `"~/.antre/models/ggml-base.en.bin"`) |
 | `language` | optional string | `null` | Language hint (ISO 639-1 code) |
 
 
@@ -1284,7 +1284,7 @@ Where the [model catalog](model-catalog.md) refreshes its models.dev data.
 
 ### `env`
 
-**Struct:** top-level `HashMap<String, String>` on `MoltisConfig`
+**Struct:** top-level `HashMap<String, String>` on `AntreConfig`
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|

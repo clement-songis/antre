@@ -836,5 +836,5 @@ mod tests {
     }
 
     // merge_weighted / merge_rrf unit coverage lives in `search::tests` so it
-    // runs in plain `cargo test -p moltis-memory` regardless of backend.
+    // runs in plain `cargo test -p antre-memory` regardless of backend.
 }

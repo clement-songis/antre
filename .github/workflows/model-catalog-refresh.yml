@@ -34,7 +34,7 @@ jobs:
         run: ./scripts/update-model-catalog.sh --diff-out "$RUNNER_TEMP/catalog-diff.md"
 
       - name: Catalog tests
-        run: cargo test -p moltis-model-catalog
+        run: cargo test -p antre-model-catalog
 
       - name: Open or update pull request
         env:

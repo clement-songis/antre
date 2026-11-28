@@ -16,7 +16,7 @@ async function mockRpcs(page, responses) {
 	await page.evaluate((table) => {
 		window.__rpcCalls = [];
 		window.__rpcTable = table;
-		const state = window.__moltis_modules.state;
+		const state = window.__antre_modules.state;
 		const ws = state.ws;
 		if (!window.__rpcOriginalSend) window.__rpcOriginalSend = ws.send.bind(ws);
 		ws.send = (raw) => {
@@ -55,9 +55,9 @@ function switchPayload(key, history) {
 }
 
 async function loadHistory(page, history = HISTORY, key = "main") {
-	await page.evaluate((k) => window.__moltis_modules["stores/session-history-cache"]?.clearSessionHistory?.(k), key);
+	await page.evaluate((k) => window.__antre_modules["stores/session-history-cache"]?.clearSessionHistory?.(k), key);
 	await mockRpcs(page, { "sessions.switch": switchPayload(key, history) });
-	await page.evaluate((k) => window.__moltis_modules.sessions.switchSession(k), key);
+	await page.evaluate((k) => window.__antre_modules.sessions.switchSession(k), key);
 	await expect(page.locator("#messages .msg.user")).toHaveCount(history.filter((m) => m.role === "user").length);
 }
 
@@ -71,7 +71,7 @@ test.describe("Rewind, regenerate and edit", () => {
 
 	test.afterEach(async ({ page }) => {
 		await page.evaluate(() => {
-			const ws = window.__moltis_modules?.state?.ws;
+			const ws = window.__antre_modules?.state?.ws;
 			if (ws && window.__rpcOriginalSend) ws.send = window.__rpcOriginalSend;
 		});
 	});

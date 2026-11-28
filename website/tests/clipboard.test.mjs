@@ -18,9 +18,9 @@ test("offers copy controls for every primary install method", () => {
   assert.deepEqual(commands, [
     "curl -fsSL moltis.org/install.sh | sh",
     "curl -fsSL https://www.moltis.org/install.sh | sh",
-    "brew install moltis-org/tap/moltis",
-    "docker run -d \\\n    --name moltis -p 13131:13131 -p 1455:1455 \\\n    -v moltis-config:/home/moltis/.config/moltis \\\n    -v moltis-data:/home/moltis/.moltis \\\n    -v /var/run/docker.sock:/var/run/docker.sock \\\n    ghcr.io/moltis-org/moltis:latest",
-    "cargo install moltis --git https://github.com/moltis-org/moltis",
+    "brew install antre-ai/tap/antre",
+    "docker run -d \\\n    --name antre -p 13131:13131 -p 1455:1455 \\\n    -v antre-config:/home/antre/.config/antre \\\n    -v antre-data:/home/antre/.antre \\\n    -v /var/run/docker.sock:/var/run/docker.sock \\\n    ghcr.io/antre-ai/antre:latest",
+    "cargo install antre --git https://github.com/antre-ai/antre",
   ]);
   dom.window.close();
 });

@@ -17,7 +17,7 @@ fn probe_reports_success_and_failure() {
 #[test]
 fn probe_of_a_missing_program_fails() {
     assert!(!command_succeeds_within(
-        "moltis-no-such-runtime-cli",
+        "antre-no-such-runtime-cli",
         &["--version"],
         Duration::from_secs(5)
     ));

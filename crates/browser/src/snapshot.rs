@@ -70,8 +70,8 @@ const EXTRACT_ELEMENTS_JS: &str = r#"
     // Drop refs assigned by earlier snapshots first: an element that has since
     // become hidden (and is skipped below) would otherwise keep its old number
     // and could shadow the same ref freshly assigned to another element.
-    for (const el of __mDeepCollect('[data-moltis-ref]')) {
-        delete el.dataset.moltisRef;
+    for (const el of __mDeepCollect('[data-antre-ref]')) {
+        delete el.dataset.antreRef;
     }
 
     const elements = __mDeepCollect(selector);
@@ -164,7 +164,7 @@ const EXTRACT_ELEMENTS_JS: &str = r#"
         });
 
         // Store ref on element for later retrieval
-        el.dataset.moltisRef = (refNum - 1).toString();
+        el.dataset.antreRef = (refNum - 1).toString();
     }
 
     // Extract page content (truncated to avoid huge responses)
@@ -194,7 +194,7 @@ const EXTRACT_ELEMENTS_JS: &str = r#"
 /// JavaScript to find an element by its ref number.
 const FIND_BY_REF_JS: &str = r#"
 ((ref) => {
-    const el = __mDeepFind(`[data-moltis-ref="${ref}"]`);
+    const el = __mDeepFind(`[data-antre-ref="${ref}"]`);
     if (!el) return null;
     const rect = el.getBoundingClientRect();
     return {
@@ -283,7 +283,7 @@ pub async fn find_element_by_ref(page: &Page, ref_: u32) -> Result<(f64, f64), E
 pub async fn focus_element_by_ref(page: &Page, ref_: u32) -> Result<(), Error> {
     let body = format!(
         r#"(() => {{
-            const el = __mDeepFind(`[data-moltis-ref="{ref_}"]`);
+            const el = __mDeepFind(`[data-antre-ref="{ref_}"]`);
             if (!el) return false;
             el.focus();
             return true;
@@ -309,7 +309,7 @@ pub async fn focus_element_by_ref(page: &Page, ref_: u32) -> Result<(), Error> {
 pub async fn scroll_element_into_view(page: &Page, ref_: u32) -> Result<(), Error> {
     let body = format!(
         r#"(() => {{
-            const el = __mDeepFind(`[data-moltis-ref="{ref_}"]`);
+            const el = __mDeepFind(`[data-antre-ref="{ref_}"]`);
             if (!el) return false;
             el.scrollIntoView({{ behavior: 'instant', block: 'center' }});
             return true;
@@ -422,8 +422,8 @@ mod tests {
     fn snapshot_js_clears_stale_refs_before_renumbering() {
         // Elements tagged by a previous snapshot that are now hidden must not
         // keep their old ref, or find-by-ref could resolve to the wrong node.
-        assert!(EXTRACT_ELEMENTS_JS.contains("__mDeepCollect('[data-moltis-ref]')"));
-        assert!(EXTRACT_ELEMENTS_JS.contains("delete el.dataset.moltisRef;"));
+        assert!(EXTRACT_ELEMENTS_JS.contains("__mDeepCollect('[data-antre-ref]')"));
+        assert!(EXTRACT_ELEMENTS_JS.contains("delete el.dataset.antreRef;"));
     }
 
     #[test]

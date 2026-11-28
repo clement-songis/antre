@@ -3,14 +3,14 @@
 use std::{path::Path, sync::Arc};
 
 use {
+    antre_agents::tool_registry::AgentTool,
+    antre_skills::{discover::SkillDiscoverer, types::SkillSource, usage::SkillUsageStore},
     async_trait::async_trait,
-    moltis_agents::tool_registry::AgentTool,
-    moltis_skills::{discover::SkillDiscoverer, types::SkillSource, usage::SkillUsageStore},
     serde_json::{Value, json},
 };
 
 #[cfg(feature = "metrics")]
-use moltis_metrics::{counter, labels, skills as skills_metrics};
+use antre_metrics::{counter, labels, skills as skills_metrics};
 
 use {
     super::{
@@ -21,7 +21,7 @@ use {
 };
 
 /// Sidecar subdirectories walked for the primary-read linked-files listing.
-const SIDECAR_SUBDIRS: &[&str] = moltis_skills::SIDECAR_SUBDIRS;
+const SIDECAR_SUBDIRS: &[&str] = antre_skills::SIDECAR_SUBDIRS;
 
 // ── ReadSkillTool ───────────────────────────────────────────
 
@@ -35,7 +35,7 @@ pub struct ReadSkillTool {
     discoverer: Arc<dyn SkillDiscoverer>,
     usage_store: Option<SkillUsageStore>,
     #[cfg(feature = "bundled-skills")]
-    bundled_store: Option<Arc<moltis_skills::bundled::BundledSkillStore>>,
+    bundled_store: Option<Arc<antre_skills::bundled::BundledSkillStore>>,
 }
 
 impl ReadSkillTool {
@@ -55,7 +55,7 @@ impl ReadSkillTool {
     #[must_use]
     pub fn with_bundled(
         discoverer: Arc<dyn SkillDiscoverer>,
-        bundled_store: Arc<moltis_skills::bundled::BundledSkillStore>,
+        bundled_store: Arc<antre_skills::bundled::BundledSkillStore>,
     ) -> Self {
         Self {
             discoverer,
@@ -74,7 +74,7 @@ impl ReadSkillTool {
     /// Convenience constructor that uses default filesystem paths.
     #[must_use]
     pub fn with_default_paths() -> Self {
-        use moltis_skills::discover::FsSkillDiscoverer;
+        use antre_skills::discover::FsSkillDiscoverer;
         let discoverer = Arc::new(FsSkillDiscoverer::new(FsSkillDiscoverer::default_paths()));
         Self {
             discoverer,
@@ -202,7 +202,7 @@ impl AgentTool for ReadSkillTool {
 /// `scripts/`.
 async fn read_primary(
     name: &str,
-    meta: &moltis_skills::types::SkillMetadata,
+    meta: &antre_skills::types::SkillMetadata,
 ) -> anyhow::Result<Value> {
     let is_plugin = meta.source.as_ref() == Some(&SkillSource::Plugin);
 
@@ -245,7 +245,7 @@ async fn read_primary(
                 meta.path.display()
             ))
         })?;
-        let body = moltis_skills::parse::strip_optional_frontmatter(&raw).to_string();
+        let body = antre_skills::parse::strip_optional_frontmatter(&raw).to_string();
         let effective_dir = meta
             .path
             .parent()
@@ -269,14 +269,14 @@ async fn read_primary(
             .into());
         }
 
-        let content = moltis_skills::registry::load_skill_from_path(&canonical_skill_dir)
+        let content = antre_skills::registry::load_skill_from_path(&canonical_skill_dir)
             .await
             .map_err(|e| Error::message(format!("failed to load skill '{name}': {e}")))?;
         let linked = list_skill_sidecar_files(&canonical_skill_dir).await?;
         (content.metadata, content.body, linked, canonical_skill_dir)
     };
 
-    let hits = moltis_skills::safety::scan_skill_body(name, &body);
+    let hits = antre_skills::safety::scan_skill_body(name, &body);
     if !hits.is_empty() {
         tracing::warn!(
             skill = %name,
@@ -544,8 +544,8 @@ async fn collect_sidecar_entries(skill_dir: &Path) -> crate::Result<Vec<SidecarE
 #[cfg(feature = "bundled-skills")]
 fn read_bundled(
     name: &str,
-    meta: &moltis_skills::types::SkillMetadata,
-    store: &moltis_skills::bundled::BundledSkillStore,
+    meta: &antre_skills::types::SkillMetadata,
+    store: &antre_skills::bundled::BundledSkillStore,
     file_path: Option<&str>,
 ) -> anyhow::Result<Value> {
     if let Some(rel) = file_path {
@@ -660,8 +660,8 @@ fn read_bundled(
 /// Check skill requirements and return install instructions if binaries are
 /// missing. Does NOT run the install — the agent should run the commands via
 /// `exec` so they execute in the correct environment (sandbox or host).
-async fn auto_install_requirements(meta: &moltis_skills::types::SkillMetadata) -> Option<String> {
-    use moltis_skills::requirements::{check_requirements, install_command_preview};
+async fn auto_install_requirements(meta: &antre_skills::types::SkillMetadata) -> Option<String> {
+    use antre_skills::requirements::{check_requirements, install_command_preview};
 
     let elig = check_requirements(meta);
     if elig.eligible || elig.install_options.is_empty() {

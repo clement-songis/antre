@@ -1,12 +1,12 @@
-//! Bridge between the agent loop and `moltis-observability`.
+//! Bridge between the agent loop and `antre-observability`.
 //!
 //! Keeps trace-scope derivation out of the runner bodies: the loops call
 //! [`begin_turn`] once and then open steps. Every function here degrades to a
 //! no-op when instrumentation is disabled, so the runner needs no `cfg` gates.
 
 use {
-    moltis_common::hooks::ChannelBinding,
-    moltis_observability::{
+    antre_common::hooks::ChannelBinding,
+    antre_observability::{
         ObservationKind, RecorderSettings, TokenUsage, TraceScope, TurnRecorder,
     },
 };
@@ -22,7 +22,7 @@ use crate::{
 /// Derive the trace scope from the session and channel context.
 ///
 /// The session key becomes the backend's session id, so a Langfuse session
-/// view lines up one-to-one with a Moltis conversation. Channel provenance
+/// view lines up one-to-one with a Antre conversation. Channel provenance
 /// becomes tags, and the sender becomes the user id — namespaced by channel so
 /// `telegram:42` and `slack:42` are never conflated into one person.
 #[must_use]
@@ -78,9 +78,9 @@ pub fn trace_scope(
 /// backend that receives payload bodies at all; the APM profiles gate content
 /// independently through their own `content` mode.
 #[must_use]
-pub fn recorder_settings(config: &moltis_config::InstrumentationConfig) -> RecorderSettings {
+pub fn recorder_settings(config: &antre_config::InstrumentationConfig) -> RecorderSettings {
     RecorderSettings {
-        redaction: moltis_observability::RedactionPolicy::from_needles(&config.redact),
+        redaction: antre_observability::RedactionPolicy::from_needles(&config.redact),
         capture_input: config.langfuse.capture_input,
         capture_output: config.langfuse.capture_output,
         capture_tool_io: config.langfuse.capture_tool_io,
@@ -90,11 +90,11 @@ pub fn recorder_settings(config: &moltis_config::InstrumentationConfig) -> Recor
 
 /// Release identifier reported to backends, defaulting to the running version.
 #[must_use]
-pub fn release(config: &moltis_config::InstrumentationConfig) -> String {
+pub fn release(config: &antre_config::InstrumentationConfig) -> String {
     config
         .release
         .clone()
-        .unwrap_or_else(|| moltis_config::VERSION.to_string())
+        .unwrap_or_else(|| antre_config::VERSION.to_string())
 }
 
 /// Begin recording an agent run, if instrumentation is enabled.
@@ -120,7 +120,7 @@ pub fn begin_turn(
     // omit it, so they cannot overwrite the trace used to attribute the parent
     // run's delivered reply.
     if let Some(key) = trace_correlation_key {
-        moltis_observability::remember_trace(key, recorder.trace_id());
+        antre_observability::remember_trace(key, recorder.trace_id());
     }
 
     recorder.set_metadata("provider", serde_json::Value::String(provider.to_string()));
@@ -169,7 +169,7 @@ pub fn generation_name(provider: &str, model: &str) -> String {
 
 /// Attach request parameters already exposed by the provider and agent model.
 pub fn set_generation_parameters(
-    step: &mut moltis_observability::StepGuard,
+    step: &mut antre_observability::StepGuard,
     provider: &dyn LlmProvider,
     controls: &AgentToolControls,
 ) {
@@ -190,7 +190,7 @@ pub fn begin_generation_step(
     iteration: usize,
     tool_count: usize,
     messages: &[ChatMessage],
-) -> Option<moltis_observability::StepGuard> {
+) -> Option<antre_observability::StepGuard> {
     recorder.map(|recorder| {
         let mut step = recorder.step(
             ObservationKind::Generation,
@@ -284,7 +284,7 @@ pub fn finish_turn(
 
 /// Close a tool observation with the exact content persisted for the model.
 pub fn finish_tool_step(
-    step: Option<moltis_observability::StepGuard>,
+    step: Option<antre_observability::StepGuard>,
     persisted_output: &str,
     success: bool,
     error: Option<&str>,
@@ -332,7 +332,7 @@ mod tests {
         time::Duration,
     };
 
-    use moltis_observability::{Event, ObservationSink, RecorderSettings, RedactionPolicy};
+    use antre_observability::{Event, ObservationSink, RecorderSettings, RedactionPolicy};
 
     use super::*;
 
@@ -633,7 +633,7 @@ mod tests {
         });
         let tool = tool.expect("completed tool observation");
         assert_eq!(tool.output, Some(serde_json::Value::String(output)));
-        assert_eq!(tool.level, moltis_observability::Level::Error);
+        assert_eq!(tool.level, antre_observability::Level::Error);
         assert_eq!(
             tool.status_message.as_deref(),
             Some("tool returned success: false")

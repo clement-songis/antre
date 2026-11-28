@@ -2,9 +2,9 @@ use super::*;
 
 /// Strip gateway-owned routing and trust markers from RPC-supplied params.
 ///
-/// The list is owned by `moltis-chat` (the crate that reads these) so it cannot
+/// The list is owned by `antre-chat` (the crate that reads these) so it cannot
 /// drift from what the chat service treats as a gateway assertion.
-use moltis_chat::request_params::strip_gateway_owned_params as strip_internal_channel_fields;
+use antre_chat::request_params::strip_gateway_owned_params as strip_internal_channel_fields;
 
 /// Prepare client-supplied `chat.send`/`chat.send_sync` params for the chat
 /// service: drop anything the client must not be able to claim, then inject the
@@ -13,8 +13,8 @@ use moltis_chat::request_params::strip_gateway_owned_params as strip_internal_ch
 /// The `_`-prefixed params are internal plumbing, and some of them are set
 /// legitimately by the web UI (`_session_key`, `_audio_filename`,
 /// `_document_files`), so this is a targeted removal rather than a blanket
-/// strip. See [`moltis_chat::params::SERVER_ONLY`] and
-/// [`moltis_chat::request_params::GATEWAY_OWNED_REQUEST_PARAMS`] for which keys
+/// strip. See [`antre_chat::params::SERVER_ONLY`] and
+/// [`antre_chat::request_params::GATEWAY_OWNED_REQUEST_PARAMS`] for which keys
 /// are dropped and why; the server re-derives each of them from state it trusts.
 ///
 /// Only the channel dispatch path sets those keys, and it calls the chat service
@@ -22,7 +22,7 @@ use moltis_chat::request_params::strip_gateway_owned_params as strip_internal_ch
 /// it.
 async fn prepare_chat_send_params(ctx: &MethodContext) -> serde_json::Value {
     let mut params = ctx.params.clone();
-    moltis_chat::params::strip_server_only(&mut params);
+    antre_chat::params::strip_server_only(&mut params);
     strip_internal_channel_fields(&mut params);
     params["_conn_id"] = serde_json::json!(ctx.client_conn_id);
 
@@ -572,11 +572,11 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                     {
                         let project_dir = Path::new(dir);
                         let create_result =
-                            match moltis_projects::WorktreeManager::resolve_base_branch(project_dir)
+                            match antre_projects::WorktreeManager::resolve_base_branch(project_dir)
                                 .await
                             {
                                 Ok(base) => {
-                                    moltis_projects::WorktreeManager::create_from_base(
+                                    antre_projects::WorktreeManager::create_from_base(
                                         project_dir,
                                         key,
                                         &base,
@@ -584,7 +584,7 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                                     .await
                                 },
                                 Err(_) => {
-                                    moltis_projects::WorktreeManager::create(project_dir, key).await
+                                    antre_projects::WorktreeManager::create(project_dir, key).await
                                 },
                             };
                         match create_result {
@@ -593,7 +593,7 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                                     .get("branch_prefix")
                                     .and_then(|v| v.as_str())
                                     .filter(|s| !s.is_empty())
-                                    .unwrap_or("moltis");
+                                    .unwrap_or("antre");
                                 let branch = format!("{prefix}/{key}");
                                 let _ = ctx
                                     .state
@@ -605,7 +605,7 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                                     }))
                                     .await;
 
-                                if let Err(e) = moltis_projects::worktree::copy_project_config(
+                                if let Err(e) = antre_projects::worktree::copy_project_config(
                                     project_dir,
                                     &wt_dir,
                                 ) {
@@ -616,7 +616,7 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                                     .get("setup_command")
                                     .and_then(|v| v.as_str())
                                     .filter(|s| !s.is_empty())
-                                    && let Err(e) = moltis_projects::WorktreeManager::run_setup(
+                                    && let Err(e) = antre_projects::WorktreeManager::run_setup(
                                         &wt_dir,
                                         cmd,
                                         project_dir,
@@ -807,7 +807,7 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                             .and_then(|v| v.as_str())
                             .unwrap_or("settings");
 
-                        let identity = moltis_config::resolve_identity();
+                        let identity = antre_config::resolve_identity();
                         let user = identity
                             .user_name
                             .unwrap_or_else(|| "friend".into());
@@ -826,8 +826,8 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                                      Reply with ONLY the phrase text — no quotes, no markdown. Under 200 chars."
                                 );
                                 let messages = vec![
-                                    moltis_agents::model::ChatMessage::system(system_prompt),
-                                    moltis_agents::model::ChatMessage::user(format!(
+                                    antre_agents::model::ChatMessage::system(system_prompt),
+                                    antre_agents::model::ChatMessage::user(format!(
                                         "Generate a {context} TTS test phrase."
                                     )),
                                 ];
@@ -974,8 +974,8 @@ mod tests {
             "text": "hi",
             "channel": {"sender_id": "forged"},
             "_native_channel_request": true,
-            moltis_chat::params::ACK_KEYS: ["slack-acct:C123:1700000000.1"],
-            moltis_chat::params::CHANNEL_REPLY_TARGET: {
+            antre_chat::params::ACK_KEYS: ["slack-acct:C123:1700000000.1"],
+            antre_chat::params::CHANNEL_REPLY_TARGET: {
                 "channel_type": "slack",
                 "account_id": "victim-workspace",
                 "chat_id": "C999",
@@ -983,10 +983,10 @@ mod tests {
         })))
         .await;
 
-        for key in moltis_chat::params::SERVER_ONLY {
+        for key in antre_chat::params::SERVER_ONLY {
             assert!(params.get(*key).is_none(), "{key} was not stripped");
         }
-        for key in moltis_chat::request_params::GATEWAY_OWNED_REQUEST_PARAMS {
+        for key in antre_chat::request_params::GATEWAY_OWNED_REQUEST_PARAMS {
             assert!(params.get(key).is_none(), "{key} was not stripped");
         }
         assert_eq!(params["text"], "hi");

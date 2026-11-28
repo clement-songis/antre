@@ -25,7 +25,7 @@ impl AgentService for NoopAgentService {
     }
 
     async fn identity_get(&self) -> ServiceResult {
-        Ok(serde_json::json!({ "name": "moltis", "avatar": null }))
+        Ok(serde_json::json!({ "name": "antre", "avatar": null }))
     }
 
     async fn list(&self) -> ServiceResult {
@@ -931,7 +931,7 @@ impl OnboardingService for NoopOnboardingService {
     }
 
     async fn identity_get(&self) -> ServiceResult {
-        Ok(serde_json::json!({ "name": "moltis", "avatar": null }))
+        Ok(serde_json::json!({ "name": "antre", "avatar": null }))
     }
 
     async fn identity_update(&self, _params: Value) -> ServiceResult {
@@ -1142,7 +1142,7 @@ pub trait ProviderSetupService: Send + Sync {
     async fn oauth_status(&self, params: Value) -> ServiceResult;
     async fn remove_key(&self, params: Value) -> ServiceResult;
     /// Copy another tool's credentials (`{"source": "codex-cli"}`) into
-    /// Moltis's store. Only ever called on an explicit user action.
+    /// Antre's store. Only ever called on an explicit user action.
     async fn import_external(&self, _params: Value) -> ServiceResult {
         Err("provider setup not configured".into())
     }

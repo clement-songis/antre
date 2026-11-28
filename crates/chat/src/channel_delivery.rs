@@ -4,12 +4,12 @@
 use std::sync::Arc;
 
 use {
-    async_trait::async_trait,
-    moltis_channels::ChannelReplyTarget,
-    moltis_delivery::{
+    antre_channels::ChannelReplyTarget,
+    antre_delivery::{
         Delivery, DeliveryBody, DeliveryKind, DeliveryObserver, DeliverySink, DeliveryState,
         NewDelivery, Outbox, SinkError,
     },
+    async_trait::async_trait,
     serde_json::json,
 };
 

@@ -15,15 +15,15 @@ use axum::{
 use tracing::{debug, warn};
 
 use {
-    moltis_auth::locality::is_local_connection,
-    moltis_gateway::{
+    antre_auth::locality::is_local_connection,
+    antre_gateway::{
         auth::{AuthIdentity, AuthMethod, CredentialStore},
         state::GatewayState,
     },
 };
 
 /// Session cookie name.
-pub const SESSION_COOKIE: &str = "moltis_session";
+pub const SESSION_COOKIE: &str = "antre_session";
 #[cfg(feature = "web-ui")]
 const AUTH_SETUP_REQUIRED: &str = "AUTH_SETUP_REQUIRED";
 #[cfg(feature = "web-ui")]
@@ -283,7 +283,7 @@ fn is_public_path(path: &str) -> bool {
                 false
             }
         }
-        // Slack calls these endpoints itself and cannot present a Moltis
+        // Slack calls these endpoints itself and cannot present a Antre
         // session, so gateway auth would reject every callback before the
         // handler runs. They are not unauthenticated: each verifies Slack's
         // HMAC signature (and timestamp freshness) before doing any work.
@@ -355,7 +355,7 @@ pub async fn vault_guard(
         return next.run(request).await;
     }
     // Only block when Sealed (not Uninitialized).
-    if matches!(vault.status().await, Ok(moltis_vault::VaultStatus::Sealed)) {
+    if matches!(vault.status().await, Ok(antre_vault::VaultStatus::Sealed)) {
         return (
             StatusCode::LOCKED,
             Json(serde_json::json!({"error": "vault is sealed", "status": "sealed"})),
@@ -492,8 +492,8 @@ mod tests {
     async fn require_admin_checks_extension_identity_scope() {
         let state = ExtractorTestState {
             gateway: GatewayState::new(
-                moltis_gateway::auth::resolve_auth(None, None),
-                moltis_gateway::services::GatewayServices::noop(),
+                antre_gateway::auth::resolve_auth(None, None),
+                antre_gateway::services::GatewayServices::noop(),
             ),
         };
         let mut read_parts = axum::http::Request::new(axum::body::Body::empty())
@@ -548,7 +548,7 @@ mod tests {
     #[cfg(all(feature = "slack", feature = "web-ui"))]
     #[test]
     fn slack_callback_paths_bypass_gateway_auth_but_nothing_else_does() {
-        // Slack cannot present a Moltis session; these three verify Slack's
+        // Slack cannot present a Antre session; these three verify Slack's
         // HMAC signature themselves.
         for p in [
             "/api/channels/slack/my-bot/events",
@@ -586,6 +586,9 @@ mod tests {
     async fn composed_router_bypasses_auth_only_for_hmac_verified_slack_callbacks()
     -> Result<(), Box<dyn std::error::Error>> {
         use {
+            antre_channels::ChannelWebhookVerifier as _,
+            antre_gateway::channel_webhook_dedup::ChannelWebhookDedupeStore,
+            antre_slack::channel_webhook_verifier::SlackChannelWebhookVerifier,
             axum::{
                 Router,
                 body::Bytes,
@@ -595,9 +598,6 @@ mod tests {
                 response::IntoResponse,
                 routing::post,
             },
-            moltis_channels::ChannelWebhookVerifier as _,
-            moltis_gateway::channel_webhook_dedup::ChannelWebhookDedupeStore,
-            moltis_slack::channel_webhook_verifier::SlackChannelWebhookVerifier,
             secrecy::Secret,
             std::sync::RwLock,
         };
@@ -684,7 +684,7 @@ mod tests {
         for (endpoint, body, signature, duplicate) in [
             (
                 "commands",
-                "command=%2Fmoltis&trigger_id=route-trigger&text=hello\n",
+                "command=%2Fantre&trigger_id=route-trigger&text=hello\n",
                 "v0=ba1da8a2c1281bfc9e48a97c750a7f9906303fd4824237e9870094fdd0ff71c3",
                 false,
             ),
@@ -696,7 +696,7 @@ mod tests {
             ),
             (
                 "commands",
-                "command=%2Fmoltis&trigger_id=route-trigger&text=hello\n",
+                "command=%2Fantre&trigger_id=route-trigger&text=hello\n",
                 "v0=ba1da8a2c1281bfc9e48a97c750a7f9906303fd4824237e9870094fdd0ff71c3",
                 true,
             ),
@@ -734,15 +734,15 @@ mod tests {
     #[test]
     fn test_parse_cookie() {
         assert_eq!(
-            parse_cookie("moltis_session=abc123; other=def", "moltis_session"),
+            parse_cookie("antre_session=abc123; other=def", "antre_session"),
             Some("abc123")
         );
         assert_eq!(
-            parse_cookie("other=def; moltis_session=xyz", "moltis_session"),
+            parse_cookie("other=def; antre_session=xyz", "antre_session"),
             Some("xyz")
         );
-        assert_eq!(parse_cookie("other=def", "moltis_session"), None);
-        assert_eq!(parse_cookie("", "moltis_session"), None);
+        assert_eq!(parse_cookie("other=def", "antre_session"), None);
+        assert_eq!(parse_cookie("", "antre_session"), None);
     }
 
     #[cfg(feature = "web-ui")]
@@ -779,7 +779,7 @@ mod tests {
     async fn auth_disabled_still_requires_setup_for_remote_requests()
     -> Result<(), Box<dyn std::error::Error>> {
         let pool = SqlitePool::connect("sqlite::memory:").await?;
-        let auth_config = moltis_config::AuthConfig {
+        let auth_config = antre_config::AuthConfig {
             disabled: true,
             ..Default::default()
         };

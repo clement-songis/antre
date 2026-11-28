@@ -6,15 +6,15 @@
 //! plans the whole sequence, and we guarantee rollback on any failure.
 
 use {
+    antre_agents::tool_registry::AgentTool,
     async_trait::async_trait,
-    moltis_agents::tool_registry::AgentTool,
     serde_json::{Value, json},
     std::sync::Arc,
     tracing::instrument,
 };
 
 #[cfg(feature = "metrics")]
-use moltis_metrics::{counter, labels, tools as tools_metrics};
+use antre_metrics::{counter, labels, tools as tools_metrics};
 
 use crate::{
     Result,

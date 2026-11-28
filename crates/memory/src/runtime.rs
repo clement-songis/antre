@@ -1,6 +1,6 @@
 use std::{path::Path, sync::Arc};
 
-use {async_trait::async_trait, moltis_agents::memory_writer::MemoryWriter};
+use {antre_agents::memory_writer::MemoryWriter, async_trait::async_trait};
 
 use crate::{
     config::CitationMode,

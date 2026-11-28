@@ -25,8 +25,8 @@ use crate::{
 const MAX_PROMPT_BLOCKS: usize = 256;
 const MAX_PROMPT_BYTES: usize = 1024 * 1024;
 
-/// Protocol handler bridging an ACP client to a Moltis backend.
-pub struct MoltisAgent {
+/// Protocol handler bridging an ACP client to a Antre backend.
+pub struct AntreAgent {
     backend: Arc<dyn AcpBackend>,
     sessions: SessionRegistry,
     /// Weak on purpose: the connection owns the handler, so a strong reference
@@ -34,7 +34,7 @@ pub struct MoltisAgent {
     connection: RefCell<Weak<acp::AgentSideConnection>>,
 }
 
-impl MoltisAgent {
+impl AntreAgent {
     #[must_use]
     pub fn new(backend: Arc<dyn AcpBackend>) -> Self {
         Self {
@@ -80,7 +80,7 @@ impl MoltisAgent {
     }
 }
 
-/// Flattens the supported prompt blocks into the plain text Moltis consumes.
+/// Flattens the supported prompt blocks into the plain text Antre consumes.
 /// Blocks outside the advertised capabilities are rejected instead of being
 /// silently replaced or dropped.
 pub fn prompt_text(blocks: &[acp::ContentBlock]) -> acp::Result<String> {
@@ -108,7 +108,7 @@ pub fn prompt_text(blocks: &[acp::ContentBlock]) -> acp::Result<String> {
 }
 
 #[async_trait(?Send)]
-impl acp::Agent for MoltisAgent {
+impl acp::Agent for AntreAgent {
     #[cfg_attr(feature = "tracing", tracing::instrument(skip(self, args)))]
     async fn initialize(
         &self,
@@ -126,10 +126,10 @@ impl acp::Agent for MoltisAgent {
             )
             .agent_info(
                 acp::Implementation::new(
-                    "moltis",
-                    option_env!("MOLTIS_VERSION").unwrap_or(env!("CARGO_PKG_VERSION")),
+                    "antre",
+                    option_env!("ANTRE_VERSION").unwrap_or(env!("CARGO_PKG_VERSION")),
                 )
-                .title("Moltis"),
+                .title("Antre"),
             ))
     }
 

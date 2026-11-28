@@ -1,7 +1,7 @@
 const { expect, test } = require("../base-test");
 const { navigateAndWait, watchPageErrors } = require("../helpers");
 
-test.describe("Settings > Imports > Moltis data", () => {
+test.describe("Settings > Imports > Antre data", () => {
 	test("managed Files export is opt-in and passed to the API", async ({ page }) => {
 		const pageErrors = watchPageErrors(page);
 		let exportUrl = "";
@@ -37,12 +37,12 @@ test.describe("Settings > Imports > Moltis data", () => {
 				body: JSON.stringify({
 					manifest: {
 						format_version: 1,
-						moltis_version: `preview-${policy}`,
+						antre_version: `preview-${policy}`,
 						created_at: "2026-08-16T00:00:00Z",
 						inventory: {
 							config_files: [],
 							workspace_files: [],
-							has_moltis_db: false,
+							has_antre_db: false,
 							has_memory_db: false,
 							session_files: [],
 							media_files: [],
@@ -68,12 +68,12 @@ test.describe("Settings > Imports > Moltis data", () => {
 				body: JSON.stringify({
 					manifest: {
 						format_version: 1,
-						moltis_version: "applied",
+						antre_version: "applied",
 						created_at: "2026-08-16T00:00:00Z",
 						inventory: {
 							config_files: [],
 							workspace_files: [],
-							has_moltis_db: false,
+							has_antre_db: false,
 							has_memory_db: false,
 							session_files: [],
 							media_files: [],
@@ -93,9 +93,9 @@ test.describe("Settings > Imports > Moltis data", () => {
 			mimeType: "application/gzip",
 			buffer: Buffer.from("archive"),
 		});
-		await expect(page.getByText("Moltis preview-skip", { exact: false })).toBeVisible();
+		await expect(page.getByText("Antre preview-skip", { exact: false })).toBeVisible();
 		await page.getByRole("radio", { name: "Overwrite", exact: true }).check();
-		await expect(page.getByText("Moltis preview-overwrite", { exact: false })).toBeVisible();
+		await expect(page.getByText("Antre preview-overwrite", { exact: false })).toBeVisible();
 		await expect(page.getByText("1 will be overwritten", { exact: true })).toBeVisible();
 		await page.getByRole("button", { name: "Apply import", exact: true }).click();
 		await expect.poll(() => appliedPolicy).toBe("overwrite");

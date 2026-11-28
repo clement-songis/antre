@@ -30,9 +30,8 @@ use {
     tokio_util::compat::{TokioAsyncReadCompatExt, TokioAsyncWriteCompatExt},
 };
 
-use moltis_acp::{
-    AcpBackend, BackendCapabilities, EchoBackend, MoltisAgent, SessionKey, SessionSetup,
-    TurnUpdates,
+use antre_acp::{
+    AcpBackend, AntreAgent, BackendCapabilities, EchoBackend, SessionKey, SessionSetup, TurnUpdates,
 };
 
 /// Every await in these tests should settle in milliseconds; the budget exists
@@ -170,7 +169,7 @@ impl AcpBackend for ResumableBackend {
         _setup: &SessionSetup,
     ) -> anyhow::Result<Vec<acp::SessionUpdate>> {
         if key.as_str() == "acp:missing" {
-            return Err(moltis_acp::SessionNotFound.into());
+            return Err(antre_acp::SessionNotFound.into());
         }
         if key.as_str() == "acp:broken" {
             return Err(anyhow::anyhow!("history store unavailable"));
@@ -289,7 +288,7 @@ impl AsyncWrite for Tee {
 /// the test: the agent keeps only a weak reference to its own connection.
 struct Harness {
     client: Rc<acp::ClientSideConnection>,
-    _agent: Rc<MoltisAgent>,
+    _agent: Rc<AntreAgent>,
     _agent_conn: Rc<acp::AgentSideConnection>,
     wire: Arc<Mutex<Vec<u8>>>,
 }
@@ -303,7 +302,7 @@ fn connect(backend: Arc<dyn AcpBackend>, client: TestClient) -> Harness {
     });
     let (client_read, client_write) = tokio::io::split(client_io);
 
-    let agent = Rc::new(MoltisAgent::new(backend));
+    let agent = Rc::new(AntreAgent::new(backend));
     let (agent_conn, agent_io_task) = acp::AgentSideConnection::new(
         Rc::clone(&agent),
         agent_write.compat_write(),
@@ -386,7 +385,7 @@ fn initialize_negotiates_version_and_reports_capabilities() {
         // The echo backend has nothing to resume, so it must not claim it can.
         assert!(!response.agent_capabilities.load_session);
         let info = response.agent_info.expect("agent_info advertised");
-        assert_eq!(info.name, "moltis");
+        assert_eq!(info.name, "antre");
     });
 }
 

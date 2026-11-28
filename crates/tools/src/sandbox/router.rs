@@ -384,7 +384,7 @@ pub(crate) fn select_backend(config: SandboxConfig) -> Arc<dyn Sandbox> {
             if !ensure_apple_container_service() {
                 tracing::warn!(
                     "apple container service could not be started; \
-                     run `container system start` manually, then restart moltis"
+                     run `container system start` manually, then restart antre"
                 );
             }
             let apple_backend: Arc<dyn Sandbox> =
@@ -577,15 +577,15 @@ fn create_firecracker_backend(config: SandboxConfig) -> Arc<dyn Sandbox> {
         kernel_path: config
             .firecracker_kernel
             .clone()
-            .unwrap_or_else(|| std::path::PathBuf::from("/opt/moltis/vmlinux")),
+            .unwrap_or_else(|| std::path::PathBuf::from("/opt/antre/vmlinux")),
         rootfs_path: config
             .firecracker_rootfs
             .clone()
-            .unwrap_or_else(|| std::path::PathBuf::from("/opt/moltis/rootfs.ext4")),
+            .unwrap_or_else(|| std::path::PathBuf::from("/opt/antre/rootfs.ext4")),
         ssh_key_path: config
             .firecracker_ssh_key
             .clone()
-            .unwrap_or_else(|| std::path::PathBuf::from("/opt/moltis/ssh_key")),
+            .unwrap_or_else(|| std::path::PathBuf::from("/opt/antre/ssh_key")),
         vcpus: config.firecracker_vcpus.unwrap_or(2),
         memory_mb: config.firecracker_memory_mb.unwrap_or(512),
     };

@@ -28,8 +28,8 @@ export default {
 		chooseHowToSecureRequired: "Choose how to secure your instance.",
 		setupCode: "Setup code",
 		setupCodePlaceholder: "6-digit code from terminal",
-		setupCodeHint: "Find this code in the moltis process log (stdout).",
-		setupCodePrefilledHint: "Prérempli à partir du lien ouvert par moltis.",
+		setupCodeHint: "Find this code in the antre process log (stdout).",
+		setupCodePrefilledHint: "Prérempli à partir du lien ouvert par antre.",
 		enterSetupCode: "Enter the setup code shown in the process log (stdout).",
 		setupFailed: "Setup failed",
 		passkey: "Passkey",
@@ -203,7 +203,7 @@ export default {
 	skills: {
 		title: "Skills inclus",
 		description:
-			"Moltis inclut des compétences dans de nombreux domaines. Désactivez les catégories dont vous n'avez pas besoin pour garder l'agent concentré. Vous pouvez modifier cela plus tard dans les Paramètres.",
+			"Antre inclut des compétences dans de nombreux domaines. Désactivez les catégories dont vous n'avez pas besoin pour garder l'agent concentré. Vous pouvez modifier cela plus tard dans les Paramètres.",
 		enableAll: "Tout activer",
 		disableAll: "Tout désactiver",
 	},

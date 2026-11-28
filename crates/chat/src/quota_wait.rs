@@ -16,8 +16,8 @@ use std::{
 };
 
 use {
-    moltis_agents::provider_error::{ProviderFailure, QuotaWindow},
-    moltis_config::schema::QuotaWaitConfig,
+    antre_agents::provider_error::{ProviderFailure, QuotaWindow},
+    antre_config::schema::QuotaWaitConfig,
     serde::{Deserialize, Serialize},
     serde_json::Value,
     time::OffsetDateTime,
@@ -135,7 +135,7 @@ pub(crate) fn waiting_error(
     timezone: Option<&str>,
 ) -> Value {
     let window = match &failure.error {
-        moltis_agents::provider_error::ProviderError::QuotaExhausted { window, .. } => *window,
+        antre_agents::provider_error::ProviderError::QuotaExhausted { window, .. } => *window,
         _ => QuotaWindow::Unknown,
     };
     let detail = format!(
@@ -174,11 +174,11 @@ pub(crate) fn error_obj_for_run(
 /// The typed failure inside an agent run error, if any.
 #[must_use]
 pub(crate) fn run_error_failure(
-    error: &moltis_agents::runner::AgentRunError,
+    error: &antre_agents::runner::AgentRunError,
 ) -> Option<&ProviderFailure> {
     match error {
-        moltis_agents::runner::AgentRunError::Other(error) => ProviderFailure::find(error),
-        moltis_agents::runner::AgentRunError::ContextWindowExceeded(_) => None,
+        antre_agents::runner::AgentRunError::Other(error) => ProviderFailure::find(error),
+        antre_agents::runner::AgentRunError::ContextWindowExceeded(_) => None,
     }
 }
 
@@ -355,7 +355,7 @@ pub(crate) fn is_resume(params: &Value) -> bool {
 mod tests {
     use {
         super::*,
-        moltis_agents::provider_error::{LimitScope, ProviderError},
+        antre_agents::provider_error::{LimitScope, ProviderError},
         time::macros::datetime,
     };
 
@@ -486,8 +486,8 @@ mod tests {
     }
 
     #[async_trait::async_trait]
-    impl moltis_service_traits::ChatService for RecordingChat {
-        async fn send(&self, params: Value) -> moltis_service_traits::ServiceResult {
+    impl antre_service_traits::ChatService for RecordingChat {
+        async fn send(&self, params: Value) -> antre_service_traits::ServiceResult {
             let session = params["_session_key"].as_str().unwrap_or_default();
             self.parked_at_send
                 .lock()
@@ -500,39 +500,39 @@ mod tests {
             Ok(Value::Null)
         }
 
-        async fn abort(&self, _: Value) -> moltis_service_traits::ServiceResult {
+        async fn abort(&self, _: Value) -> antre_service_traits::ServiceResult {
             Ok(Value::Null)
         }
 
-        async fn cancel_queued(&self, _: Value) -> moltis_service_traits::ServiceResult {
+        async fn cancel_queued(&self, _: Value) -> antre_service_traits::ServiceResult {
             Ok(Value::Null)
         }
 
-        async fn history(&self, _: Value) -> moltis_service_traits::ServiceResult {
+        async fn history(&self, _: Value) -> antre_service_traits::ServiceResult {
             Ok(Value::Null)
         }
 
-        async fn inject(&self, _: Value) -> moltis_service_traits::ServiceResult {
+        async fn inject(&self, _: Value) -> antre_service_traits::ServiceResult {
             Ok(Value::Null)
         }
 
-        async fn clear(&self, _: Value) -> moltis_service_traits::ServiceResult {
+        async fn clear(&self, _: Value) -> antre_service_traits::ServiceResult {
             Ok(Value::Null)
         }
 
-        async fn compact(&self, _: Value) -> moltis_service_traits::ServiceResult {
+        async fn compact(&self, _: Value) -> antre_service_traits::ServiceResult {
             Ok(Value::Null)
         }
 
-        async fn context(&self, _: Value) -> moltis_service_traits::ServiceResult {
+        async fn context(&self, _: Value) -> antre_service_traits::ServiceResult {
             Ok(Value::Null)
         }
 
-        async fn raw_prompt(&self, _: Value) -> moltis_service_traits::ServiceResult {
+        async fn raw_prompt(&self, _: Value) -> antre_service_traits::ServiceResult {
             Ok(Value::Null)
         }
 
-        async fn full_context(&self, _: Value) -> moltis_service_traits::ServiceResult {
+        async fn full_context(&self, _: Value) -> antre_service_traits::ServiceResult {
             Ok(Value::Null)
         }
     }

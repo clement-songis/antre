@@ -1,6 +1,6 @@
 # Quickstart
 
-Get Moltis running in under 5 minutes.
+Get Antre running in under 5 minutes.
 
 ## 1. Install
 
@@ -11,19 +11,19 @@ curl -fsSL https://www.moltis.org/install.sh | sh
 Or via Homebrew:
 
 ```bash
-brew install moltis-org/tap/moltis
+brew install antre-ai/tap/antre
 ```
 
 ## 2. Start
 
 ```bash
-moltis
+antre
 ```
 
 You'll see output like:
 
 ```
-🚀 Moltis gateway starting...
+🚀 Antre gateway starting...
 🌐 Open http://localhost:13131 in your browser
 ```
 
@@ -33,7 +33,7 @@ You need an LLM provider configured to chat. The fastest options:
 
 ### Option A: API Key (Anthropic, OpenAI, Gemini, etc.)
 
-1. Set an API key as an environment variable and restart Moltis:
+1. Set an API key as an environment variable and restart Antre:
    ```bash
    export ANTHROPIC_API_KEY="sk-ant-..."   # Anthropic
    export OPENAI_API_KEY="sk-..."          # OpenAI
@@ -45,13 +45,13 @@ Or configure via the web UI: **Settings** → **Providers** → enter your API k
 
 ### Option B: OAuth (Codex / Copilot)
 
-1. In Moltis, go to **Settings** → **Providers**
+1. In Antre, go to **Settings** → **Providers**
 2. Click **OpenAI Codex** or **GitHub Copilot** → **Connect**
 3. Complete the OAuth flow
 
 ### Option C: Local LLM (Offline)
 
-1. In Moltis, go to **Settings** → **Providers**
+1. In Antre, go to **Settings** → **Providers**
 2. Click **Local LLM**
 3. Choose a model and save
 
@@ -81,7 +81,7 @@ Use **Copy as Markdown** on an assistant response to preserve its formatting, or
 
 ### Enable Tool Use
 
-Moltis can execute code, browse the web, and more. Tools are enabled by default with sandbox protection.
+Antre can execute code, browse the web, and more. Tools are enabled by default with sandbox protection.
 
 Try:
 
@@ -95,14 +95,14 @@ Chat with your agent from anywhere:
 
 1. Create a bot via [@BotFather](https://t.me/BotFather)
 2. Copy the bot token
-3. In Moltis: **Settings** → **Telegram** → Enter token → **Save**
+3. In Antre: **Settings** → **Telegram** → Enter token → **Save**
 4. Message your bot!
 
 ### Connect Discord
 
 1. Create a bot in the [Discord Developer Portal](https://discord.com/developers/applications)
 2. Enable **Message Content Intent** and copy the bot token
-3. In Moltis: **Settings** → **Channels** → **Connect Discord** → Enter token → **Connect**
+3. In Antre: **Settings** → **Channels** → **Connect Discord** → Enter token → **Connect**
 4. Invite the bot to your server and @mention it!
 
 → [Full Discord setup guide](discord.md)
@@ -112,7 +112,7 @@ Chat with your agent from anywhere:
 Extend capabilities with [MCP servers](mcp.md):
 
 ```toml
-# In moltis.toml
+# In antre.toml
 [mcp]
 [mcp.servers.github]
 command = "npx"
@@ -125,13 +125,13 @@ env = { GITHUB_TOKEN = "ghp_..." }
 Enable long-term memory for context across sessions:
 
 ```toml
-# In moltis.toml
+# In antre.toml
 [memory]
 provider = "openai"
 model = "text-embedding-3-small"
 ```
 
-Add knowledge by placing Markdown files in `~/.moltis/memory/`.
+Add knowledge by placing Markdown files in `~/.antre/memory/`.
 
 ## Useful Commands
 
@@ -148,12 +148,12 @@ Add knowledge by placing Markdown files in `~/.moltis/memory/`.
 
 | Path | Contents |
 |------|----------|
-| `~/.config/moltis/moltis.toml` | Configuration |
-| `~/.config/moltis/provider_keys.json` | API keys |
-| `~/.moltis/` | Data (sessions, memory, logs) |
+| `~/.config/antre/antre.toml` | Configuration |
+| `~/.config/antre/provider_keys.json` | API keys |
+| `~/.antre/` | Data (sessions, memory, logs) |
 
 ## Getting Help
 
 - **Documentation**: [docs.moltis.org](https://docs.moltis.org)
-- **GitHub Issues**: [github.com/moltis-org/moltis/issues](https://github.com/moltis-org/moltis/issues)
-- **Discussions**: [github.com/moltis-org/moltis/discussions](https://github.com/moltis-org/moltis/discussions)
+- **GitHub Issues**: [github.com/antre-ai/antre/issues](https://github.com/antre-ai/antre/issues)
+- **Discussions**: [github.com/antre-ai/antre/discussions](https://github.com/antre-ai/antre/discussions)

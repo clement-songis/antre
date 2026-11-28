@@ -1,12 +1,12 @@
 # Security Architecture
 
-Moltis is designed with a defense-in-depth security model. This document
+Antre is designed with a defense-in-depth security model. This document
 explains the key security features and provides guidance for production
 deployments.
 
 ## Overview
 
-Moltis runs AI agents that can execute code and interact with external systems.
+Antre runs AI agents that can execute code and interact with external systems.
 This power requires multiple layers of protection:
 
 1. **Human-in-the-loop approval** for dangerous commands
@@ -22,7 +22,7 @@ drift re-trust, dependency install guards, kill switch, audit log), see
 ## Certificate trust updates
 
 Certificate-verification fixes and bundled root-store updates require new
-binaries. Keep both the Moltis daemon and Moltis Desktop current; they have
+binaries. Keep both the Antre daemon and Antre Desktop current; they have
 separate dependency lockfiles. Also apply operating-system trust-store updates
 and refresh container images, since some integrations use native TLS libraries.
 
@@ -43,7 +43,7 @@ pins remain a separate trust mechanism. These paths need separate verification.
 
 ## Command Execution Approval
 
-By default, Moltis requires explicit user approval before executing potentially
+By default, Antre requires explicit user approval before executing potentially
 dangerous commands. This "human-in-the-loop" design ensures the AI cannot take
 destructive actions without consent.
 
@@ -64,7 +64,7 @@ directly from Telegram or WhatsApp.
 
 ### Approval Policies
 
-Configure approval behavior in `moltis.toml`:
+Configure approval behavior in `antre.toml`:
 
 ```toml
 [tools.exec]
@@ -78,14 +78,14 @@ cases. Only use `"never"` in fully automated, sandboxed environments.
 
 ### Built-in Dangerous Command Blocklist
 
-Even with `approval_mode = "never"` or `security_level = "full"`, Moltis
+Even with `approval_mode = "never"` or `security_level = "full"`, Antre
 maintains a safety floor: a hardcoded set of regex patterns for the most
 critical destructive commands (e.g. `rm -rf /`, `git reset --hard`,
 `DROP TABLE`, `mkfs`, `terraform destroy`). Matching commands always require
 approval regardless of configuration.
 
 Users can override specific patterns by adding matching entries to their
-`allowlist` in `moltis.toml`. The blocklist only applies to host execution;
+`allowlist` in `antre.toml`. The blocklist only applies to host execution;
 sandboxed commands are already isolated.
 
 ### Destructive Command Guard (dcg)
@@ -164,7 +164,7 @@ downloads to use attachment disposition.
 ## Channel Authorization
 
 Channels (Telegram, Slack, etc.) allow external parties to interact with your
-Moltis agent. This requires careful access control.
+Antre agent. This requires careful access control.
 
 ### Sender Allowlisting
 
@@ -246,7 +246,7 @@ heartbeat) bypass this limit.
 
 ### Job Notifications
 
-When cron jobs are created, updated, or removed, Moltis broadcasts events:
+When cron jobs are created, updated, or removed, Antre broadcasts events:
 
 - `cron.job.created` - A new job was created
 - `cron.job.updated` - An existing job was modified
@@ -292,7 +292,7 @@ The gateway API uses role-based access control with scopes:
 
 ### API Keys
 
-API keys authenticate external tools and scripts connecting to Moltis. Keys
+API keys authenticate external tools and scripts connecting to Antre. Keys
 **must specify at least one scope** — keys without scopes are denied access
 (least-privilege by default).
 
@@ -309,9 +309,9 @@ API keys authenticate external tools and scripts connecting to Moltis. Keys
 
 ```bash
 # Scoped key (comma-separated scopes)
-moltis auth create-api-key --label "Monitor" --scopes "operator.read"
-moltis auth create-api-key --label "Automation" --scopes "operator.read,operator.write"
-moltis auth create-api-key --label "CI pipeline" --scopes "operator.admin"
+antre auth create-api-key --label "Monitor" --scopes "operator.read"
+antre auth create-api-key --label "Automation" --scopes "operator.read,operator.write"
+antre auth create-api-key --label "CI pipeline" --scopes "operator.admin"
 ```
 
 #### Using API Keys
@@ -386,7 +386,7 @@ certificates. The auto-generated certificate is intended for localhost and
 private-network access; importing the generated CA does not make the certificate
 valid for public IP addresses or domains that are not listed in its SANs. IP
 address URLs require a certificate with that address as an IP SAN; set
-`tls.public_ip` to include a direct-access VPS IP in Moltis' auto-generated
+`tls.public_ip` to include a direct-access VPS IP in Antre' auto-generated
 certificate. Regular public TLS deployments should use a domain name. For VPS and other
 internet-facing deployments, terminate TLS at a reverse proxy or configure
 `tls.cert_path` and `tls.key_path` with a certificate issued for your public
@@ -417,7 +417,7 @@ unless you understand the risk.
 
 ## Authentication
 
-Moltis uses a unified auth gate that applies a single `check_auth()`
+Antre uses a unified auth gate that applies a single `check_auth()`
 function to every request. This prevents split-brain bugs where different
 code paths disagree on auth status.
 
@@ -439,9 +439,9 @@ Remote nodes authenticate using Ed25519 challenge-response, following the same
 Trust On First Use (TOFU) model as SSH:
 
 1. **First connection**: The operator opens the pairing window from the Nodes UI
-   or with `moltis node pairing enable`. The node generates an Ed25519 keypair
+   or with `antre node pairing enable`. The node generates an Ed25519 keypair
    and presents its public key to the gateway. The operator verifies the
-   fingerprint and approves the pairing (via the web UI or `moltis node approve`).
+   fingerprint and approves the pairing (via the web UI or `antre node approve`).
 2. **Subsequent connections**: The gateway sends a random 32-byte nonce. The node
    signs it with its private key. The gateway verifies the signature against the
    stored public key. No shared secret crosses the wire.
@@ -451,15 +451,15 @@ Trust On First Use (TOFU) model as SSH:
 4. **Revocation**: Revoked keys are kept in the database so they cannot be
    re-paired without explicit operator action.
 
-The private key (`~/.moltis/node_key`) is stored with mode 0600 and never
+The private key (`~/.antre/node_key`) is stored with mode 0600 and never
 leaves the node. The gateway stores only public keys.
 
 Pairing is disabled by default. Keep it disabled except while onboarding a new
-node, then close the window with `moltis node pairing disable`.
+node, then close the window with `antre node pairing disable`.
 
 ## HTTP Endpoint Throttling
 
-Moltis includes built-in per-IP endpoint throttling to reduce brute force
+Antre includes built-in per-IP endpoint throttling to reduce brute force
 attempts and traffic spikes, but only when auth is required for the current
 request.
 
@@ -485,7 +485,7 @@ allowed.
 
 ### Reverse Proxy Behavior
 
-When `MOLTIS_BEHIND_PROXY=true`, throttling is keyed by forwarded client IP
+When `ANTRE_BEHIND_PROXY=true`, throttling is keyed by forwarded client IP
 headers (`X-Forwarded-For`, `X-Real-IP`, `CF-Connecting-IP`) instead of the
 direct socket address.
 
@@ -497,13 +497,13 @@ burst controls, geo rules, bot filtering).
 
 ## Reverse Proxy Deployments
 
-Running Moltis behind a reverse proxy (Caddy, nginx, Traefik, etc.)
+Running Antre behind a reverse proxy (Caddy, nginx, Traefik, etc.)
 requires understanding how authentication interacts with loopback
 connections.
 
 ### The problem
 
-When Moltis binds to `127.0.0.1` and a proxy on the same machine
+When Antre binds to `127.0.0.1` and a proxy on the same machine
 forwards traffic to it, **every** incoming TCP connection appears to
 originate from `127.0.0.1` — including requests from the public
 internet.  A naive "trust all loopback connections" check would bypass
@@ -514,18 +514,18 @@ This is the same class of vulnerability as
 which allowed one-click remote code execution on OpenClaw through
 authentication token exfiltration and cross-site WebSocket hijacking.
 
-### How Moltis handles it
+### How Antre handles it
 
-Moltis uses the per-request `is_local_connection()` check described
+Antre uses the per-request `is_local_connection()` check described
 above.  Most reverse proxies add forwarding headers or change the
 `Host` header, which automatically triggers the "remote" classification.
 
 For proxies that **strip all signals** (e.g. a bare nginx `proxy_pass`
 that rewrites `Host` to the upstream address and adds no `X-Forwarded-For`),
-use the `MOLTIS_BEHIND_PROXY` environment variable as a hard override:
+use the `ANTRE_BEHIND_PROXY` environment variable as a hard override:
 
 ```bash
-MOLTIS_BEHIND_PROXY=true moltis
+ANTRE_BEHIND_PROXY=true antre
 ```
 
 When this variable is set, **all** connections are treated as remote —
@@ -533,7 +533,7 @@ no loopback bypass, no exceptions.
 
 ### Deploying behind a proxy
 
-1. **Set `MOLTIS_BEHIND_PROXY=true`** if your proxy does not add
+1. **Set `ANTRE_BEHIND_PROXY=true`** if your proxy does not add
    forwarding headers (safest option — eliminates any ambiguity).
 
 2. **Set a password or register a passkey** during initial setup.
@@ -541,19 +541,19 @@ no loopback bypass, no exceptions.
    for all traffic regardless of `is_local_connection()`.
 
 3. **WebSocket proxying** must preserve browser origin host info
-   (`Host`, or `X-Forwarded-Host` if `Host` is rewritten). Moltis
+   (`Host`, or `X-Forwarded-Host` if `Host` is rewritten). Antre
    validates same-origin on WebSocket upgrades to prevent cross-site
    WebSocket hijacking (CSWSH).
 
-4. **TLS termination** should happen at the proxy. Run Moltis with
-   `--no-tls` (or `MOLTIS_NO_TLS=true`) in this mode.
+4. **TLS termination** should happen at the proxy. Run Antre with
+   `--no-tls` (or `ANTRE_NO_TLS=true`) in this mode.
 
    If your browser is being redirected to `https://<domain>:13131`,
-   Moltis TLS is still enabled while your proxy upstream is plain HTTP.
+   Antre TLS is still enabled while your proxy upstream is plain HTTP.
 
 5. **Advanced TLS upstream mode** (optional): if your proxy connects to
-   Moltis using HTTPS upstream (or TCP TLS passthrough), you may keep
-   Moltis TLS enabled. Set `MOLTIS_ALLOW_TLS_BEHIND_PROXY=true` to
+   Antre using HTTPS upstream (or TCP TLS passthrough), you may keep
+   Antre TLS enabled. Set `ANTRE_ALLOW_TLS_BEHIND_PROXY=true` to
    acknowledge this non-default setup.
 
 ### Nginx (direct config example)
@@ -590,8 +590,8 @@ map $http_upgrade $connection_upgrade {
 
 If WebSockets fail behind NPM while HTTP works, ensure:
 
-- Moltis runs with `MOLTIS_BEHIND_PROXY=true`
-- For standard edge TLS termination, Moltis runs with `--no-tls`
+- Antre runs with `ANTRE_BEHIND_PROXY=true`
+- For standard edge TLS termination, Antre runs with `--no-tls`
 - NPM preserves browser host/origin context
 
 Use this in NPM's **Advanced** field:
@@ -606,17 +606,17 @@ proxy_set_header Connection "upgrade";
 ```
 
 **Why `$http_host` instead of `$host`?** Nginx's `$host` strips the port,
-while `$http_host` preserves it. Moltis validates that the WebSocket `Origin`
+while `$http_host` preserves it. Antre validates that the WebSocket `Origin`
 header matches the `Host` header (including port). On non-standard ports
 (e.g., `:444` instead of `:443`), using `$host` causes a mismatch and
 WebSocket connections are rejected with "cross-origin WebSocket upgrade".
 
 Upstream scheme guidance:
 
-- **Edge TLS termination (most setups)**: proxy to `http://<moltis-host>:13131`
-  with Moltis started using `--no-tls`
-- **HTTPS upstream / TLS passthrough**: proxy to `https://<moltis-host>:13131`
-  and set `MOLTIS_ALLOW_TLS_BEHIND_PROXY=true`
+- **Edge TLS termination (most setups)**: proxy to `http://<antre-host>:13131`
+  with Antre started using `--no-tls`
+- **HTTPS upstream / TLS passthrough**: proxy to `https://<antre-host>:13131`
+  and set `ANTRE_ALLOW_TLS_BEHIND_PROXY=true`
 
 ### Passkeys Behind Proxies (Host Changes)
 
@@ -628,22 +628,22 @@ server process. In practice:
 - If a proxy rewrites `Host` and does not preserve browser host context,
   passkey routes can fail with "no passkey config for this hostname".
 
-For stable proxy deployments, set your public URL in `moltis.toml`:
+For stable proxy deployments, set your public URL in `antre.toml`:
 
 ```toml
 [server]
 external_url = "https://chat.example.com"
 ```
 
-Moltis derives the WebAuthn RP ID (domain) and origin from this URL
-automatically. The `MOLTIS_EXTERNAL_URL` environment variable takes
+Antre derives the WebAuthn RP ID (domain) and origin from this URL
+automatically. The `ANTRE_EXTERNAL_URL` environment variable takes
 precedence over the config field, which is useful for container
 deployments:
 
 ```bash
-MOLTIS_BEHIND_PROXY=true
-MOLTIS_NO_TLS=true
-MOLTIS_EXTERNAL_URL=https://chat.example.com
+ANTRE_BEHIND_PROXY=true
+ANTRE_NO_TLS=true
+ANTRE_EXTERNAL_URL=https://chat.example.com
 ```
 
 For fine-grained control (e.g. when the RP ID differs from the URL host),
@@ -651,8 +651,8 @@ the existing env vars still work and take precedence after
 `external_url`:
 
 ```bash
-MOLTIS_WEBAUTHN_RP_ID=chat.example.com
-MOLTIS_WEBAUTHN_ORIGIN=https://chat.example.com
+ANTRE_WEBAUTHN_RP_ID=chat.example.com
+ANTRE_WEBAUTHN_ORIGIN=https://chat.example.com
 ```
 
 Migration guidance when changing host/domain:
@@ -666,7 +666,7 @@ Migration guidance when changing host/domain:
 
 ### 1. Enable Authentication
 
-By default, Moltis requires a password when accessed from non-localhost:
+By default, Antre requires a password when accessed from non-localhost:
 
 ```toml
 [auth]
@@ -708,7 +708,7 @@ Watch for these suspicious patterns:
 
 ### 6. Network Segmentation
 
-Run Moltis on a private network or behind a reverse proxy with:
+Run Antre on a private network or behind a reverse proxy with:
 
 - IP allowlisting
 - Rate limiting
@@ -723,12 +723,12 @@ disclosed.
 
 All release artifacts are signed with three independent methods:
 
-1. **[GitHub artifact attestations](https://github.com/moltis-org/moltis/attestations)**
+1. **[GitHub artifact attestations](https://github.com/antre-ai/antre/attestations)**
    (automated in CI) — cryptographic provenance records tied to the repository,
    workflow, and commit SHA; provides SLSA v1.0 Build Level 2 guarantees;
    verifiable with `gh attestation verify`
 2. **Sigstore keyless signing** (automated in CI) — proves the artifact was
-   built by the `moltis-org/moltis` GitHub Actions pipeline; recorded in
+   built by the `antre-ai/antre` GitHub Actions pipeline; recorded in
    Sigstore's Rekor transparency log
 3. **GPG signing** (maintainer's YubiKey hardware key) — proves a specific
    maintainer authorized the release

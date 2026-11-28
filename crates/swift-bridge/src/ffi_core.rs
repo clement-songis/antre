@@ -4,7 +4,7 @@
 use std::ffi::{CString, c_char};
 
 use {
-    moltis_provider_setup::{
+    antre_provider_setup::{
         KeyStore, detect_auto_provider_sources_with_overrides, known_providers,
     },
     secrecy::ExposeSecret,
@@ -28,15 +28,15 @@ use crate::{
 
 #[allow(unsafe_code)]
 #[unsafe(no_mangle)]
-pub extern "C" fn moltis_version() -> *mut c_char {
-    record_call("moltis_version");
-    trace_call("moltis_version");
+pub extern "C" fn antre_version() -> *mut c_char {
+    record_call("antre_version");
+    trace_call("antre_version");
 
     with_ffi_boundary(|| {
-        emit_log("DEBUG", "bridge", "moltis_version called");
+        emit_log("DEBUG", "bridge", "antre_version called");
         let response = VersionResponse {
-            bridge_version: moltis_config::VERSION,
-            moltis_version: moltis_config::VERSION,
+            bridge_version: antre_config::VERSION,
+            antre_version: antre_config::VERSION,
             config_dir: config_dir_string(),
         };
         emit_log(
@@ -53,25 +53,25 @@ pub extern "C" fn moltis_version() -> *mut c_char {
 
 #[allow(unsafe_code)]
 #[unsafe(no_mangle)]
-pub extern "C" fn moltis_get_identity() -> *mut c_char {
-    record_call("moltis_get_identity");
-    trace_call("moltis_get_identity");
+pub extern "C" fn antre_get_identity() -> *mut c_char {
+    record_call("antre_get_identity");
+    trace_call("antre_get_identity");
 
     with_ffi_boundary(|| {
-        let resolved = moltis_config::resolve_identity();
-        emit_log("DEBUG", "bridge", "moltis_get_identity called");
+        let resolved = antre_config::resolve_identity();
+        emit_log("DEBUG", "bridge", "antre_get_identity called");
         encode_json(&resolved)
     })
 }
 
 #[allow(unsafe_code)]
 #[unsafe(no_mangle)]
-pub extern "C" fn moltis_chat_json(request_json: *const c_char) -> *mut c_char {
-    record_call("moltis_chat_json");
-    trace_call("moltis_chat_json");
+pub extern "C" fn antre_chat_json(request_json: *const c_char) -> *mut c_char {
+    record_call("antre_chat_json");
+    trace_call("antre_chat_json");
 
     with_ffi_boundary(|| {
-        let request = match parse_ffi_request::<ChatRequest>("moltis_chat_json", request_json) {
+        let request = match parse_ffi_request::<ChatRequest>("antre_chat_json", request_json) {
             Ok(request) => request,
             Err(e) => return e,
         };
@@ -85,9 +85,9 @@ pub extern "C" fn moltis_chat_json(request_json: *const c_char) -> *mut c_char {
 /// Returns JSON array of all known providers.
 #[allow(unsafe_code)]
 #[unsafe(no_mangle)]
-pub extern "C" fn moltis_known_providers() -> *mut c_char {
-    record_call("moltis_known_providers");
-    trace_call("moltis_known_providers");
+pub extern "C" fn antre_known_providers() -> *mut c_char {
+    record_call("antre_known_providers");
+    trace_call("antre_known_providers");
 
     with_ffi_boundary(|| {
         emit_log("DEBUG", "bridge", "Loading known providers");
@@ -115,13 +115,13 @@ pub extern "C" fn moltis_known_providers() -> *mut c_char {
 /// Returns JSON array of auto-detected provider sources.
 #[allow(unsafe_code)]
 #[unsafe(no_mangle)]
-pub extern "C" fn moltis_detect_providers() -> *mut c_char {
-    record_call("moltis_detect_providers");
-    trace_call("moltis_detect_providers");
+pub extern "C" fn antre_detect_providers() -> *mut c_char {
+    record_call("antre_detect_providers");
+    trace_call("antre_detect_providers");
 
     with_ffi_boundary(|| {
         emit_log("DEBUG", "bridge", "Detecting provider sources");
-        let config = moltis_config::discover_and_load();
+        let config = antre_config::discover_and_load();
         let sources =
             detect_auto_provider_sources_with_overrides(&config.providers, None, &config.env);
         let bridge_sources: Vec<BridgeDetectedSource> = sources
@@ -144,13 +144,13 @@ pub extern "C" fn moltis_detect_providers() -> *mut c_char {
 /// Saves provider configuration (API key, base URL, models).
 #[allow(unsafe_code)]
 #[unsafe(no_mangle)]
-pub extern "C" fn moltis_save_provider_config(request_json: *const c_char) -> *mut c_char {
-    record_call("moltis_save_provider_config");
-    trace_call("moltis_save_provider_config");
+pub extern "C" fn antre_save_provider_config(request_json: *const c_char) -> *mut c_char {
+    record_call("antre_save_provider_config");
+    trace_call("antre_save_provider_config");
 
     with_ffi_boundary(|| {
         let request = match parse_ffi_request::<SaveProviderRequest>(
-            "moltis_save_provider_config",
+            "antre_save_provider_config",
             request_json,
         ) {
             Ok(request) => request,
@@ -181,9 +181,9 @@ pub extern "C" fn moltis_save_provider_config(request_json: *const c_char) -> *m
 /// Lists all discovered models from the current provider registry.
 #[allow(unsafe_code)]
 #[unsafe(no_mangle)]
-pub extern "C" fn moltis_list_models() -> *mut c_char {
-    record_call("moltis_list_models");
-    trace_call("moltis_list_models");
+pub extern "C" fn antre_list_models() -> *mut c_char {
+    record_call("antre_list_models");
+    trace_call("antre_list_models");
 
     with_ffi_boundary(|| {
         emit_log("DEBUG", "bridge", "Listing models from registry");
@@ -207,9 +207,9 @@ pub extern "C" fn moltis_list_models() -> *mut c_char {
 /// Rebuilds the global provider registry from saved config + env.
 #[allow(unsafe_code)]
 #[unsafe(no_mangle)]
-pub extern "C" fn moltis_refresh_registry() -> *mut c_char {
-    record_call("moltis_refresh_registry");
-    trace_call("moltis_refresh_registry");
+pub extern "C" fn antre_refresh_registry() -> *mut c_char {
+    record_call("antre_refresh_registry");
+    trace_call("antre_refresh_registry");
 
     with_ffi_boundary(|| {
         emit_log("INFO", "bridge", "Refreshing provider registry");
@@ -228,10 +228,10 @@ pub extern "C" fn moltis_refresh_registry() -> *mut c_char {
 /// # Safety
 ///
 /// `ptr` must either be null or a pointer previously returned by one of the
-/// `moltis_*` FFI functions from this crate. Passing any other pointer, or
+/// `antre_*` FFI functions from this crate. Passing any other pointer, or
 /// freeing the same pointer more than once, is undefined behavior.
-pub unsafe extern "C" fn moltis_free_string(ptr: *mut c_char) {
-    record_call("moltis_free_string");
+pub unsafe extern "C" fn antre_free_string(ptr: *mut c_char) {
+    record_call("antre_free_string");
 
     if ptr.is_null() {
         return;
@@ -250,7 +250,7 @@ pub unsafe extern "C" fn moltis_free_string(ptr: *mut c_char) {
 /// the lifetime of the process.
 #[allow(unsafe_code)]
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn moltis_set_log_callback(callback: LogCallback) {
+pub unsafe extern "C" fn antre_set_log_callback(callback: LogCallback) {
     let _ = LOG_CALLBACK.set(callback);
     emit_log("INFO", "bridge", "Log callback registered");
 }
@@ -266,7 +266,7 @@ pub unsafe extern "C" fn moltis_set_log_callback(callback: LogCallback) {
 /// the lifetime of the process.
 #[allow(unsafe_code)]
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn moltis_set_session_event_callback(callback: SessionEventCallback) {
+pub unsafe extern "C" fn antre_set_session_event_callback(callback: SessionEventCallback) {
     if SESSION_EVENT_CALLBACK.set(callback).is_ok() {
         // Spawn a background task that subscribes to session events and
         // invokes the callback for each one.
@@ -306,21 +306,21 @@ pub unsafe extern "C" fn moltis_set_session_event_callback(callback: SessionEven
 /// the lifetime of the process.
 #[allow(unsafe_code)]
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn moltis_set_network_audit_callback(callback: NetworkAuditCallback) {
+pub unsafe extern "C" fn antre_set_network_audit_callback(callback: NetworkAuditCallback) {
     let _ = NETWORK_AUDIT_CALLBACK.set(callback);
     emit_log("INFO", "bridge", "Network audit callback registered");
 }
 
 // ── HTTPD lifecycle ──────────────────────────────────────────────────────
 
-/// Starts the embedded HTTP server with the full Moltis gateway.
+/// Starts the embedded HTTP server with the full Antre gateway.
 /// Returns JSON with `{"running": true, "addr": "..."}`.
 /// If already running, returns the current status without restarting.
 #[allow(unsafe_code)]
 #[unsafe(no_mangle)]
-pub extern "C" fn moltis_start_httpd(request_json: *const c_char) -> *mut c_char {
-    record_call("moltis_start_httpd");
-    trace_call("moltis_start_httpd");
+pub extern "C" fn antre_start_httpd(request_json: *const c_char) -> *mut c_char {
+    record_call("antre_start_httpd");
+    trace_call("antre_start_httpd");
 
     with_ffi_boundary(|| {
         let request: StartHttpdRequest = if request_json.is_null() {
@@ -365,18 +365,16 @@ pub extern "C" fn moltis_start_httpd(request_json: *const c_char) -> *mut c_char
         // Prepare the full gateway (config, DB migrations, service wiring,
         // background tasks). This runs on the bridge runtime via block_on --
         // valid because this is an extern "C" fn, not async.
-        let prepared = match BRIDGE
-            .runtime
-            .block_on(moltis_httpd::prepare_httpd_embedded(
-                &request.host,
-                request.port,
-                true, // no_tls -- the macOS app manages its own TLS if needed
-                None, // log_buffer
-                request.config_dir.map(std::path::PathBuf::from),
-                request.data_dir.map(std::path::PathBuf::from),
-                Some(moltis_web::web_routes), // full web UI
-                BRIDGE.session_metadata.event_bus().cloned(), // share bus with gateway
-            )) {
+        let prepared = match BRIDGE.runtime.block_on(antre_httpd::prepare_httpd_embedded(
+            &request.host,
+            request.port,
+            true, // no_tls -- the macOS app manages its own TLS if needed
+            None, // log_buffer
+            request.config_dir.map(std::path::PathBuf::from),
+            request.data_dir.map(std::path::PathBuf::from),
+            Some(antre_web::web_routes),                  // full web UI
+            BRIDGE.session_metadata.event_bus().cloned(), // share bus with gateway
+        )) {
             Ok(p) => p,
             Err(e) => {
                 emit_log(
@@ -470,9 +468,9 @@ pub extern "C" fn moltis_start_httpd(request_json: *const c_char) -> *mut c_char
 /// Stops the embedded HTTP server. Returns `{"running": false}`.
 #[allow(unsafe_code)]
 #[unsafe(no_mangle)]
-pub extern "C" fn moltis_stop_httpd() -> *mut c_char {
-    record_call("moltis_stop_httpd");
-    trace_call("moltis_stop_httpd");
+pub extern "C" fn antre_stop_httpd() -> *mut c_char {
+    record_call("antre_stop_httpd");
+    trace_call("antre_stop_httpd");
 
     with_ffi_boundary(|| {
         let mut guard = HTTPD.lock().unwrap_or_else(|e| e.into_inner());
@@ -498,9 +496,9 @@ pub extern "C" fn moltis_stop_httpd() -> *mut c_char {
 /// Returns the current httpd server status.
 #[allow(unsafe_code)]
 #[unsafe(no_mangle)]
-pub extern "C" fn moltis_httpd_status() -> *mut c_char {
-    record_call("moltis_httpd_status");
-    trace_call("moltis_httpd_status");
+pub extern "C" fn antre_httpd_status() -> *mut c_char {
+    record_call("antre_httpd_status");
+    trace_call("antre_httpd_status");
 
     with_ffi_boundary(|| {
         let guard = HTTPD.lock().unwrap_or_else(|e| e.into_inner());
@@ -520,12 +518,12 @@ pub extern "C" fn moltis_httpd_status() -> *mut c_char {
 // ── Abort / Peek FFI ─────────────────────────────────────────────────────
 
 /// Abort the active generation for a session. Requires the gateway to be
-/// running (via `moltis_start_httpd`). Returns JSON with `{"aborted": bool}`.
+/// running (via `antre_start_httpd`). Returns JSON with `{"aborted": bool}`.
 #[allow(unsafe_code)]
 #[unsafe(no_mangle)]
-pub extern "C" fn moltis_abort_session(session_key: *const c_char) -> *mut c_char {
-    record_call("moltis_abort_session");
-    trace_call("moltis_abort_session");
+pub extern "C" fn antre_abort_session(session_key: *const c_char) -> *mut c_char {
+    record_call("antre_abort_session");
+    trace_call("antre_abort_session");
 
     with_ffi_boundary(|| {
         let key = match read_c_string(session_key) {
@@ -554,9 +552,9 @@ pub extern "C" fn moltis_abort_session(session_key: *const c_char) -> *mut c_cha
 /// running. Returns JSON with `{"active": bool, ...}`.
 #[allow(unsafe_code)]
 #[unsafe(no_mangle)]
-pub extern "C" fn moltis_peek_session(session_key: *const c_char) -> *mut c_char {
-    record_call("moltis_peek_session");
-    trace_call("moltis_peek_session");
+pub extern "C" fn antre_peek_session(session_key: *const c_char) -> *mut c_char {
+    record_call("antre_peek_session");
+    trace_call("antre_peek_session");
 
     with_ffi_boundary(|| {
         let key = match read_c_string(session_key) {
@@ -585,9 +583,9 @@ pub extern "C" fn moltis_peek_session(session_key: *const c_char) -> *mut c_char
 
 #[allow(unsafe_code)]
 #[unsafe(no_mangle)]
-pub extern "C" fn moltis_shutdown() {
-    record_call("moltis_shutdown");
-    trace_call("moltis_shutdown");
+pub extern "C" fn antre_shutdown() {
+    record_call("antre_shutdown");
+    trace_call("antre_shutdown");
     emit_log("INFO", "bridge", "Shutdown requested");
 
     // Stop the HTTP server if it is running.
@@ -638,13 +636,13 @@ mod tests {
 
     #[test]
     fn version_returns_expected_payload() {
-        let payload = json_from_ptr(moltis_version());
+        let payload = json_from_ptr(antre_version());
 
         let version = payload
             .get("bridge_version")
             .and_then(Value::as_str)
             .unwrap_or_default();
-        assert_eq!(version, moltis_config::VERSION);
+        assert_eq!(version, antre_config::VERSION);
 
         let config_dir = payload
             .get("config_dir")
@@ -655,7 +653,7 @@ mod tests {
 
     #[test]
     fn chat_returns_error_for_null_pointer() {
-        let payload = json_from_ptr(moltis_chat_json(std::ptr::null()));
+        let payload = json_from_ptr(antre_chat_json(std::ptr::null()));
 
         let code = payload
             .get("error")
@@ -674,7 +672,7 @@ mod tests {
             Err(error) => panic!("failed to build c string for test request: {error}"),
         };
 
-        let payload = json_from_ptr(moltis_chat_json(c_request.as_ptr()));
+        let payload = json_from_ptr(antre_chat_json(c_request.as_ptr()));
 
         // Chat response should have a reply (either from LLM or fallback)
         assert!(
@@ -692,7 +690,7 @@ mod tests {
 
     #[test]
     fn known_providers_returns_array() {
-        let payload = json_from_ptr(moltis_known_providers());
+        let payload = json_from_ptr(antre_known_providers());
 
         let providers = payload.as_array();
         assert!(
@@ -711,7 +709,7 @@ mod tests {
 
     #[test]
     fn detect_providers_returns_array() {
-        let payload = json_from_ptr(moltis_detect_providers());
+        let payload = json_from_ptr(antre_detect_providers());
 
         // Should always return a JSON array (possibly empty)
         assert!(
@@ -722,7 +720,7 @@ mod tests {
 
     #[test]
     fn save_provider_config_returns_error_for_null() {
-        let payload = json_from_ptr(moltis_save_provider_config(std::ptr::null()));
+        let payload = json_from_ptr(antre_save_provider_config(std::ptr::null()));
 
         let code = payload
             .get("error")
@@ -734,7 +732,7 @@ mod tests {
 
     #[test]
     fn list_models_returns_array() {
-        let payload = json_from_ptr(moltis_list_models());
+        let payload = json_from_ptr(antre_list_models());
 
         assert!(
             payload.as_array().is_some(),
@@ -744,7 +742,7 @@ mod tests {
 
     #[test]
     fn refresh_registry_returns_ok() {
-        let payload = json_from_ptr(moltis_refresh_registry());
+        let payload = json_from_ptr(antre_refresh_registry());
 
         let ok = payload.get("ok").and_then(Value::as_bool).unwrap_or(false);
         assert!(ok, "refresh_registry should return ok: true");
@@ -754,7 +752,7 @@ mod tests {
     fn free_string_tolerates_null_pointer() {
         // SAFETY: null pointers are explicitly accepted and treated as no-op.
         unsafe {
-            moltis_free_string(std::ptr::null_mut());
+            antre_free_string(std::ptr::null_mut());
         }
     }
 
@@ -778,7 +776,7 @@ mod tests {
 
         // SAFETY: null request_json triggers synchronous error callback.
         unsafe {
-            crate::chat::moltis_chat_stream(std::ptr::null(), test_callback, user_data);
+            crate::chat::antre_chat_stream(std::ptr::null(), test_callback, user_data);
         }
 
         // Reclaim the Arc.
@@ -802,7 +800,7 @@ mod tests {
         let request = r#"{"host":"127.0.0.1","port":0}"#;
         let c_request = CString::new(request).unwrap_or_else(|e| panic!("{e}"));
 
-        let payload = json_from_ptr(moltis_start_httpd(c_request.as_ptr()));
+        let payload = json_from_ptr(antre_start_httpd(c_request.as_ptr()));
         assert_eq!(
             payload.get("running").and_then(Value::as_bool),
             Some(true),
@@ -814,15 +812,15 @@ mod tests {
         );
 
         // Status should confirm running.
-        let status = json_from_ptr(moltis_httpd_status());
+        let status = json_from_ptr(antre_httpd_status());
         assert_eq!(status.get("running").and_then(Value::as_bool), Some(true),);
 
         // Stop.
-        let stopped = json_from_ptr(moltis_stop_httpd());
+        let stopped = json_from_ptr(antre_stop_httpd());
         assert_eq!(stopped.get("running").and_then(Value::as_bool), Some(false),);
 
         // Status after stop.
-        let status2 = json_from_ptr(moltis_httpd_status());
+        let status2 = json_from_ptr(antre_httpd_status());
         assert_eq!(status2.get("running").and_then(Value::as_bool), Some(false),);
     }
 
@@ -830,7 +828,7 @@ mod tests {
     #[serial_test::serial]
     fn httpd_stop_when_not_running() {
         // Stop without start should still return running: false.
-        let payload = json_from_ptr(moltis_stop_httpd());
+        let payload = json_from_ptr(antre_stop_httpd());
         assert_eq!(payload.get("running").and_then(Value::as_bool), Some(false),);
     }
 
@@ -841,9 +839,9 @@ mod tests {
         // synchronous error callback path deterministically.
         let original_registry = {
             let mut guard = BRIDGE.registry.write().unwrap_or_else(|e| e.into_inner());
-            std::mem::replace(&mut *guard, moltis_providers::ProviderRegistry::empty())
+            std::mem::replace(&mut *guard, antre_providers::ProviderRegistry::empty())
         };
-        struct RestoreRegistry(Option<moltis_providers::ProviderRegistry>);
+        struct RestoreRegistry(Option<antre_providers::ProviderRegistry>);
         impl Drop for RestoreRegistry {
             fn drop(&mut self) {
                 if let Some(registry) = self.0.take() {
@@ -874,7 +872,7 @@ mod tests {
 
         // SAFETY: valid C string, valid callback, valid user_data.
         unsafe {
-            crate::chat::moltis_chat_stream(c_request.as_ptr(), test_callback, user_data);
+            crate::chat::antre_chat_stream(c_request.as_ptr(), test_callback, user_data);
         }
 
         let events = unsafe { Arc::from_raw(user_data as *const Mutex<Vec<String>>) };

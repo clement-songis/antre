@@ -4,8 +4,8 @@
 use std::path::{Path, PathBuf};
 
 use {
-    moltis_config::schema::CatalogConfig,
-    moltis_model_catalog::{
+    antre_config::schema::CatalogConfig,
+    antre_model_catalog::{
         global,
         refresh::{RefreshCache, RefreshOptions, RefreshOutcome},
     },
@@ -25,7 +25,7 @@ fn catalog_dir(data_dir: &Path) -> PathBuf {
 /// request. Call before the provider registry is built.
 pub(super) async fn init_model_catalog(data_dir: &Path) {
     let dir = catalog_dir(data_dir);
-    moltis_providers::registry::set_live_cache_dir(dir.join("live"));
+    antre_providers::registry::set_live_cache_dir(dir.join("live"));
     match RefreshCache::new(&dir).load().await {
         Ok(Some(catalog)) => {
             debug!(
@@ -62,7 +62,7 @@ pub(super) fn spawn_catalog_refresh(config: &CatalogConfig, data_dir: &Path) {
         ..RefreshOptions::default()
     };
     tokio::spawn(async move {
-        let client = moltis_common::http_client::build_default_http_client();
+        let client = antre_common::http_client::build_default_http_client();
         loop {
             match cache
                 .refresh(&client, &urls, options, time::OffsetDateTime::now_utc())

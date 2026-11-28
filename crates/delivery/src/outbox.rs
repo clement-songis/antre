@@ -6,8 +6,8 @@ use std::{
 };
 
 use {
+    antre_channels::ChannelReplyTarget,
     async_trait::async_trait,
-    moltis_channels::ChannelReplyTarget,
     time::OffsetDateTime,
     tokio::{
         sync::{Notify, Semaphore},
@@ -44,12 +44,12 @@ pub enum SinkError {
     Rejected(String),
 }
 
-impl From<moltis_channels::Error> for SinkError {
+impl From<antre_channels::Error> for SinkError {
     /// An unknown account is retried: after a restart the outbox can run
     /// before every channel account has registered again.
-    fn from(error: moltis_channels::Error) -> Self {
+    fn from(error: antre_channels::Error) -> Self {
         let message = error.to_string();
-        if error.is_retryable() || matches!(error, moltis_channels::Error::UnknownAccount { .. }) {
+        if error.is_retryable() || matches!(error, antre_channels::Error::UnknownAccount { .. }) {
             Self::Retryable(message)
         } else {
             Self::Rejected(message)
@@ -426,7 +426,7 @@ impl Outbox {
 
 #[cfg(feature = "metrics")]
 fn record_enqueued(new: &NewDelivery) {
-    use moltis_metrics::{counter, delivery, labels};
+    use antre_metrics::{counter, delivery, labels};
     counter!(delivery::ENQUEUED_TOTAL, labels::KIND => new.kind.as_str()).increment(1);
 }
 
@@ -435,7 +435,7 @@ fn record_enqueued(_new: &NewDelivery) {}
 
 #[cfg(feature = "metrics")]
 fn record_outcome(delivery: &Delivery) {
-    use moltis_metrics::{counter, delivery as metrics, labels};
+    use antre_metrics::{counter, delivery as metrics, labels};
     let status = match delivery.state {
         DeliveryState::Delivered => "delivered",
         DeliveryState::Failed => "failed",

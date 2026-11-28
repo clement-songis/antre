@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use {
-    moltis_auth::{AuthMode, CredentialStore, ResolvedAuth},
+    antre_auth::{AuthMode, CredentialStore, ResolvedAuth},
     sqlx::SqlitePool,
 };
 
@@ -16,7 +16,7 @@ async fn sync_runtime_webauthn_host_registers_new_origin() {
             password: None,
         },
         crate::services::GatewayServices::noop(),
-        moltis_config::MoltisConfig::default(),
+        antre_config::AntreConfig::default(),
         None,
         Some(Arc::clone(&credential_store)),
         None,
@@ -26,8 +26,8 @@ async fn sync_runtime_webauthn_host_registers_new_origin() {
         false,
         None,
         None,
-        Arc::new(moltis_code_index::CodeIndex::config_only(
-            moltis_code_index::CodeIndexConfig::default(),
+        Arc::new(antre_code_index::CodeIndex::config_only(
+            antre_code_index::CodeIndexConfig::default(),
         )),
         18789,
         false,

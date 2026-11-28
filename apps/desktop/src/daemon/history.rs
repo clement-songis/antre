@@ -2,7 +2,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use moltis_protocol::{
+use antre_protocol::{
     chat_event::{ChatEvent, ChatEventKind},
     message::PersistedMessage,
 };

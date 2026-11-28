@@ -1,6 +1,6 @@
 # Multi-Node
 
-Moltis can distribute work across multiple machines. A **node** is a remote
+Antre can distribute work across multiple machines. A **node** is a remote
 device that connects to your gateway and executes approved programs on your behalf.
 This lets the AI agent run commands on a Linux server, query a Raspberry
 Pi, or leverage a GPU machine — all from a single chat session.
@@ -9,19 +9,19 @@ Pi, or leverage a GPU machine — all from a single chat session.
 
 ```
 ┌──────────────┐    WebSocket     ┌─────────────────┐
-│  Your laptop │◄────────────────►│  Moltis gateway  │
-│  (browser)   │                  │  (moltis)        │
+│  Your laptop │◄────────────────►│  Antre gateway  │
+│  (browser)   │                  │  (antre)        │
 └──────────────┘                  └────────┬─────────┘
                                            │ WebSocket
                                   ┌────────▼─────────┐
                                   │  Remote machine   │
-                                  │  (moltis node)    │
+                                  │  (antre node)    │
                                   └──────────────────┘
 ```
 
 1. The gateway runs on your primary machine (or a server).
 2. On the gateway, briefly enable node pairing.
-3. On the remote machine, run `moltis node add` to register it with the gateway.
+3. On the remote machine, run `antre node add` to register it with the gateway.
 4. The gateway authenticates the node using **Ed25519 challenge-response** (TOFU
    model).
 5. Once connected, the agent can execute commands on the node, query its
@@ -42,12 +42,12 @@ connection spam. Open the pairing window only while adding a node.
 
 1. On the gateway, enable pairing:
    ```bash
-   moltis node pairing enable
+   antre node pairing enable
    ```
 
 2. On the remote machine:
    ```bash
-   moltis node add --host ws://your-gateway:9090/ws --name "Build Server"
+   antre node add --host ws://your-gateway:9090/ws --name "Build Server"
    ```
    The node prints its fingerprint and waits for approval.
 
@@ -56,8 +56,8 @@ connection spam. Open the pairing window only while adding a node.
      click **Approve**.
    - **CLI** (headless gateways):
      ```bash
-     moltis node pending                 # list pending requests
-     moltis node approve <request-id>    # approve by ID
+     antre node pending                 # list pending requests
+     antre node approve <request-id>    # approve by ID
      ```
 
 4. The gateway sends a challenge nonce, the node signs it, and authentication
@@ -65,7 +65,7 @@ connection spam. Open the pairing window only while adding a node.
 
 5. Disable new pairing requests:
    ```bash
-   moltis node pairing disable
+   antre node pairing disable
    ```
 
 ## Adding a Node
@@ -73,16 +73,16 @@ connection spam. Open the pairing window only while adding a node.
 On the remote machine, register it as a node:
 
 ```bash
-moltis node add --host ws://your-gateway:9090/ws --name "Build Server"
+antre node add --host ws://your-gateway:9090/ws --name "Build Server"
 ```
 
-This saves the connection parameters to `~/.moltis/node.json` and installs an
+This saves the connection parameters to `~/.antre/node.json` and installs an
 OS service that starts on boot and reconnects on failure:
 
 | Platform | Service file |
 |----------|-------------|
-| macOS | `~/Library/LaunchAgents/org.moltis.node.plist` |
-| Linux | `~/.config/systemd/user/moltis-node.service` |
+| macOS | `~/Library/LaunchAgents/ai.antre.node.plist` |
+| Linux | `~/.config/systemd/user/antre-node.service` |
 
 Options:
 
@@ -100,7 +100,7 @@ Remote execution is disabled until at least one program is explicitly allowed
 by the node owner. For example:
 
 ```bash
-moltis node add \
+antre node add \
   --host ws://your-gateway:9090/ws \
   --working-dir "$HOME/projects" \
   --allow-program /bin/ls \
@@ -110,7 +110,7 @@ moltis node add \
 The working directory is also the execution root. Requests for directories
 outside that root, including symlink escapes, are rejected.
 
-You can also set `MOLTIS_GATEWAY_URL` as an environment variable instead of
+You can also set `ANTRE_GATEWAY_URL` as an environment variable instead of
 passing `--host`.
 
 ### Foreground mode
@@ -119,7 +119,7 @@ For debugging or one-off use, pass `--foreground` to run the node in the
 current terminal session instead of installing a service:
 
 ```bash
-moltis node add --host ws://your-gateway:9090/ws --name "Build Server" --foreground
+antre node add --host ws://your-gateway:9090/ws --name "Build Server" --foreground
 ```
 
 Press `Ctrl+C` to disconnect.
@@ -129,16 +129,16 @@ Press `Ctrl+C` to disconnect.
 To disconnect this machine and remove the background service:
 
 ```bash
-moltis node remove
+antre node remove
 ```
 
 This stops the service, removes the service file, and deletes the saved
-configuration from `~/.moltis/node.json`.
+configuration from `~/.antre/node.json`.
 
 ## Checking Status
 
 ```bash
-moltis node status
+antre node status
 ```
 
 Shows the gateway URL, display name, and whether the background service is
@@ -147,7 +147,7 @@ running.
 ## Node Fingerprint
 
 ```bash
-moltis node fingerprint
+antre node fingerprint
 ```
 
 Prints the Ed25519 public key fingerprint (`SHA256:<base64>`) for this node.
@@ -156,9 +156,9 @@ Use this to verify the key shown in the gateway UI during pairing.
 ## Logs
 
 ```bash
-moltis node logs
+antre node logs
 # Tail the log:
-tail -f $(moltis node logs)
+tail -f $(antre node logs)
 ```
 
 ## Selecting a Node in Chat
@@ -167,7 +167,7 @@ Once a node is connected, you can target it from a chat session:
 
 - **UI dropdown**: The chat toolbar shows a node selector next to the model
   picker. Select a node to route all `exec` commands to it. Select "Local" to
-  revert to local execution. When `tools.exec.host = "ssh"`, Moltis also shows
+  revert to local execution. When `tools.exec.host = "ssh"`, Antre also shows
   either the legacy configured SSH target from `tools.exec.ssh_target` or any
   managed SSH targets you created in **Settings → SSH** as first-class
   execution options.
@@ -216,7 +216,7 @@ Managed SSH targets now support:
 The Nodes page also includes a **Remote Exec Status** panel that acts like a
 lightweight doctor:
 
-- shows whether Moltis is currently configured for `local`, `node`, or `ssh`
+- shows whether Antre is currently configured for `local`, `node`, or `ssh`
 - reports paired-node inventory and managed SSH inventory
 - flags obvious misconfigurations, such as `tools.exec.host = "ssh"` with no
   active target or a managed key that cannot be decrypted because the vault is
@@ -226,7 +226,7 @@ lightweight doctor:
   doctor panel
 - lets you test the active SSH route without leaving the page
 
-The CLI now mirrors the basic setup view with `moltis doctor`, including:
+The CLI now mirrors the basic setup view with `antre doctor`, including:
 
 - active remote-exec backend (`local`, `node`, or `ssh`)
 - SSH client discovery and version
@@ -237,19 +237,19 @@ The CLI now mirrors the basic setup view with `moltis doctor`, including:
 
 | Command | Description |
 |---------|-------------|
-| `moltis node add --host <url>` | Join this machine to a gateway as a node |
-| `moltis node add ... --foreground` | Run in the terminal instead of installing a service |
-| `moltis node fingerprint` | Print this node's Ed25519 fingerprint |
-| `moltis node list` | List all connected nodes |
-| `moltis node pairing status` | Show whether new node pairing requests are accepted |
-| `moltis node pairing enable` | Enable new node pairing requests |
-| `moltis node pairing disable` | Disable new node pairing requests |
-| `moltis node pending` | List pending pairing requests |
-| `moltis node approve <id>` | Approve a pending pairing request |
-| `moltis node reject <id>` | Reject a pending pairing request |
-| `moltis node remove` | Disconnect this machine and remove the service |
-| `moltis node status` | Show connection info and service status |
-| `moltis node logs` | Print log file path |
+| `antre node add --host <url>` | Join this machine to a gateway as a node |
+| `antre node add ... --foreground` | Run in the terminal instead of installing a service |
+| `antre node fingerprint` | Print this node's Ed25519 fingerprint |
+| `antre node list` | List all connected nodes |
+| `antre node pairing status` | Show whether new node pairing requests are accepted |
+| `antre node pairing enable` | Enable new node pairing requests |
+| `antre node pairing disable` | Disable new node pairing requests |
+| `antre node pending` | List pending pairing requests |
+| `antre node approve <id>` | Approve a pending pairing request |
+| `antre node reject <id>` | Reject a pending pairing request |
+| `antre node remove` | Disconnect this machine and remove the service |
+| `antre node status` | Show connection info and service status |
+| `antre node logs` | Print log file path |
 
 ## Security
 
@@ -269,7 +269,7 @@ Trust On First Use model as SSH:
 - **Re-keying**: If a node legitimately needs a new key (e.g., after a disk
   wipe), revoke the old device from the Nodes page, then re-pair.
 
-The private key (`~/.moltis/node_key`) is stored with mode 0600. The gateway
+The private key (`~/.antre/node_key`) is stored with mode 0600. The gateway
 only stores the public key. No shared secret crosses the wire.
 
 Legacy token-authenticated nodes created by older releases must be removed and

@@ -1,5 +1,5 @@
 {
-  "name": "moltis-website",
+  "name": "antre-website",
   "private": true,
   "scripts": {
     "build": "node scripts/build-statement.mjs && node scripts/build-changelog.mjs --published-only",

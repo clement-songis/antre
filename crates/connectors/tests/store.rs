@@ -1,5 +1,5 @@
 use {
-    moltis_connectors::{
+    antre_connectors::{
         AccountCreate, AccountUpdate, ConnectorError, ConnectorItemInput, ConnectorKind,
         ConnectorReader, Dataset, DatasetCreate, DatasetUpdate, ItemQuery, MAX_QUERY_LIMIT,
         ProjectionConfig, SnapshotResult, SourceDisposition, SourceObservation,

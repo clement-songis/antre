@@ -12,9 +12,9 @@ use crate::server::CoreStartupProfile;
 
 pub(super) fn gateway_credentials_allowed(
     profile: CoreStartupProfile,
-    network: &moltis_tools::sandbox::NetworkPolicy,
+    network: &antre_tools::sandbox::NetworkPolicy,
 ) -> bool {
-    !profile.is_headless() && *network != moltis_tools::sandbox::NetworkPolicy::Blocked
+    !profile.is_headless() && *network != antre_tools::sandbox::NetworkPolicy::Blocked
 }
 
 pub(super) struct CredentialEnvVarProvider {
@@ -24,12 +24,12 @@ pub(super) struct CredentialEnvVarProvider {
 }
 
 #[async_trait]
-impl moltis_tools::exec::EnvVarProvider for CredentialEnvVarProvider {
+impl antre_tools::exec::EnvVarProvider for CredentialEnvVarProvider {
     async fn get_env_vars(&self) -> Vec<(String, Secret<String>)> {
         let mut vars = match self.store.get_all_env_values().await {
             Ok(values) => values
                 .into_iter()
-                .filter(|(key, _)| !key.starts_with("__MOLTIS_"))
+                .filter(|(key, _)| !key.starts_with("__ANTRE_"))
                 .map(|(key, value)| (key, Secret::new(value)))
                 .collect(),
             Err(error) => {
@@ -39,11 +39,11 @@ impl moltis_tools::exec::EnvVarProvider for CredentialEnvVarProvider {
         };
 
         if let Some(ref url) = self.gateway_url {
-            vars.push(("MOLTIS_GATEWAY_URL".into(), Secret::new(url.clone())));
+            vars.push(("ANTRE_GATEWAY_URL".into(), Secret::new(url.clone())));
         }
         if let Some(ref key) = self.sandbox_api_key {
             vars.push((
-                "MOLTIS_API_KEY".into(),
+                "ANTRE_API_KEY".into(),
                 Secret::new(key.expose_secret().clone()),
             ));
         }
@@ -54,7 +54,7 @@ impl moltis_tools::exec::EnvVarProvider for CredentialEnvVarProvider {
 
 pub(super) async fn ensure_sandbox_api_key(store: &auth::CredentialStore) -> Option<String> {
     if let Ok(vals) = store.get_all_env_values().await
-        && let Some((_, key)) = vals.iter().find(|(k, _)| k == "__MOLTIS_SANDBOX_API_KEY")
+        && let Some((_, key)) = vals.iter().find(|(k, _)| k == "__ANTRE_SANDBOX_API_KEY")
     {
         return Some(key.clone());
     }
@@ -62,13 +62,10 @@ pub(super) async fn ensure_sandbox_api_key(store: &auth::CredentialStore) -> Opt
     let scopes = vec!["operator.read".to_string(), "operator.write".to_string()];
     match store.create_api_key("sandbox-ctl", Some(&scopes)).await {
         Ok((_id, raw_key)) => {
-            if let Err(e) = store
-                .set_env_var("__MOLTIS_SANDBOX_API_KEY", &raw_key)
-                .await
-            {
+            if let Err(e) = store.set_env_var("__ANTRE_SANDBOX_API_KEY", &raw_key).await {
                 warn!(error = %e, "failed to persist sandbox API key");
             }
-            info!("created sandbox-ctl API key for moltis-ctl");
+            info!("created sandbox-ctl API key for antre-ctl");
             Some(raw_key)
         },
         Err(e) => {
@@ -86,11 +83,11 @@ mod tests {
     fn headless_profiles_never_create_gateway_credentials() {
         assert!(!gateway_credentials_allowed(
             CoreStartupProfile::Headless,
-            &moltis_tools::sandbox::NetworkPolicy::Trusted,
+            &antre_tools::sandbox::NetworkPolicy::Trusted,
         ));
         assert!(!gateway_credentials_allowed(
             CoreStartupProfile::Headless,
-            &moltis_tools::sandbox::NetworkPolicy::Bypass,
+            &antre_tools::sandbox::NetworkPolicy::Bypass,
         ));
     }
 }

@@ -1,7 +1,7 @@
 //! Ordered TTS provider fallback chain.
 
 use {
-    moltis_voice::{AudioOutput, SynthesizeRequest, TtsProvider, TtsProviderId},
+    antre_voice::{AudioOutput, SynthesizeRequest, TtsProvider, TtsProviderId},
     tracing::{debug, info, warn},
 };
 
@@ -106,9 +106,9 @@ where
 mod tests {
     use {
         super::*,
+        antre_voice::AudioFormat,
         async_trait::async_trait,
         bytes::Bytes,
-        moltis_voice::AudioFormat,
         std::sync::{Arc, Mutex},
     };
 
@@ -131,7 +131,7 @@ mod tests {
             true
         }
 
-        async fn voices(&self) -> anyhow::Result<Vec<moltis_voice::Voice>> {
+        async fn voices(&self) -> anyhow::Result<Vec<antre_voice::Voice>> {
             Ok(Vec::new())
         }
 

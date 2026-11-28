@@ -5,7 +5,7 @@ pub(super) fn is_explicit_shell_request(params: &Value) -> bool {
         .get("text")
         .or_else(|| params.get("message"))
         .and_then(Value::as_str)
-        .is_some_and(|text| moltis_agents::runner::explicit_shell_command(text).is_some())
+        .is_some_and(|text| antre_agents::runner::explicit_shell_command(text).is_some())
 }
 
 pub(super) fn allows_external_agent_request(params: &Value, channel_bound: bool) -> bool {

@@ -54,7 +54,7 @@ pub async fn probe_context_window(
             return best;
         }
         let text = response.text().await.unwrap_or_default();
-        if let Some(limit) = moltis_agents::provider_error::reset::context_limit(&text) {
+        if let Some(limit) = antre_agents::provider_error::reset::context_limit(&text) {
             best = Some(best.map_or(limit, |current: u32| current.max(limit)));
         }
     }

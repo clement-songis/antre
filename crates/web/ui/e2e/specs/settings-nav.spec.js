@@ -235,14 +235,14 @@ test.describe("Settings navigation", () => {
 				status: 200,
 				contentType: "application/json",
 				body: JSON.stringify({
-					hostname: "moltis.tail-scale.ts.net",
+					hostname: "antre.tail-scale.ts.net",
 					installed: true,
 					login_name: "team@example.com",
 					mode: "serve",
 					tailnet: "example.ts.net",
 					tailscale_ip: "100.64.0.10",
 					tailscale_up: true,
-					url: "https://moltis.tail-scale.ts.net",
+					url: "https://antre.tail-scale.ts.net",
 					version: "1.88.2",
 				}),
 			});
@@ -278,8 +278,8 @@ test.describe("Settings navigation", () => {
 				contentType: "application/json",
 				body: JSON.stringify({
 					enabled: true,
-					hostname: "moltis.example.com",
-					public_url: "https://moltis.example.com",
+					hostname: "antre.example.com",
+					public_url: "https://antre.example.com",
 					token_source: "config",
 				}),
 			});
@@ -299,7 +299,7 @@ test.describe("Settings navigation", () => {
 		await page.getByRole("tab", { name: /NetBird/ }).click();
 		await expect(page.getByText("https://100.80.0.10:8443", { exact: true })).toBeVisible();
 		await page.getByRole("tab", { name: /Cloudflare/ }).click();
-		await expect(page.getByText("https://moltis.example.com", { exact: true }).last()).toBeVisible();
+		await expect(page.getByText("https://antre.example.com", { exact: true }).last()).toBeVisible();
 
 		expect(pageErrors).toEqual([]);
 	});
@@ -360,10 +360,10 @@ test.describe("Settings navigation", () => {
 		// Re-navigate so ConnectNodeForm re-renders with the spoofed gon port.
 		await navigateAndWait(page, "/settings/nodes");
 
-		const endpointCode = page.locator("code").filter({ hasText: /^moltis node add --host wss?:\/\// });
+		const endpointCode = page.locator("code").filter({ hasText: /^antre node add --host wss?:\/\// });
 		await expect(endpointCode).toBeVisible();
 		const endpointText = (await endpointCode.textContent()).trim();
-		const wsUrl = endpointText.replace(/^moltis node add --host\s+/, "");
+		const wsUrl = endpointText.replace(/^antre node add --host\s+/, "");
 
 		// The URL must use the browser's port (location.port), NOT the spoofed
 		// gon port 99999 — proving we are immune to the behind-proxy bug (#426).

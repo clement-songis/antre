@@ -1,5 +1,5 @@
 use {
-    moltis_connectors::{ConnectorItemInput, SourceObservation},
+    antre_connectors::{ConnectorItemInput, SourceObservation},
     serde::{Deserialize, Serialize},
 };
 

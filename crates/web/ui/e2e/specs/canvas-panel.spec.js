@@ -29,7 +29,7 @@ function designFrame(page) {
 /** Capture outgoing `chat.send` texts and answer them locally. */
 async function captureChatSends(page) {
 	await page.evaluate(() => {
-		const state = window.__moltis_modules.state;
+		const state = window.__antre_modules.state;
 		const ws = state.ws;
 		const originalSend = ws.send.bind(ws);
 		window.__canvasSent = [];
@@ -57,7 +57,7 @@ async function sentTexts(page) {
 async function mockRpc(page, method, payload) {
 	await page.evaluate(
 		({ targetMethod, responsePayload }) => {
-			const state = window.__moltis_modules.state;
+			const state = window.__antre_modules.state;
 			const ws = state.ws;
 			const originalSend = ws.send.bind(ws);
 			ws.send = (raw) => {

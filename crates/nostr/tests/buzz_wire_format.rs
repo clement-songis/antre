@@ -19,10 +19,10 @@ use std::{
 };
 
 use {
-    moltis_channels::{
+    antre_channels::{
         ChannelOutbound, ChannelStreamOutbound, StreamReceiver, otp::OtpState, plugin::StreamEvent,
     },
-    moltis_nostr::{
+    antre_nostr::{
         config::NostrAccountConfig,
         groups::{self, GroupMessageKind},
         outbound::{AccountStateMap, NostrOutbound},
@@ -79,7 +79,7 @@ async fn buzz_reply_round_trips_with_expected_kind_and_tags() {
         &client,
         groups::buzz_stream_message_kind(),
         "buzz-general",
-        "hello from moltis",
+        "hello from antre",
         Some(parent),
         Some(author),
     )
@@ -93,7 +93,7 @@ async fn buzz_reply_round_trips_with_expected_kind_and_tags() {
         .expect("published message stored by relay");
 
     assert_eq!(event.kind.as_u16(), 40_002, "Buzz stream message v2");
-    assert_eq!(event.content, "hello from moltis");
+    assert_eq!(event.content, "hello from antre");
 
     // Channel scoping: NIP-29 `h` tag, not an `e` tag.
     let h = tag_values(event, TagKind::h());
@@ -318,7 +318,7 @@ async fn verified_subscription_still_delivers_both_group_dialects() {
     let relay = MockRelay::run().await.expect("start mock relay");
     let url = relay.url().await;
 
-    let bot = moltis_nostr::client::build_client(Keys::generate());
+    let bot = antre_nostr::client::build_client(Keys::generate());
     bot.add_relay(&url).await.expect("add relay");
     bot.connect().await;
 
@@ -712,7 +712,7 @@ async fn receive_only_mode_publishes_nothing() {
     let relay = MockRelay::run().await.expect("relay");
     let outbound = outbound_for(&relay, NostrAccountConfig {
         groups: vec!["grp".to_string()],
-        group_mention_mode: moltis_channels::gating::MentionMode::None,
+        group_mention_mode: antre_channels::gating::MentionMode::None,
         ..Default::default()
     })
     .await;

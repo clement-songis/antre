@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Test a Moltis webhook endpoint with realistic payloads.
+# Test a Antre webhook endpoint with realistic payloads.
 #
 # Usage:
 #   ./scripts/test-webhook.sh <URL> [--profile github|gitlab|stripe|generic] [--secret SECRET]
@@ -236,7 +236,7 @@ send_webhook() {
   elif [[ "$http_code" == "000" ]]; then
     echo ""
     echo "⚠  Connection failed. Check that:"
-    echo "   - The Moltis server is running"
+    echo "   - The Antre server is running"
     echo "   - The URL is correct"
     echo "   - For HTTPS, the certificate is valid (script uses -k to skip verification)"
   fi
@@ -247,7 +247,7 @@ send_webhook() {
 # ── Main ────────────────────────────────────────────────────────────────
 
 echo ""
-echo "Moltis Webhook Test"
+echo "Antre Webhook Test"
 echo "==================="
 echo ""
 
@@ -282,4 +282,4 @@ case "$PROFILE" in
     ;;
 esac
 
-echo "Done. Check Settings → Webhooks → Deliveries in the Moltis UI."
+echo "Done. Check Settings → Webhooks → Deliveries in the Antre UI."

@@ -375,13 +375,13 @@ export function MemorySection(): VNode {
 
 					{qmdFeatureEnabled ? null : (
 						<div className="text-xs text-[var(--error)]" style={{ marginTop: "8px" }}>
-							QMD feature is not enabled. Rebuild moltis with{" "}
+							QMD feature is not enabled. Rebuild antre with{" "}
 							<code style={{ fontFamily: "var(--font-mono)", fontSize: ".7rem" }}>--features qmd</code>
 						</div>
 					)}
 					{zvecFeatureEnabled ? null : (
 						<div className="text-xs text-[var(--error)]" style={{ marginTop: "8px" }}>
-							Zvec feature is not enabled. Rebuild moltis with{" "}
+							Zvec feature is not enabled. Rebuild antre with{" "}
 							<code style={{ fontFamily: "var(--font-mono)", fontSize: ".7rem" }}>--features zvec</code>
 						</div>
 					)}
@@ -522,7 +522,7 @@ export function MemorySection(): VNode {
 				<div>
 					<SubHeading title="USER.md Writes" />
 					<p className="text-xs text-[var(--muted)]" style={{ margin: "0 0 8px" }}>
-						Control whether Moltis mirrors your profile into <code>USER.md</code>, and whether browser or channel
+						Control whether Antre mirrors your profile into <code>USER.md</code>, and whether browser or channel
 						timezone/location signals can update it silently.
 					</p>
 					<select
@@ -536,7 +536,7 @@ export function MemorySection(): VNode {
 					>
 						<option value="explicit-and-auto">Explicit and auto</option>
 						<option value="explicit-only">Explicit only</option>
-						<option value="off">Off (moltis.toml only)</option>
+						<option value="off">Off (antre.toml only)</option>
 					</select>
 				</div>
 
@@ -592,7 +592,7 @@ export function MemorySection(): VNode {
 				<div>
 					<SubHeading title="Search Merge Strategy" />
 					<p className="text-xs text-[var(--muted)]" style={{ margin: "0 0 8px" }}>
-						Choose how Moltis blends vector and keyword memory hits before optional reranking.
+						Choose how Antre blends vector and keyword memory hits before optional reranking.
 					</p>
 					<select
 						className="provider-key-input"

@@ -1,7 +1,7 @@
 //! Offline regression for the CA key distrust incident tracked as CVE-2026-111943.
 //!
 //! Run against both lockfiles:
-//! cargo test -p moltis-client --test ca_distrust
+//! cargo test -p antre-client --test ca_distrust
 //! cargo test --manifest-path apps/desktop/Cargo.toml --test ca_distrust
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]

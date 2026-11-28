@@ -10,12 +10,12 @@ use std::{
 };
 
 use {
-    moltis_learning::{
+    antre_learning::{
         LearningService,
         curator::{SkillActivity, activity_from_usage},
         service::ReviewReport,
     },
-    moltis_skills::{
+    antre_skills::{
         discover::{FsSkillDiscoverer, SkillDiscoverer},
         types::SkillSource,
     },
@@ -161,7 +161,7 @@ async fn session_turns(
     session_key: &str,
 ) -> Result<
     (
-        Vec<moltis_learning::review_digest::Turn>,
+        Vec<antre_learning::review_digest::Turn>,
         HashSet<String>,
         Option<String>,
     ),
@@ -176,7 +176,7 @@ async fn session_turns(
         .read(session_key)
         .await
         .map_err(|error| error.to_string())?;
-    let messages = moltis_agents::model::values_to_chat_messages_with_tool_result_limit(
+    let messages = antre_agents::model::values_to_chat_messages_with_tool_result_limit(
         &history,
         state.config.tools.max_tool_result_bytes,
     );
@@ -324,7 +324,7 @@ mod tests {
     #[tokio::test]
     async fn reserved_names_skip_personal_skills() {
         let tmp = tempfile::tempdir().unwrap();
-        for (dir, name) in [("skills/mine", "mine"), (".moltis/skills/theirs", "theirs")] {
+        for (dir, name) in [("skills/mine", "mine"), (".antre/skills/theirs", "theirs")] {
             let path = tmp.path().join(dir);
             std::fs::create_dir_all(&path).unwrap();
             std::fs::write(

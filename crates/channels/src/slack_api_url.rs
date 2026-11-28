@@ -9,7 +9,7 @@
 //! `proxy.internal` pointing at a private or metadata address is rejected too.
 //!
 //! Operators who deliberately front Slack with an internal proxy can opt specific
-//! hosts back in via the `MOLTIS_SLACK_API_BASE_URL_ALLOWLIST` env var
+//! hosts back in via the `ANTRE_SLACK_API_BASE_URL_ALLOWLIST` env var
 //! (comma-separated exact hosts). Cloud metadata addresses stay blocked even when
 //! allowlisted, since no legitimate Slack base URL resolves there.
 //!
@@ -28,10 +28,10 @@ use crate::error::{Error, Result};
 
 /// Env var holding a comma-separated list of exact hosts allowed to bypass the
 /// private-address SSRF guard for Slack `api_base_url`.
-pub const ALLOWLIST_ENV_VAR: &str = "MOLTIS_SLACK_API_BASE_URL_ALLOWLIST";
+pub const ALLOWLIST_ENV_VAR: &str = "ANTRE_SLACK_API_BASE_URL_ALLOWLIST";
 
 /// Normalize and validate a Slack Web API base URL, honoring the operator
-/// allowlist from `MOLTIS_SLACK_API_BASE_URL_ALLOWLIST`.
+/// allowlist from `ANTRE_SLACK_API_BASE_URL_ALLOWLIST`.
 ///
 /// Returns the trimmed URL (no trailing slash) or an `InvalidInput` error.
 pub fn normalize_slack_api_base_url(api_base_url: &str) -> Result<String> {

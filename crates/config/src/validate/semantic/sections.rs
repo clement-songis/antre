@@ -137,7 +137,7 @@ pub(super) fn validate_context_window(
 ///
 /// API keys should be supplied via environment variables (e.g. `${{ANTHROPIC_API_KEY}}`)
 /// or stored in the credential store (`provider_keys.json`), not hard-coded in
-/// `moltis.toml`.  The config file may be backed up, synced, or accidentally
+/// `antre.toml`.  The config file may be backed up, synced, or accidentally
 /// committed to version control.
 pub(super) fn check_catalog(
     catalog: &crate::schema::CatalogConfig,

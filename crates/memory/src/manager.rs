@@ -8,7 +8,7 @@ use {
     walkdir::WalkDir,
 };
 
-use moltis_agents::memory_writer::{MemoryWriteResult, MemoryWriter};
+use antre_agents::memory_writer::{MemoryWriteResult, MemoryWriter};
 
 use crate::{
     chunker::chunk_content,
@@ -427,7 +427,7 @@ impl MemoryManager {
     #[tracing::instrument(skip(self), fields(query_len = query.len(), limit))]
     pub async fn search(&self, query: &str, limit: usize) -> Result<Vec<SearchResult>> {
         #[cfg(feature = "metrics")]
-        use moltis_metrics::memory as mem_metrics;
+        use antre_metrics::memory as mem_metrics;
 
         #[cfg(feature = "metrics")]
         let start = std::time::Instant::now();
@@ -440,9 +440,9 @@ impl MemoryManager {
         };
 
         #[cfg(feature = "metrics")]
-        moltis_metrics::counter!(
+        antre_metrics::counter!(
             mem_metrics::SEARCHES_TOTAL,
-            moltis_metrics::labels::SEARCH_TYPE => search_type
+            antre_metrics::labels::SEARCH_TYPE => search_type
         )
         .increment(1);
 
@@ -481,9 +481,9 @@ impl MemoryManager {
         results.truncate(limit);
 
         #[cfg(feature = "metrics")]
-        moltis_metrics::histogram!(
+        antre_metrics::histogram!(
             mem_metrics::SEARCH_DURATION_SECONDS,
-            moltis_metrics::labels::SEARCH_TYPE => search_type
+            antre_metrics::labels::SEARCH_TYPE => search_type
         )
         .record(start.elapsed().as_secs_f64());
 

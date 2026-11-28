@@ -4,7 +4,7 @@ use tracing::warn;
 
 use {
     crate::{openai_compat::split_responses_instructions_and_input, raw_model_id},
-    moltis_agents::model::{AgentToolControls, ChatMessage},
+    antre_agents::model::{AgentToolControls, ChatMessage},
 };
 
 use {
@@ -45,7 +45,7 @@ impl OpenAiProvider {
             self.capabilities.cache_control_policy,
             CacheControlPolicy::OpenRouterAnthropic
         ) || !self.model.starts_with("anthropic/")
-            || matches!(self.cache_retention, moltis_config::CacheRetention::None)
+            || matches!(self.cache_retention, antre_config::CacheRetention::None)
         {
             return;
         }
@@ -538,7 +538,7 @@ mod tests {
     #[test]
     fn responses_sse_body_combines_reasoning_and_function_tools() {
         let mut provider = provider("gpt-5.6-sol", "openai", "https://api.openai.com/v1");
-        provider.reasoning_effort = Some(moltis_agents::model::ReasoningEffort::High);
+        provider.reasoning_effort = Some(antre_agents::model::ReasoningEffort::High);
         let tools = [serde_json::json!({
             "name": "get_weather",
             "description": "Get weather",
@@ -801,7 +801,7 @@ mod tests {
         metadata.insert("thought_signature".to_string(), serde_json::json!("sig123"));
         let messages =
             p.serialize_messages_for_request(&[ChatMessage::assistant_with_tools(None, vec![
-                moltis_agents::model::ToolCall {
+                antre_agents::model::ToolCall {
                     id: "call_1".to_string(),
                     name: "get_weather".to_string(),
                     arguments: serde_json::json!({"location": "London"}),
@@ -830,7 +830,7 @@ mod tests {
 
         let messages =
             p.serialize_messages_for_request(&[ChatMessage::assistant_with_tools(None, vec![
-                moltis_agents::model::ToolCall {
+                antre_agents::model::ToolCall {
                     id: "call_1".to_string(),
                     name: "get_weather".to_string(),
                     arguments: serde_json::json!({"location": "London"}),
@@ -859,7 +859,7 @@ mod tests {
 
         let messages =
             p.serialize_messages_for_request(&[ChatMessage::assistant_with_tools(None, vec![
-                moltis_agents::model::ToolCall {
+                antre_agents::model::ToolCall {
                     id: "call_1".to_string(),
                     name: "get_weather".to_string(),
                     arguments: serde_json::json!({"location": "London"}),
@@ -972,8 +972,8 @@ mod tests {
     #[test]
     fn deepseek_v4_reasoning_effort_enables_thinking_with_documented_mapping() {
         for (effort, expected) in [
-            (moltis_agents::model::ReasoningEffort::ExtraHigh, "high"),
-            (moltis_agents::model::ReasoningEffort::Max, "max"),
+            (antre_agents::model::ReasoningEffort::ExtraHigh, "high"),
+            (antre_agents::model::ReasoningEffort::Max, "max"),
         ] {
             let mut p = provider("deepseek-v4-pro", "deepseek", "https://api.deepseek.com")
                 .with_capabilities(OpenAiProviderCapabilities {
@@ -996,10 +996,10 @@ mod tests {
     #[test]
     fn deepseek_v4_reasoning_effort_maps_lower_levels_as_documented() {
         for (effort, expected) in [
-            (moltis_agents::model::ReasoningEffort::Minimal, "low"),
-            (moltis_agents::model::ReasoningEffort::Low, "low"),
-            (moltis_agents::model::ReasoningEffort::Medium, "high"),
-            (moltis_agents::model::ReasoningEffort::High, "high"),
+            (antre_agents::model::ReasoningEffort::Minimal, "low"),
+            (antre_agents::model::ReasoningEffort::Low, "low"),
+            (antre_agents::model::ReasoningEffort::Medium, "high"),
+            (antre_agents::model::ReasoningEffort::High, "high"),
         ] {
             let mut p = provider("deepseek-v4-flash", "deepseek", "https://api.deepseek.com")
                 .with_capabilities(OpenAiProviderCapabilities {
@@ -1014,12 +1014,12 @@ mod tests {
     #[test]
     fn kimi_reasoning_effort_always_maps_to_max() {
         for effort in [
-            moltis_agents::model::ReasoningEffort::Minimal,
-            moltis_agents::model::ReasoningEffort::Low,
-            moltis_agents::model::ReasoningEffort::Medium,
-            moltis_agents::model::ReasoningEffort::High,
-            moltis_agents::model::ReasoningEffort::ExtraHigh,
-            moltis_agents::model::ReasoningEffort::Max,
+            antre_agents::model::ReasoningEffort::Minimal,
+            antre_agents::model::ReasoningEffort::Low,
+            antre_agents::model::ReasoningEffort::Medium,
+            antre_agents::model::ReasoningEffort::High,
+            antre_agents::model::ReasoningEffort::ExtraHigh,
+            antre_agents::model::ReasoningEffort::Max,
         ] {
             let mut p = provider("kimi-k3", "moonshot", "https://api.moonshot.ai/v1")
                 .with_capabilities(OpenAiProviderCapabilities {
@@ -1139,7 +1139,7 @@ mod tests {
         let messages = vec![
             ChatMessage::user("What's the weather?"),
             ChatMessage::assistant_with_tools(Some("thinking about weather".to_string()), vec![
-                moltis_agents::model::ToolCall {
+                antre_agents::model::ToolCall {
                     id: "call_123".to_string(),
                     name: "get_weather".to_string(),
                     arguments: serde_json::json!({"location": "Berlin"}),
@@ -1171,7 +1171,7 @@ mod tests {
         let messages = [ChatMessage::Assistant {
             content: Some("Checking weather".into()),
             reasoning: Some(String::new()),
-            tool_calls: vec![moltis_agents::model::ToolCall {
+            tool_calls: vec![antre_agents::model::ToolCall {
                 id: "call_weather".into(),
                 name: "get_weather".into(),
                 arguments: serde_json::json!({"location":"Lisbon"}),
@@ -1216,7 +1216,7 @@ mod tests {
             serde_json::json!({"role": "assistant", "content": "It is 20 C."}),
             serde_json::json!({"role": "user", "content": "What about tomorrow?"}),
         ];
-        let messages = moltis_agents::model::values_to_chat_messages(&persisted);
+        let messages = antre_agents::model::values_to_chat_messages(&persisted);
 
         let serialized = p.serialize_messages_for_request(&messages);
 
@@ -1244,7 +1244,7 @@ mod tests {
         let capabilities = definition.capabilities;
         let mut messages = vec![ChatMessage::Assistant {
             content: Some("Checking the weather.".into()),
-            tool_calls: vec![moltis_agents::model::ToolCall {
+            tool_calls: vec![antre_agents::model::ToolCall {
                 id: "call_minimax".into(),
                 name: "get_weather".into(),
                 arguments: serde_json::json!({"location": "London"}),
@@ -1401,7 +1401,7 @@ mod tests {
         let messages = vec![
             ChatMessage::user("What's the weather?"),
             ChatMessage::assistant_with_tools(Some("let me check".to_string()), vec![
-                moltis_agents::model::ToolCall {
+                antre_agents::model::ToolCall {
                     id: "call_456".to_string(),
                     name: "get_weather".to_string(),
                     arguments: serde_json::json!({"location": "Paris"}),

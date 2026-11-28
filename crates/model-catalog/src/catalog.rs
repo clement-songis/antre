@@ -6,7 +6,7 @@
 //! 2. runtime probe results
 //! 3. live provider metadata
 //! 4. models.dev refreshed at runtime
-//! 5. bundled models.dev snapshot plus Moltis's supplement
+//! 5. bundled models.dev snapshot plus Antre's supplement
 //! 6. id heuristics (supplied by the caller)
 //! 7. provider defaults
 
@@ -38,7 +38,7 @@ pub enum Source {
 /// Provider key for override rows that apply to every provider.
 pub const ANY_PROVIDER: &str = "*";
 
-/// Sources that hold per-provider rows set by Moltis at runtime.
+/// Sources that hold per-provider rows set by Antre at runtime.
 const PROVIDER_SOURCES: [Source; 3] = [Source::Override, Source::Probe, Source::Live];
 
 /// models.dev data indexed by models.dev provider id, then model id.
@@ -77,7 +77,7 @@ fn normalize_base_url(url: &str) -> String {
 }
 
 impl IndexedModelsDev {
-    /// Find metadata for a Moltis provider's model: the provider's own
+    /// Find metadata for a Antre provider's model: the provider's own
     /// models.dev entries first, then first-party labs by id (a custom
     /// provider serving `kimi-k3` gets Moonshot's metadata). Router-style
     /// `vendor/model` ids also match the bare model id at first-party labs.
@@ -180,7 +180,7 @@ pub struct ModelCatalog {
     /// Providers the remote catalog may describe. `None` until the registry
     /// reports what is configured.
     configured: Option<HashSet<String>>,
-    /// Moltis provider -> models.dev provider, for custom providers whose
+    /// Antre provider -> models.dev provider, for custom providers whose
     /// base URL matches a provider models.dev knows.
     provider_aliases: HashMap<String, String>,
 }
@@ -279,7 +279,7 @@ impl ModelCatalog {
             .unwrap_or_default()
     }
 
-    /// Treat a Moltis provider (typically `custom-*`) as a models.dev
+    /// Treat a Antre provider (typically `custom-*`) as a models.dev
     /// provider for metadata lookups.
     pub fn set_provider_alias(&mut self, provider: &str, models_dev_provider: &str) {
         self.provider_aliases

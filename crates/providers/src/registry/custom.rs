@@ -1,6 +1,6 @@
 //! Building OpenAI-compatible `custom-*` providers from their config entry.
 
-use moltis_config::schema::ProviderEntry;
+use antre_config::schema::ProviderEntry;
 
 use {
     super::ProviderRegistry,
@@ -47,10 +47,10 @@ impl ProviderRegistry {
         )
         .with_extra_headers(provider_headers(entry))
         .with_probe_timeout_secs(entry.probe_timeout_secs);
-        if !matches!(entry.wire_api, moltis_config::WireApi::ChatCompletions) {
+        if !matches!(entry.wire_api, antre_config::WireApi::ChatCompletions) {
             provider = provider.with_wire_api(entry.wire_api);
         }
-        if !matches!(entry.tool_mode, moltis_config::ToolMode::Auto) {
+        if !matches!(entry.tool_mode, antre_config::ToolMode::Auto) {
             provider = provider.with_tool_mode(entry.tool_mode);
         }
         if let Some(strict) = entry.strict_tools {

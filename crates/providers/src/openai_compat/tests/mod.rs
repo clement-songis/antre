@@ -195,7 +195,7 @@ fn normalize_nullable_enum_none_sentinel_to_null() {
             "required": ["query"]
         }
     })];
-    let mut tool_calls = vec![moltis_agents::model::ToolCall {
+    let mut tool_calls = vec![antre_agents::model::ToolCall {
         id: "call_1".to_string(),
         name: "mcp_tavily_search".to_string(),
         arguments: serde_json::json!({
@@ -225,7 +225,7 @@ fn normalize_preserves_literal_none_enum_value() {
             }
         }
     })];
-    let mut tool_calls = vec![moltis_agents::model::ToolCall {
+    let mut tool_calls = vec![antre_agents::model::ToolCall {
         id: "call_1".to_string(),
         name: "set_mode".to_string(),
         arguments: serde_json::json!({ "mode": "None" }),
@@ -251,7 +251,7 @@ fn normalize_null_only_empty_string_to_null() {
             "required": ["kind", "label"]
         }
     })];
-    let mut tool_calls = vec![moltis_agents::model::ToolCall {
+    let mut tool_calls = vec![antre_agents::model::ToolCall {
         id: "call_1".to_string(),
         name: "serialization_probe".to_string(),
         arguments: serde_json::json!({ "kind": "", "label": "" }),
@@ -281,7 +281,7 @@ fn normalize_array_schema_decodes_json_string_array() {
             "required": ["task"]
         }
     })];
-    let mut tool_calls = vec![moltis_agents::model::ToolCall {
+    let mut tool_calls = vec![antre_agents::model::ToolCall {
         id: "call_1".to_string(),
         name: "spawn_agent".to_string(),
         arguments: serde_json::json!({

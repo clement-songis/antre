@@ -23,14 +23,14 @@ async fn inspect_provider(provider: &str) -> Result<()> {
 }
 
 fn provider_inspection_payload(
-    models: Vec<moltis_providers::DiscoveredModel>,
+    models: Vec<antre_providers::DiscoveredModel>,
 ) -> Vec<serde_json::Value> {
     models
         .into_iter()
         .map(|model| {
             let capabilities = model
                 .capabilities
-                .unwrap_or_else(|| moltis_providers::ModelCapabilities::infer(&model.id));
+                .unwrap_or_else(|| antre_providers::ModelCapabilities::infer(&model.id));
             serde_json::json!({
                 "id": model.id,
                 "displayName": model.display_name,
@@ -45,7 +45,7 @@ fn provider_inspection_payload(
 #[cfg(feature = "provider-github-copilot")]
 async fn inspect_github_copilot() -> Result<()> {
     let models =
-        tokio::task::spawn_blocking(moltis_providers::github_copilot::live_models).await??;
+        tokio::task::spawn_blocking(antre_providers::github_copilot::live_models).await??;
     let payload = provider_inspection_payload(models);
     println!("{}", serde_json::to_string_pretty(&payload)?);
     Ok(())
@@ -64,7 +64,7 @@ mod tests {
     #[test]
     fn provider_inspection_payload_infers_missing_capabilities() {
         let payload = provider_inspection_payload(vec![
-            moltis_providers::DiscoveredModel::new("gpt-5.4", "GPT-5.4")
+            antre_providers::DiscoveredModel::new("gpt-5.4", "GPT-5.4")
                 .with_created_at(Some(123))
                 .with_recommended(true),
         ]);

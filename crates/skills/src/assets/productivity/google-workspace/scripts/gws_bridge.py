@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Bridge between the Moltis OAuth token and gws CLI.
+"""Bridge between the Antre OAuth token and gws CLI.
 
 Refreshes the token if expired, then executes gws with the valid access token.
 """
@@ -12,12 +12,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
-def get_moltis_home() -> Path:
-    return Path(os.environ.get("MOLTIS_DATA_DIR") or os.environ.get("HERMES_HOME") or Path.home() / ".moltis")
+def get_antre_home() -> Path:
+    return Path(os.environ.get("ANTRE_DATA_DIR") or os.environ.get("HERMES_HOME") or Path.home() / ".antre")
 
 
 def get_token_path() -> Path:
-    return get_moltis_home() / "google_token.json"
+    return get_antre_home() / "google_token.json"
 
 
 def _normalize_authorized_user_payload(payload: dict) -> dict:

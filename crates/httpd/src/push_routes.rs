@@ -2,6 +2,13 @@
 
 use {
     crate::server::AppState,
+    antre_gateway::{
+        auth::{AuthIdentity, AuthMethod},
+        push::{
+            PresenceUpdateResult, PushSendStats, PushSubscription, PushSubscriptionValidationError,
+        },
+    },
+    antre_protocol::scopes,
     axum::{
         Extension, Json, Router,
         extract::{ConnectInfo, State},
@@ -10,13 +17,6 @@ use {
         routing::{get, post},
     },
     chrono::Utc,
-    moltis_gateway::{
-        auth::{AuthIdentity, AuthMethod},
-        push::{
-            PresenceUpdateResult, PushSendStats, PushSubscription, PushSubscriptionValidationError,
-        },
-    },
-    moltis_protocol::scopes,
     serde::{Deserialize, Serialize},
     std::net::SocketAddr,
 };
@@ -224,11 +224,11 @@ async fn subscribe_handler(
         .map_err(|error| subscription_error_status(&error))?;
 
     // Broadcast subscription change
-    moltis_gateway::broadcast::broadcast(
+    antre_gateway::broadcast::broadcast(
         &state.gateway,
         "push.subscriptions",
         serde_json::json!({"action": "added"}),
-        moltis_gateway::broadcast::BroadcastOpts::default(),
+        antre_gateway::broadcast::BroadcastOpts::default(),
     )
     .await;
 
@@ -252,11 +252,11 @@ async fn unsubscribe_handler(
         .map_err(|error| subscription_error_status(&error))?;
 
     // Broadcast subscription change
-    moltis_gateway::broadcast::broadcast(
+    antre_gateway::broadcast::broadcast(
         &state.gateway,
         "push.subscriptions",
         serde_json::json!({"action": "removed"}),
-        moltis_gateway::broadcast::BroadcastOpts::default(),
+        antre_gateway::broadcast::BroadcastOpts::default(),
     )
     .await;
 
@@ -291,8 +291,8 @@ async fn test_handler(
 
     // No session key: a test must reach every device, including the one the
     // user is holding, so it must not be suppressed by presence.
-    let payload = moltis_gateway::push::PushPayload::new(
-        "moltis",
+    let payload = antre_gateway::push::PushPayload::new(
+        "antre",
         "Test notification — push is working.",
         Some("/settings/notifications".to_string()),
         None,
@@ -455,12 +455,12 @@ pub fn push_router() -> Router<AppState> {
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use {
-        axum::body::to_bytes,
-        base64::Engine,
-        moltis_gateway::{
+        antre_gateway::{
             auth, methods::MethodRegistry, push::PushService, services::GatewayServices,
             state::GatewayState,
         },
+        axum::body::to_bytes,
+        base64::Engine,
         std::sync::Arc,
     };
 
@@ -627,7 +627,7 @@ mod tests {
             #[cfg(feature = "netbird")]
             netbird_runtime,
             #[cfg(feature = "tailscale")]
-            tailscale_manager: moltis_gateway::tailscale::CachedTailscaleManager::new_with_prefetch(
+            tailscale_manager: antre_gateway::tailscale::CachedTailscaleManager::new_with_prefetch(
             ),
             push_service,
             #[cfg(feature = "graphql")]

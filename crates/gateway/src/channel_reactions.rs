@@ -26,7 +26,7 @@ use std::{
 };
 
 use {
-    moltis_channels::{ChannelAckOutcome, ChannelActivity, ChannelOutbound},
+    antre_channels::{ChannelAckOutcome, ChannelActivity, ChannelOutbound},
     tokio::sync::{Mutex, mpsc},
     tracing::{debug, warn},
 };
@@ -34,7 +34,7 @@ use {
 /// Acknowledgment/phase emoji, from the shared channel-neutral vocabulary.
 /// Channels translate these at their own boundary (Slack maps glyphs to
 /// shortcodes; Matrix uses the glyph directly).
-use moltis_channels::activity::ack_emoji;
+use antre_channels::activity::ack_emoji;
 
 const RECEIVED_EMOJI: &str = ack_emoji::RECEIVED;
 const SUCCESS_EMOJI: &str = ack_emoji::SUCCESS;
@@ -628,7 +628,7 @@ async fn remove_reaction(
 mod tests {
     use std::sync::Mutex as StdMutex;
 
-    use moltis_channels::{Result as ChannelResult, plugin::ChannelOutbound};
+    use antre_channels::{Result as ChannelResult, plugin::ChannelOutbound};
 
     use super::*;
 
@@ -666,7 +666,7 @@ mod tests {
             &self,
             _: &str,
             _: &str,
-            _: &moltis_common::types::ReplyPayload,
+            _: &antre_common::types::ReplyPayload,
             _: Option<&str>,
         ) -> ChannelResult<()> {
             Ok(())
@@ -692,7 +692,7 @@ mod tests {
                 .unwrap_or_else(|e| e.into_inner())
                 .push(format!("-{emoji}"));
             if self.retraction_fails {
-                return Err(moltis_channels::Error::unavailable("retraction refused"));
+                return Err(antre_channels::Error::unavailable("retraction refused"));
             }
             Ok(())
         }

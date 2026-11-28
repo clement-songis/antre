@@ -12,7 +12,7 @@ import { sessionStore } from "../stores/session-store";
 import { shareLinkDialog, shareVisibilityDialog, showToast } from "../ui";
 import { clearSessionHistoryCache } from "./session-history";
 
-const PINNED_STORAGE_KEY = "moltis-pinned-sessions";
+const PINNED_STORAGE_KEY = "antre-pinned-sessions";
 const DELETE_UNDO_MS = 5000;
 
 function loadPinned(): Set<string> {

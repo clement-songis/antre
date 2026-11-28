@@ -6,7 +6,7 @@ use {
 use crate::server::helpers::instance_slug;
 
 pub(super) async fn build_webauthn_registry(
-    config: &moltis_config::MoltisConfig,
+    config: &antre_config::AntreConfig,
     port: u16,
 ) -> anyhow::Result<Option<crate::auth_webauthn::SharedWebAuthnRegistry>> {
     let default_scheme = if config.tls.enabled {
@@ -40,7 +40,7 @@ pub(super) async fn build_webauthn_registry(
     };
 
     let explicit_rp_id = external_rp_id
-        .or_else(|| std::env::var("MOLTIS_WEBAUTHN_RP_ID").ok())
+        .or_else(|| std::env::var("ANTRE_WEBAUTHN_RP_ID").ok())
         .or_else(|| std::env::var("APP_DOMAIN").ok())
         .or_else(|| std::env::var("RENDER_EXTERNAL_HOSTNAME").ok())
         .or_else(|| {
@@ -50,7 +50,7 @@ pub(super) async fn build_webauthn_registry(
         })
         .or_else(|| std::env::var("RAILWAY_PUBLIC_DOMAIN").ok());
     let explicit_origin = external_origin
-        .or_else(|| std::env::var("MOLTIS_WEBAUTHN_ORIGIN").ok())
+        .or_else(|| std::env::var("ANTRE_WEBAUTHN_ORIGIN").ok())
         .or_else(|| std::env::var("APP_URL").ok())
         .or_else(|| std::env::var("RENDER_EXTERNAL_URL").ok());
 
@@ -83,12 +83,11 @@ pub(super) async fn build_webauthn_registry(
         try_add(rp_id, &origin, &[]);
     } else {
         let localhost_origin = format!("{default_scheme}://localhost:{port}");
-        let moltis_localhost: Vec<webauthn_rs::prelude::Url> = webauthn_rs::prelude::Url::parse(
-            &format!("{default_scheme}://moltis.localhost:{port}"),
-        )
-        .into_iter()
-        .collect();
-        try_add("localhost", &localhost_origin, &moltis_localhost);
+        let antre_localhost: Vec<webauthn_rs::prelude::Url> =
+            webauthn_rs::prelude::Url::parse(&format!("{default_scheme}://antre.localhost:{port}"))
+                .into_iter()
+                .collect();
+        try_add("localhost", &localhost_origin, &antre_localhost);
 
         let instance_slug_value = instance_slug(config);
         if instance_slug_value != "localhost" {

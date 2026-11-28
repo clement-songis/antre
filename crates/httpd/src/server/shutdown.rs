@@ -8,7 +8,7 @@ use super::launch::StartupStatus;
 /// Resources released when the gateway receives a shutdown signal.
 pub(super) struct ShutdownHooks {
     pub state: Arc<GatewayState>,
-    pub browser: Arc<dyn moltis_gateway::services::BrowserService>,
+    pub browser: Arc<dyn antre_gateway::services::BrowserService>,
     pub status: Option<Arc<dyn StartupStatus>>,
     #[cfg(feature = "mdns")]
     pub mdns: Option<Box<dyn FnOnce() + Send>>,

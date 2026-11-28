@@ -107,7 +107,7 @@ fn commit_temp_file(
         return dir.remove_file(temp_name).map_err(map_io);
     }
 
-    let backup_name = format!(".moltis-upload-backup-{}.tmp", Uuid::new_v4().simple());
+    let backup_name = format!(".antre-upload-backup-{}.tmp", Uuid::new_v4().simple());
     dir.rename(destination_name, dir, &backup_name)
         .map_err(map_io)?;
     if let Err(commit_error) = dir.rename(temp_name, dir, destination_name) {

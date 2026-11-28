@@ -6,8 +6,8 @@
 mod registered_provider;
 
 use {
+    antre_agents::model::{ChatMessage, ReasoningEffort, ToolCall},
     axum::{Json, Router, extract::State, routing::post},
-    moltis_agents::model::{ChatMessage, ReasoningEffort, ToolCall},
     secrecy::Secret,
     serde_json::{Value, json},
     std::sync::{Arc, Mutex},

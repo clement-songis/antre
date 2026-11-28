@@ -82,7 +82,7 @@ language = "fr-FR"
         "gemini STT config should validate cleanly: {gemini_diagnostics:?}"
     );
 
-    let config: MoltisConfig = toml::from_str(toml).unwrap();
+    let config: AntreConfig = toml::from_str(toml).unwrap();
     assert_eq!(
         config.voice.stt.provider,
         Some(crate::schema::VoiceSttProvider::Gemini)

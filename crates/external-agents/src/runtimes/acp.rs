@@ -147,19 +147,19 @@ struct AcpTerminalState {
 #[derive(Clone)]
 struct AcpClient {
     state: Arc<Mutex<AcpClientState>>,
-    moltis_session_key: Option<String>,
+    antre_session_key: Option<String>,
     permission_handler: Option<Arc<dyn AcpPermissionHandler>>,
 }
 
 impl AcpClient {
     fn new(
         state: Arc<Mutex<AcpClientState>>,
-        moltis_session_key: Option<String>,
+        antre_session_key: Option<String>,
         permission_handler: Option<Arc<dyn AcpPermissionHandler>>,
     ) -> Self {
         Self {
             state,
-            moltis_session_key,
+            antre_session_key,
             permission_handler,
         }
     }
@@ -225,7 +225,7 @@ impl acp::Client for AcpClient {
     ) -> acp::Result<acp::RequestPermissionResponse> {
         if let Some(handler) = &self.permission_handler {
             let request = AcpPermissionRequest {
-                moltis_session_key: self.moltis_session_key.clone(),
+                antre_session_key: self.antre_session_key.clone(),
                 acp_session_id: args.session_id.to_string(),
                 tool_call: tool_call_update_summary(&args.tool_call),
                 options: args
@@ -477,7 +477,7 @@ impl AcpSession {
         let status = Arc::new(Mutex::new(ExternalAgentStatus::Starting));
         let thread_status = Arc::clone(&status);
         let worker = std::thread::Builder::new()
-            .name("moltis-acp-session".to_string())
+            .name("antre-acp-session".to_string())
             .spawn(move || {
                 let runtime = match tokio::runtime::Builder::new_current_thread()
                     .enable_all()
@@ -633,7 +633,7 @@ async fn run_acp_controller(
                     .terminal(true),
             )
             .client_info(
-                acp::Implementation::new("moltis", env!("CARGO_PKG_VERSION")).title("Moltis"),
+                acp::Implementation::new("antre", env!("CARGO_PKG_VERSION")).title("Antre"),
             );
         conn.initialize(initialize)
             .await

@@ -1,6 +1,6 @@
 #![allow(clippy::expect_used)]
 
-use {super::*, moltis_sessions::metadata::SqliteSessionMetadata, sqlx::sqlite::SqlitePoolOptions};
+use {super::*, antre_sessions::metadata::SqliteSessionMetadata, sqlx::sqlite::SqlitePoolOptions};
 
 #[tokio::test]
 async fn default_registry_includes_minimax_code_acp() {

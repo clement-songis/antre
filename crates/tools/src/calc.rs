@@ -4,8 +4,8 @@
 //! This tool intentionally does not support variables, functions, or assignments.
 
 use {
+    antre_agents::tool_registry::AgentTool,
     async_trait::async_trait,
-    moltis_agents::tool_registry::AgentTool,
     serde_json::{Value, json},
 };
 

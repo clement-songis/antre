@@ -273,7 +273,7 @@ function commitModelSelection(m: ModelInfo, sessionKey = S.activeSessionKey): vo
 	// Dual-write to state.js for backward compat
 	S.setSelectedModelId(m.id);
 	updateModelComboLabel(m);
-	localStorage.setItem("moltis-model", m.id);
+	localStorage.setItem("antre-model", m.id);
 	setSessionModel(sessionKey, modelStore.effectiveModelId.value);
 	closeModelDropdown();
 	// Show notice if model doesn't support tools
@@ -548,7 +548,7 @@ document.addEventListener("click", (e: MouseEvent) => {
 	}
 });
 
-window.addEventListener("moltis:locale-changed", () => {
+window.addEventListener("antre:locale-changed", () => {
 	updateModelComboAvailability(false);
 	if (S.modelDropdown && !S.modelDropdown.classList.contains("hidden")) {
 		const query = S.modelSearchInput ? (S.modelSearchInput as HTMLInputElement).value.trim() : "";

@@ -1,5 +1,5 @@
-# Maintainer: Moltis Contributors
-pkgname=moltis
+# Maintainer: Antre Contributors
+pkgname=antre
 pkgver=0.1.0
 pkgrel=1
 pkgdesc="Personal AI gateway inspired by OpenClaw"
@@ -15,6 +15,6 @@ build() {
 }
 
 package() {
-    install -Dm755 "${startdir}/../../target/release/moltis" "${pkgdir}/usr/bin/moltis"
+    install -Dm755 "${startdir}/../../target/release/antre" "${pkgdir}/usr/bin/antre"
     install -Dm644 "${startdir}/../../LICENSE" "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE" 2>/dev/null || true
 }

@@ -1,7 +1,7 @@
 use std::{collections::HashMap, str::FromStr};
 
 use {
-    moltis_config::env_subst::{is_entire_env_placeholder, substitute_env_placeholders},
+    antre_config::env_subst::{is_entire_env_placeholder, substitute_env_placeholders},
     reqwest::header::{HeaderMap, HeaderName, HeaderValue},
     secrecy::{ExposeSecret, Secret},
     url::Url,

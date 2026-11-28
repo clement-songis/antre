@@ -1,6 +1,6 @@
 # Browser Automation
 
-Moltis provides full browser automation via Chrome DevTools Protocol (CDP),
+Antre provides full browser automation via Chrome DevTools Protocol (CDP),
 enabling agents to interact with JavaScript-heavy websites, fill forms,
 click buttons, and capture screenshots.
 
@@ -42,7 +42,7 @@ faster and more lightweight.
 
 ## Configuration
 
-Browser automation is **enabled by default**. To customize, add to your `moltis.toml`:
+Browser automation is **enabled by default**. To customize, add to your `antre.toml`:
 
 ```toml
 [tools.browser]
@@ -72,8 +72,8 @@ sandbox_image = "docker.io/browserless/chrome"  # Container image for sandboxed 
 browserless_api_version = "v1"                  # Must match the image API
 # allowed_domains = ["example.com", "*.trusted.org"]  # Restrict navigation
 
-# Container connectivity (for Moltis-in-Docker setups)
-# container_host = "127.0.0.1"  # Default; change when Moltis runs inside Docker
+# Container connectivity (for Antre-in-Docker setups)
+# container_host = "127.0.0.1"  # Default; change when Antre runs inside Docker
 ```
 
 ### Memory-Based Pool Limits
@@ -163,12 +163,12 @@ Supported values: `auto`, `chrome`, `chromium`, `edge`, `brave`, `opera`,
 `vivaldi`, `arc`, `obscura`, `lightpanda`.
 
 `auto` (default) picks the first detected installed browser. If none are
-installed, Moltis will attempt a best-effort auto-install, then retry
+installed, Antre will attempt a best-effort auto-install, then retry
 detection.
 
 `obscura` launches the Obscura sidecar binary from `obscura_path`, the
 `OBSCURA` environment variable, or `PATH`. It supports DOM-oriented browsing
-through CDP, but not pixel screenshots. Moltis passes Obscura's
+through CDP, but not pixel screenshots. Antre passes Obscura's
 [`--stealth` mode](https://github.com/h4ckf0r0day/obscura/wiki/Configure-stealth-and-proxies)
 flag by default, enabling the anti-detection behavior available in the
 installed binary. Full TLS impersonation requires Obscura 0.1.1 or newer built
@@ -286,12 +286,12 @@ When the `metrics` feature is enabled, the browser module records:
 
 | Metric | Description |
 |--------|-------------|
-| `moltis_browser_instances_active` | Currently running browsers |
-| `moltis_browser_instances_created_total` | Total browsers launched |
-| `moltis_browser_instances_destroyed_total` | Total browsers closed |
-| `moltis_browser_screenshots_total` | Screenshots taken |
-| `moltis_browser_navigation_duration_seconds` | Page load time histogram |
-| `moltis_browser_errors_total` | Errors by type |
+| `antre_browser_instances_active` | Currently running browsers |
+| `antre_browser_instances_created_total` | Total browsers launched |
+| `antre_browser_instances_destroyed_total` | Total browsers closed |
+| `antre_browser_screenshots_total` | Screenshots taken |
+| `antre_browser_navigation_duration_seconds` | Page load time histogram |
+| `antre_browser_errors_total` | Errors by type |
 
 ## Sandbox Mode
 
@@ -330,18 +330,18 @@ sandbox_image = "ghcr.io/browserless/chromium:v2.56.0"
 browserless_api_version = "v2"
 ```
 
-Moltis passes viewport, low-memory, and persistent-profile launch arguments
+Antre passes viewport, low-memory, and persistent-profile launch arguments
 using the protocol expected by the selected version. Browserless v2 images no
 longer accept the legacy `DEFAULT_LAUNCH_ARGS` and `PREBOOT_CHROME` variables.
-For v2, Moltis sets `TIMEOUT` and `CONCURRENT` on the container and sends Chrome
+For v2, Antre sets `TIMEOUT` and `CONCURRENT` on the container and sends Chrome
 launch arguments in the Base64-encoded `launch` WebSocket query. Do not set
 those values manually.
 
-For persistent Browserless v2 profiles, Moltis holds an exclusive profile lock
+For persistent Browserless v2 profiles, Antre holds an exclusive profile lock
 before removing stale Chrome singleton files. Once container cleanup is
 confirmed and the profile guard is released, the lock is explicitly unlocked,
 so descriptors briefly inherited by another process do not prevent reopening
-the profile. If cleanup cannot be confirmed, Moltis retains the lock until it
+the profile. If cleanup cannot be confirmed, Antre retains the lock until it
 exits to avoid reusing a profile that may still be active.
 
 Requirements:
@@ -356,14 +356,14 @@ Requirements:
    already running with v1 do not change protocol in place.
 2. Pin a Browserless v2 image and set `browserless_api_version = "v2"` in the
    same configuration change.
-3. If Moltis runs in Docker, mount the container-runtime socket, configure a
+3. If Antre runs in Docker, mount the container-runtime socket, configure a
    host-reachable `container_host`, and make the host data path visible with
    `host_data_dir` when persistent profiles are enabled.
-4. Restart Moltis. It pulls the configured image during startup.
+4. Restart Antre. It pulls the configured image during startup.
 5. Start a new sandboxed browser session and verify the startup logs show
    `browserless_api_version=v2` and the pinned image.
 
-For a native Moltis installation, the minimal configuration is:
+For a native Antre installation, the minimal configuration is:
 
 ```toml
 [tools.exec.sandbox]
@@ -374,13 +374,13 @@ sandbox_image = "ghcr.io/browserless/chromium:v2.56.0"
 browserless_api_version = "v2"
 ```
 
-When Moltis runs inside Docker and launches sibling browser containers, use the
-host-visible data path rather than the path inside the Moltis container:
+When Antre runs inside Docker and launches sibling browser containers, use the
+host-visible data path rather than the path inside the Antre container:
 
 ```toml
 [tools.exec.sandbox]
 mode = "all"
-host_data_dir = "/srv/moltis/data"
+host_data_dir = "/srv/antre/data"
 
 [tools.browser]
 sandbox_image = "ghcr.io/browserless/chromium:v2.56.0"
@@ -393,29 +393,29 @@ and a host-gateway mapping on Linux:
 
 ```yaml
 services:
-  moltis:
+  antre:
     volumes:
-      - /srv/moltis/data:/home/moltis/.moltis
+      - /srv/antre/data:/home/antre/.antre
       - /var/run/docker.sock:/var/run/docker.sock
     extra_hosts:
       - "host.docker.internal:host-gateway"
 ```
 
-The Moltis user inside the container must be allowed to access the socket. If
+The Antre user inside the container must be allowed to access the socket. If
 the socket is group-owned, add its host group ID with Compose `group_add`.
 Mounting the Docker socket grants container-management privileges equivalent to
-host-level control; only use this setup with a trusted Moltis instance. See
+host-level control; only use this setup with a trusted Antre instance. See
 [Docker Socket Sandbox Execution](docker.md#docker-socket-sandbox-execution)
 for the complete Docker setup.
 
 To validate the configuration and image before opening a browser session:
 
 ```bash
-moltis config check
+antre config check
 docker pull ghcr.io/browserless/chromium:v2.56.0
 ```
 
-After the first v2 browser action, the Moltis logs should report a browser
+After the first v2 browser action, the Antre logs should report a browser
 container using the v2 image and `browserless_api_version=v2`. Its environment
 contains `TIMEOUT` and `CONCURRENT`, not the v1-only `DEFAULT_LAUNCH_ARGS`,
 `PREBOOT_CHROME`, or `MAX_CONCURRENT_SESSIONS` variables.
@@ -424,12 +424,12 @@ Common setup failures:
 
 - A v2 image with `browserless_api_version = "v1"` (or the reverse) causes
   WebSocket timeouts or missing launch options. Always change the pair together.
-- A connection to `127.0.0.1` from Moltis-in-Docker targets the Moltis container,
+- A connection to `127.0.0.1` from Antre-in-Docker targets the Antre container,
   not the sibling browser. Configure `container_host` as described below.
 - `Permission denied` mentioning `/data/browser-profile/SingletonLock` means the
   host profile mount is wrong or not writable. Set the correct absolute
   `host_data_dir` and ensure the directory is writable by the browser container.
-- `Permission denied` for `/var/run/docker.sock` means the Moltis container user
+- `Permission denied` for `/var/run/docker.sock` means the Antre container user
   is missing the socket's group ID or the socket was not mounted.
 
 Browserless v2.56.0 can mount and safely restart the same `userDataDir`, but it
@@ -437,14 +437,14 @@ currently does not reliably restore cookies or local storage across new
 container instances. Track the upstream limitation in
 [browserless/browserless#4913](https://github.com/browserless/browserless/issues/4913).
 
-### Moltis Inside Docker (Sibling Containers)
+### Antre Inside Docker (Sibling Containers)
 
-When Moltis itself runs inside a Docker container, the browser container is
-launched as a sibling via the host's Docker socket. By default Moltis connects
-to the browser at `127.0.0.1`, which points to the Moltis container's own
+When Antre itself runs inside a Docker container, the browser container is
+launched as a sibling via the host's Docker socket. By default Antre connects
+to the browser at `127.0.0.1`, which points to the Antre container's own
 loopback — not the host where the browser port is mapped.
 
-Set `container_host` so Moltis can reach the browser container through the
+Set `container_host` so Antre can reach the browser container through the
 host's port mapping:
 
 ```toml
@@ -455,7 +455,7 @@ container_host = "host.docker.internal"   # macOS / Windows Docker Desktop
 
 On Linux, `host.docker.internal` is not available by default. Use the Docker
 bridge gateway IP (typically `172.17.0.1`) or add `--add-host=host.docker.internal:host-gateway`
-to the Moltis container's `docker run` command.
+to the Antre container's `docker run` command.
 
 ### Exec Tool Scripts
 
@@ -512,7 +512,7 @@ malicious sites could attempt to inject instructions.
 
 ## Browser Detection
 
-Moltis automatically detects installed Chromium-based browsers in the following order:
+Antre automatically detects installed Chromium-based browsers in the following order:
 
 1. **Custom path** from `chrome_path` config
 2. **CHROME environment variable**
@@ -521,7 +521,7 @@ Moltis automatically detects installed Chromium-based browsers in the following 
    - Windows: `C:\Program Files\Google\Chrome\Application\chrome.exe`, etc.
 4. **PATH executables** (fallback): `chrome`, `chromium`, `msedge`, `brave`, etc.
 
-If no browser is found, Moltis displays platform-specific installation instructions.
+If no browser is found, Antre displays platform-specific installation instructions.
 
 ### Supported Browsers
 
@@ -560,7 +560,7 @@ When using the Telegram channel, screenshots are automatically sent to the chat:
 ## Handling Model Errors
 
 Some models (particularly Claude via GitHub Copilot) occasionally send malformed
-tool calls with missing required fields. Moltis handles this gracefully:
+tool calls with missing required fields. Antre handles this gracefully:
 
 - **Default action**: If `url` is provided but `action` is missing, defaults to
   `navigate`

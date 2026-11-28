@@ -1,8 +1,8 @@
 # Email Connectors
 
-Moltis provides two read-only email connectors:
+Antre provides two read-only email connectors:
 
-- **Gmail** reads the Gmail API using Moltis' existing Google Workspace OAuth
+- **Gmail** reads the Gmail API using Antre' existing Google Workspace OAuth
   authorization.
 - **Himalaya** invokes an existing host-side
   [Himalaya](https://github.com/pimalaya/himalaya) v2 account and selected read
@@ -21,9 +21,9 @@ Gmail read-capable scope. The connector references that file and does not copy
 OAuth credentials into `connectors.db`.
 
 The Himalaya connector reuses an account already configured for the `himalaya`
-binary on the Moltis host. By default, Himalaya v2 loads the first available
+binary on the Antre host. By default, Himalaya v2 loads the first available
 configuration from `$XDG_CONFIG_HOME/himalaya/config.toml`,
-`~/.config/himalaya/config.toml`, or `~/.himalayarc`. Moltis stores only the
+`~/.config/himalaya/config.toml`, or `~/.himalayarc`. Antre stores only the
 account name and selected backend, not the config file, passwords, or tokens.
 
 ## Setup and test
@@ -42,7 +42,7 @@ account name and selected backend, not the config file, passwords, or tokens.
    ```
 2. Open **Settings -> Connectors -> Connections**, select **Add Gmail
    connection**, name it, and save it.
-3. Select **Test connection**. Moltis reads the Gmail profile with the existing
+3. Select **Test connection**. Antre reads the Gmail profile with the existing
    token and reports the authorized address.
 4. Open **Datasets**, create an email dataset, set a Gmail search query, message
    limit, body option, schedule, and optional projections, then run it.
@@ -58,7 +58,7 @@ off, headers, snippet, labels, and attachment metadata are still retained.
    2. Version 1 is rejected.
 2. Configure and test the host account with Himalaya itself. The v2 setup wizard
    is the bare `himalaya` command; it is not `himalaya account configure`.
-3. Verify the exact account and backend that Moltis will use:
+3. Verify the exact account and backend that Antre will use:
 
    ```bash
    himalaya --json account list

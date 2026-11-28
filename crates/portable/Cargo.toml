@@ -1,8 +1,8 @@
 [package]
-description       = "Import/export Moltis config, data, and databases as portable .tar.gz archives"
+description       = "Import/export Antre config, data, and databases as portable .tar.gz archives"
 edition.workspace = true
 license.workspace = true
-name              = "moltis-portable"
+name              = "antre-portable"
 version.workspace = true
 
 [dependencies]
@@ -23,7 +23,7 @@ tracing    = { workspace = true }
 uuid       = { workspace = true }
 walkdir    = { workspace = true }
 
-moltis-config = { workspace = true }
+antre-config = { workspace = true }
 
 [lints]
 workspace = true

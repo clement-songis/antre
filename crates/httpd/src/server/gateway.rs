@@ -4,16 +4,16 @@
 use std::{path::PathBuf, sync::Arc};
 
 #[cfg(any(feature = "msteams", feature = "slack", feature = "telephony"))]
-use moltis_channels::ChannelPlugin;
+use antre_channels::ChannelPlugin;
 
 use {
+    antre_gateway::server::{PreparedGatewayCore, prepare_gateway_core},
+    antre_sessions::session_events::SessionEventBus,
     axum::{
         extract::ConnectInfo,
         http::StatusCode,
         response::{IntoResponse, Json},
     },
-    moltis_gateway::server::{PreparedGatewayCore, prepare_gateway_core},
-    moltis_sessions::session_events::SessionEventBus,
 };
 
 #[cfg(not(feature = "ngrok"))]
@@ -44,7 +44,7 @@ fn telephony_webhook_url(
     endpoint: &str,
     headers: &axum::http::HeaderMap,
     account_config: Option<serde_json::Value>,
-    config: &moltis_config::schema::MoltisConfig,
+    config: &antre_config::schema::AntreConfig,
 ) -> Option<String> {
     let base_url = account_config
         .as_ref()
@@ -79,16 +79,16 @@ fn telephony_webhook_url(
 /// open, so the empty case is short-circuited here).
 #[cfg(feature = "telephony")]
 fn inbound_call_rejected(
-    policy: moltis_channels::gating::DmPolicy,
+    policy: antre_channels::gating::DmPolicy,
     caller: &str,
     allowlist: &[String],
 ) -> bool {
     match policy {
-        moltis_channels::gating::DmPolicy::Disabled => true,
-        moltis_channels::gating::DmPolicy::Allowlist => {
-            allowlist.is_empty() || !moltis_channels::gating::is_allowed(caller, allowlist)
+        antre_channels::gating::DmPolicy::Disabled => true,
+        antre_channels::gating::DmPolicy::Allowlist => {
+            allowlist.is_empty() || !antre_channels::gating::is_allowed(caller, allowlist)
         },
-        moltis_channels::gating::DmPolicy::Open => false,
+        antre_channels::gating::DmPolicy::Open => false,
     }
 }
 
@@ -130,7 +130,7 @@ pub async fn prepare_gateway(
     bind: &str,
     port: u16,
     no_tls: bool,
-    log_buffer: Option<moltis_gateway::logs::LogBuffer>,
+    log_buffer: Option<antre_gateway::logs::LogBuffer>,
     config_dir: Option<PathBuf>,
     data_dir: Option<PathBuf>,
     #[cfg(feature = "tailscale")] tailscale_opts: Option<TailscaleOpts>,
@@ -309,11 +309,11 @@ pub async fn prepare_gateway(
                         if let Some(secret) = query.get("secret")
                             && let Ok(val) = secret.parse()
                         {
-                            merged_headers.insert("x-moltis-webhook-secret", val);
+                            merged_headers.insert("x-antre-webhook-secret", val);
                         }
 
                         // Run the middleware pipeline.
-                        match moltis_gateway::channel_webhook_middleware::channel_webhook_gate(
+                        match antre_gateway::channel_webhook_middleware::channel_webhook_gate(
                             verifier.as_ref(),
                             &gw_state.channel_webhook_dedup,
                             &gw_state.channel_webhook_rate_limiter,
@@ -327,12 +327,12 @@ pub async fn prepare_gateway(
                                     rejection,
                                 )
                             },
-                            Ok((_, moltis_channels::ChannelWebhookDedupeResult::Duplicate)) => (
+                            Ok((_, antre_channels::ChannelWebhookDedupeResult::Duplicate)) => (
                                 StatusCode::OK,
                                 Json(serde_json::json!({ "ok": true, "deduplicated": true })),
                             )
                                 .into_response(),
-                            Ok((verified, moltis_channels::ChannelWebhookDedupeResult::New)) => {
+                            Ok((verified, antre_channels::ChannelWebhookDedupeResult::New)) => {
                                 // Parse verified body.
                                 let payload: serde_json::Value =
                                     match serde_json::from_slice(&verified.body) {
@@ -546,7 +546,7 @@ pub async fn prepare_gateway(
                             };
 
                             match event {
-                                moltis_telephony::types::CallEvent::Initiated {
+                                antre_telephony::types::CallEvent::Initiated {
                                     ref provider_call_id,
                                 } => {
                                     let (_, caller, called) = telnyx_call_fields(&body);
@@ -581,7 +581,7 @@ pub async fn prepare_gateway(
                                         .map(|call| {
                                             matches!(
                                                 call.mode,
-                                                moltis_telephony::types::CallMode::Conversation
+                                                antre_telephony::types::CallMode::Conversation
                                             )
                                         })
                                         .unwrap_or(true);
@@ -602,7 +602,7 @@ pub async fn prepare_gateway(
                                         tracing::warn!(account_id = %account_id, provider_call_id = %provider_call_id, "failed to start Telnyx transcription: {e}");
                                     }
                                 },
-                                moltis_telephony::types::CallEvent::Speech {
+                                antre_telephony::types::CallEvent::Speech {
                                     ref provider_call_id,
                                     ref text,
                                     ..
@@ -689,12 +689,12 @@ pub async fn prepare_gateway(
                             // Outbound call we initiated — use its mode and message.
                             let msg = call.initial_message.as_deref();
                             let twiml = match call.mode {
-                                moltis_telephony::types::CallMode::Notify => {
+                                antre_telephony::types::CallMode::Notify => {
                                     // Speak the message, then hang up.
                                     let say_msg = msg.unwrap_or("This is a notification.");
                                     provider.build_answer_response(Some(say_msg), None)
                                 },
-                                moltis_telephony::types::CallMode::Conversation => {
+                                antre_telephony::types::CallMode::Conversation => {
                                     let greeting = msg.unwrap_or(
                                         "Hello, you've reached the AI assistant. How can I help you?",
                                     );
@@ -711,7 +711,7 @@ pub async fn prepare_gateway(
 
                         // New inbound call — enforce access policy.
                         {
-                            use moltis_channels::ChannelPlugin as _;
+                            use antre_channels::ChannelPlugin as _;
                             if let Some(config_view) = plugin_guard.account_config(&account_id).await {
                                 let policy = config_view.dm_policy();
                                 if inbound_call_rejected(policy.clone(), caller, config_view.allowlist()) {
@@ -798,7 +798,7 @@ pub async fn prepare_gateway(
                         match provider.parse_webhook_event(&headers, &body) {
                             Ok(event) => {
                                 match &event {
-                                    moltis_telephony::types::CallEvent::Speech {
+                                    antre_telephony::types::CallEvent::Speech {
                                         provider_call_id,
                                         text,
                                         confidence,
@@ -809,7 +809,7 @@ pub async fn prepare_gateway(
                                         confidence = ?confidence,
                                         "telephony gather received speech"
                                     ),
-                                    moltis_telephony::types::CallEvent::Dtmf {
+                                    antre_telephony::types::CallEvent::Dtmf {
                                         provider_call_id,
                                         ..
                                     } => tracing::debug!(
@@ -828,7 +828,7 @@ pub async fn prepare_gateway(
                                 manager.handle_event(&event);
 
                                 // If speech was recognized, dispatch to the agent loop.
-                                if let moltis_telephony::types::CallEvent::Speech {
+                                if let antre_telephony::types::CallEvent::Speech {
                                     ref provider_call_id,
                                     ref text,
                                     ..
@@ -1003,7 +1003,7 @@ pub async fn prepare_gateway(
                             let mut webhook = webhook;
 
                             #[cfg(feature = "vault")]
-                            if let Err(error) = moltis_gateway::webhooks::decrypt_webhook_secrets(
+                            if let Err(error) = antre_gateway::webhooks::decrypt_webhook_secrets(
                                 &mut webhook,
                                 gw.vault.as_ref(),
                             )
@@ -1065,7 +1065,7 @@ pub async fn prepare_gateway(
                             }
 
                             // Verify authentication.
-                            if let Err(e) = moltis_webhooks::auth::verify(
+                            if let Err(e) = antre_webhooks::auth::verify(
                                 &webhook.auth_mode,
                                 webhook.auth_config.as_ref(),
                                 &headers,
@@ -1085,8 +1085,7 @@ pub async fn prepare_gateway(
                             }
 
                             // Parse event type and delivery key from source profile.
-                            let profile_registry =
-                                moltis_webhooks::profiles::ProfileRegistry::new();
+                            let profile_registry = antre_webhooks::profiles::ProfileRegistry::new();
                             let profile = profile_registry.get(&webhook.source_profile);
                             let event_type =
                                 profile.and_then(|p| p.parse_event_type(&headers, &body));
@@ -1121,7 +1120,7 @@ pub async fn prepare_gateway(
 
                             // Dedup check.
                             if let Some(ref dk) = delivery_key {
-                                match moltis_webhooks::dedup::check_duplicate(
+                                match antre_webhooks::dedup::check_duplicate(
                                     store.as_ref(),
                                     webhook.id,
                                     Some(dk.as_str()),
@@ -1167,7 +1166,7 @@ pub async fn prepare_gateway(
 
                             // Extract safe headers for audit logging.
                             let safe_headers =
-                                moltis_webhooks::normalize::extract_safe_headers(&headers);
+                                antre_webhooks::normalize::extract_safe_headers(&headers);
                             let headers_json = serde_json::to_string(&safe_headers).ok();
 
                             let content_type = headers
@@ -1176,10 +1175,10 @@ pub async fn prepare_gateway(
                                 .map(String::from);
 
                             // Persist delivery.
-                            let delivery = moltis_webhooks::store::NewDelivery {
+                            let delivery = antre_webhooks::store::NewDelivery {
                                 webhook_id: webhook.id,
                                 received_at: received_at.clone(),
-                                status: moltis_webhooks::types::DeliveryStatus::Queued,
+                                status: antre_webhooks::types::DeliveryStatus::Queued,
                                 event_type: event_type.clone(),
                                 entity_key,
                                 delivery_key,

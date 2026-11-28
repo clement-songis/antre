@@ -21,7 +21,7 @@ pub struct Theme {
     /// Primary buttons and the send button: near-black, near-white in dark.
     pub accent: Hsla,
     pub accent_text: Hsla,
-    /// Moltis's own mark: a reply in progress, the brand glyph.
+    /// Antre's own mark: a reply in progress, the brand glyph.
     pub brand: Hsla,
     pub user_bubble: Hsla,
     pub code_background: Hsla,

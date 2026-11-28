@@ -3,8 +3,8 @@
 use std::sync::Arc;
 
 use {
+    antre_browser::{BrowserConfig, BrowserManager, RenderFormat, RenderRequest},
     async_trait::async_trait,
-    moltis_browser::{BrowserConfig, BrowserManager, RenderFormat, RenderRequest},
     tokio::sync::OnceCell,
 };
 
@@ -27,7 +27,7 @@ impl BrowserRenderer {
     /// Build from the browser tool settings (Chrome path, container image,
     /// scale factor), forcing a non-persistent profile.
     #[must_use]
-    pub fn new(browser: &moltis_config::schema::BrowserConfig, container_prefix: String) -> Self {
+    pub fn new(browser: &antre_config::schema::BrowserConfig, container_prefix: String) -> Self {
         let mut config = BrowserConfig::from(browser);
         config.enabled = true;
         config.persist_profile = false;
@@ -74,8 +74,8 @@ impl DesignRenderer for BrowserRenderer {
             .await
             .map_err(|error| Error::Render(error.to_string()));
         #[cfg(feature = "metrics")]
-        moltis_metrics::histogram!(
-            moltis_metrics::canvas::RENDER_DURATION_SECONDS,
+        antre_metrics::histogram!(
+            antre_metrics::canvas::RENDER_DURATION_SECONDS,
             "format" => format_label(format)
         )
         .record(started.elapsed().as_secs_f64());
@@ -123,7 +123,7 @@ pub(crate) mod tests {
 
     #[test]
     fn browser_renderer_never_persists_profiles() {
-        let tool = moltis_config::schema::BrowserConfig {
+        let tool = antre_config::schema::BrowserConfig {
             persist_profile: true,
             enabled: false,
             ..Default::default()

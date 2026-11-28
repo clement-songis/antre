@@ -1,8 +1,8 @@
 use std::{borrow::Cow, collections::HashSet};
 
 use {
-    moltis_agents::runner::RunnerEvent,
-    moltis_channels::plugin::{ChannelTaskStatus, ChannelTaskUpdate},
+    antre_agents::runner::RunnerEvent,
+    antre_channels::plugin::{ChannelTaskStatus, ChannelTaskUpdate},
 };
 
 pub(super) fn channel_task_update(

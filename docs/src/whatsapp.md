@@ -1,6 +1,6 @@
 # WhatsApp Channel
 
-Moltis supports WhatsApp as a messaging channel using the WhatsApp Linked Devices
+Antre supports WhatsApp as a messaging channel using the WhatsApp Linked Devices
 protocol. Your WhatsApp account connects as a linked device (like WhatsApp Web),
 so no separate phone number or WhatsApp Business API is needed — you pair your
 existing personal or business WhatsApp by scanning a QR code.
@@ -9,7 +9,7 @@ existing personal or business WhatsApp by scanning a QR code.
 
 ```
 ┌────────────────┐   QR pair   ┌─────────────────┐   Signal   ┌──────────────┐
-│  Your Phone    │ ──────────► │  Moltis Gateway  │ ◄────────► │  WhatsApp    │
+│  Your Phone    │ ──────────► │  Antre Gateway  │ ◄────────► │  WhatsApp    │
 │  (WhatsApp)    │             │  (linked device)  │            │  Servers     │
 └────────────────┘             └─────────────────┘            └──────────────┘
                                        │
@@ -20,9 +20,9 @@ existing personal or business WhatsApp by scanning a QR code.
                                └─────────────────┘
 ```
 
-1. Moltis registers as a **linked device** on your WhatsApp account
-2. Messages sent to your WhatsApp number arrive at both your phone and Moltis
-3. Moltis processes inbound messages through the configured LLM
+1. Antre registers as a **linked device** on your WhatsApp account
+2. Messages sent to your WhatsApp number arrive at both your phone and Antre
+3. Antre processes inbound messages through the configured LLM
 4. The LLM reply is sent back through your WhatsApp account
 
 ```admonish info title="Dedicated vs Personal Number"
@@ -31,9 +31,9 @@ account. All messages to that number go to the bot. Clean separation, no
 accidental replies to personal contacts.
 
 **Personal number (self-chat):** Use your own WhatsApp account and message
-yourself via WhatsApp's "Message Yourself" feature. Moltis automatically
+yourself via WhatsApp's "Message Yourself" feature. Antre automatically
 detects self-chat and prevents reply loops. Convenient for personal use.
-Note that Moltis (as a linked device) sees all your incoming messages —
+Note that Antre (as a linked device) sees all your incoming messages —
 whether it *responds* is governed by access control (see below).
 ```
 
@@ -45,7 +45,7 @@ WhatsApp is behind the `whatsapp` cargo feature, enabled by default:
 # crates/cli/Cargo.toml
 [features]
 default = ["whatsapp", ...]
-whatsapp = ["moltis-gateway/whatsapp"]
+whatsapp = ["antre-gateway/whatsapp"]
 ```
 
 When disabled, all WhatsApp code is compiled out — no QR code library, no
@@ -53,14 +53,14 @@ Signal Protocol store, no WhatsApp event handlers.
 
 ```admonish important title="Enable in Channel List"
 WhatsApp is not shown in the web UI by default. Add it to the offered
-channels list in `moltis.toml`:
+channels list in `antre.toml`:
 
 \`\`\`toml
 [channels]
 offered = ["telegram", "discord", "slack", "whatsapp"]
 \`\`\`
 
-Restart Moltis after changing this setting. The **+ Add Channel** menu
+Restart Antre after changing this setting. The **+ Add Channel** menu
 will then include the WhatsApp option.
 ```
 
@@ -68,7 +68,7 @@ will then include the WhatsApp option.
 
 The fastest way to connect WhatsApp:
 
-1. Start Moltis: `moltis serve`
+1. Start Antre: `antre serve`
 2. Open the web UI and navigate to **Settings > Channels**
 3. Click **+ Add Channel** > **WhatsApp**
 4. Enter an **Account ID** (any name you like, e.g. `my-whatsapp`)
@@ -79,7 +79,7 @@ The fastest way to connect WhatsApp:
 9. Scan the QR code
 10. The modal shows "Connected" with your phone's display name
 
-That's it — messages to your WhatsApp account are now processed by Moltis.
+That's it — messages to your WhatsApp account are now processed by Antre.
 
 ```admonish tip
 The QR code refreshes automatically every ~20 seconds. If it expires before
@@ -88,11 +88,11 @@ you scan it, a new one appears without any action needed.
 
 ## Quick Start (Config File)
 
-You can also configure WhatsApp accounts in `moltis.toml`. This is useful for
+You can also configure WhatsApp accounts in `antre.toml`. This is useful for
 automated deployments or when you want to pre-configure settings before pairing.
 
 ```toml
-# ~/.moltis/moltis.toml
+# ~/.antre/antre.toml
 
 [channels.whatsapp."my-whatsapp"]
 dm_policy = "open"
@@ -100,7 +100,7 @@ model = "anthropic/claude-sonnet-5-5"
 model_provider = "anthropic"
 ```
 
-Start Moltis and the account will begin the pairing process. The QR code is
+Start Antre and the account will begin the pairing process. The QR code is
 printed to the terminal and also available via the web UI. Once paired, the
 config file is updated with:
 
@@ -127,7 +127,7 @@ Each WhatsApp account is a named entry under `[channels.whatsapp]`:
 | `paired` | bool | `false` | Whether QR code pairing is complete (auto-set) |
 | `display_name` | string | — | Phone name after pairing (auto-populated) |
 | `phone_number` | string | — | Phone number after pairing (auto-populated) |
-| `store_path` | string | — | Custom path to sled store; defaults to `~/.moltis/whatsapp/<account_id>/` |
+| `store_path` | string | — | Custom path to sled store; defaults to `~/.antre/whatsapp/<account_id>/` |
 | `model` | string | — | Default LLM model ID for this account |
 | `model_provider` | string | — | Provider name for the model |
 | `agent_id` | string | — | Default agent ID for this account |
@@ -138,7 +138,7 @@ Each WhatsApp account is a named entry under `[channels.whatsapp]`:
 | `group_allowlist` | array | `[]` | Group JIDs allowed for bot responses |
 | `otp_self_approval` | bool | `true` | Allow non-allowlisted users to self-approve via OTP |
 | `otp_cooldown_secs` | int | `300` | Cooldown seconds after 3 failed OTP attempts |
-| `push_name` | string | — | Name this client asserts on WhatsApp, shown to anyone without the number saved. Falls back to `[identity] name`, then `"Moltis"` |
+| `push_name` | string | — | Name this client asserts on WhatsApp, shown to anyone without the number saved. Falls back to `[identity] name`, then `"Antre"` |
 | `untrusted_audience` | string | `"public"` | Tool audience ceiling for turns outside an operator direct chat: `"public"` or `"trusted"` |
 | `untrusted_tools` | string | `"deny_all"` | Tool name policy for those turns: `"deny_all"`, or `"policy"` to let `[tools.policy]` decide |
 
@@ -237,7 +237,7 @@ user from the web UI instead of letting them self-approve.
 
 ### Using Your Personal Number Safely
 
-When Moltis is linked to your personal WhatsApp, it sees **every** incoming
+When Antre is linked to your personal WhatsApp, it sees **every** incoming
 message — from friends, family, groups, everyone. The key question is: who
 does the bot *respond* to?
 
@@ -245,7 +245,7 @@ does the bot *respond* to?
 Yourself") bypass access control entirely. You are the account owner, so
 you're always authorized regardless of `dm_policy` settings.
 
-**Other people's messages follow `dm_policy`.** If you want Moltis to only
+**Other people's messages follow `dm_policy`.** If you want Antre to only
 respond to your self-chat and ignore everyone else:
 
 ```toml
@@ -278,7 +278,7 @@ WhatsApp uses the Signal Protocol for end-to-end encryption. The encryption
 keys and session state are stored in a **sled database** at:
 
 ```
-~/.moltis/whatsapp/<account_id>/
+~/.antre/whatsapp/<account_id>/
 ```
 
 This means:
@@ -291,13 +291,13 @@ This means:
   (useful for Docker volumes or shared storage)
 
 ```admonish warning
-Do not delete the sled store directory while Moltis is running. If you need
-to re-pair, stop Moltis first, then delete the directory and restart.
+Do not delete the sled store directory while Antre is running. If you need
+to re-pair, stop Antre first, then delete the directory and restart.
 ```
 
 ## Self-Chat
 
-Moltis automatically supports WhatsApp's "Message Yourself" feature. When you
+Antre automatically supports WhatsApp's "Message Yourself" feature. When you
 send a message to yourself, the bot processes it as a regular inbound message
 and replies in the same chat.
 
@@ -309,7 +309,7 @@ This is useful for:
 ### Loop Prevention
 
 When the bot replies to your self-chat, WhatsApp delivers that reply back as
-an incoming message (since it's your own chat). Moltis uses two mechanisms to
+an incoming message (since it's your own chat). Antre uses two mechanisms to
 prevent infinite reply loops:
 
 1. **Message ID tracking**: Every message the bot sends is recorded in a
@@ -331,11 +331,11 @@ links, code blocks, and simple tables are rendered in a mobile-friendly form;
 plain URLs remain visible so WhatsApp can create link previews.
 
 Formatting conversion applies only to WhatsApp delivery. The original Markdown
-is retained in the Moltis session history and remains unchanged in the web UI.
+is retained in the Antre session history and remains unchanged in the web UI.
 
 ## Media Handling
 
-WhatsApp supports rich media messages. Moltis handles each type:
+WhatsApp supports rich media messages. Antre handles each type:
 
 | Message Type | Handling |
 |--------------|----------|
@@ -348,7 +348,7 @@ WhatsApp supports rich media messages. Moltis handles each type:
 | **Location** | Resolves pending location tool requests, or dispatches coordinates to LLM |
 
 The 20 MB limit for saved images and documents is enforced *while streaming*, so
-a sender who understates the file size in the message metadata cannot make Moltis
+a sender who understates the file size in the message metadata cannot make Antre
 buffer an oversized payload — the download aborts as soon as the limit is crossed.
 Sender-supplied MIME types are normalized to a bare `type/subtype` before they are
 stored or shown to the agent. Download and persistence failures are reported in the
@@ -402,12 +402,12 @@ Switch to the **Senders** tab to see everyone who has messaged the bot:
 
 ### WhatsApp Not in Add Channel Menu
 
-- WhatsApp is not offered by default. Add `"whatsapp"` to the `offered` list in `moltis.toml`:
+- WhatsApp is not offered by default. Add `"whatsapp"` to the `offered` list in `antre.toml`:
   ```toml
   [channels]
   offered = ["telegram", "discord", "slack", "whatsapp"]
   ```
-- Restart Moltis after changing this setting
+- Restart Antre after changing this setting
 
 ### "Can't Understand That Message Type"
 
@@ -419,12 +419,12 @@ Switch to the **Senders** tab to see everyone who has messaged the bot:
 
 - Ensure the `whatsapp` feature is enabled (it is by default)
 - Check terminal output for errors — the QR code is also printed to stdout
-- Verify the sled store directory is writable: `~/.moltis/whatsapp/`
+- Verify the sled store directory is writable: `~/.antre/whatsapp/`
 
 ### "Logged Out" After Restart
 
 - This usually means the sled store was corrupted or deleted
-- Check that `~/.moltis/whatsapp/<account_id>/` exists and has data files
+- Check that `~/.antre/whatsapp/<account_id>/` exists and has data files
 - Re-pair by removing the directory and restarting: the pairing flow starts again
 
 ### Bot Not Responding to Messages

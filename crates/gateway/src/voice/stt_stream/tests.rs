@@ -1,8 +1,8 @@
 use {
     super::*,
+    antre_voice::{MockStreamingStt, StreamingSttSession},
     anyhow::anyhow,
     async_trait::async_trait,
-    moltis_voice::{MockStreamingStt, StreamingSttSession},
 };
 
 const START: &str = r#"{"type":"start","language":"fr"}"#;
@@ -362,13 +362,10 @@ fn slots_cap_streams_per_ip() {
 
 #[test]
 fn openai_and_gemini_support_streaming() {
-    let mut cfg = moltis_config::MoltisConfig::default();
+    let mut cfg = antre_config::AntreConfig::default();
     cfg.voice.stt.whisper.api_key = Some(secrecy::Secret::new("sk-test".into()));
     let provider = create_streaming_provider(&cfg, SttProviderId::Whisper).unwrap();
-    assert_eq!(
-        provider.model(),
-        moltis_voice::OPENAI_DEFAULT_REALTIME_MODEL
-    );
+    assert_eq!(provider.model(), antre_voice::OPENAI_DEFAULT_REALTIME_MODEL);
     assert_eq!(provider.input_sample_rate(), 24_000);
 
     cfg.voice.stt.whisper.realtime_model = Some("gpt-realtime-whisper".into());
@@ -380,10 +377,7 @@ fn openai_and_gemini_support_streaming() {
 
     cfg.voice.stt.gemini.api_key = Some(secrecy::Secret::new("gm-test".into()));
     let provider = create_streaming_provider(&cfg, SttProviderId::Gemini).unwrap();
-    assert_eq!(
-        provider.model(),
-        moltis_voice::GEMINI_DEFAULT_REALTIME_MODEL
-    );
+    assert_eq!(provider.model(), antre_voice::GEMINI_DEFAULT_REALTIME_MODEL);
     assert_eq!(provider.input_sample_rate(), 16_000);
     cfg.voice.stt.gemini.enabled = false;
     assert!(create_streaming_provider(&cfg, SttProviderId::Gemini).is_none());

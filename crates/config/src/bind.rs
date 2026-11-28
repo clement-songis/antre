@@ -31,7 +31,7 @@ mod tests {
             "[::1]",
             "localhost",
             "LOCALHOST",
-            "moltis.localhost",
+            "antre.localhost",
             "localhost.",
         ] {
             assert!(is_loopback_bind(bind), "{bind} should be loopback");

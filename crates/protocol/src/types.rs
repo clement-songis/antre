@@ -272,25 +272,25 @@ pub struct ConnectParamsV4 {
 impl ConnectParamsV4 {
     /// Convert to v3-compatible `ConnectParams` for internal processing.
     pub fn into_connect_params(self) -> ConnectParams {
-        // Extract Moltis-specific fields from extensions.
-        let moltis = self.extensions.get("moltis");
-        let caps = moltis
+        // Extract Antre-specific fields from extensions.
+        let antre = self.extensions.get("antre");
+        let caps = antre
             .and_then(|v| v.get("caps"))
             .and_then(|v| serde_json::from_value(v.clone()).ok());
-        let commands = moltis
+        let commands = antre
             .and_then(|v| v.get("commands"))
             .and_then(|v| serde_json::from_value(v.clone()).ok());
-        let permissions = moltis
+        let permissions = antre
             .and_then(|v| v.get("permissions"))
             .and_then(|v| v.as_object().cloned());
-        let path_env = moltis
+        let path_env = antre
             .and_then(|v| v.get("pathEnv"))
             .and_then(|v| v.as_str())
             .map(String::from);
-        let device = moltis
+        let device = antre
             .and_then(|v| v.get("device"))
             .and_then(|v| serde_json::from_value(v.clone()).ok());
-        let user_agent = moltis
+        let user_agent = antre
             .and_then(|v| v.get("userAgent"))
             .and_then(|v| v.as_str())
             .map(String::from);
@@ -544,7 +544,7 @@ mod tests {
             "client": { "id": "test-v4", "version": "0.2.0", "platform": "browser", "mode": "operator" },
             "locale": "fr",
             "extensions": {
-                "moltis": {
+                "antre": {
                     "caps": ["audio"],
                     "pathEnv": "/usr/bin"
                 }
@@ -680,7 +680,7 @@ mod tests {
     #[test]
     fn hello_ok_with_extensions_serialized() {
         let mut extensions = Extensions::new();
-        extensions.insert("moltis".into(), serde_json::json!({"extra": true}));
+        extensions.insert("antre".into(), serde_json::json!({"extra": true}));
         let hello = HelloOk {
             r#type: "hello-ok".into(),
             protocol: 4,
@@ -701,7 +701,7 @@ mod tests {
             extensions,
         };
         let json = serde_json::to_value(&hello).unwrap();
-        assert_eq!(json["extensions"]["moltis"]["extra"], true);
+        assert_eq!(json["extensions"]["antre"]["extra"], true);
     }
 
     // ── Error codes ────────────────────────────────────────────────────

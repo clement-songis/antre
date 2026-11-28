@@ -1,5 +1,5 @@
 //! Data compiled into the binary: the gzip-compressed models.dev snapshot
-//! and Moltis's curated supplement.
+//! and Antre's curated supplement.
 //!
 //! Refresh the snapshot with `scripts/update-model-catalog.sh`.
 
@@ -41,12 +41,12 @@ pub fn bundled_models_dev() -> crate::Result<ModelsDevCatalog> {
     ModelsDevCatalog::parse(&json)
 }
 
-/// Moltis's curated additions: models models.dev does not list yet (mostly
+/// Antre's curated additions: models models.dev does not list yet (mostly
 /// image, voice and other non-chat models) and provider facts such as the
 /// timezone of reset times printed without an offset.
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct Supplement {
-    /// Model specs keyed by Moltis provider id.
+    /// Model specs keyed by Antre provider id.
     pub models: HashMap<String, Vec<ModelSpec>>,
     /// Defaults applied to every model of a provider, lowest priority.
     pub provider_defaults: HashMap<String, ModelSpec>,

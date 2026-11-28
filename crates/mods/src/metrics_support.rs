@@ -1,7 +1,7 @@
 //! Metric helpers that compile to nothing without the `metrics` feature.
 
 #[cfg(feature = "metrics")]
-use moltis_metrics::{counter, gauge, histogram, mods};
+use antre_metrics::{counter, gauge, histogram, mods};
 
 pub(crate) fn install_outcome(outcome: &'static str) {
     #[cfg(feature = "metrics")]

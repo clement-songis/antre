@@ -28,7 +28,7 @@ env:
   NIGHTLY_TOOLCHAIN: nightly-2026-06-20
   # Standalone packages cannot bundle zvec's native runtime on every target.
   # Docker builds run in an isolated context and keep the default `full` set.
-  MOLTIS_BUILD_FEATURES: portable
+  ANTRE_BUILD_FEATURES: portable
   RELEASE_DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && 'true' || 'false' }}
   RELEASE_PRE_RELEASE: ${{ github.event_name == 'workflow_dispatch' && inputs.pre_release && 'true' || 'false' }}
 
@@ -318,10 +318,10 @@ jobs:
           ./scripts/download-tailwindcss-cli.sh tailwindcss-linux-x64
           TAILWINDCSS=./tailwindcss-linux-x64 ./scripts/build-web-assets.sh
 
-      - name: Build moltis binary
+      - name: Build antre binary
         if: ${{ env.RELEASE_DRY_RUN != 'true' }}
         timeout-minutes: 20
-        run: cargo build --bin moltis
+        run: cargo build --bin antre
 
       - name: Reclaim Rust build disk for E2E
         if: ${{ env.RELEASE_DRY_RUN != 'true' }}
@@ -338,7 +338,7 @@ jobs:
         working-directory: crates/web/ui
         env:
           CI: "true"
-          MOLTIS_BINARY: ${{ github.workspace }}/target/e2e-bin/moltis
+          ANTRE_BINARY: ${{ github.workspace }}/target/e2e-bin/antre
         # Must stay identical to the CI workflow's E2E command: run-ci.sh shards
         # the default project and gives every project its own gateway, which is
         # the only configuration the suite is validated against.
@@ -450,14 +450,14 @@ jobs:
 
       - name: Build WASM components
         run: |
-          cargo build --target wasm32-wasip2 -p moltis-wasm-calc -p moltis-wasm-web-fetch -p moltis-wasm-web-search --release
-          cargo run -p moltis-wasm-precompile --release
+          cargo build --target wasm32-wasip2 -p antre-wasm-calc -p antre-wasm-web-fetch -p antre-wasm-web-search --release
+          cargo run -p antre-wasm-precompile --release
 
       - name: Build release binary
         env:
           BUILD_TARGET: ${{ matrix.target }}
-          MOLTIS_VERSION: ${{ steps.release_version.outputs.version }}
-        run: ./scripts/cargo-build-moltis.sh --release --target "$BUILD_TARGET"
+          ANTRE_VERSION: ${{ steps.release_version.outputs.version }}
+        run: ./scripts/cargo-build-antre.sh --release --target "$BUILD_TARGET"
 
       - name: Stage WASM assets for cargo-deb
         env:
@@ -467,8 +467,8 @@ jobs:
       - name: Build .deb package
         env:
           BUILD_TARGET: ${{ matrix.target }}
-          MOLTIS_VERSION: ${{ steps.release_version.outputs.version }}
-        run: cargo deb -p moltis --no-build --target "$BUILD_TARGET" --deb-version "$MOLTIS_VERSION"
+          ANTRE_VERSION: ${{ steps.release_version.outputs.version }}
+        run: cargo deb -p antre --no-build --target "$BUILD_TARGET" --deb-version "$ANTRE_VERSION"
 
       - name: Sign with Sigstore and generate checksums
         if: ${{ env.RELEASE_DRY_RUN != 'true' }}
@@ -481,7 +481,7 @@ jobs:
         if: ${{ env.RELEASE_DRY_RUN != 'true' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: moltis-${{ matrix.arch }}.deb
+          name: antre-${{ matrix.arch }}.deb
           path: |
             target/${{ matrix.target }}/debian/*.deb
             target/${{ matrix.target }}/debian/*.sha256
@@ -553,20 +553,20 @@ jobs:
 
       - name: Build WASM components
         run: |
-          cargo build --target wasm32-wasip2 -p moltis-wasm-calc -p moltis-wasm-web-fetch -p moltis-wasm-web-search --release
-          cargo run -p moltis-wasm-precompile --release
+          cargo build --target wasm32-wasip2 -p antre-wasm-calc -p antre-wasm-web-fetch -p antre-wasm-web-search --release
+          cargo run -p antre-wasm-precompile --release
 
       - name: Build release binary
         env:
           BUILD_TARGET: ${{ matrix.target }}
-          MOLTIS_VERSION: ${{ steps.release_version.outputs.version }}
-        run: ./scripts/cargo-build-moltis.sh --release --target "$BUILD_TARGET"
+          ANTRE_VERSION: ${{ steps.release_version.outputs.version }}
+        run: ./scripts/cargo-build-antre.sh --release --target "$BUILD_TARGET"
 
       - name: Build .rpm package
         env:
           BUILD_TARGET: ${{ matrix.target }}
-          MOLTIS_VERSION: ${{ steps.release_version.outputs.version }}
-        run: cargo generate-rpm -p crates/cli --target "$BUILD_TARGET" --set-metadata="version=\"$MOLTIS_VERSION\""
+          ANTRE_VERSION: ${{ steps.release_version.outputs.version }}
+        run: cargo generate-rpm -p crates/cli --target "$BUILD_TARGET" --set-metadata="version=\"$ANTRE_VERSION\""
 
       - name: Sign with Sigstore and generate checksums
         if: ${{ env.RELEASE_DRY_RUN != 'true' }}
@@ -579,7 +579,7 @@ jobs:
         if: ${{ env.RELEASE_DRY_RUN != 'true' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: moltis-${{ matrix.arch }}.rpm
+          name: antre-${{ matrix.arch }}.rpm
           path: |
             target/${{ matrix.target }}/generate-rpm/*.rpm
             target/${{ matrix.target }}/generate-rpm/*.sha256
@@ -647,8 +647,8 @@ jobs:
 
       - name: Build WASM components
         run: |
-          cargo build --target wasm32-wasip2 -p moltis-wasm-calc -p moltis-wasm-web-fetch -p moltis-wasm-web-search --release
-          cargo run -p moltis-wasm-precompile --release
+          cargo build --target wasm32-wasip2 -p antre-wasm-calc -p antre-wasm-web-fetch -p antre-wasm-web-search --release
+          cargo run -p antre-wasm-precompile --release
 
       - name: Determine package version
         id: version
@@ -663,8 +663,8 @@ jobs:
       - name: Build release binary
         env:
           BUILD_TARGET: ${{ matrix.target }}
-          MOLTIS_VERSION: ${{ steps.version.outputs.version }}
-        run: ./scripts/cargo-build-moltis.sh --release --target "$BUILD_TARGET"
+          ANTRE_VERSION: ${{ steps.version.outputs.version }}
+        run: ./scripts/cargo-build-antre.sh --release --target "$BUILD_TARGET"
 
       - name: Build .pkg.tar.zst
         env:
@@ -673,16 +673,16 @@ jobs:
           MATRIX_ARCH: ${{ matrix.arch }}
         run: |
           PKG_DIR="pkg-root"
-          mkdir -p "$PKG_DIR/usr/bin" "$PKG_DIR/usr/share/moltis/web" "$PKG_DIR/usr/share/moltis/wasm"
-          cp "target/$BUILD_TARGET/release/moltis" "$PKG_DIR/usr/bin/moltis"
-          chmod 755 "$PKG_DIR/usr/bin/moltis"
-          cp -R crates/web/src/assets/. "$PKG_DIR/usr/share/moltis/web/"
-          cp "target/wasm32-wasip2/release/moltis_wasm_calc.wasm" "$PKG_DIR/usr/share/moltis/wasm/"
-          cp "target/wasm32-wasip2/release/moltis_wasm_web_fetch.wasm" "$PKG_DIR/usr/share/moltis/wasm/"
-          cp "target/wasm32-wasip2/release/moltis_wasm_web_search.wasm" "$PKG_DIR/usr/share/moltis/wasm/"
+          mkdir -p "$PKG_DIR/usr/bin" "$PKG_DIR/usr/share/antre/web" "$PKG_DIR/usr/share/antre/wasm"
+          cp "target/$BUILD_TARGET/release/antre" "$PKG_DIR/usr/bin/antre"
+          chmod 755 "$PKG_DIR/usr/bin/antre"
+          cp -R crates/web/src/assets/. "$PKG_DIR/usr/share/antre/web/"
+          cp "target/wasm32-wasip2/release/antre_wasm_calc.wasm" "$PKG_DIR/usr/share/antre/wasm/"
+          cp "target/wasm32-wasip2/release/antre_wasm_web_fetch.wasm" "$PKG_DIR/usr/share/antre/wasm/"
+          cp "target/wasm32-wasip2/release/antre_wasm_web_search.wasm" "$PKG_DIR/usr/share/antre/wasm/"
 
           cat > "$PKG_DIR/.PKGINFO" <<PKGINFO
-          pkgname = moltis
+          pkgname = antre
           pkgver = ${VERSION}-1
           pkgdesc = Personal AI gateway inspired by OpenClaw
           url = https://www.moltis.org/
@@ -691,19 +691,19 @@ jobs:
           PKGINFO
 
           cd "$PKG_DIR"
-          fakeroot -- tar --zstd -cf "../moltis-${VERSION}-1-${MATRIX_ARCH}.pkg.tar.zst" .PKGINFO usr/
+          fakeroot -- tar --zstd -cf "../antre-${VERSION}-1-${MATRIX_ARCH}.pkg.tar.zst" .PKGINFO usr/
 
       - name: Sign with Sigstore and generate checksums
         if: ${{ env.RELEASE_DRY_RUN != 'true' }}
         uses: ./.github/actions/sign-artifacts
         with:
-          files: moltis-${{ steps.version.outputs.version }}-1-${{ matrix.arch }}.pkg.tar.zst
+          files: antre-${{ steps.version.outputs.version }}-1-${{ matrix.arch }}.pkg.tar.zst
 
       - name: Upload .pkg.tar.zst artifact
         if: ${{ env.RELEASE_DRY_RUN != 'true' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: moltis-${{ matrix.arch }}.pkg.tar.zst
+          name: antre-${{ matrix.arch }}.pkg.tar.zst
           path: |
             *.pkg.tar.zst
             *.pkg.tar.zst.sha256
@@ -764,8 +764,8 @@ jobs:
 
       - name: Build WASM components
         run: |
-          cargo build --target wasm32-wasip2 -p moltis-wasm-calc -p moltis-wasm-web-fetch -p moltis-wasm-web-search --release
-          cargo run -p moltis-wasm-precompile --release
+          cargo build --target wasm32-wasip2 -p antre-wasm-calc -p antre-wasm-web-fetch -p antre-wasm-web-search --release
+          cargo run -p antre-wasm-precompile --release
 
       - name: Determine package version
         id: version
@@ -780,8 +780,8 @@ jobs:
       - name: Build release binary
         env:
           BUILD_TARGET: ${{ matrix.target }}
-          MOLTIS_VERSION: ${{ steps.version.outputs.version }}
-        run: ./scripts/cargo-build-moltis.sh --release --target "$BUILD_TARGET"
+          ANTRE_VERSION: ${{ steps.version.outputs.version }}
+        run: ./scripts/cargo-build-antre.sh --release --target "$BUILD_TARGET"
 
       - name: Build AppImage
         env:
@@ -795,56 +795,56 @@ jobs:
           chmod +x appimagetool
 
           # Build AppDir structure
-          APP_DIR="moltis.AppDir"
-          mkdir -p "$APP_DIR/usr/bin" "$APP_DIR/usr/share/moltis/web" "$APP_DIR/usr/share/moltis/wasm"
-          cp "target/$BUILD_TARGET/release/moltis" "$APP_DIR/usr/bin/moltis"
-          chmod 755 "$APP_DIR/usr/bin/moltis"
-          cp -R crates/web/src/assets/. "$APP_DIR/usr/share/moltis/web/"
-          cp "target/wasm32-wasip2/release/moltis_wasm_calc.wasm" "$APP_DIR/usr/share/moltis/wasm/"
-          cp "target/wasm32-wasip2/release/moltis_wasm_web_fetch.wasm" "$APP_DIR/usr/share/moltis/wasm/"
-          cp "target/wasm32-wasip2/release/moltis_wasm_web_search.wasm" "$APP_DIR/usr/share/moltis/wasm/"
+          APP_DIR="antre.AppDir"
+          mkdir -p "$APP_DIR/usr/bin" "$APP_DIR/usr/share/antre/web" "$APP_DIR/usr/share/antre/wasm"
+          cp "target/$BUILD_TARGET/release/antre" "$APP_DIR/usr/bin/antre"
+          chmod 755 "$APP_DIR/usr/bin/antre"
+          cp -R crates/web/src/assets/. "$APP_DIR/usr/share/antre/web/"
+          cp "target/wasm32-wasip2/release/antre_wasm_calc.wasm" "$APP_DIR/usr/share/antre/wasm/"
+          cp "target/wasm32-wasip2/release/antre_wasm_web_fetch.wasm" "$APP_DIR/usr/share/antre/wasm/"
+          cp "target/wasm32-wasip2/release/antre_wasm_web_search.wasm" "$APP_DIR/usr/share/antre/wasm/"
 
           # Create .desktop file
-          cat > "$APP_DIR/moltis.desktop" <<DESKTOP
+          cat > "$APP_DIR/antre.desktop" <<DESKTOP
           [Desktop Entry]
           Type=Application
-          Name=Moltis
-          Exec=moltis
-          Icon=moltis
+          Name=Antre
+          Exec=antre
+          Icon=antre
           Categories=Network;
           Terminal=true
           DESKTOP
 
           # Create minimal icon
-          cat > "$APP_DIR/moltis.svg" <<SVG
+          cat > "$APP_DIR/antre.svg" <<SVG
           <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256"><rect width="256" height="256" fill="#333"/><text x="128" y="140" font-size="120" text-anchor="middle" fill="white">M</text></svg>
           SVG
-          ln -s moltis.svg "$APP_DIR/.DirIcon"
+          ln -s antre.svg "$APP_DIR/.DirIcon"
 
           # Create AppRun
           cat > "$APP_DIR/AppRun" <<'APPRUN'
           #!/bin/sh
           SELF=$(readlink -f "$0")
           HERE=${SELF%/*}
-          export MOLTIS_SHARE_DIR="$HERE/usr/share/moltis"
-          exec "$HERE/usr/bin/moltis" "$@"
+          export ANTRE_SHARE_DIR="$HERE/usr/share/antre"
+          exec "$HERE/usr/bin/antre" "$@"
           APPRUN
           chmod +x "$APP_DIR/AppRun"
 
           # Package - use --appimage-extract-and-run to avoid FUSE requirement in CI
-          ARCH="$MATRIX_ARCH" ./appimagetool --appimage-extract-and-run "$APP_DIR" "moltis-${VERSION}-${MATRIX_ARCH}.AppImage"
+          ARCH="$MATRIX_ARCH" ./appimagetool --appimage-extract-and-run "$APP_DIR" "antre-${VERSION}-${MATRIX_ARCH}.AppImage"
 
       - name: Sign with Sigstore and generate checksums
         if: ${{ env.RELEASE_DRY_RUN != 'true' }}
         uses: ./.github/actions/sign-artifacts
         with:
-          files: moltis-${{ steps.version.outputs.version }}-${{ matrix.arch }}.AppImage
+          files: antre-${{ steps.version.outputs.version }}-${{ matrix.arch }}.AppImage
 
       - name: Upload AppImage artifact
         if: ${{ env.RELEASE_DRY_RUN != 'true' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: moltis-${{ matrix.arch }}.AppImage
+          name: antre-${{ matrix.arch }}.AppImage
           path: |
             *.AppImage
             *.AppImage.sha256
@@ -898,7 +898,7 @@ jobs:
         if: ${{ env.RELEASE_DRY_RUN != 'true' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: moltis.snap
+          name: antre.snap
           path: |
             ${{ steps.build-snap.outputs.snap }}
             ${{ steps.build-snap.outputs.snap }}.sha256
@@ -965,8 +965,8 @@ jobs:
 
       - name: Build WASM components
         run: |
-          cargo build --target wasm32-wasip2 -p moltis-wasm-calc -p moltis-wasm-web-fetch -p moltis-wasm-web-search --release
-          cargo run -p moltis-wasm-precompile --release
+          cargo build --target wasm32-wasip2 -p antre-wasm-calc -p antre-wasm-web-fetch -p antre-wasm-web-search --release
+          cargo run -p antre-wasm-precompile --release
 
       - name: Determine package version
         id: version
@@ -981,34 +981,34 @@ jobs:
       - name: Build release binary
         env:
           BUILD_TARGET: ${{ matrix.target }}
-          MOLTIS_VERSION: ${{ steps.version.outputs.version }}
-        run: ./scripts/cargo-build-moltis.sh --release --target "$BUILD_TARGET"
+          ANTRE_VERSION: ${{ steps.version.outputs.version }}
+        run: ./scripts/cargo-build-antre.sh --release --target "$BUILD_TARGET"
 
       - name: Package binary
         env:
           VERSION: ${{ steps.version.outputs.version }}
           BUILD_TARGET: ${{ matrix.target }}
         run: |
-          PKG_DIR="moltis-package"
-          mkdir -p "$PKG_DIR/share/moltis/web" "$PKG_DIR/share/moltis/wasm"
-          cp "target/$BUILD_TARGET/release/moltis" "$PKG_DIR/moltis"
-          cp -R crates/web/src/assets/. "$PKG_DIR/share/moltis/web/"
-          cp "target/wasm32-wasip2/release/moltis_wasm_calc.wasm" "$PKG_DIR/share/moltis/wasm/"
-          cp "target/wasm32-wasip2/release/moltis_wasm_web_fetch.wasm" "$PKG_DIR/share/moltis/wasm/"
-          cp "target/wasm32-wasip2/release/moltis_wasm_web_search.wasm" "$PKG_DIR/share/moltis/wasm/"
-          tar czf "moltis-${VERSION}-${BUILD_TARGET}.tar.gz" -C "$PKG_DIR" moltis share
+          PKG_DIR="antre-package"
+          mkdir -p "$PKG_DIR/share/antre/web" "$PKG_DIR/share/antre/wasm"
+          cp "target/$BUILD_TARGET/release/antre" "$PKG_DIR/antre"
+          cp -R crates/web/src/assets/. "$PKG_DIR/share/antre/web/"
+          cp "target/wasm32-wasip2/release/antre_wasm_calc.wasm" "$PKG_DIR/share/antre/wasm/"
+          cp "target/wasm32-wasip2/release/antre_wasm_web_fetch.wasm" "$PKG_DIR/share/antre/wasm/"
+          cp "target/wasm32-wasip2/release/antre_wasm_web_search.wasm" "$PKG_DIR/share/antre/wasm/"
+          tar czf "antre-${VERSION}-${BUILD_TARGET}.tar.gz" -C "$PKG_DIR" antre share
 
       - name: Sign with Sigstore and generate checksums
         if: ${{ env.RELEASE_DRY_RUN != 'true' }}
         uses: ./.github/actions/sign-artifacts
         with:
-          files: moltis-${{ steps.version.outputs.version }}-${{ matrix.target }}.tar.gz
+          files: antre-${{ steps.version.outputs.version }}-${{ matrix.target }}.tar.gz
 
       - name: Upload binary artifact
         if: ${{ env.RELEASE_DRY_RUN != 'true' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: moltis-${{ matrix.target }}
+          name: antre-${{ matrix.target }}
           path: |
             *.tar.gz
             *.tar.gz.sha256
@@ -1098,7 +1098,7 @@ jobs:
       - name: Build Swift bridge artifacts and generate Xcode project
         timeout-minutes: 120
         env:
-          MOLTIS_VERSION: ${{ steps.version.outputs.version }}
+          ANTRE_VERSION: ${{ steps.version.outputs.version }}
         run: |
           ./scripts/build-swift-bridge.sh
           ./scripts/generate-swift-project.sh
@@ -1115,8 +1115,8 @@ jobs:
           fi
 
           xcodebuild \
-            -project apps/macos/Moltis.xcodeproj \
-            -scheme Moltis \
+            -project apps/macos/Antre.xcodeproj \
+            -scheme Antre \
             -configuration Release \
             -destination "platform=macOS" \
             -derivedDataPath "$DERIVED_DATA_DIR" \
@@ -1126,9 +1126,9 @@ jobs:
           # Re-sign with hardened runtime + timestamp + clean entitlements
           # to strip com.apple.security.get-task-allow (debug entitlement)
           if [[ "$RELEASE_DRY_RUN" != "true" ]]; then
-            APP_PATH="${DERIVED_DATA_DIR}/Build/Products/Release/Moltis.app"
+            APP_PATH="${DERIVED_DATA_DIR}/Build/Products/Release/Antre.app"
             /usr/bin/codesign --force --deep --timestamp --options runtime \
-              --entitlements apps/macos/Moltis.entitlements \
+              --entitlements apps/macos/Antre.entitlements \
               --sign "Developer ID Application" \
               "$APP_PATH"
           fi
@@ -1136,13 +1136,13 @@ jobs:
       - name: Package macOS app
         env:
           VERSION: ${{ steps.version.outputs.version }}
-          APP_PATH: apps/macos/.derivedData-ci/Build/Products/Release/Moltis.app
+          APP_PATH: apps/macos/.derivedData-ci/Build/Products/Release/Antre.app
         run: |
           if [ ! -d "$APP_PATH" ]; then
             echo "expected app bundle not found at $APP_PATH" >&2
             exit 1
           fi
-          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "moltis-${VERSION}-macos.app.zip"
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "antre-${VERSION}-macos.app.zip"
 
       - name: Test notarization script
         run: bash scripts/test-notarize-macos.sh
@@ -1155,27 +1155,27 @@ jobs:
           APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
           APPLE_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
         run: |
-          bash scripts/notarize-macos.sh "moltis-${VERSION}-macos.app.zip"
+          bash scripts/notarize-macos.sh "antre-${VERSION}-macos.app.zip"
 
           # Staple the notarization ticket to the app bundle
-          APP_PATH="apps/macos/.derivedData-ci/Build/Products/Release/Moltis.app"
+          APP_PATH="apps/macos/.derivedData-ci/Build/Products/Release/Antre.app"
           xcrun stapler staple "$APP_PATH"
 
           # Re-package with the stapled ticket
-          rm "moltis-${VERSION}-macos.app.zip"
-          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "moltis-${VERSION}-macos.app.zip"
+          rm "antre-${VERSION}-macos.app.zip"
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "antre-${VERSION}-macos.app.zip"
 
       - name: Sign with Sigstore and generate checksums
         if: ${{ env.RELEASE_DRY_RUN != 'true' }}
         uses: ./.github/actions/sign-artifacts
         with:
-          files: moltis-${{ steps.version.outputs.version }}-macos.app.zip
+          files: antre-${{ steps.version.outputs.version }}-macos.app.zip
 
       - name: Upload macOS app artifact
         if: ${{ env.RELEASE_DRY_RUN != 'true' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: moltis-macos-app
+          name: antre-macos-app
           path: |
             *.app.zip
             *.app.zip.sha256
@@ -1191,12 +1191,12 @@ jobs:
             security delete-keychain "$KEYCHAIN_PATH"
           fi
 
-  # The gpui client (apps/desktop) with the moltis daemon inside, so a user
+  # The gpui client (apps/desktop) with the antre daemon inside, so a user
   # needs nothing else: the app installs the bundled daemon as a user service.
   build-desktop-app:
     needs: release-gates
     runs-on: macos-latest
-    name: Build Moltis Desktop (gpui)
+    name: Build Antre Desktop (gpui)
     timeout-minutes: 180
     permissions:
       contents: read
@@ -1231,8 +1231,8 @@ jobs:
       # tools are compiled in (embedded-wasm) like the Windows build.
       - name: Build WASM components
         run: |
-          cargo build --target wasm32-wasip2 -p moltis-wasm-calc -p moltis-wasm-web-fetch -p moltis-wasm-web-search --release
-          cargo run -p moltis-wasm-precompile --release
+          cargo build --target wasm32-wasip2 -p antre-wasm-calc -p antre-wasm-web-fetch -p antre-wasm-web-search --release
+          cargo run -p antre-wasm-precompile --release
 
       - name: Install cosign
         if: ${{ env.RELEASE_DRY_RUN != 'true' }}
@@ -1278,7 +1278,7 @@ jobs:
 
       - name: Build and sign the app bundle (universal)
         env:
-          MOLTIS_VERSION: ${{ steps.version.outputs.version }}
+          ANTRE_VERSION: ${{ steps.version.outputs.version }}
           DESKTOP_UNIVERSAL: "1"
           DESKTOP_DAEMON_FEATURES: portable,embedded-assets,embedded-wasm
         run: |
@@ -1286,15 +1286,15 @@ jobs:
             export DESKTOP_SIGN_IDENTITY="Developer ID Application"
           fi
           ./scripts/package-desktop-macos.sh "$PWD/desktop-bundle"
-          lipo -info "desktop-bundle/Moltis Desktop.app/Contents/MacOS/moltis-desktop"
-          lipo -info "desktop-bundle/Moltis Desktop.app/Contents/MacOS/moltis"
+          lipo -info "desktop-bundle/Antre Desktop.app/Contents/MacOS/antre-desktop"
+          lipo -info "desktop-bundle/Antre Desktop.app/Contents/MacOS/antre"
 
       - name: Package app
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          ditto -c -k --sequesterRsrc --keepParent "desktop-bundle/Moltis Desktop.app" \
-            "moltis-desktop-${VERSION}-macos.app.zip"
+          ditto -c -k --sequesterRsrc --keepParent "desktop-bundle/Antre Desktop.app" \
+            "antre-desktop-${VERSION}-macos.app.zip"
 
       - name: Notarize app
         if: ${{ env.RELEASE_DRY_RUN != 'true' }}
@@ -1304,31 +1304,31 @@ jobs:
           APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
           APPLE_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
         run: |
-          ARCHIVE="moltis-desktop-${VERSION}-macos.app.zip"
+          ARCHIVE="antre-desktop-${VERSION}-macos.app.zip"
           bash scripts/notarize-macos.sh "$ARCHIVE"
 
           # Staple the ticket to the bundle and re-package it.
-          xcrun stapler staple "desktop-bundle/Moltis Desktop.app"
+          xcrun stapler staple "desktop-bundle/Antre Desktop.app"
           rm "$ARCHIVE"
-          ditto -c -k --sequesterRsrc --keepParent "desktop-bundle/Moltis Desktop.app" "$ARCHIVE"
+          ditto -c -k --sequesterRsrc --keepParent "desktop-bundle/Antre Desktop.app" "$ARCHIVE"
 
       - name: Sign with Sigstore and generate checksums
         if: ${{ env.RELEASE_DRY_RUN != 'true' }}
         uses: ./.github/actions/sign-artifacts
         with:
-          files: moltis-desktop-${{ steps.version.outputs.version }}-macos.app.zip
+          files: antre-desktop-${{ steps.version.outputs.version }}-macos.app.zip
 
       - name: Upload app artifact
         if: ${{ env.RELEASE_DRY_RUN != 'true' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: moltis-desktop-macos-app
+          name: antre-desktop-macos-app
           path: |
-            moltis-desktop-*.app.zip
-            moltis-desktop-*.app.zip.sha256
-            moltis-desktop-*.app.zip.sha512
-            moltis-desktop-*.app.zip.sig
-            moltis-desktop-*.app.zip.crt
+            antre-desktop-*.app.zip
+            antre-desktop-*.app.zip.sha256
+            antre-desktop-*.app.zip.sha512
+            antre-desktop-*.app.zip.sig
+            antre-desktop-*.app.zip.crt
 
       - name: Clean up keychain
         if: always()
@@ -1350,7 +1350,7 @@ jobs:
             arch: aarch64
             os: ubuntu-24.04-arm
     runs-on: ${{ matrix.os }}
-    name: Build Moltis Desktop AppImage (${{ matrix.arch }})
+    name: Build Antre Desktop AppImage (${{ matrix.arch }})
     timeout-minutes: 180
     permissions:
       contents: read
@@ -1391,12 +1391,12 @@ jobs:
           ./scripts/download-tailwindcss-cli.sh "$TW"
           TAILWINDCSS=./$TW ./scripts/build-web-assets.sh
 
-      # The app copies its daemon to ~/.moltis/bin, away from any share/
+      # The app copies its daemon to ~/.antre/bin, away from any share/
       # directory, so the web assets and WASM tools are compiled in.
       - name: Build WASM components
         run: |
-          cargo build --target wasm32-wasip2 -p moltis-wasm-calc -p moltis-wasm-web-fetch -p moltis-wasm-web-search --release
-          cargo run -p moltis-wasm-precompile --release
+          cargo build --target wasm32-wasip2 -p antre-wasm-calc -p antre-wasm-web-fetch -p antre-wasm-web-search --release
+          cargo run -p antre-wasm-precompile --release
 
       - name: Install cosign
         if: ${{ env.RELEASE_DRY_RUN != 'true' }}
@@ -1414,7 +1414,7 @@ jobs:
 
       - name: Build the AppImage
         env:
-          MOLTIS_VERSION: ${{ steps.version.outputs.version }}
+          ANTRE_VERSION: ${{ steps.version.outputs.version }}
           DESKTOP_TARGET: ${{ matrix.target }}
           DESKTOP_DAEMON_FEATURES: portable,embedded-assets,embedded-wasm
         run: ./scripts/package-desktop-linux.sh "$PWD"
@@ -1423,19 +1423,19 @@ jobs:
         if: ${{ env.RELEASE_DRY_RUN != 'true' }}
         uses: ./.github/actions/sign-artifacts
         with:
-          files: moltis-desktop-${{ steps.version.outputs.version }}-${{ matrix.arch }}.AppImage
+          files: antre-desktop-${{ steps.version.outputs.version }}-${{ matrix.arch }}.AppImage
 
       - name: Upload AppImage artifact
         if: ${{ env.RELEASE_DRY_RUN != 'true' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: moltis-desktop-linux-${{ matrix.arch }}
+          name: antre-desktop-linux-${{ matrix.arch }}
           path: |
-            moltis-desktop-*.AppImage
-            moltis-desktop-*.AppImage.sha256
-            moltis-desktop-*.AppImage.sha512
-            moltis-desktop-*.AppImage.sig
-            moltis-desktop-*.AppImage.crt
+            antre-desktop-*.AppImage
+            antre-desktop-*.AppImage.sha256
+            antre-desktop-*.AppImage.sha512
+            antre-desktop-*.AppImage.sig
+            antre-desktop-*.AppImage.crt
 
   build-windows-exe:
     needs: release-gates
@@ -1491,8 +1491,8 @@ jobs:
       - name: Build WASM components
         shell: bash
         run: |
-          cargo build --target wasm32-wasip2 -p moltis-wasm-calc -p moltis-wasm-web-fetch -p moltis-wasm-web-search --release
-          cargo run -p moltis-wasm-precompile --release
+          cargo build --target wasm32-wasip2 -p antre-wasm-calc -p antre-wasm-web-fetch -p antre-wasm-web-search --release
+          cargo run -p antre-wasm-precompile --release
 
       - name: Determine package version
         id: version
@@ -1508,33 +1508,33 @@ jobs:
       - name: Build release binary
         shell: bash
         env:
-          MOLTIS_VERSION: ${{ steps.version.outputs.version }}
-        run: MOLTIS_BUILD_FEATURES=portable,embedded-assets,embedded-wasm ./scripts/cargo-build-moltis.sh --release --target "$BUILD_TARGET"
+          ANTRE_VERSION: ${{ steps.version.outputs.version }}
+        run: ANTRE_BUILD_FEATURES=portable,embedded-assets,embedded-wasm ./scripts/cargo-build-antre.sh --release --target "$BUILD_TARGET"
 
       - name: Package .exe
         shell: bash
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          cp "target/$BUILD_TARGET/release/moltis.exe" "moltis-${VERSION}-${BUILD_TARGET}.exe"
+          cp "target/$BUILD_TARGET/release/antre.exe" "antre-${VERSION}-${BUILD_TARGET}.exe"
 
       - name: Sign with Sigstore and generate checksums
         if: ${{ env.RELEASE_DRY_RUN != 'true' }}
         uses: ./.github/actions/sign-artifacts
         with:
-          files: moltis-${{ steps.version.outputs.version }}-${{ env.BUILD_TARGET }}.exe
+          files: antre-${{ steps.version.outputs.version }}-${{ env.BUILD_TARGET }}.exe
 
       - name: Upload .exe artifact
         if: ${{ env.RELEASE_DRY_RUN != 'true' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: moltis-${{ env.BUILD_TARGET }}.exe
+          name: antre-${{ env.BUILD_TARGET }}.exe
           path: |
-            moltis-${{ steps.version.outputs.version }}-${{ env.BUILD_TARGET }}.exe
-            moltis-${{ steps.version.outputs.version }}-${{ env.BUILD_TARGET }}.exe.sha256
-            moltis-${{ steps.version.outputs.version }}-${{ env.BUILD_TARGET }}.exe.sha512
-            moltis-${{ steps.version.outputs.version }}-${{ env.BUILD_TARGET }}.exe.sig
-            moltis-${{ steps.version.outputs.version }}-${{ env.BUILD_TARGET }}.exe.crt
+            antre-${{ steps.version.outputs.version }}-${{ env.BUILD_TARGET }}.exe
+            antre-${{ steps.version.outputs.version }}-${{ env.BUILD_TARGET }}.exe.sha256
+            antre-${{ steps.version.outputs.version }}-${{ env.BUILD_TARGET }}.exe.sha512
+            antre-${{ steps.version.outputs.version }}-${{ env.BUILD_TARGET }}.exe.sig
+            antre-${{ steps.version.outputs.version }}-${{ env.BUILD_TARGET }}.exe.crt
 
   build-docker:
     if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.dry_run) }}
@@ -1598,7 +1598,7 @@ jobs:
         with:
           context: .
           platforms: ${{ matrix.platform }}
-          build-args: MOLTIS_VERSION=${{ steps.release_version.outputs.version }}
+          build-args: ANTRE_VERSION=${{ steps.release_version.outputs.version }}
           labels: ${{ steps.meta.outputs.labels }}
           outputs: type=image,"name=ghcr.io/${{ github.repository }}",push-by-digest=true,name-canonical=true,push=true
           cache-from: type=gha,scope=${{ matrix.platform }}
@@ -1795,23 +1795,23 @@ jobs:
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           path: artifacts
-          pattern: moltis-*
+          pattern: antre-*
 
       - name: Download snap artifact
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          name: moltis.snap
-          path: artifacts/moltis.snap
+          name: antre.snap
+          path: artifacts/antre.snap
 
       - name: Collect all release files
         run: |
           mkdir -p release-files
           find artifacts -type f \( \
-            -name 'moltis*.deb' -o -name 'moltis*.rpm' -o -name 'moltis*.pkg.tar.zst' \
-            -o -name 'moltis*.AppImage' -o -name 'moltis*.snap' -o -name 'moltis*.tar.gz' \
-            -o -name 'moltis*.zip' -o -name 'moltis*.exe' \
-            -o -name 'moltis*.sha256' -o -name 'moltis*.sha512' \
-            -o -name 'moltis*.sig' -o -name 'moltis*.crt' \
+            -name 'antre*.deb' -o -name 'antre*.rpm' -o -name 'antre*.pkg.tar.zst' \
+            -o -name 'antre*.AppImage' -o -name 'antre*.snap' -o -name 'antre*.tar.gz' \
+            -o -name 'antre*.zip' -o -name 'antre*.exe' \
+            -o -name 'antre*.sha256' -o -name 'antre*.sha512' \
+            -o -name 'antre*.sig' -o -name 'antre*.crt' \
           \) -exec cp {} release-files/ \;
           cp CHANGELOG.md release-files/
           echo "Files to upload:"
@@ -1864,34 +1864,34 @@ jobs:
 
       - name: Generate SBOM (CycloneDX and SPDX)
         run: |
-          cargo sbom --output-format cyclone_dx_json_1_4 > moltis-sbom.cdx.json
-          cargo sbom --output-format spdx_json_2_3 > moltis-sbom.spdx.json
+          cargo sbom --output-format cyclone_dx_json_1_4 > antre-sbom.cdx.json
+          cargo sbom --output-format spdx_json_2_3 > antre-sbom.spdx.json
 
       - name: Sign SBOMs with Sigstore and generate checksums
         uses: ./.github/actions/sign-artifacts
         with:
-          files: moltis-sbom.cdx.json moltis-sbom.spdx.json
+          files: antre-sbom.cdx.json antre-sbom.spdx.json
           skip-sha512: 'true'
 
       - name: Upload SBOM to release
         uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2
         with:
           files: |
-            moltis-sbom.cdx.json
-            moltis-sbom.cdx.json.sha256
-            moltis-sbom.cdx.json.sig
-            moltis-sbom.cdx.json.crt
-            moltis-sbom.spdx.json
-            moltis-sbom.spdx.json.sha256
-            moltis-sbom.spdx.json.sig
-            moltis-sbom.spdx.json.crt
+            antre-sbom.cdx.json
+            antre-sbom.cdx.json.sha256
+            antre-sbom.cdx.json.sig
+            antre-sbom.cdx.json.crt
+            antre-sbom.spdx.json
+            antre-sbom.spdx.json.sha256
+            antre-sbom.spdx.json.sig
+            antre-sbom.spdx.json.crt
 
       - name: Attest build provenance for SBOMs
         uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4
         with:
           subject-path: |
-            moltis-sbom.cdx.json
-            moltis-sbom.spdx.json
+            antre-sbom.cdx.json
+            antre-sbom.spdx.json
 
   update-homebrew-tap:
     needs:
@@ -1928,7 +1928,7 @@ jobs:
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
 
           for target in aarch64-apple-darwin x86_64-apple-darwin aarch64-unknown-linux-gnu x86_64-unknown-linux-gnu; do
-            ASSET="moltis-${VERSION}-${target}.tar.gz"
+            ASSET="antre-${VERSION}-${target}.tar.gz"
             URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/${ASSET}"
             curl --silent --show-error --fail --location "$URL" -o "$ASSET"
             SHA=$(sha256sum "$ASSET" | cut -d' ' -f1)
@@ -1941,15 +1941,15 @@ jobs:
         if: steps.token_check.outputs.has_token == 'true'
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
-          repository: moltis-org/homebrew-tap
+          repository: antre-ai/homebrew-tap
           token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
           persist-credentials: true
 
       - name: Update formula
         if: steps.token_check.outputs.has_token == 'true'
         run: |
-          cat > Formula/moltis.rb <<RUBY
-          class Moltis < Formula
+          cat > Formula/antre.rb <<RUBY
+          class Antre < Formula
             desc "Personal AI gateway - one binary, multiple LLM providers"
             homepage "https://www.moltis.org/"
             license "MIT"
@@ -1957,32 +1957,32 @@ jobs:
 
             on_macos do
               if Hardware::CPU.arm?
-                url "https://github.com/moltis-org/moltis/releases/download/#{version}/moltis-#{version}-aarch64-apple-darwin.tar.gz"
+                url "https://github.com/antre-ai/antre/releases/download/#{version}/antre-#{version}-aarch64-apple-darwin.tar.gz"
                 sha256 "${SHA_aarch64_apple_darwin}"
               else
-                url "https://github.com/moltis-org/moltis/releases/download/#{version}/moltis-#{version}-x86_64-apple-darwin.tar.gz"
+                url "https://github.com/antre-ai/antre/releases/download/#{version}/antre-#{version}-x86_64-apple-darwin.tar.gz"
                 sha256 "${SHA_x86_64_apple_darwin}"
               end
             end
 
             on_linux do
               if Hardware::CPU.arm?
-                url "https://github.com/moltis-org/moltis/releases/download/#{version}/moltis-#{version}-aarch64-unknown-linux-gnu.tar.gz"
+                url "https://github.com/antre-ai/antre/releases/download/#{version}/antre-#{version}-aarch64-unknown-linux-gnu.tar.gz"
                 sha256 "${SHA_aarch64_unknown_linux_gnu}"
               else
-                url "https://github.com/moltis-org/moltis/releases/download/#{version}/moltis-#{version}-x86_64-unknown-linux-gnu.tar.gz"
+                url "https://github.com/antre-ai/antre/releases/download/#{version}/antre-#{version}-x86_64-unknown-linux-gnu.tar.gz"
                 sha256 "${SHA_x86_64_unknown_linux_gnu}"
               end
             end
 
             def install
-              libexec.install "moltis"
-              share.install "share/moltis"
-              (bin/"moltis").write_env_script libexec/"moltis", MOLTIS_SHARE_DIR: share/"moltis"
+              libexec.install "antre"
+              share.install "share/antre"
+              (bin/"antre").write_env_script libexec/"antre", ANTRE_SHARE_DIR: share/"antre"
             end
 
             test do
-              assert_match "moltis", shell_output("#{bin}/moltis --version")
+              assert_match "antre", shell_output("#{bin}/antre --version")
             end
           end
           RUBY
@@ -1992,12 +1992,12 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add Formula/moltis.rb
+          git add Formula/antre.rb
           if git diff --cached --quiet; then
             echo "No Homebrew formula changes to commit"
             exit 0
           fi
-          git commit -m "moltis ${VERSION}"
+          git commit -m "antre ${VERSION}"
           git push
 
   update-deploy-tags:
@@ -2028,19 +2028,19 @@ jobs:
           sed -i "s/tag: \"[0-9][0-9.]*\"/tag: \"${VERSION}\"/" .do/deploy.template.yaml
 
           # Render
-          sed -i "s|ghcr.io/moltis-org/moltis:[0-9][0-9.]*|ghcr.io/moltis-org/moltis:${VERSION}|" render.yaml
+          sed -i "s|ghcr.io/antre-ai/antre:[0-9][0-9.]*|ghcr.io/antre-ai/antre:${VERSION}|" render.yaml
 
           # Fly.io
-          sed -i "s|ghcr.io/moltis-org/moltis:[0-9][0-9.]*|ghcr.io/moltis-org/moltis:${VERSION}|" fly.toml
+          sed -i "s|ghcr.io/antre-ai/antre:[0-9][0-9.]*|ghcr.io/antre-ai/antre:${VERSION}|" fly.toml
 
           # Website releases.json
           jq --arg v "$VERSION" \
-            '.stable.version = $v | .stable.release_url = "https://github.com/moltis-org/moltis/releases/tag/" + $v' \
+            '.stable.version = $v | .stable.release_url = "https://github.com/antre-ai/antre/releases/tag/" + $v' \
             website/releases.json > website/releases.json.tmp \
             && mv website/releases.json.tmp website/releases.json
 
-          MOLTIS_CHANGELOG_PUBLISHED_ONLY=1 \
-            MOLTIS_CHANGELOG_INCLUDE_TAG="${VERSION}" \
+          ANTRE_CHANGELOG_PUBLISHED_ONLY=1 \
+            ANTRE_CHANGELOG_INCLUDE_TAG="${VERSION}" \
             node website/scripts/build-changelog.mjs
 
           # Check if any files changed

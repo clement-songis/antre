@@ -7,6 +7,12 @@
 use std::sync::Arc;
 
 use {
+    antre_canvas::{
+        CanvasService, DesignFilter, DesignId, Error as CanvasError, ExportFormat, Viewport,
+        Visibility,
+    },
+    antre_gateway::auth::AuthIdentity,
+    antre_protocol::scopes,
     axum::{
         Extension, Json, Router,
         body::Body,
@@ -15,12 +21,6 @@ use {
         response::{IntoResponse, Response},
         routing::{delete, get, post},
     },
-    moltis_canvas::{
-        CanvasService, DesignFilter, DesignId, Error as CanvasError, ExportFormat, Viewport,
-        Visibility,
-    },
-    moltis_gateway::auth::AuthIdentity,
-    moltis_protocol::scopes,
     serde::Deserialize,
     serde_json::json,
 };
@@ -401,7 +401,7 @@ pub fn canvas_router() -> Router<AppState> {
 mod tests {
     use {
         super::*,
-        moltis_gateway::auth::{AuthIdentity, AuthMethod},
+        antre_gateway::auth::{AuthIdentity, AuthMethod},
     };
 
     fn identity(scopes: &[&str]) -> AuthIdentity {

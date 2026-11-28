@@ -3,10 +3,10 @@
 use {
     super::*,
     crate::{KeyStore, known_providers::AuthType},
-    moltis_config::schema::{ProviderEntry, ProvidersConfig},
-    moltis_oauth::{OAuthTokens, TokenStore},
-    moltis_providers::ProviderRegistry,
-    moltis_service_traits::{NoopProviderSetupService, ProviderSetupService},
+    antre_config::schema::{ProviderEntry, ProvidersConfig},
+    antre_oauth::{OAuthTokens, TokenStore},
+    antre_providers::ProviderRegistry,
+    antre_service_traits::{NoopProviderSetupService, ProviderSetupService},
     std::{collections::HashMap, sync::Arc},
     tokio::sync::RwLock,
 };
@@ -94,9 +94,9 @@ async fn available_marks_provider_configured_from_generic_provider_env() {
     )));
     let svc = LiveProviderSetupService::new(registry, ProvidersConfig::default(), None)
         .with_env_overrides(HashMap::from([
-            ("MOLTIS_PROVIDER".to_string(), "openai".to_string()),
+            ("ANTRE_PROVIDER".to_string(), "openai".to_string()),
             (
-                "MOLTIS_API_KEY".to_string(),
+                "ANTRE_API_KEY".to_string(),
                 "sk-test-openai-generic".to_string(),
             ),
         ]));

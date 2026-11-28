@@ -9,8 +9,8 @@ use std::{
 };
 
 use {
-    moltis_config::OpenBrowser,
-    moltis_gateway::state::GatewayState,
+    antre_config::OpenBrowser,
+    antre_gateway::state::GatewayState,
     secrecy::ExposeSecret,
     tracing::{info, warn},
 };
@@ -75,7 +75,7 @@ impl LaunchContext {
             stdin_terminal,
             ssh: any(&["SSH_CONNECTION", "SSH_CLIENT", "SSH_TTY"]),
             ci: any(&["CI"]),
-            container: container_marker || any(&["container", "MOLTIS_DEPLOY_PLATFORM"]),
+            container: container_marker || any(&["container", "ANTRE_DEPLOY_PLATFORM"]),
             // systemd sets INVOCATION_ID for every unit it starts.
             service: any(&["INVOCATION_ID"]),
             display: !cfg!(target_os = "linux")
@@ -190,7 +190,7 @@ pub(crate) fn next_step_lines(step: &NextStep<'_>) -> Vec<String> {
         _ => lines.push(format!("open {page} in your browser")),
     }
     if !step.onboarded {
-        lines.push("to finish setting up Moltis".into());
+        lines.push("to finish setting up Antre".into());
     }
     if step.setup_code.is_some() {
         lines.push(if step.browser == BrowserOutcome::Opened {
@@ -205,7 +205,7 @@ pub(crate) fn next_step_lines(step: &NextStep<'_>) -> Vec<String> {
 /// Text for the pinned status line.
 pub(crate) fn status_message(base_url: &str, onboarded: bool, setup_code: Option<&str>) -> String {
     if onboarded {
-        return format!("● Moltis running at {base_url}  ·  Ctrl+C to stop");
+        return format!("● Antre running at {base_url}  ·  Ctrl+C to stop");
     }
     let page = launch_url(base_url, false, None);
     match setup_code {
@@ -241,7 +241,7 @@ async fn current_setup_code(state: &GatewayState) -> Option<String> {
 }
 
 async fn is_onboarded() -> bool {
-    tokio::fs::try_exists(moltis_config::onboarded_sentinel_path())
+    tokio::fs::try_exists(antre_config::onboarded_sentinel_path())
         .await
         .unwrap_or(false)
 }
@@ -360,7 +360,7 @@ pub(crate) fn trust_answer(read: std::io::Result<usize>, answer: &str) -> TrustA
 /// per CA, when someone at this desktop can answer.
 #[cfg(feature = "tls")]
 pub(crate) async fn offer_ca_trust(ca_path: &Path) {
-    use moltis_tls::trust::{self, TrustDecision};
+    use antre_tls::trust::{self, TrustDecision};
 
     if !LaunchContext::detect().can_prompt() || trust::recorded_decision(ca_path).is_some() {
         return;
@@ -368,7 +368,7 @@ pub(crate) async fn offer_ca_trust(ca_path: &Path) {
     let ca_path = ca_path.to_path_buf();
     let outcome = tokio::task::spawn_blocking(move || {
         eprint!(
-            "\nTrust the Moltis local CA so your browser opens https:// pages without warnings?\n\
+            "\nTrust the Antre local CA so your browser opens https:// pages without warnings?\n\
              It only covers localhost, .local names and private network addresses.\n\
              Your OS may ask for your password. [Y/n] "
         );
@@ -392,9 +392,9 @@ pub(crate) async fn offer_ca_trust(ca_path: &Path) {
         Ok(Some(report)) => {
             for step in &report.steps {
                 match &step.result {
-                    Ok(()) => info!(store = %step.store, "trusted Moltis local CA"),
+                    Ok(()) => info!(store = %step.store, "trusted Antre local CA"),
                     Err(error) => {
-                        warn!(store = %step.store, %error, "could not trust Moltis local CA")
+                        warn!(store = %step.store, %error, "could not trust Antre local CA")
                     },
                 }
             }
@@ -405,7 +405,7 @@ pub(crate) async fn offer_ca_trust(ca_path: &Path) {
                 info!("restart your browser if it was already open");
             }
         },
-        Ok(None) => info!("skipped trusting the local CA; run `moltis trust-ca` later"),
+        Ok(None) => info!("skipped trusting the local CA; run `antre trust-ca` later"),
         Err(error) => warn!(%error, "CA trust prompt failed"),
     }
 }
@@ -446,7 +446,7 @@ mod tests {
             ("SSH_TTY", "/dev/pts/1"),
             ("CI", "true"),
             ("container", "podman"),
-            ("MOLTIS_DEPLOY_PLATFORM", "fly"),
+            ("ANTRE_DEPLOY_PLATFORM", "fly"),
             ("INVOCATION_ID", "abc"),
         ] {
             let mut vars = desktop();
@@ -511,7 +511,7 @@ mod tests {
         // The listener only accepts the exact address, so `localhost` would
         // not reach it.
         assert_eq!(browse_host("127.1.2.3"), "127.1.2.3");
-        assert_eq!(browse_host("moltis.localhost"), "moltis.localhost");
+        assert_eq!(browse_host("antre.localhost"), "antre.localhost");
     }
 
     #[test]
@@ -591,7 +591,7 @@ mod tests {
         );
         assert_eq!(
             status_message(base, true, Some("123456")),
-            "● Moltis running at http://localhost:4000  ·  Ctrl+C to stop"
+            "● Antre running at http://localhost:4000  ·  Ctrl+C to stop"
         );
     }
 }

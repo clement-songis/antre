@@ -162,5 +162,5 @@ Common property formats for database items:
 - Rate limit: ~3 requests/second average
 - The API cannot set database view filters — that's UI-only
 - Use `is_inline: true` when creating data sources to embed them in pages
-- Add `-s` flag to curl to suppress progress bars (cleaner output for Moltis)
+- Add `-s` flag to curl to suppress progress bars (cleaner output for Antre)
 - Pipe output through `jq` for readable JSON: `... | jq '.results[0].properties'`

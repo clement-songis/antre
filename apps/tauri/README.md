@@ -1,6 +1,6 @@
 # Antre shell (Tauri 2)
 
-A thin Tauri 2 window around the web UI served by the Moltis daemon.
+A thin Tauri 2 window around the web UI served by the Antre daemon.
 Findings, measurements and recommendation: `plans/research/tauri-spike.md`.
 
 Separate Cargo workspace, not built by the root `cargo build`.
@@ -15,8 +15,8 @@ cargo run --features embedded -- --embedded   # needs `just build-web-assets` fi
 cargo test
 ```
 
-The sidecar needs a `moltis` binary: next to the shell, `MOLTIS_BIN`, `PATH`,
-or `--moltis PATH`.
+The sidecar needs a `antre` binary: next to the shell, `ANTRE_BIN`, `PATH`,
+or `--antre PATH`.
 
 ## Behaviour
 
@@ -34,7 +34,7 @@ or `--moltis PATH`.
 ## Packaging with the sidecar
 
 ```bash
-apps/tauri/scripts/stage-sidecar.sh             # release moltis → binaries/moltis-<triple>
+apps/tauri/scripts/stage-sidecar.sh             # release antre → binaries/antre-<triple>
 cd apps/tauri && cargo tauri build --config tauri.bundle.conf.json
 ```
 

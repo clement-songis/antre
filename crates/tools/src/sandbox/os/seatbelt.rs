@@ -167,7 +167,7 @@ pub fn build_profile(policy: &OsSandboxPolicy) -> SeatbeltProfile {
         .collect();
     if !write_deny_keys.is_empty() {
         sections.push(format!(
-            "; loaded or executed by Moltis on the host\n(deny file-write* {})",
+            "; loaded or executed by Antre on the host\n(deny file-write* {})",
             subpaths(&write_deny_keys)
         ));
     }
@@ -280,13 +280,13 @@ mod tests {
 
     fn policy(network: OsNetworkAccess, workspace: WorkspaceMount) -> OsSandboxPolicy {
         OsSandboxPolicy::build(&OsPolicyInputs {
-            data_dir: PathBuf::from("/Users/u/.moltis"),
-            config_dir: Some(PathBuf::from("/Users/u/.config/moltis")),
+            data_dir: PathBuf::from("/Users/u/.antre"),
+            config_dir: Some(PathBuf::from("/Users/u/.config/antre")),
             user_home: Some(PathBuf::from("/Users/u")),
-            home: PathBuf::from("/Users/u/.moltis/sandbox/home/shared"),
-            tmp: PathBuf::from("/Users/u/.moltis/sandbox/os/s1/tmp"),
+            home: PathBuf::from("/Users/u/.antre/sandbox/home/shared"),
+            tmp: PathBuf::from("/Users/u/.antre/sandbox/os/s1/tmp"),
             workspace_mount: workspace,
-            managed_files_dir: PathBuf::from("/Users/u/.moltis/files"),
+            managed_files_dir: PathBuf::from("/Users/u/.antre/files"),
             managed_files_mount: ManagedFilesMount::Ro,
             network,
             system_read_roots: vec![PathBuf::from("/usr"), PathBuf::from("/bin")],
@@ -324,9 +324,9 @@ mod tests {
             .filter(|line| !line.contains("(regex #\"^(/Users"))
             .collect();
         assert!(!without_regex.contains("/Users/u"));
-        let ro = param(&profile, "/Users/u/.moltis");
+        let ro = param(&profile, "/Users/u/.antre");
         assert!(ro.starts_with("RO_"));
-        let rw = param(&profile, "/Users/u/.moltis/sandbox/home/shared");
+        let rw = param(&profile, "/Users/u/.antre/sandbox/home/shared");
         assert!(rw.starts_with("RW_"));
         assert!(profile.profile.contains(&format!(
             "(allow file-read* file-write* file-map-executable (subpath (param \"{rw}\"))"
@@ -343,10 +343,10 @@ mod tests {
             .unwrap();
         let grant_pos = profile.profile.find("; writable roots").unwrap();
         assert!(deny_pos > grant_pos);
-        param(&profile, "/Users/u/.moltis/credentials.json");
-        param(&profile, "/Users/u/.config/moltis");
+        param(&profile, "/Users/u/.antre/credentials.json");
+        param(&profile, "/Users/u/.config/antre");
         assert!(profile.profile.contains(
-            "(regex #\"^(/Users/u/\\.moltis)/(.*/)?[^/]*(\\.db|\\.db-wal|\\.db-shm|\\.db-journal|\\.sqlite|\\.sqlite3)$\")"
+            "(regex #\"^(/Users/u/\\.antre)/(.*/)?[^/]*(\\.db|\\.db-wal|\\.db-shm|\\.db-journal|\\.sqlite|\\.sqlite3)$\")"
         ));
     }
 
@@ -357,7 +357,7 @@ mod tests {
             .params
             .iter()
             .find(|(key, value)| {
-                key.starts_with("NESTED_RO") && value == Path::new("/Users/u/.moltis/files")
+                key.starts_with("NESTED_RO") && value == Path::new("/Users/u/.antre/files")
             })
             .map(|(key, _)| key.clone())
             .unwrap();
@@ -371,7 +371,7 @@ mod tests {
     #[test]
     fn host_executed_entries_are_write_denied() {
         let profile = build_profile(&policy(OsNetworkAccess::Blocked, WorkspaceMount::Rw));
-        let key = param(&profile, "/Users/u/.moltis/hooks");
+        let key = param(&profile, "/Users/u/.antre/hooks");
         assert!(key.starts_with("NO_WRITE_"));
         let deny = profile
             .profile

@@ -2,7 +2,7 @@
 
 use std::{collections::HashMap, ffi::c_char};
 
-use moltis_tools::image_cache::ImageBuilder;
+use antre_tools::image_cache::ImageBuilder;
 
 use crate::{
     helpers::{
@@ -17,28 +17,28 @@ use crate::{
 
 /// Returns sandbox runtime status used by Settings > Sandboxes.
 #[unsafe(no_mangle)]
-pub extern "C" fn moltis_sandbox_status() -> *mut c_char {
-    record_call("moltis_sandbox_status");
-    trace_call("moltis_sandbox_status");
+pub extern "C" fn antre_sandbox_status() -> *mut c_char {
+    record_call("antre_sandbox_status");
+    trace_call("antre_sandbox_status");
 
     with_ffi_boundary(|| {
-        let config = moltis_config::discover_and_load();
+        let config = antre_config::discover_and_load();
         encode_json(&sandbox_status_from_config(&config))
     })
 }
 
 /// Returns cached tool and sandbox images.
 #[unsafe(no_mangle)]
-pub extern "C" fn moltis_sandbox_list_images() -> *mut c_char {
-    record_call("moltis_sandbox_list_images");
-    trace_call("moltis_sandbox_list_images");
+pub extern "C" fn antre_sandbox_list_images() -> *mut c_char {
+    record_call("antre_sandbox_list_images");
+    trace_call("antre_sandbox_list_images");
 
     with_ffi_boundary(|| {
-        let builder = moltis_tools::image_cache::DockerImageBuilder::new();
+        let builder = antre_tools::image_cache::DockerImageBuilder::new();
         let (cached, sandbox) = BRIDGE.runtime.block_on(async {
             tokio::join!(
                 builder.list_cached(),
-                moltis_tools::sandbox::list_sandbox_images()
+                antre_tools::sandbox::list_sandbox_images()
             )
         });
 
@@ -68,13 +68,13 @@ pub extern "C" fn moltis_sandbox_list_images() -> *mut c_char {
 
 /// Deletes one cached image by tag.
 #[unsafe(no_mangle)]
-pub extern "C" fn moltis_sandbox_delete_image(request_json: *const c_char) -> *mut c_char {
-    record_call("moltis_sandbox_delete_image");
-    trace_call("moltis_sandbox_delete_image");
+pub extern "C" fn antre_sandbox_delete_image(request_json: *const c_char) -> *mut c_char {
+    record_call("antre_sandbox_delete_image");
+    trace_call("antre_sandbox_delete_image");
 
     with_ffi_boundary(|| {
         let request = match parse_ffi_request::<SandboxDeleteImageRequest>(
-            "moltis_sandbox_delete_image",
+            "antre_sandbox_delete_image",
             request_json,
         ) {
             Ok(r) => r,
@@ -83,19 +83,19 @@ pub extern "C" fn moltis_sandbox_delete_image(request_json: *const c_char) -> *m
 
         let tag = request.tag.trim();
         if tag.is_empty() {
-            record_error("moltis_sandbox_delete_image", "IMAGE_TAG_REQUIRED");
+            record_error("antre_sandbox_delete_image", "IMAGE_TAG_REQUIRED");
             return encode_error("IMAGE_TAG_REQUIRED", "tag is required");
         }
 
         let result = BRIDGE.runtime.block_on(async {
             if tag.contains("-sandbox:") {
-                moltis_tools::sandbox::remove_sandbox_image(tag).await
+                antre_tools::sandbox::remove_sandbox_image(tag).await
             } else {
-                let builder = moltis_tools::image_cache::DockerImageBuilder::new();
-                let full_tag = if tag.starts_with("moltis-cache/") {
+                let builder = antre_tools::image_cache::DockerImageBuilder::new();
+                let full_tag = if tag.starts_with("antre-cache/") {
                     tag.to_owned()
                 } else {
-                    format!("moltis-cache/{tag}")
+                    format!("antre-cache/{tag}")
                 };
                 builder.remove_cached(&full_tag).await
             }
@@ -104,7 +104,7 @@ pub extern "C" fn moltis_sandbox_delete_image(request_json: *const c_char) -> *m
         match result {
             Ok(()) => encode_json(&OkResponse { ok: true }),
             Err(error) => {
-                record_error("moltis_sandbox_delete_image", IMAGE_CACHE_DELETE_FAILED);
+                record_error("antre_sandbox_delete_image", IMAGE_CACHE_DELETE_FAILED);
                 encode_error(IMAGE_CACHE_DELETE_FAILED, &error.to_string())
             },
         }
@@ -113,16 +113,16 @@ pub extern "C" fn moltis_sandbox_delete_image(request_json: *const c_char) -> *m
 
 /// Removes all cached tool and sandbox images.
 #[unsafe(no_mangle)]
-pub extern "C" fn moltis_sandbox_prune_images() -> *mut c_char {
-    record_call("moltis_sandbox_prune_images");
-    trace_call("moltis_sandbox_prune_images");
+pub extern "C" fn antre_sandbox_prune_images() -> *mut c_char {
+    record_call("antre_sandbox_prune_images");
+    trace_call("antre_sandbox_prune_images");
 
     with_ffi_boundary(|| {
-        let builder = moltis_tools::image_cache::DockerImageBuilder::new();
+        let builder = antre_tools::image_cache::DockerImageBuilder::new();
         let (tool_result, sandbox_result) = BRIDGE.runtime.block_on(async {
             tokio::join!(
                 builder.prune_all(),
-                moltis_tools::sandbox::clean_sandbox_images()
+                antre_tools::sandbox::clean_sandbox_images()
             )
         });
 
@@ -136,7 +136,7 @@ pub extern "C" fn moltis_sandbox_prune_images() -> *mut c_char {
 
         if let (Err(e1), Err(e2)) = (&tool_result, &sandbox_result) {
             let message = format!("tool images: {e1}; sandbox images: {e2}");
-            record_error("moltis_sandbox_prune_images", IMAGE_CACHE_PRUNE_FAILED);
+            record_error("antre_sandbox_prune_images", IMAGE_CACHE_PRUNE_FAILED);
             return encode_error(IMAGE_CACHE_PRUNE_FAILED, &message);
         }
 
@@ -146,13 +146,13 @@ pub extern "C" fn moltis_sandbox_prune_images() -> *mut c_char {
 
 /// Checks package presence in a base Docker image.
 #[unsafe(no_mangle)]
-pub extern "C" fn moltis_sandbox_check_packages(request_json: *const c_char) -> *mut c_char {
-    record_call("moltis_sandbox_check_packages");
-    trace_call("moltis_sandbox_check_packages");
+pub extern "C" fn antre_sandbox_check_packages(request_json: *const c_char) -> *mut c_char {
+    record_call("antre_sandbox_check_packages");
+    trace_call("antre_sandbox_check_packages");
 
     with_ffi_boundary(|| {
         let request = match parse_ffi_request::<SandboxCheckPackagesRequest>(
-            "moltis_sandbox_check_packages",
+            "antre_sandbox_check_packages",
             request_json,
         ) {
             Ok(r) => r,
@@ -180,7 +180,7 @@ pub extern "C" fn moltis_sandbox_check_packages(request_json: *const c_char) -> 
         }
 
         if !is_valid_image_ref(&base) {
-            record_error("moltis_sandbox_check_packages", SANDBOX_BASE_IMAGE_INVALID);
+            record_error("antre_sandbox_check_packages", SANDBOX_BASE_IMAGE_INVALID);
             return encode_error(
                 SANDBOX_BASE_IMAGE_INVALID,
                 "base image contains invalid characters",
@@ -188,10 +188,7 @@ pub extern "C" fn moltis_sandbox_check_packages(request_json: *const c_char) -> 
         }
 
         if let Some(bad) = packages.iter().find(|p| !is_valid_package_name(p)) {
-            record_error(
-                "moltis_sandbox_check_packages",
-                SANDBOX_PACKAGE_NAME_INVALID,
-            );
+            record_error("antre_sandbox_check_packages", SANDBOX_PACKAGE_NAME_INVALID);
             return encode_error(
                 SANDBOX_PACKAGE_NAME_INVALID,
                 &format!("invalid package name: {bad}"),
@@ -208,7 +205,7 @@ pub extern "C" fn moltis_sandbox_check_packages(request_json: *const c_char) -> 
             .collect();
         let script = checks.join("\n");
 
-        let cli = moltis_tools::sandbox::container_cli();
+        let cli = antre_tools::sandbox::container_cli();
         let output = BRIDGE.runtime.block_on(async {
             tokio::process::Command::new(cli)
                 .args(["run", "--rm", "--entrypoint", "sh", &base, "-c", &script])
@@ -232,7 +229,7 @@ pub extern "C" fn moltis_sandbox_check_packages(request_json: *const c_char) -> 
             },
             Err(error) => {
                 record_error(
-                    "moltis_sandbox_check_packages",
+                    "antre_sandbox_check_packages",
                     SANDBOX_CHECK_PACKAGES_FAILED,
                 );
                 encode_error(SANDBOX_CHECK_PACKAGES_FAILED, &error.to_string())
@@ -243,13 +240,13 @@ pub extern "C" fn moltis_sandbox_check_packages(request_json: *const c_char) -> 
 
 /// Builds a sandbox image from base image + apt package list.
 #[unsafe(no_mangle)]
-pub extern "C" fn moltis_sandbox_build_image(request_json: *const c_char) -> *mut c_char {
-    record_call("moltis_sandbox_build_image");
-    trace_call("moltis_sandbox_build_image");
+pub extern "C" fn antre_sandbox_build_image(request_json: *const c_char) -> *mut c_char {
+    record_call("antre_sandbox_build_image");
+    trace_call("antre_sandbox_build_image");
 
     with_ffi_boundary(|| {
         let request = match parse_ffi_request::<SandboxBuildImageRequest>(
-            "moltis_sandbox_build_image",
+            "antre_sandbox_build_image",
             request_json,
         ) {
             Ok(r) => r,
@@ -258,7 +255,7 @@ pub extern "C" fn moltis_sandbox_build_image(request_json: *const c_char) -> *mu
 
         let name = request.name.trim();
         if name.is_empty() {
-            record_error("moltis_sandbox_build_image", SANDBOX_IMAGE_NAME_REQUIRED);
+            record_error("antre_sandbox_build_image", SANDBOX_IMAGE_NAME_REQUIRED);
             return encode_error(SANDBOX_IMAGE_NAME_REQUIRED, "name is required");
         }
 
@@ -266,7 +263,7 @@ pub extern "C" fn moltis_sandbox_build_image(request_json: *const c_char) -> *mu
             .chars()
             .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
         {
-            record_error("moltis_sandbox_build_image", SANDBOX_IMAGE_NAME_INVALID);
+            record_error("antre_sandbox_build_image", SANDBOX_IMAGE_NAME_INVALID);
             return encode_error(
                 SANDBOX_IMAGE_NAME_INVALID,
                 "name must be alphanumeric, dash, or underscore",
@@ -288,7 +285,7 @@ pub extern "C" fn moltis_sandbox_build_image(request_json: *const c_char) -> *mu
             .collect();
 
         if !is_valid_image_ref(&base) {
-            record_error("moltis_sandbox_build_image", SANDBOX_BASE_IMAGE_INVALID);
+            record_error("antre_sandbox_build_image", SANDBOX_BASE_IMAGE_INVALID);
             return encode_error(
                 SANDBOX_BASE_IMAGE_INVALID,
                 "base image contains invalid characters",
@@ -296,15 +293,12 @@ pub extern "C" fn moltis_sandbox_build_image(request_json: *const c_char) -> *mu
         }
 
         if packages.is_empty() {
-            record_error(
-                "moltis_sandbox_build_image",
-                SANDBOX_IMAGE_PACKAGES_REQUIRED,
-            );
+            record_error("antre_sandbox_build_image", SANDBOX_IMAGE_PACKAGES_REQUIRED);
             return encode_error(SANDBOX_IMAGE_PACKAGES_REQUIRED, "packages list is empty");
         }
 
         if let Some(bad) = packages.iter().find(|p| !is_valid_package_name(p)) {
-            record_error("moltis_sandbox_build_image", SANDBOX_PACKAGE_NAME_INVALID);
+            record_error("antre_sandbox_build_image", SANDBOX_PACKAGE_NAME_INVALID);
             return encode_error(
                 SANDBOX_PACKAGE_NAME_INVALID,
                 &format!("invalid package name: {bad}"),
@@ -320,23 +314,20 @@ ENV HOME=/home/sandbox\n\
 WORKDIR /home/sandbox\n"
         );
 
-        let tmp_dir = std::env::temp_dir().join(format!("moltis-build-{}", uuid::Uuid::new_v4()));
+        let tmp_dir = std::env::temp_dir().join(format!("antre-build-{}", uuid::Uuid::new_v4()));
         if let Err(error) = std::fs::create_dir_all(&tmp_dir) {
-            record_error("moltis_sandbox_build_image", SANDBOX_TMP_DIR_CREATE_FAILED);
+            record_error("antre_sandbox_build_image", SANDBOX_TMP_DIR_CREATE_FAILED);
             return encode_error(SANDBOX_TMP_DIR_CREATE_FAILED, &error.to_string());
         }
 
         let dockerfile_path = tmp_dir.join("Dockerfile");
         if let Err(error) = std::fs::write(&dockerfile_path, &dockerfile_contents) {
             let _ = std::fs::remove_dir_all(&tmp_dir);
-            record_error(
-                "moltis_sandbox_build_image",
-                SANDBOX_DOCKERFILE_WRITE_FAILED,
-            );
+            record_error("antre_sandbox_build_image", SANDBOX_DOCKERFILE_WRITE_FAILED);
             return encode_error(SANDBOX_DOCKERFILE_WRITE_FAILED, &error.to_string());
         }
 
-        let builder = moltis_tools::image_cache::DockerImageBuilder::new();
+        let builder = antre_tools::image_cache::DockerImageBuilder::new();
         let result =
             BRIDGE
                 .runtime
@@ -346,7 +337,7 @@ WORKDIR /home/sandbox\n"
         match result {
             Ok(tag) => encode_json(&SandboxBuildImageResponse { tag }),
             Err(error) => {
-                record_error("moltis_sandbox_build_image", SANDBOX_IMAGE_BUILD_FAILED);
+                record_error("antre_sandbox_build_image", SANDBOX_IMAGE_BUILD_FAILED);
                 encode_error(SANDBOX_IMAGE_BUILD_FAILED, &error.to_string())
             },
         }
@@ -355,12 +346,12 @@ WORKDIR /home/sandbox\n"
 
 /// Returns the effective default sandbox image.
 #[unsafe(no_mangle)]
-pub extern "C" fn moltis_sandbox_get_default_image() -> *mut c_char {
-    record_call("moltis_sandbox_get_default_image");
-    trace_call("moltis_sandbox_get_default_image");
+pub extern "C" fn antre_sandbox_get_default_image() -> *mut c_char {
+    record_call("antre_sandbox_get_default_image");
+    trace_call("antre_sandbox_get_default_image");
 
     with_ffi_boundary(|| {
-        let config = moltis_config::discover_and_load();
+        let config = antre_config::discover_and_load();
         let image = sandbox_effective_default_image(&config);
         encode_json(&SandboxDefaultImageResponse { image })
     })
@@ -368,23 +359,23 @@ pub extern "C" fn moltis_sandbox_get_default_image() -> *mut c_char {
 
 /// Sets a runtime default sandbox image override.
 #[unsafe(no_mangle)]
-pub extern "C" fn moltis_sandbox_set_default_image(request_json: *const c_char) -> *mut c_char {
-    record_call("moltis_sandbox_set_default_image");
-    trace_call("moltis_sandbox_set_default_image");
+pub extern "C" fn antre_sandbox_set_default_image(request_json: *const c_char) -> *mut c_char {
+    record_call("antre_sandbox_set_default_image");
+    trace_call("antre_sandbox_set_default_image");
 
     with_ffi_boundary(|| {
         let request = match parse_ffi_request::<SandboxSetDefaultImageRequest>(
-            "moltis_sandbox_set_default_image",
+            "antre_sandbox_set_default_image",
             request_json,
         ) {
             Ok(r) => r,
             Err(e) => return e,
         };
 
-        let config = moltis_config::discover_and_load();
+        let config = antre_config::discover_and_load();
         if sandbox_backend_name(&config) == "none" {
             record_error(
-                "moltis_sandbox_set_default_image",
+                "antre_sandbox_set_default_image",
                 SANDBOX_BACKEND_UNAVAILABLE,
             );
             return encode_error(SANDBOX_BACKEND_UNAVAILABLE, "no sandbox backend available");
@@ -409,12 +400,12 @@ pub extern "C" fn moltis_sandbox_set_default_image(request_json: *const c_char) 
 
 /// Returns shared `/home/sandbox` persistence config.
 #[unsafe(no_mangle)]
-pub extern "C" fn moltis_sandbox_get_shared_home() -> *mut c_char {
-    record_call("moltis_sandbox_get_shared_home");
-    trace_call("moltis_sandbox_get_shared_home");
+pub extern "C" fn antre_sandbox_get_shared_home() -> *mut c_char {
+    record_call("antre_sandbox_get_shared_home");
+    trace_call("antre_sandbox_get_shared_home");
 
     with_ffi_boundary(|| {
-        let config = moltis_config::discover_and_load();
+        let config = antre_config::discover_and_load();
         let response = sandbox_shared_home_config_from_config(&config);
         encode_json(&response)
     })
@@ -422,13 +413,13 @@ pub extern "C" fn moltis_sandbox_get_shared_home() -> *mut c_char {
 
 /// Updates shared `/home/sandbox` persistence config.
 #[unsafe(no_mangle)]
-pub extern "C" fn moltis_sandbox_set_shared_home(request_json: *const c_char) -> *mut c_char {
-    record_call("moltis_sandbox_set_shared_home");
-    trace_call("moltis_sandbox_set_shared_home");
+pub extern "C" fn antre_sandbox_set_shared_home(request_json: *const c_char) -> *mut c_char {
+    record_call("antre_sandbox_set_shared_home");
+    trace_call("antre_sandbox_set_shared_home");
 
     with_ffi_boundary(|| {
         let request = match parse_ffi_request::<SandboxSharedHomeUpdateRequest>(
-            "moltis_sandbox_set_shared_home",
+            "antre_sandbox_set_shared_home",
             request_json,
         ) {
             Ok(r) => r,
@@ -442,23 +433,23 @@ pub extern "C" fn moltis_sandbox_set_shared_home(request_json: *const c_char) ->
             .filter(|value| !value.is_empty())
             .map(ToOwned::to_owned);
 
-        let update_result = moltis_config::update_config(|cfg| {
+        let update_result = antre_config::update_config(|cfg| {
             cfg.tools.exec.sandbox.shared_home_dir = path.clone();
             if request.enabled {
                 cfg.tools.exec.sandbox.home_persistence =
-                    moltis_config::schema::HomePersistenceConfig::Shared;
+                    antre_config::schema::HomePersistenceConfig::Shared;
             } else if matches!(
                 cfg.tools.exec.sandbox.home_persistence,
-                moltis_config::schema::HomePersistenceConfig::Shared
+                antre_config::schema::HomePersistenceConfig::Shared
             ) {
                 cfg.tools.exec.sandbox.home_persistence =
-                    moltis_config::schema::HomePersistenceConfig::Off;
+                    antre_config::schema::HomePersistenceConfig::Off;
             }
         });
 
         match update_result {
             Ok(saved_path) => {
-                let config = moltis_config::discover_and_load();
+                let config = antre_config::discover_and_load();
                 let response = SandboxSharedHomeSaveResponse {
                     ok: true,
                     restart_required: true,
@@ -469,7 +460,7 @@ pub extern "C" fn moltis_sandbox_set_shared_home(request_json: *const c_char) ->
             },
             Err(error) => {
                 record_error(
-                    "moltis_sandbox_set_shared_home",
+                    "antre_sandbox_set_shared_home",
                     SANDBOX_SHARED_HOME_SAVE_FAILED,
                 );
                 encode_error(SANDBOX_SHARED_HOME_SAVE_FAILED, &error.to_string())
@@ -480,21 +471,21 @@ pub extern "C" fn moltis_sandbox_set_shared_home(request_json: *const c_char) ->
 
 /// Returns running containers for the configured sandbox prefix.
 #[unsafe(no_mangle)]
-pub extern "C" fn moltis_sandbox_list_containers() -> *mut c_char {
-    record_call("moltis_sandbox_list_containers");
-    trace_call("moltis_sandbox_list_containers");
+pub extern "C" fn antre_sandbox_list_containers() -> *mut c_char {
+    record_call("antre_sandbox_list_containers");
+    trace_call("antre_sandbox_list_containers");
 
     with_ffi_boundary(|| {
-        let config = moltis_config::discover_and_load();
+        let config = antre_config::discover_and_load();
         let prefix = sandbox_container_prefix(&config);
         match BRIDGE
             .runtime
-            .block_on(moltis_tools::sandbox::list_running_containers(&prefix))
+            .block_on(antre_tools::sandbox::list_running_containers(&prefix))
         {
             Ok(containers) => encode_json(&SandboxContainersResponse { containers }),
             Err(error) => {
                 record_error(
-                    "moltis_sandbox_list_containers",
+                    "antre_sandbox_list_containers",
                     SANDBOX_CONTAINERS_LIST_FAILED,
                 );
                 encode_error(SANDBOX_CONTAINERS_LIST_FAILED, &error.to_string())
@@ -505,13 +496,13 @@ pub extern "C" fn moltis_sandbox_list_containers() -> *mut c_char {
 
 /// Stops one sandbox container.
 #[unsafe(no_mangle)]
-pub extern "C" fn moltis_sandbox_stop_container(request_json: *const c_char) -> *mut c_char {
-    record_call("moltis_sandbox_stop_container");
-    trace_call("moltis_sandbox_stop_container");
+pub extern "C" fn antre_sandbox_stop_container(request_json: *const c_char) -> *mut c_char {
+    record_call("antre_sandbox_stop_container");
+    trace_call("antre_sandbox_stop_container");
 
     with_ffi_boundary(|| {
         let request = match parse_ffi_request::<SandboxContainerNameRequest>(
-            "moltis_sandbox_stop_container",
+            "antre_sandbox_stop_container",
             request_json,
         ) {
             Ok(r) => r,
@@ -521,19 +512,19 @@ pub extern "C" fn moltis_sandbox_stop_container(request_json: *const c_char) -> 
         let name = request.name.trim();
         if name.is_empty() {
             record_error(
-                "moltis_sandbox_stop_container",
+                "antre_sandbox_stop_container",
                 "SANDBOX_CONTAINER_NAME_REQUIRED",
             );
             return encode_error("SANDBOX_CONTAINER_NAME_REQUIRED", "name is required");
         }
 
-        let config = moltis_config::discover_and_load();
+        let config = antre_config::discover_and_load();
         let prefix = sandbox_container_prefix(&config);
         if !name.starts_with(&prefix)
-            && !moltis_tools::sandbox::has_apple_container_prefix(name, &prefix)
+            && !antre_tools::sandbox::has_apple_container_prefix(name, &prefix)
         {
             record_error(
-                "moltis_sandbox_stop_container",
+                "antre_sandbox_stop_container",
                 SANDBOX_CONTAINER_PREFIX_MISMATCH,
             );
             return encode_error(
@@ -544,12 +535,12 @@ pub extern "C" fn moltis_sandbox_stop_container(request_json: *const c_char) -> 
 
         match BRIDGE
             .runtime
-            .block_on(moltis_tools::sandbox::stop_container(name))
+            .block_on(antre_tools::sandbox::stop_container(name))
         {
             Ok(()) => encode_json(&OkResponse { ok: true }),
             Err(error) => {
                 record_error(
-                    "moltis_sandbox_stop_container",
+                    "antre_sandbox_stop_container",
                     SANDBOX_CONTAINER_STOP_FAILED,
                 );
                 encode_error(SANDBOX_CONTAINER_STOP_FAILED, &error.to_string())
@@ -560,13 +551,13 @@ pub extern "C" fn moltis_sandbox_stop_container(request_json: *const c_char) -> 
 
 /// Removes one sandbox container.
 #[unsafe(no_mangle)]
-pub extern "C" fn moltis_sandbox_remove_container(request_json: *const c_char) -> *mut c_char {
-    record_call("moltis_sandbox_remove_container");
-    trace_call("moltis_sandbox_remove_container");
+pub extern "C" fn antre_sandbox_remove_container(request_json: *const c_char) -> *mut c_char {
+    record_call("antre_sandbox_remove_container");
+    trace_call("antre_sandbox_remove_container");
 
     with_ffi_boundary(|| {
         let request = match parse_ffi_request::<SandboxContainerNameRequest>(
-            "moltis_sandbox_remove_container",
+            "antre_sandbox_remove_container",
             request_json,
         ) {
             Ok(r) => r,
@@ -576,19 +567,19 @@ pub extern "C" fn moltis_sandbox_remove_container(request_json: *const c_char) -
         let name = request.name.trim();
         if name.is_empty() {
             record_error(
-                "moltis_sandbox_remove_container",
+                "antre_sandbox_remove_container",
                 "SANDBOX_CONTAINER_NAME_REQUIRED",
             );
             return encode_error("SANDBOX_CONTAINER_NAME_REQUIRED", "name is required");
         }
 
-        let config = moltis_config::discover_and_load();
+        let config = antre_config::discover_and_load();
         let prefix = sandbox_container_prefix(&config);
         if !name.starts_with(&prefix)
-            && !moltis_tools::sandbox::has_apple_container_prefix(name, &prefix)
+            && !antre_tools::sandbox::has_apple_container_prefix(name, &prefix)
         {
             record_error(
-                "moltis_sandbox_remove_container",
+                "antre_sandbox_remove_container",
                 SANDBOX_CONTAINER_PREFIX_MISMATCH,
             );
             return encode_error(
@@ -599,12 +590,12 @@ pub extern "C" fn moltis_sandbox_remove_container(request_json: *const c_char) -
 
         match BRIDGE
             .runtime
-            .block_on(moltis_tools::sandbox::remove_container(name))
+            .block_on(antre_tools::sandbox::remove_container(name))
         {
             Ok(()) => encode_json(&OkResponse { ok: true }),
             Err(error) => {
                 record_error(
-                    "moltis_sandbox_remove_container",
+                    "antre_sandbox_remove_container",
                     SANDBOX_CONTAINER_REMOVE_FAILED,
                 );
                 encode_error(SANDBOX_CONTAINER_REMOVE_FAILED, &error.to_string())
@@ -615,21 +606,21 @@ pub extern "C" fn moltis_sandbox_remove_container(request_json: *const c_char) -
 
 /// Stops and removes all sandbox containers.
 #[unsafe(no_mangle)]
-pub extern "C" fn moltis_sandbox_clean_containers() -> *mut c_char {
-    record_call("moltis_sandbox_clean_containers");
-    trace_call("moltis_sandbox_clean_containers");
+pub extern "C" fn antre_sandbox_clean_containers() -> *mut c_char {
+    record_call("antre_sandbox_clean_containers");
+    trace_call("antre_sandbox_clean_containers");
 
     with_ffi_boundary(|| {
-        let config = moltis_config::discover_and_load();
+        let config = antre_config::discover_and_load();
         let prefix = sandbox_container_prefix(&config);
         match BRIDGE
             .runtime
-            .block_on(moltis_tools::sandbox::clean_all_containers(&prefix))
+            .block_on(antre_tools::sandbox::clean_all_containers(&prefix))
         {
             Ok(removed) => encode_json(&SandboxCleanContainersResponse { ok: true, removed }),
             Err(error) => {
                 record_error(
-                    "moltis_sandbox_clean_containers",
+                    "antre_sandbox_clean_containers",
                     SANDBOX_CONTAINERS_CLEAN_FAILED,
                 );
                 encode_error(SANDBOX_CONTAINERS_CLEAN_FAILED, &error.to_string())
@@ -640,18 +631,18 @@ pub extern "C" fn moltis_sandbox_clean_containers() -> *mut c_char {
 
 /// Returns container runtime disk usage.
 #[unsafe(no_mangle)]
-pub extern "C" fn moltis_sandbox_disk_usage() -> *mut c_char {
-    record_call("moltis_sandbox_disk_usage");
-    trace_call("moltis_sandbox_disk_usage");
+pub extern "C" fn antre_sandbox_disk_usage() -> *mut c_char {
+    record_call("antre_sandbox_disk_usage");
+    trace_call("antre_sandbox_disk_usage");
 
     with_ffi_boundary(|| {
         match BRIDGE
             .runtime
-            .block_on(moltis_tools::sandbox::container_disk_usage())
+            .block_on(antre_tools::sandbox::container_disk_usage())
         {
             Ok(usage) => encode_json(&SandboxDiskUsageResponse { usage }),
             Err(error) => {
-                record_error("moltis_sandbox_disk_usage", SANDBOX_DISK_USAGE_FAILED);
+                record_error("antre_sandbox_disk_usage", SANDBOX_DISK_USAGE_FAILED);
                 encode_error(SANDBOX_DISK_USAGE_FAILED, &error.to_string())
             },
         }
@@ -660,19 +651,19 @@ pub extern "C" fn moltis_sandbox_disk_usage() -> *mut c_char {
 
 /// Restarts the container daemon.
 #[unsafe(no_mangle)]
-pub extern "C" fn moltis_sandbox_restart_daemon() -> *mut c_char {
-    record_call("moltis_sandbox_restart_daemon");
-    trace_call("moltis_sandbox_restart_daemon");
+pub extern "C" fn antre_sandbox_restart_daemon() -> *mut c_char {
+    record_call("antre_sandbox_restart_daemon");
+    trace_call("antre_sandbox_restart_daemon");
 
     with_ffi_boundary(|| {
         match BRIDGE
             .runtime
-            .block_on(moltis_tools::sandbox::restart_container_daemon())
+            .block_on(antre_tools::sandbox::restart_container_daemon())
         {
             Ok(()) => encode_json(&OkResponse { ok: true }),
             Err(error) => {
                 record_error(
-                    "moltis_sandbox_restart_daemon",
+                    "antre_sandbox_restart_daemon",
                     SANDBOX_DAEMON_RESTART_FAILED,
                 );
                 encode_error(SANDBOX_DAEMON_RESTART_FAILED, &error.to_string())

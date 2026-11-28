@@ -25,7 +25,7 @@ use crate::{
     types::{ClientCapabilities, JsonRpcError, RootsCapability},
 };
 
-pub type TrustTier = moltis_config::schema::McpTrustTier;
+pub type TrustTier = antre_config::schema::McpTrustTier;
 
 /// A sampling request that passed policy and budget checks.
 #[derive(Debug, Clone)]

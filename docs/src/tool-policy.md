@@ -1,7 +1,7 @@
 # Tool Policy
 
 Tool policies control which tools are available during a session. Before these
-name-based layers run, Moltis applies the registry's host-owned audience
+name-based layers run, Antre applies the registry's host-owned audience
 ceiling. Guest, shared-room, and unknown-topology channel turns receive no
 tools by default. Supported channel accounts can explicitly lift that ceiling
 and hand tool selection back to these policy layers. Webhooks receive no tools
@@ -69,7 +69,7 @@ non-empty allow replaces).
 
 ## Layer 1 — Global
 
-The base policy for all sessions. Set in `moltis.toml` under `[tools.policy]`:
+The base policy for all sessions. Set in `antre.toml` under `[tools.policy]`:
 
 ```toml
 [tools.policy]
@@ -133,8 +133,8 @@ enabling them; without restrictive policies, every tool allowed by the remaining
 layers becomes available.
 
 For UI-managed accounts, set these fields through Advanced Config JSON in
-**Settings > Channels**. Channel settings are stored in `data_dir()/moltis.db`,
-not written back to `moltis.toml`. Database-backed `tools.groups` policies are
+**Settings > Channels**. Channel settings are stored in `data_dir()/antre.db`,
+not written back to `antre.toml`. Database-backed `tools.groups` policies are
 not currently part of runtime policy resolution, so use a restrictive global
 or provider policy before lifting the ceiling. See
 [Telegram](telegram.md#tools-in-shared-chats) and

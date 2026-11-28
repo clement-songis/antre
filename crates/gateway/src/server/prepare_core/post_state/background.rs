@@ -6,11 +6,11 @@ use std::{path::Path, sync::Arc};
 use crate::state::GatewayState;
 
 pub(super) fn start(state: &Arc<GatewayState>, data_dir: &Path) {
-    moltis_chat::quota_wait::configure(
+    antre_chat::quota_wait::configure(
         state.config.chat.quota_wait.clone(),
         Some(data_dir.join("chat").join("quota-waits.json")),
     );
-    moltis_chat::quota_wait::restore(&crate::chat::GatewayChatRuntime::from_state(Arc::clone(
+    antre_chat::quota_wait::restore(&crate::chat::GatewayChatRuntime::from_state(Arc::clone(
         state,
     )));
     crate::learning::start(state, data_dir);

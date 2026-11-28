@@ -1,6 +1,6 @@
 use std::time::SystemTime;
 
-use moltis_sessions::MessageContent;
+use antre_sessions::MessageContent;
 
 pub(super) fn message_content_text(content: &MessageContent) -> String {
     match content {
@@ -8,8 +8,8 @@ pub(super) fn message_content_text(content: &MessageContent) -> String {
         MessageContent::Multimodal(blocks) => blocks
             .iter()
             .filter_map(|block| match block {
-                moltis_sessions::ContentBlock::Text { text } => Some(text.as_str()),
-                moltis_sessions::ContentBlock::ImageUrl { .. } => None,
+                antre_sessions::ContentBlock::Text { text } => Some(text.as_str()),
+                antre_sessions::ContentBlock::ImageUrl { .. } => None,
             })
             .collect::<Vec<_>>()
             .join("\n"),

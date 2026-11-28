@@ -12,11 +12,11 @@ use {
 };
 
 use {
-    moltis_channels::{
+    antre_channels::{
         Result as ChannelResult,
         plugin::{ChannelOutbound, ChannelStreamOutbound, StreamEvent, StreamReceiver},
     },
-    moltis_common::types::ReplyPayload,
+    antre_common::types::ReplyPayload,
 };
 
 use crate::{
@@ -28,7 +28,7 @@ use crate::{
 fn resolve_jid(to: &str) -> ChannelResult<Jid> {
     if to.contains('@') {
         to.parse()
-            .map_err(|e| moltis_channels::Error::invalid_input(format!("invalid JID: {e:?}")))
+            .map_err(|e| antre_channels::Error::invalid_input(format!("invalid JID: {e:?}")))
     } else {
         Ok(Jid::pn(to))
     }
@@ -50,11 +50,11 @@ fn build_text_message(text: &str) -> wa::Message {
 fn decode_data_url(url: &str) -> ChannelResult<Vec<u8>> {
     let comma_pos = url
         .find(',')
-        .ok_or_else(|| moltis_channels::Error::invalid_input("invalid data URI: no comma"))?;
+        .ok_or_else(|| antre_channels::Error::invalid_input("invalid data URI: no comma"))?;
     let base64_data = &url[comma_pos + 1..];
     base64::engine::general_purpose::STANDARD
         .decode(base64_data)
-        .map_err(|e| moltis_channels::Error::invalid_input(format!("base64 decode: {e}")))
+        .map_err(|e| antre_channels::Error::invalid_input(format!("base64 decode: {e}")))
 }
 
 /// Map a MIME type to the WhatsApp `MediaType` used for encryption/upload.
@@ -152,7 +152,7 @@ impl WhatsAppOutbound {
         accounts
             .get(account_id)
             .map(|s| std::sync::Arc::clone(&s.client))
-            .ok_or_else(|| moltis_channels::Error::unknown_account(account_id))
+            .ok_or_else(|| antre_channels::Error::unknown_account(account_id))
     }
 
     /// Record a sent message ID for self-chat loop detection.
@@ -187,13 +187,13 @@ impl ChannelOutbound for WhatsAppOutbound {
         let sent = client
             .send_message(jid, msg)
             .await
-            .map_err(|e| moltis_channels::Error::unavailable(format!("whatsapp send_text: {e}")))?;
+            .map_err(|e| antre_channels::Error::unavailable(format!("whatsapp send_text: {e}")))?;
         self.record_sent_id(account_id, &sent.message_id);
 
         #[cfg(feature = "metrics")]
-        moltis_metrics::counter!(
-            moltis_metrics::channels::MESSAGES_SENT_TOTAL,
-            moltis_metrics::labels::CHANNEL => "whatsapp"
+        antre_metrics::counter!(
+            antre_metrics::channels::MESSAGES_SENT_TOTAL,
+            antre_metrics::labels::CHANNEL => "whatsapp"
         )
         .increment(1);
 
@@ -248,20 +248,21 @@ impl ChannelOutbound for WhatsAppOutbound {
             .upload(bytes, media_type, Default::default())
             .await
             .map_err(|e| {
-                moltis_channels::Error::unavailable(format!("whatsapp media upload: {e}"))
+                antre_channels::Error::unavailable(format!("whatsapp media upload: {e}"))
             })?;
 
         let msg = build_media_message(&media.mime_type, caption, &upload);
 
-        let sent = client.send_message(jid, msg).await.map_err(|e| {
-            moltis_channels::Error::unavailable(format!("whatsapp send_media: {e}"))
-        })?;
+        let sent = client
+            .send_message(jid, msg)
+            .await
+            .map_err(|e| antre_channels::Error::unavailable(format!("whatsapp send_media: {e}")))?;
         self.record_sent_id(account_id, &sent.message_id);
 
         #[cfg(feature = "metrics")]
-        moltis_metrics::counter!(
-            moltis_metrics::channels::MESSAGES_SENT_TOTAL,
-            moltis_metrics::labels::CHANNEL => "whatsapp"
+        antre_metrics::counter!(
+            antre_metrics::channels::MESSAGES_SENT_TOTAL,
+            antre_metrics::labels::CHANNEL => "whatsapp"
         )
         .increment(1);
 
@@ -276,7 +277,7 @@ impl ChannelOutbound for WhatsAppOutbound {
             .chatstate()
             .send(&jid, ChatStateType::Composing)
             .await
-            .map_err(|e| moltis_channels::Error::unavailable(format!("whatsapp chatstate: {e}")))?;
+            .map_err(|e| antre_channels::Error::unavailable(format!("whatsapp chatstate: {e}")))?;
         Ok(())
     }
 }

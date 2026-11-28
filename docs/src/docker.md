@@ -1,6 +1,6 @@
-# Running Moltis in Docker
+# Running Antre in Docker
 
-Moltis is available as a multi-architecture Docker image supporting both
+Antre is available as a multi-architecture Docker image supporting both
 `linux/amd64` and `linux/arm64`. The image is published to GitHub Container
 Registry on every release.
 
@@ -8,20 +8,20 @@ Registry on every release.
 
 ```bash
 docker run -d \
-  --name moltis \
+  --name antre \
   -p 13131:13131 \
   -p 13132:13132 \
   -p 1455:1455 \
-  -v moltis-config:/home/moltis/.config/moltis \
-  -v moltis-data:/home/moltis/.moltis \
+  -v antre-config:/home/antre/.config/antre \
+  -v antre-data:/home/antre/.antre \
   -v /var/run/docker.sock:/var/run/docker.sock \
-  ghcr.io/moltis-org/moltis:latest
+  ghcr.io/antre-ai/antre:latest
 ```
 
 Open https://localhost:13131 in your browser and configure your LLM provider to start chatting.
 
-For unattended bootstraps, add `MOLTIS_TOKEN`, `MOLTIS_PROVIDER`, and
-`MOLTIS_API_KEY` before first start. That pre-configures auth plus one LLM
+For unattended bootstraps, add `ANTRE_TOKEN`, `ANTRE_PROVIDER`, and
+`ANTRE_API_KEY` before first start. That pre-configures auth plus one LLM
 provider so you can skip the browser setup wizard entirely.
 
 ### Ports
@@ -34,20 +34,20 @@ provider so you can skip the browser setup wizard entirely.
 
 ### Trusting the TLS certificate
 
-Moltis generates a self-signed CA on first run. Browsers will show a security
+Antre generates a self-signed CA on first run. Browsers will show a security
 warning until you trust this CA. Port 13132 serves the certificate over plain
 HTTP so you can download it:
 
 ```bash
 # Download the CA certificate
-curl -o moltis-ca.pem http://localhost:13132/certs/ca.pem
+curl -o antre-ca.pem http://localhost:13132/certs/ca.pem
 
 # macOS — add to system Keychain and trust it
 sudo security add-trusted-cert -d -r trustRoot \
-  -k /Library/Keychains/System.keychain moltis-ca.pem
+  -k /Library/Keychains/System.keychain antre-ca.pem
 
 # Linux (Debian/Ubuntu)
-sudo cp moltis-ca.pem /usr/local/share/ca-certificates/moltis-ca.crt
+sudo cp antre-ca.pem /usr/local/share/ca-certificates/antre-ca.crt
 sudo update-ca-certificates
 ```
 
@@ -55,13 +55,13 @@ After trusting the CA, restart your browser. The warning will not appear again
 (the CA persists in the mounted config volume).
 
 This local CA only solves certificate trust for names included in the generated
-server certificate, such as `localhost`, `moltis.localhost`, the container or
+server certificate, such as `localhost`, `antre.localhost`, the container or
 host name, and sometimes an inferred non-loopback bind IP. It does not make a
 certificate valid for an arbitrary public VPS IP address or hosting-provider
 domain. Browsers still reject those targets with a certificate name mismatch if
 they are not present in the certificate SAN list. IP-address URLs require an IP
 SAN. For direct `https://<public-ip>:13131` access, set `tls.public_ip` to that
-address before starting Moltis so the auto-generated certificate includes it:
+address before starting Antre so the auto-generated certificate includes it:
 
 ```toml
 [tls]
@@ -71,57 +71,57 @@ public_ip = "203.0.113.10"
 Regular public TLS deployments should use a domain name.
 
 For internet-facing Docker deployments, prefer a domain name plus a reverse
-proxy with public CA certificates. Run Moltis with `--no-tls`, set
-`MOLTIS_BEHIND_PROXY=true`, and point the proxy at `http://<moltis-host>:13131`.
-If you want Moltis to serve HTTPS directly, mount a certificate and private key
+proxy with public CA certificates. Run Antre with `--no-tls`, set
+`ANTRE_BEHIND_PROXY=true`, and point the proxy at `http://<antre-host>:13131`.
+If you want Antre to serve HTTPS directly, mount a certificate and private key
 whose SANs cover the public hostname and set `tls.cert_path` and `tls.key_path`
-in `moltis.toml`.
+in `antre.toml`.
 
 ```admonish note
-When accessing from localhost, no authentication is required. If you access Moltis from a different machine (e.g., over the network), a setup code is printed to the container logs for authentication setup.
+When accessing from localhost, no authentication is required. If you access Antre from a different machine (e.g., over the network), a setup code is printed to the container logs for authentication setup.
 
 Docker's default bridge networking rewrites the request's apparent source
 address, so this "no auth needed" convenience does not apply automatically
 inside a container even when the browser genuinely is on the same machine
 — see [Docker and check 4](authentication.md#docker-and-check-4) for why,
-and the `MOLTIS_TRUST_DOCKER_LOOPBACK` opt-in if you've confirmed your own
+and the `ANTRE_TRUST_DOCKER_LOOPBACK` opt-in if you've confirmed your own
 port publish is loopback-only.
 
 ~~~bash
-docker logs moltis
+docker logs antre
 ~~~
 ```
 
 ## Volume Mounts
 
-Moltis uses two directories that should be persisted:
+Antre uses two directories that should be persisted:
 
 | Path | Contents |
 |------|----------|
-| `/home/moltis/.config/moltis` | Configuration files: `moltis.toml`, `credentials.json`, `mcp-servers.json` |
-| `/home/moltis/.moltis` | Runtime data: databases, sessions, memory files, logs |
-| `/home/moltis/.npm` | npm cache (used by stdio-based MCP servers) |
+| `/home/antre/.config/antre` | Configuration files: `antre.toml`, `credentials.json`, `mcp-servers.json` |
+| `/home/antre/.antre` | Runtime data: databases, sessions, memory files, logs |
+| `/home/antre/.npm` | npm cache (used by stdio-based MCP servers) |
 
 You can use named volumes (as shown above) or bind mounts to local directories
 for easier access to configuration files:
 
 ```bash
 docker run -d \
-  --name moltis \
+  --name antre \
   -p 13131:13131 \
   -p 13132:13132 \
   -p 1455:1455 \
-  -v ./config:/home/moltis/.config/moltis \
-  -v ./data:/home/moltis/.moltis \
+  -v ./config:/home/antre/.config/antre \
+  -v ./data:/home/antre/.antre \
   -v /var/run/docker.sock:/var/run/docker.sock \
-  ghcr.io/moltis-org/moltis:latest
+  ghcr.io/antre-ai/antre:latest
 ```
 
-With bind mounts, you can edit `config/moltis.toml` directly on the host.
+With bind mounts, you can edit `config/antre.toml` directly on the host.
 
 ```admonish warning
 On a fresh checkout, Docker auto-creates `./config` and `./data` as
-`root:root` the first time it bind-mounts them. Moltis runs as a non-root
+`root:root` the first time it bind-mounts them. Antre runs as a non-root
 user inside the container, so the very first start can fail with `unable
 to open database file` before that user can write to them. Fix it once,
 before starting the container:
@@ -129,13 +129,13 @@ before starting the container:
 ~~~bash
 mkdir -p ./config ./data
 docker run --rm --user root --entrypoint chown \
-  -v ./config:/home/moltis/.config/moltis \
-  -v ./data:/home/moltis/.moltis \
-  ghcr.io/moltis-org/moltis:latest \
-  -R moltis:moltis /home/moltis/.config /home/moltis/.moltis
+  -v ./config:/home/antre/.config/antre \
+  -v ./data:/home/antre/.antre \
+  ghcr.io/antre-ai/antre:latest \
+  -R antre:antre /home/antre/.config /home/antre/.antre
 ~~~
 
-Using the image's own `moltis` username rather than a hardcoded UID keeps
+Using the image's own `antre` username rather than a hardcoded UID keeps
 this working even if the image's UID assignment ever changes. Named
 volumes (the Quick Start example above) don't need this — Docker leaves an
 existing named volume's ownership alone, only bind-mount source
@@ -144,8 +144,8 @@ directories get created as `root:root` on first use.
 
 ## Docker Socket (Sandbox Execution)
 
-Moltis runs LLM-generated shell commands inside isolated containers for
-security. When Moltis itself runs in a container, it needs access to the host's
+Antre runs LLM-generated shell commands inside isolated containers for
+security. When Antre itself runs in a container, it needs access to the host's
 container runtime to create these sandbox containers.
 
 ```bash
@@ -153,21 +153,21 @@ container runtime to create these sandbox containers.
 -v /var/run/docker.sock:/var/run/docker.sock
 ```
 
-**Without the socket mount**, Moltis automatically falls back to the
+**Without the socket mount**, Antre automatically falls back to the
 [restricted-host sandbox](sandbox.md#restricted-host-sandbox), which provides
 lightweight isolation by clearing environment variables, restricting `PATH`,
 and applying resource limits via `ulimit`. Commands will execute successfully
-inside the Moltis container but without filesystem or network isolation.
+inside the Antre container but without filesystem or network isolation.
 
 For full container-level isolation (filesystem boundaries, network policies),
 mount the Docker socket.
 
-If Moltis is itself running in Docker and your `data_dir()` mount is backed by
-a different host path than `/home/moltis/.moltis`, Moltis tries to discover that
+If Antre is itself running in Docker and your `data_dir()` mount is backed by
+a different host path than `/home/antre/.antre`, Antre tries to discover that
 host path automatically from `docker inspect`/`podman inspect`. It first checks
 the current container's hostname/cgroup references, then scans running
-containers for an unambiguous mount of Moltis' data directory. If that lookup
-still fails, add this to `/home/moltis/.config/moltis/moltis.toml` inside the
+containers for an unambiguous mount of Antre' data directory. If that lookup
+still fails, add this to `/home/antre/.config/antre/antre.toml` inside the
 container:
 
 ```toml
@@ -175,80 +175,80 @@ container:
 host_data_dir = "/absolute/host/path/to/data"
 ```
 
-For a bind mount like `-v ./data:/home/moltis/.moltis`, use the resolved host
+For a bind mount like `-v ./data:/home/antre/.antre`, use the resolved host
 path to `./data`. This setting is also used by sandboxed browser containers for
 their persistent Chrome profile directory. If browser startup logs show
-`/data/browser-profile/SingletonLock: Permission denied`, Moltis probably fell
-back to the in-container path (`/home/moltis/.moltis/...`) instead of the real
+`/data/browser-profile/SingletonLock: Permission denied`, Antre probably fell
+back to the in-container path (`/home/antre/.antre/...`) instead of the real
 host path. Set `host_data_dir` to the host-visible data directory and restart
-Moltis so new sandbox and browser containers pick up the corrected mount
+Antre so new sandbox and browser containers pick up the corrected mount
 source.
 
 ### Security Consideration
 
 Mounting the Docker socket gives the container full access to the Docker
 daemon. This is equivalent to root access on the host for practical purposes.
-Only run Moltis containers from trusted sources (official images from
-`ghcr.io/moltis-org/moltis`).
+Only run Antre containers from trusted sources (official images from
+`ghcr.io/antre-ai/antre`).
 
 ## Docker Compose
 
-See [`examples/docker-compose.yml`](https://github.com/moltis-org/moltis/blob/main/examples/docker-compose.yml) for a
+See [`examples/docker-compose.yml`](https://github.com/antre-ai/antre/blob/main/examples/docker-compose.yml) for a
 complete example:
 
 ```yaml
 services:
-  moltis:
-    image: ghcr.io/moltis-org/moltis:latest
-    container_name: moltis
+  antre:
+    image: ghcr.io/antre-ai/antre:latest
+    container_name: antre
     restart: unless-stopped
     ports:
       - "13131:13131"
       - "13132:13132"
       - "1455:1455"   # OAuth callback (OpenAI Codex, etc.)
     volumes:
-      - ./config:/home/moltis/.config/moltis
-      - ./data:/home/moltis/.moltis
+      - ./config:/home/antre/.config/antre
+      - ./data:/home/antre/.antre
       - /var/run/docker.sock:/var/run/docker.sock
 ```
 
 For unattended recovery after host reboots or in-place `/update`, store the
-vault recovery key as a Docker secret and point Moltis at the mounted file:
+vault recovery key as a Docker secret and point Antre at the mounted file:
 
 ```yaml
 services:
-  moltis:
-    image: ghcr.io/moltis-org/moltis:latest
+  antre:
+    image: ghcr.io/antre-ai/antre:latest
     environment:
-      MOLTIS_VAULT_AUTO_UNSEAL_KEY_FILE: /run/secrets/moltis_vault_recovery_key
+      ANTRE_VAULT_AUTO_UNSEAL_KEY_FILE: /run/secrets/antre_vault_recovery_key
     secrets:
-      - moltis_vault_recovery_key
+      - antre_vault_recovery_key
 
 secrets:
-  moltis_vault_recovery_key:
-    file: ./moltis-vault-recovery-key
+  antre_vault_recovery_key:
+    file: ./antre-vault-recovery-key
 ```
 
 This lets encrypted environment variables and channel credentials load during
 startup. Treat the secret file as sensitive as the vault recovery key itself.
 If you create the secret file before the vault is initialized, Docker will
-accept the mount but Moltis cannot auto-unseal from an empty file. After you
+accept the mount but Antre cannot auto-unseal from an empty file. After you
 initialize the vault in **Settings > Encryption**, copy the one-time recovery
 key into this file before relying on unattended auto-unseal.
 
 ### Coolify (Hetzner/VPS)
 
 For Coolify service stacks, use
-[`examples/docker-compose.coolify.yml`](https://github.com/moltis-org/moltis/blob/main/examples/docker-compose.coolify.yml).
+[`examples/docker-compose.coolify.yml`](https://github.com/antre-ai/antre/blob/main/examples/docker-compose.coolify.yml).
 It is preconfigured for reverse-proxy deployments (`--no-tls`) and includes
 the Docker socket mount for sandboxed command execution.
 
 Key points:
 
-- Set `MOLTIS_TOKEN` in the Coolify UI before first deploy.
-- Set `SERVICE_FQDN_MOLTIS_13131` to your app domain.
-- Keep Moltis in `--no-tls` mode behind Coolify's reverse proxy. If requests
-  are redirected to `:13131`, check that TLS is disabled in Moltis.
+- Set `ANTRE_TOKEN` in the Coolify UI before first deploy.
+- Set `SERVICE_FQDN_ANTRE_13131` to your app domain.
+- Keep Antre in `--no-tls` mode behind Coolify's reverse proxy. If requests
+  are redirected to `:13131`, check that TLS is disabled in Antre.
 - Keep `/var/run/docker.sock:/var/run/docker.sock` mounted if you want sandbox
   isolation for exec tools.
 
@@ -256,24 +256,24 @@ Start with:
 
 ```bash
 docker compose up -d
-docker compose logs -f moltis  # watch for startup messages
+docker compose logs -f antre  # watch for startup messages
 ```
 
 ## Browser Sandbox in Docker
 
-When Moltis runs inside Docker and launches a sandboxed browser, the browser
-container is a sibling container on the host. By default, Moltis connects to
+When Antre runs inside Docker and launches a sandboxed browser, the browser
+container is a sibling container on the host. By default, Antre connects to
 `127.0.0.1` which only reaches its own loopback, not the browser.
 
 The sibling browser also needs a host-visible mount for its Chrome profile. If
-your Moltis data directory is bind-mounted or stored somewhere that is not
-visible on the host as `/home/moltis/.moltis`, configure
+your Antre data directory is bind-mounted or stored somewhere that is not
+visible on the host as `/home/antre/.antre`, configure
 `[tools.exec.sandbox].host_data_dir` as described in
 [Docker Socket Sandbox Execution](#docker-socket-sandbox-execution). Without
 that override, Chrome may fail with `SingletonLock: Permission denied` when the
 browser container tries to write `/data/browser-profile`.
 
-Add `container_host` to your `moltis.toml` so Moltis can reach the browser
+Add `container_host` to your `antre.toml` so Antre can reach the browser
 container through the host's port mapping:
 
 ```toml
@@ -281,20 +281,20 @@ container through the host's port mapping:
 container_host = "host.docker.internal"
 ```
 
-On Linux, add `--add-host` to the Moltis container so `host.docker.internal`
+On Linux, add `--add-host` to the Antre container so `host.docker.internal`
 resolves to the host:
 
 ```bash
 docker run -d \
-  --name moltis \
+  --name antre \
   --add-host=host.docker.internal:host-gateway \
   -p 13131:13131 \
   -p 13132:13132 \
   -p 1455:1455 \
-  -v moltis-config:/home/moltis/.config/moltis \
-  -v moltis-data:/home/moltis/.moltis \
+  -v antre-config:/home/antre/.config/antre \
+  -v antre-data:/home/antre/.antre \
   -v /var/run/docker.sock:/var/run/docker.sock \
-  ghcr.io/moltis-org/moltis:latest
+  ghcr.io/antre-ai/antre:latest
 ```
 
 Alternatively, use the Docker bridge gateway IP directly
@@ -302,31 +302,31 @@ Alternatively, use the Docker bridge gateway IP directly
 
 ## Podman Support
 
-Moltis works with Podman using its Docker-compatible API. Mount the Podman
+Antre works with Podman using its Docker-compatible API. Mount the Podman
 socket instead of the Docker socket:
 
 ```bash
 # Podman rootless
 podman run -d \
-  --name moltis \
+  --name antre \
   -p 13131:13131 \
   -p 13132:13132 \
   -p 1455:1455 \
-  -v moltis-config:/home/moltis/.config/moltis \
-  -v moltis-data:/home/moltis/.moltis \
+  -v antre-config:/home/antre/.config/antre \
+  -v antre-data:/home/antre/.antre \
   -v /run/user/$(id -u)/podman/podman.sock:/var/run/docker.sock \
-  ghcr.io/moltis-org/moltis:latest
+  ghcr.io/antre-ai/antre:latest
 
 # Podman rootful
 podman run -d \
-  --name moltis \
+  --name antre \
   -p 13131:13131 \
   -p 13132:13132 \
   -p 1455:1455 \
-  -v moltis-config:/home/moltis/.config/moltis \
-  -v moltis-data:/home/moltis/.moltis \
+  -v antre-config:/home/antre/.config/antre \
+  -v antre-data:/home/antre/.antre \
   -v /run/podman/podman.sock:/var/run/docker.sock \
-  ghcr.io/moltis-org/moltis:latest
+  ghcr.io/antre-ai/antre:latest
 ```
 
 You may need to enable the Podman socket service first:
@@ -343,24 +343,24 @@ sudo systemctl enable --now podman.socket
 
 | Variable | Description |
 |----------|-------------|
-| `MOLTIS_CONFIG_DIR` | Override config directory (default: `~/.config/moltis`) |
-| `MOLTIS_DATA_DIR` | Override data directory (default: `~/.moltis`) |
-| `MOLTIS_NO_TLS` | Disable TLS (serve plain HTTP) — equivalent to `--no-tls` |
+| `ANTRE_CONFIG_DIR` | Override config directory (default: `~/.config/antre`) |
+| `ANTRE_DATA_DIR` | Override data directory (default: `~/.antre`) |
+| `ANTRE_NO_TLS` | Disable TLS (serve plain HTTP) — equivalent to `--no-tls` |
 
 Example:
 
 ```bash
 docker run -d \
-  --name moltis \
+  --name antre \
   -p 13131:13131 \
   -p 13132:13132 \
   -p 1455:1455 \
-  -e MOLTIS_CONFIG_DIR=/config \
-  -e MOLTIS_DATA_DIR=/data \
+  -e ANTRE_CONFIG_DIR=/config \
+  -e ANTRE_DATA_DIR=/data \
   -v ./config:/config \
   -v ./data:/data \
   -v /var/run/docker.sock:/var/run/docker.sock \
-  ghcr.io/moltis-org/moltis:latest
+  ghcr.io/antre-ai/antre:latest
 ```
 
 ### API Keys and the `[env]` Section
@@ -376,34 +376,34 @@ and no manual setup:
 
 ```yaml
 services:
-  moltis:
-    image: ghcr.io/moltis-org/moltis:latest
+  antre:
+    image: ghcr.io/antre-ai/antre:latest
     environment:
-      MOLTIS_TOKEN: "change-me"
-      MOLTIS_PROVIDER: "openai"
-      MOLTIS_API_KEY: "sk-..."
+      ANTRE_TOKEN: "change-me"
+      ANTRE_PROVIDER: "openai"
+      ANTRE_API_KEY: "sk-..."
 ```
 
-`MOLTIS_PROVIDER` must be a Moltis provider name such as `openai`,
+`ANTRE_PROVIDER` must be a Antre provider name such as `openai`,
 `anthropic`, `gemini`, `groq`, `openrouter`, or `mistral`. The shorter
-aliases `PROVIDER` and `API_KEY` also work, but the `MOLTIS_*` names are
+aliases `PROVIDER` and `API_KEY` also work, but the `ANTRE_*` names are
 preferred because they are less likely to collide with other containers.
 
 **Option 2: Provider-specific `docker -e` flags** (takes precedence for that provider)
 
 ```bash
 docker run -d \
-  --name moltis \
+  --name antre \
   -e BRAVE_API_KEY=your-key \
   -e OPENROUTER_API_KEY=sk-or-... \
   ...
-  ghcr.io/moltis-org/moltis:latest
+  ghcr.io/antre-ai/antre:latest
 ```
 
-**Option 3: `[env]` section in `moltis.toml`**
+**Option 3: `[env]` section in `antre.toml`**
 
 Add an `[env]` section to your config file. These variables are injected into
-the Moltis process at startup, making them available to all features:
+the Antre process at startup, making them available to all features:
 
 ```toml
 [env]
@@ -416,7 +416,7 @@ environment value wins — `[env]` never overwrites existing variables.
 
 ```admonish info title="Settings UI env vars"
 Environment variables set through the Settings UI (Settings > Environment)
-are stored in SQLite. At startup, Moltis injects them into the process
+are stored in SQLite. At startup, Antre injects them into the process
 environment so they are available to all features (search, embeddings,
 provider API calls), not just sandbox commands.
 
@@ -432,10 +432,10 @@ To build the Docker image from source:
 
 ```bash
 # Single architecture (current platform)
-docker build -t moltis:local .
+docker build -t antre:local .
 
 # Multi-architecture (requires buildx)
-docker buildx build --platform linux/amd64,linux/arm64 -t moltis:local .
+docker buildx build --platform linux/amd64,linux/arm64 -t antre:local .
 ```
 
 ## OrbStack
@@ -448,11 +448,11 @@ isolation with lower resource usage than Docker Desktop.
 
 ### "Cannot connect to Docker daemon"
 
-The Docker socket is not mounted or the Moltis user doesn't have permission
+The Docker socket is not mounted or the Antre user doesn't have permission
 to access it. Verify:
 
 ```bash
-docker exec moltis ls -la /var/run/docker.sock
+docker exec antre ls -la /var/run/docker.sock
 ```
 
 ### Setup code not appearing in logs (for network access)
@@ -460,7 +460,7 @@ docker exec moltis ls -la /var/run/docker.sock
 The setup code only appears when accessing from a non-localhost address. If you're accessing from the same machine via `localhost`, no setup code is needed. For network access, wait a few seconds for the gateway to start, then check logs:
 
 ```bash
-docker logs moltis 2>&1 | grep -i setup
+docker logs antre 2>&1 | grep -i setup
 ```
 
 ### OAuth authentication error (OpenAI Codex)
@@ -472,16 +472,16 @@ page, port 1455 is not reachable from your browser. Make sure you published it:
 -p 1455:1455
 ```
 
-If you're running Moltis on a remote server (cloud VM, VPS) and accessing it
+If you're running Antre on a remote server (cloud VM, VPS) and accessing it
 over the network, `localhost:1455` on the browser side points to your local
 machine — not the server. In that case, authenticate via the CLI instead:
 
 ```bash
-docker exec -it moltis moltis auth login --provider openai-codex
+docker exec -it antre antre auth login --provider openai-codex
 ```
 
 The CLI opens a browser on the machine where you run the command and handles
-the OAuth callback locally. If automatic callback capture fails, Moltis prompts
+the OAuth callback locally. If automatic callback capture fails, Antre prompts
 you to paste the callback URL (or `code#state`) into the terminal. Tokens are
 saved to the config volume and picked up by the running gateway automatically.
 
@@ -494,7 +494,7 @@ mkdir -p ./config ./data
 chmod 755 ./config ./data
 ```
 
-The container runs as user `moltis` (UID 1000). If you see permission errors,
+The container runs as user `antre` (UID 1000). If you see permission errors,
 you may need to adjust ownership:
 
 ```bash

@@ -149,8 +149,8 @@ mod tests {
             "ws://localhost:8080/ws/chat"
         );
         assert_eq!(
-            parse("https://moltis.example.com/").ws_url().as_str(),
-            "wss://moltis.example.com/ws/chat"
+            parse("https://antre.example.com/").ws_url().as_str(),
+            "wss://antre.example.com/ws/chat"
         );
         assert_eq!(
             parse("192.168.1.1:8080").ws_url().as_str(),

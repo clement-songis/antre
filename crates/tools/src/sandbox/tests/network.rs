@@ -3,7 +3,7 @@ use super::*;
 
 #[test]
 fn test_from_config_network_trusted_overrides_no_network() {
-    let cfg = moltis_config::schema::SandboxConfig {
+    let cfg = antre_config::schema::SandboxConfig {
         no_network: true,
         network: "trusted".into(),
         ..Default::default()
@@ -14,7 +14,7 @@ fn test_from_config_network_trusted_overrides_no_network() {
 
 #[test]
 fn test_from_config_network_bypass_overrides_no_network() {
-    let cfg = moltis_config::schema::SandboxConfig {
+    let cfg = antre_config::schema::SandboxConfig {
         no_network: true,
         network: "bypass".into(),
         ..Default::default()
@@ -25,7 +25,7 @@ fn test_from_config_network_bypass_overrides_no_network() {
 
 #[test]
 fn test_from_config_empty_network_defaults_to_trusted() {
-    let cfg = moltis_config::schema::SandboxConfig {
+    let cfg = antre_config::schema::SandboxConfig {
         no_network: false,
         network: String::new(),
         ..Default::default()
@@ -36,7 +36,7 @@ fn test_from_config_empty_network_defaults_to_trusted() {
 
 #[test]
 fn test_from_config_no_network_true_empty_network_is_blocked() {
-    let cfg = moltis_config::schema::SandboxConfig {
+    let cfg = antre_config::schema::SandboxConfig {
         no_network: true,
         network: String::new(),
         ..Default::default()
@@ -89,10 +89,10 @@ fn docker_proxy_env_uses_the_bound_proxy_port() {
 
 #[test]
 fn proxy_port_comes_from_config_or_the_legacy_default() {
-    let mut schema = moltis_config::schema::SandboxConfig::default();
+    let mut schema = antre_config::schema::SandboxConfig::default();
     assert_eq!(
         SandboxConfig::from(&schema).proxy_port,
-        moltis_network_filter::DEFAULT_PROXY_PORT
+        antre_network_filter::DEFAULT_PROXY_PORT
     );
     schema.proxy_port = Some(40000);
     assert_eq!(SandboxConfig::from(&schema).proxy_port, 40000);
@@ -108,7 +108,7 @@ fn test_docker_proxy_exec_env_args_trusted() {
     let args = docker.proxy_exec_env_args();
     let expected_url = format!(
         "http://host.docker.internal:{}",
-        moltis_network_filter::DEFAULT_PROXY_PORT
+        antre_network_filter::DEFAULT_PROXY_PORT
     );
     // Should contain -e pairs for HTTP_PROXY, http_proxy, HTTPS_PROXY, https_proxy,
     // NO_PROXY, no_proxy (6 keys x 2 args each = 12 args).
@@ -178,7 +178,7 @@ fn test_apple_container_proxy_prefix_trusted() {
     let proxy_url = format!(
         "http://{}:{}",
         gateway,
-        moltis_network_filter::DEFAULT_PROXY_PORT
+        antre_network_filter::DEFAULT_PROXY_PORT
     );
     let mut prefix = String::new();
     let escaped_proxy = proxy_url.replace('\'', "'\\''");
@@ -191,6 +191,6 @@ fn test_apple_container_proxy_prefix_trusted() {
 
     assert!(prefix.contains("export HTTP_PROXY="));
     assert!(prefix.contains("export https_proxy="));
-    assert!(prefix.contains(&format!(":{}", moltis_network_filter::DEFAULT_PROXY_PORT)));
+    assert!(prefix.contains(&format!(":{}", antre_network_filter::DEFAULT_PROXY_PORT)));
     assert!(prefix.contains("export NO_PROXY='localhost,127.0.0.1,::1'"));
 }

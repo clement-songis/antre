@@ -1,4 +1,4 @@
-use moltis_channels::{ChannelReplyTarget, Error as ChannelError, SavedChannelFile};
+use antre_channels::{ChannelReplyTarget, Error as ChannelError, SavedChannelFile};
 
 use super::{
     super::{
@@ -487,7 +487,7 @@ use {
     std::io::Cursor,
 };
 
-use moltis_channels::Result as ChannelsResult;
+use antre_channels::Result as ChannelsResult;
 
 enum MockTranscription {
     Success(String),

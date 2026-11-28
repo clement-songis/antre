@@ -183,7 +183,7 @@ export function PersonaEditModal({ editingId, existingPersona, onClose, onSaved 
 			const personaIdToTest = isNew ? undefined : editingId;
 			const identity = gon.get("identity") as { user_name?: string; name?: string } | undefined;
 			const user = identity?.user_name || "friend";
-			const bot = label || identity?.name || "Moltis";
+			const bot = label || identity?.name || "Antre";
 			const text = await fetchPhrase("settings", user, bot);
 
 			let res: RpcResponse;

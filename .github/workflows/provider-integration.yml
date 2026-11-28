@@ -402,8 +402,8 @@ jobs:
         working-directory: crates/web/ui
         env:
           CI: "true"
-          MOLTIS_E2E_ONLY_PROJECT: remote-sandbox-live
-          MOLTIS_E2E_SKIP_DEFAULT_PROJECTS: "1"
+          ANTRE_E2E_ONLY_PROJECT: remote-sandbox-live
+          ANTRE_E2E_SKIP_DEFAULT_PROJECTS: "1"
         run: npx playwright test --project=remote-sandbox-live e2e/specs/remote-sandbox-live.spec.js
 
       - name: Upload cloud sandbox live E2E results
@@ -467,10 +467,10 @@ jobs:
           ./scripts/download-tailwindcss-cli.sh tailwindcss-linux-x64
           TAILWINDCSS=./tailwindcss-linux-x64 ./scripts/build-web-assets.sh
 
-      - name: Build moltis binary
+      - name: Build antre binary
         if: env.SKIP != 'true'
         timeout-minutes: 20
-        run: cargo build --bin moltis
+        run: cargo build --bin antre
 
       - name: Reclaim Rust build disk for E2E
         if: env.SKIP != 'true'
@@ -494,7 +494,7 @@ jobs:
         working-directory: crates/web/ui
         env:
           CI: "true"
-          MOLTIS_BINARY: ${{ github.workspace }}/target/e2e-bin/moltis
+          ANTRE_BINARY: ${{ github.workspace }}/target/e2e-bin/antre
         run: npx playwright test --project=openai-live e2e/specs/openai-live.spec.js
 
       - name: Upload OpenAI live E2E results
@@ -516,8 +516,8 @@ jobs:
       contents: read
     continue-on-error: ${{ inputs.fail_on_error != true }}
     env:
-      MOLTIS_E2E_OLLAMA_QWEN_LIVE: "1"
-      MOLTIS_E2E_OLLAMA_QWEN_MODEL: qwen2.5:0.5b
+      ANTRE_E2E_OLLAMA_QWEN_LIVE: "1"
+      ANTRE_E2E_OLLAMA_QWEN_MODEL: qwen2.5:0.5b
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
@@ -567,9 +567,9 @@ jobs:
           ./scripts/download-tailwindcss-cli.sh tailwindcss-linux-x64
           TAILWINDCSS=./tailwindcss-linux-x64 ./scripts/build-web-assets.sh
 
-      - name: Build moltis binary
+      - name: Build antre binary
         timeout-minutes: 20
-        run: cargo build --bin moltis
+        run: cargo build --bin antre
 
       - name: Cache Playwright browsers
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4

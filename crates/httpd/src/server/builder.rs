@@ -13,7 +13,7 @@ use {
     tower_http::set_header::SetResponseHeaderLayer,
 };
 
-use moltis_gateway::{
+use antre_gateway::{
     auth_webauthn::SharedWebAuthnRegistry, methods::MethodRegistry, state::GatewayState,
 };
 
@@ -39,7 +39,7 @@ use super::ngrok::NgrokController;
 pub(super) fn build_gateway_base_internal(
     state: Arc<GatewayState>,
     methods: Arc<MethodRegistry>,
-    push_service: Option<Arc<moltis_gateway::push::PushService>>,
+    push_service: Option<Arc<antre_gateway::push::PushService>>,
     webauthn_registry: Option<SharedWebAuthnRegistry>,
 ) -> GatewayBase {
     let mut router = Router::new()
@@ -103,7 +103,7 @@ pub(super) fn build_gateway_base_internal(
         #[cfg(feature = "netbird")]
         netbird_runtime,
         #[cfg(feature = "tailscale")]
-        tailscale_manager: moltis_gateway::tailscale::CachedTailscaleManager::new_with_prefetch(),
+        tailscale_manager: antre_gateway::tailscale::CachedTailscaleManager::new_with_prefetch(),
         push_service,
         #[cfg(feature = "graphql")]
         graphql_schema,
@@ -137,7 +137,7 @@ pub(super) fn build_gateway_base_internal(
 pub fn build_gateway_base(
     state: Arc<GatewayState>,
     methods: Arc<MethodRegistry>,
-    push_service: Option<Arc<moltis_gateway::push::PushService>>,
+    push_service: Option<Arc<antre_gateway::push::PushService>>,
     webauthn_registry: Option<SharedWebAuthnRegistry>,
 ) -> (Router<AppState>, AppState) {
     #[cfg(feature = "ngrok")]
@@ -230,7 +230,7 @@ pub(super) fn build_gateway_base_internal(
         #[cfg(feature = "netbird")]
         netbird_runtime,
         #[cfg(feature = "tailscale")]
-        tailscale_manager: moltis_gateway::tailscale::CachedTailscaleManager::new_with_prefetch(),
+        tailscale_manager: antre_gateway::tailscale::CachedTailscaleManager::new_with_prefetch(),
         #[cfg(feature = "graphql")]
         graphql_schema,
     };
@@ -325,7 +325,7 @@ pub fn finalize_gateway_app(
 pub fn build_gateway_app(
     state: Arc<GatewayState>,
     methods: Arc<MethodRegistry>,
-    push_service: Option<Arc<moltis_gateway::push::PushService>>,
+    push_service: Option<Arc<antre_gateway::push::PushService>>,
     http_request_logs: bool,
     webauthn_registry: Option<SharedWebAuthnRegistry>,
 ) -> Router {

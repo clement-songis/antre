@@ -24,7 +24,7 @@ pub(crate) const MAX_ARCHIVE_PATH_METADATA_BYTES: u64 = 8192;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExportManifest {
     pub format_version: u32,
-    pub moltis_version: String,
+    pub antre_version: String,
     pub created_at: String,
     pub inventory: ArchiveInventory,
 }
@@ -34,7 +34,7 @@ pub struct ExportManifest {
 pub struct ArchiveInventory {
     pub config_files: Vec<String>,
     pub workspace_files: Vec<String>,
-    pub has_moltis_db: bool,
+    pub has_antre_db: bool,
     pub has_memory_db: bool,
     pub session_files: Vec<String>,
     pub media_files: Vec<String>,
@@ -118,12 +118,12 @@ mod tests {
     fn manifest_round_trip() {
         let manifest = ExportManifest {
             format_version: FORMAT_VERSION,
-            moltis_version: "test".into(),
+            antre_version: "test".into(),
             created_at: "2026-05-01T00:00:00Z".into(),
             inventory: ArchiveInventory {
-                config_files: vec!["moltis.toml".into()],
+                config_files: vec!["antre.toml".into()],
                 workspace_files: vec!["SOUL.md".into()],
-                has_moltis_db: true,
+                has_antre_db: true,
                 has_memory_db: false,
                 session_files: vec!["main.jsonl".into()],
                 media_files: vec![],
@@ -137,7 +137,7 @@ mod tests {
         let json = serde_json::to_string(&manifest).unwrap();
         let decoded: ExportManifest = serde_json::from_str(&json).unwrap();
         assert_eq!(decoded.format_version, FORMAT_VERSION);
-        assert!(decoded.inventory.has_moltis_db);
+        assert!(decoded.inventory.has_antre_db);
         assert_eq!(decoded.inventory.session_count(), 1);
         assert_eq!(decoded.inventory.managed_files.files.len(), 1);
         assert_eq!(decoded.inventory.managed_files.total_bytes, 12);
@@ -147,12 +147,12 @@ mod tests {
     fn old_manifest_defaults_managed_files_inventory() {
         let json = r#"{
             "format_version": 1,
-            "moltis_version": "test",
+            "antre_version": "test",
             "created_at": "2026-05-01T00:00:00Z",
             "inventory": {
                 "config_files": [],
                 "workspace_files": [],
-                "has_moltis_db": false,
+                "has_antre_db": false,
                 "has_memory_db": false,
                 "session_files": [],
                 "media_files": []

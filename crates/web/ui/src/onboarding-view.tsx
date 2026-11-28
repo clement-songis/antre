@@ -283,7 +283,7 @@ function SummaryStep({ onBack, onFinish }: { onBack: () => void; onFinish: () =>
 		);
 	}
 
-	const activeModel = localStorage.getItem("moltis-model");
+	const activeModel = localStorage.getItem("antre-model");
 	const configuredProviders = data.providers.filter((p) => p.configured);
 	const installedAcpAgents = data.externalAgents.filter((agent) => agent.installed && agent.isAcp);
 	const hasConfiguredLlm = configuredProviders.length > 0;

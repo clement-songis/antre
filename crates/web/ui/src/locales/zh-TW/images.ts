@@ -4,7 +4,7 @@ export default {
 	// ── Page-level ──────────────────────────────────────────
 	title: "沙盒",
 	description:
-		"Moltis 會快取沙盒使用的容器映像檔。您可以刪除個別映像檔、全部清除，或使用基底映像檔與 apt 套件建置自訂映像檔。",
+		"Antre 會快取沙盒使用的容器映像檔。您可以刪除個別映像檔、全部清除，或使用基底映像檔與 apt 套件建置自訂映像檔。",
 	appleContainerNote:
 		"Apple Container 會在虛擬機器中提供隔離環境，但無法建置映像檔。若要建置及快取自訂映像檔，還需安裝 Docker（或 OrbStack）。沙盒指令使用 Apple Container 執行，映像檔則由 Docker 建置。",
 	sandboxDisabledHint:
@@ -59,7 +59,7 @@ export default {
 		noRuntimeLinux: "未偵測到容器執行環境。請安裝 Docker 以執行沙盒，或確認可以使用 systemd 以啟用 cgroup 隔離。",
 		noRuntimeGeneric: "未偵測到容器執行環境。請安裝 Docker 以執行沙盒。",
 		macosDockerTip:
-			"Apple Container 在 macOS 26+ 上提供更強的虛擬機器層級隔離。安裝後 Moltis 會自動優先使用（優先於 Docker）。執行：brew install container",
+			"Apple Container 在 macOS 26+ 上提供更強的虛擬機器層級隔離。安裝後 Antre 會自動優先使用（優先於 Docker）。執行：brew install container",
 		linuxDockerTip:
 			"Docker 是 Linux 上的良好選擇。若想要更輕量的隔離，並避免 Docker 的額外資源開銷，也可使用 systemd cgroup 沙盒。",
 		restrictedHostTip: "目前使用受限主機執行（env 清除、rlimits）。如需更強的隔離，請安裝 Docker 或 Apple Container。",

@@ -1,5 +1,5 @@
 #!/bin/sh
-# Moltis installer script
+# Antre installer script
 # https://www.moltis.org/
 #
 # Usage:
@@ -12,9 +12,9 @@
 
 set -e
 
-GITHUB_REPO="moltis-org/moltis"
-HOMEBREW_TAP="moltis-org/tap"
-BINARY_NAME="moltis"
+GITHUB_REPO="antre-ai/antre"
+HOMEBREW_TAP="antre-ai/tap"
+BINARY_NAME="antre"
 INSTALL_DIR="${INSTALL_DIR:-$HOME/.local/bin}"
 
 # Default options
@@ -70,7 +70,7 @@ while [ $# -gt 0 ]; do
             ;;
         -h|--help)
             cat <<EOF
-Moltis installer
+Antre installer
 
 Usage:
     install.sh [OPTIONS]
@@ -222,7 +222,7 @@ install_shared_assets() {
         return 0
     fi
 
-    share_dir="$HOME/.moltis/share"
+    share_dir="$HOME/.antre/share"
     mkdir -p "$share_dir"
     cp -R "$source_dir"/. "$share_dir"/
     info "Installed shared assets to $share_dir"
@@ -272,8 +272,8 @@ install_homebrew() {
         error "Homebrew not found. Install it from https://brew.sh/"
     fi
     brew tap "$HOMEBREW_TAP" 2>/dev/null || true
-    brew install moltis
-    success "Moltis installed via Homebrew"
+    brew install antre
+    success "Antre installed via Homebrew"
 }
 
 install_binary() {
@@ -322,13 +322,13 @@ install_binary() {
     mv "$tmpdir/$BINARY_NAME" "$INSTALL_DIR/$BINARY_NAME"
     chmod +x "$INSTALL_DIR/$BINARY_NAME"
 
-    if [ -d "$tmpdir/share/moltis" ]; then
-        install_shared_assets "$tmpdir/share/moltis"
+    if [ -d "$tmpdir/share/antre" ]; then
+        install_shared_assets "$tmpdir/share/antre"
     elif [ -d "$tmpdir/share/web" ] && [ -d "$tmpdir/share/wasm" ]; then
         install_shared_assets "$tmpdir/share"
     fi
 
-    success "Moltis installed to $INSTALL_DIR/$BINARY_NAME"
+    success "Antre installed to $INSTALL_DIR/$BINARY_NAME"
     add_to_path_instructions
 }
 
@@ -342,9 +342,9 @@ install_deb() {
         *) error "Unsupported architecture for .deb: $arch" ;;
     esac
 
-    # Package naming: moltis_VERSION_ARCH.deb (cargo-deb with --deb-version, no revision)
+    # Package naming: antre_VERSION_ARCH.deb (cargo-deb with --deb-version, no revision)
     tag=$(release_tag "$version")
-    deb_file="moltis_${version}_${deb_arch}.deb"
+    deb_file="antre_${version}_${deb_arch}.deb"
     url="https://github.com/${GITHUB_REPO}/releases/download/${tag}/${deb_file}"
 
     info "Downloading ${deb_file}..."
@@ -357,7 +357,7 @@ install_deb() {
     info "Installing .deb package (requires sudo)..."
     sudo dpkg -i "$tmpdir/$deb_file" || sudo apt-get install -f -y
 
-    success "Moltis installed via .deb package"
+    success "Antre installed via .deb package"
 }
 
 install_rpm() {
@@ -370,9 +370,9 @@ install_rpm() {
         *) error "Unsupported architecture for .rpm: $arch" ;;
     esac
 
-    # Package naming: moltis-VERSION-1.ARCH.rpm
+    # Package naming: antre-VERSION-1.ARCH.rpm
     tag=$(release_tag "$version")
-    rpm_file="moltis-${version}-1.${rpm_arch}.rpm"
+    rpm_file="antre-${version}-1.${rpm_arch}.rpm"
     url="https://github.com/${GITHUB_REPO}/releases/download/${tag}/${rpm_file}"
 
     info "Downloading ${rpm_file}..."
@@ -391,7 +391,7 @@ install_rpm() {
         sudo rpm -i "$tmpdir/$rpm_file"
     fi
 
-    success "Moltis installed via .rpm package"
+    success "Antre installed via .rpm package"
 }
 
 install_arch() {
@@ -399,7 +399,7 @@ install_arch() {
     version="$2"
 
     tag=$(release_tag "$version")
-    pkg_file="moltis-${version}-1-${arch}.pkg.tar.zst"
+    pkg_file="antre-${version}-1-${arch}.pkg.tar.zst"
     url="https://github.com/${GITHUB_REPO}/releases/download/${tag}/${pkg_file}"
 
     info "Downloading ${pkg_file}..."
@@ -412,7 +412,7 @@ install_arch() {
     info "Installing Arch package (requires sudo)..."
     sudo pacman -U --noconfirm "$tmpdir/$pkg_file"
 
-    success "Moltis installed via Arch package"
+    success "Antre installed via Arch package"
 }
 
 install_appimage() {
@@ -433,7 +433,7 @@ install_appimage() {
     esac
 
     tag=$(release_tag "$version")
-    appimage_file="moltis-${version}-${arch}.AppImage"
+    appimage_file="antre-${version}-${arch}.AppImage"
     url="https://github.com/${GITHUB_REPO}/releases/download/${tag}/${appimage_file}"
     checksum_url="${url}.sha256"
 
@@ -456,7 +456,7 @@ install_appimage() {
     mv "$tmpdir/$appimage_file" "$INSTALL_DIR/$BINARY_NAME"
     chmod +x "$INSTALL_DIR/$BINARY_NAME"
 
-    success "Moltis AppImage installed to $INSTALL_DIR/$BINARY_NAME"
+    success "Antre AppImage installed to $INSTALL_DIR/$BINARY_NAME"
     add_to_path_instructions
 }
 
@@ -467,9 +467,9 @@ install_snap() {
         error "Snap not found. Install it first: https://snapcraft.io/docs/installing-snapd"
     fi
 
-    sudo snap install moltis
+    sudo snap install antre
 
-    success "Moltis installed via Snap"
+    success "Antre installed via Snap"
 }
 
 detect_proxmox() {
@@ -477,24 +477,24 @@ detect_proxmox() {
 }
 
 install_proxmox() {
-    info "Proxmox VE detected — installing Moltis as an LXC container..."
+    info "Proxmox VE detected — installing Antre as an LXC container..."
 
     if ! detect_proxmox; then
         error "This does not appear to be a Proxmox VE host."
     fi
 
     PROXMOX_REPO_URL="https://raw.githubusercontent.com/moltis-org/ProxmoxVED/feat/moltis"
-    PROXMOX_SCRIPT_URL="$PROXMOX_REPO_URL/ct/moltis.sh"
+    PROXMOX_SCRIPT_URL="$PROXMOX_REPO_URL/ct/antre.sh"
 
     tmpdir=$(mktemp -d)
     trap 'rm -rf "$tmpdir"' EXIT
-    proxmox_script="$tmpdir/moltis-proxmox.sh"
-    patched_script="$tmpdir/moltis-proxmox-patched.sh"
+    proxmox_script="$tmpdir/antre-proxmox.sh"
+    patched_script="$tmpdir/antre-proxmox-patched.sh"
 
     download "$PROXMOX_SCRIPT_URL" "$proxmox_script" || error "Failed to download Proxmox helper"
 
-    # Patch the fetched helper at launch time for Moltis-specific fixes that live
-    # in remote community-scripts files: keep /usr/bin/update on the Moltis fork,
+    # Patch the fetched helper at launch time for Antre-specific fixes that live
+    # in remote community-scripts files: keep /usr/bin/update on the Antre fork,
     # make the Docker prompt safe when lxc-attach has no interactive stdin, and
     # keep optional CA certificate display failures from removing the container.
     awk -v repo_url="$PROXMOX_REPO_URL" '
@@ -502,24 +502,24 @@ install_proxmox() {
             if ($0 ~ /^source <\(curl -fsSL / && !curl_patched) {
                 print "curl() {"
                 print "  case \"${*: -1}\" in"
-                print "    */install/moltis-install.sh)"
-                print "      command curl \"$@\" | sed '\''s|^[[:space:]]*read -r -p \".*Docker for sandbox support.*\" prompt$|if [[ -t 0 ]]; then &; else prompt=\"${MOLTIS_INSTALL_DOCKER:-no}\"; fi|'\''"
+                print "    */install/antre-install.sh)"
+                print "      command curl \"$@\" | sed '\''s|^[[:space:]]*read -r -p \".*Docker for sandbox support.*\" prompt$|if [[ -t 0 ]]; then &; else prompt=\"${ANTRE_INSTALL_DOCKER:-no}\"; fi|'\''"
                 print "      ;;"
                 print "    *) command curl \"$@\" ;;"
                 print "  esac"
                 print "}"
                 curl_patched = 1
             }
-            if ($0 == "CA_CERT=$(pct exec \"$CTID\" -- cat /etc/moltis/certs/ca.pem 2>/dev/null)" && !ca_cert_patched) {
+            if ($0 == "CA_CERT=$(pct exec \"$CTID\" -- cat /etc/antre/certs/ca.pem 2>/dev/null)" && !ca_cert_patched) {
                 sub(/\)$/, " || true)")
                 ca_cert_patched = 1
             }
             print
             if ($0 == "description" && !patched) {
                 q = sprintf("%c", 39)
-                print "pct exec \"$CTID\" -- bash -c \"cat > /usr/bin/update <<" q "MOLTIS_UPDATE_EOF" q
-                print "bash -c \\\"\\$(curl -fsSL " repo_url "/ct/moltis.sh)\\\""
-                print "MOLTIS_UPDATE_EOF"
+                print "pct exec \"$CTID\" -- bash -c \"cat > /usr/bin/update <<" q "ANTRE_UPDATE_EOF" q
+                print "bash -c \\\"\\$(curl -fsSL " repo_url "/ct/antre.sh)\\\""
+                print "ANTRE_UPDATE_EOF"
                 print "chmod +x /usr/bin/update\" || true"
                 patched = 1
             }
@@ -527,8 +527,8 @@ install_proxmox() {
     ' "$proxmox_script" >"$patched_script"
 
     grep -q 'curl()' "$patched_script" || error "Failed to apply Docker prompt patch to Proxmox helper"
-    grep -q 'MOLTIS_UPDATE_EOF' "$patched_script" || error "Failed to apply update URL patch to Proxmox helper"
-    grep -q 'cat /etc/moltis/certs/ca.pem 2>/dev/null || true' "$patched_script" || warn "Could not apply optional CA certificate patch to Proxmox helper"
+    grep -q 'ANTRE_UPDATE_EOF' "$patched_script" || error "Failed to apply update URL patch to Proxmox helper"
+    grep -q 'cat /etc/antre/certs/ca.pem 2>/dev/null || true' "$patched_script" || warn "Could not apply optional CA certificate patch to Proxmox helper"
 
     info "Launching Proxmox VE helper script..."
     bash "$patched_script"
@@ -559,13 +559,13 @@ install_from_source() {
 
     info "Cloning repository..."
     tag=$(release_tag "$version")
-    git clone --depth 1 --branch "$tag" "https://github.com/${GITHUB_REPO}.git" "$tmpdir/moltis"
+    git clone --depth 1 --branch "$tag" "https://github.com/${GITHUB_REPO}.git" "$tmpdir/antre"
 
-    cd "$tmpdir/moltis"
+    cd "$tmpdir/antre"
 
     info "Building WASM tool components..."
     rustup target add wasm32-wasip2
-    cargo build --target wasm32-wasip2 -p moltis-wasm-calc -p moltis-wasm-web-fetch -p moltis-wasm-web-search --release
+    cargo build --target wasm32-wasip2 -p antre-wasm-calc -p antre-wasm-web-fetch -p antre-wasm-web-search --release
 
     info "Building release binary..."
     cargo build --release
@@ -574,15 +574,15 @@ install_from_source() {
     cp "target/release/$BINARY_NAME" "$INSTALL_DIR/$BINARY_NAME"
     chmod +x "$INSTALL_DIR/$BINARY_NAME"
 
-    SHARE_STAGING="$tmpdir/moltis-share"
+    SHARE_STAGING="$tmpdir/antre-share"
     mkdir -p "$SHARE_STAGING/web" "$SHARE_STAGING/wasm"
     cp -R "crates/web/src/assets/." "$SHARE_STAGING/web/"
-    cp "target/wasm32-wasip2/release/moltis_wasm_calc.wasm" "$SHARE_STAGING/wasm/"
-    cp "target/wasm32-wasip2/release/moltis_wasm_web_fetch.wasm" "$SHARE_STAGING/wasm/"
-    cp "target/wasm32-wasip2/release/moltis_wasm_web_search.wasm" "$SHARE_STAGING/wasm/"
+    cp "target/wasm32-wasip2/release/antre_wasm_calc.wasm" "$SHARE_STAGING/wasm/"
+    cp "target/wasm32-wasip2/release/antre_wasm_web_fetch.wasm" "$SHARE_STAGING/wasm/"
+    cp "target/wasm32-wasip2/release/antre_wasm_web_search.wasm" "$SHARE_STAGING/wasm/"
     install_shared_assets "$SHARE_STAGING"
 
-    success "Moltis built and installed to $INSTALL_DIR/$BINARY_NAME"
+    success "Antre built and installed to $INSTALL_DIR/$BINARY_NAME"
     add_to_path_instructions
 }
 
@@ -590,7 +590,7 @@ install_from_source() {
 
 main() {
     printf "\n"
-    printf "  ${BOLD}Moltis Installer${NC}\n"
+    printf "  ${BOLD}Antre Installer${NC}\n"
     printf "  Personal AI gateway - one binary, multiple LLM providers\n"
     printf "\n"
 
@@ -729,8 +729,8 @@ main() {
         printf "  ${BOLD}%s${NC}\n" "$installed_version"
         printf "\n"
         printf "Get started:\n"
-        printf "  ${BOLD}moltis${NC}          # Start the gateway\n"
-        printf "  ${BOLD}moltis --help${NC}   # Show help\n"
+        printf "  ${BOLD}antre${NC}          # Start the gateway\n"
+        printf "  ${BOLD}antre --help${NC}   # Show help\n"
         printf "\n"
         printf "Documentation: ${BLUE}https://www.moltis.org/${NC}\n"
     elif [ -x "$INSTALL_DIR/$BINARY_NAME" ]; then

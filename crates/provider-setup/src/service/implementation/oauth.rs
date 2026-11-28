@@ -3,15 +3,15 @@
 
 use std::sync::Arc;
 
-use {moltis_oauth::TokenStore, serde_json::Value, tracing::info};
+use {antre_oauth::TokenStore, serde_json::Value, tracing::info};
 
 use {
-    moltis_oauth::{
+    antre_oauth::{
         CallbackServer, OAuthFlow, callback_port, device_flow, load_oauth_config,
         normalize_loopback_redirect,
     },
-    moltis_providers::ProviderRegistry,
-    moltis_service_traits::{ServiceError, ServiceResult},
+    antre_providers::ProviderRegistry,
+    antre_service_traits::{ServiceError, ServiceResult},
 };
 
 use {
@@ -31,7 +31,7 @@ impl LiveProviderSetupService {
     async fn oauth_start_device_flow(
         &self,
         provider_name: String,
-        oauth_config: moltis_oauth::OAuthConfig,
+        oauth_config: antre_oauth::OAuthConfig,
     ) -> ServiceResult {
         let client = reqwest::Client::new();
         let extra_headers = build_provider_headers(&provider_name);
@@ -294,7 +294,7 @@ impl LiveProviderSetupService {
             .and_then(Value::as_str)
             .map(str::trim)
             .filter(|value| !value.is_empty())
-            .map(moltis_oauth::parse_callback_input)
+            .map(antre_oauth::parse_callback_input)
             .transpose()
             .map_err(ServiceError::message)?;
 
@@ -400,7 +400,7 @@ async fn prefetch_provider_api_metadata(
             return;
         }
         if let Err(error) =
-            moltis_providers::github_copilot::prefetch_api_token_metadata(client, token_store).await
+            antre_providers::github_copilot::prefetch_api_token_metadata(client, token_store).await
         {
             tracing::warn!(
                 provider = %provider_name,
@@ -421,7 +421,7 @@ fn is_github_copilot_provider(provider_name: &str) -> bool {
 }
 
 pub(super) fn ensure_provider_enabled(
-    config: &mut moltis_config::schema::ProvidersConfig,
+    config: &mut antre_config::schema::ProvidersConfig,
     provider: &str,
 ) {
     config

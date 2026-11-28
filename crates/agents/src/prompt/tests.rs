@@ -9,14 +9,14 @@ use {
             build_system_prompt_with_session_runtime,
             build_system_prompt_with_session_runtime_details,
             formatting::{
-                format_compact_tool_schema, format_moltis_runtime_line, tool_call_guidance,
+                format_antre_runtime_line, format_compact_tool_schema, tool_call_guidance,
             },
             prepend_datetime_to_user_content, runtime_datetime_message,
         },
         tool_registry::ToolRegistry,
     },
-    moltis_config::{AgentIdentity, UserProfile},
-    moltis_skills::types::SkillMetadata,
+    antre_config::{AgentIdentity, UserProfile},
+    antre_skills::types::SkillMetadata,
 };
 
 #[test]
@@ -138,8 +138,8 @@ fn test_documentation_section_includes_local_docs_path() {
     let tools = ToolRegistry::new();
     let runtime = PromptRuntimeContext {
         host: PromptHostRuntimeContext {
-            docs_path: Some("/tmp/moltis/docs/moltis".into()),
-            config_template_path: Some("/tmp/moltis/docs/moltis/config-template.md".into()),
+            docs_path: Some("/tmp/antre/docs/antre".into()),
+            config_template_path: Some("/tmp/antre/docs/antre/config-template.md".into()),
             ..Default::default()
         },
         ..Default::default()
@@ -162,7 +162,7 @@ fn test_documentation_section_includes_local_docs_path() {
     );
 
     assert!(prompt.contains("## Documentation"));
-    assert!(prompt.contains("Moltis docs: /tmp/moltis/docs/moltis"));
+    assert!(prompt.contains("Antre docs: /tmp/antre/docs/antre"));
     assert!(prompt.contains("consult local docs first"));
     assert!(prompt.contains("config-template.md"));
 }
@@ -186,7 +186,7 @@ fn test_documentation_section_falls_back_to_public_docs() {
         None,
     );
 
-    assert!(prompt.contains("Moltis docs: https://docs.moltis.org"));
+    assert!(prompt.contains("Antre docs: https://docs.moltis.org"));
 }
 
 #[test]
@@ -343,7 +343,7 @@ fn test_runtime_context_injected_when_provided() {
     let tools = ToolRegistry::new();
     let runtime = PromptRuntimeContext {
         host: PromptHostRuntimeContext {
-            host: Some("moltis-devbox".into()),
+            host: Some("antre-devbox".into()),
             os: Some("macos".into()),
             arch: Some("aarch64".into()),
             shell: Some("zsh".into()),
@@ -360,8 +360,8 @@ fn test_runtime_context_injected_when_provided() {
             channel_outbound_to: None,
             channel_chat_type: None,
             channel_sender_id: None,
-            data_dir: Some("/home/moltis/.moltis".into()),
-            files_dir: Some("/home/moltis/.moltis/files".into()),
+            data_dir: Some("/home/antre/.antre".into()),
+            files_dir: Some("/home/antre/.antre/files".into()),
             working_dir: Some("/workspace/project".into()),
             docs_path: None,
             config_template_path: None,
@@ -377,10 +377,10 @@ fn test_runtime_context_injected_when_provided() {
             mode: Some("all".into()),
             backend: Some("docker".into()),
             scope: Some("session".into()),
-            image: Some("moltis-sandbox:abc123".into()),
+            image: Some("antre-sandbox:abc123".into()),
             home: Some("/home/sandbox".into()),
             workspace_mount: Some("ro".into()),
-            workspace_path: Some("/home/moltis/.moltis".into()),
+            workspace_path: Some("/home/antre/.antre".into()),
             files_path: Some("/home/sandbox/files".into()),
             files_mount: Some("ro".into()),
             no_network: Some(true),
@@ -407,17 +407,17 @@ fn test_runtime_context_injected_when_provided() {
     );
 
     assert!(prompt.contains("## Runtime"));
-    assert!(prompt.contains("Moltis v"));
-    assert!(prompt.contains(&format_moltis_runtime_line()));
-    assert!(prompt.contains("Host: host=moltis-devbox"));
+    assert!(prompt.contains("Antre v"));
+    assert!(prompt.contains(&format_antre_runtime_line()));
+    assert!(prompt.contains("Host: host=antre-devbox"));
     assert!(!prompt.contains("time=2026-02-17 16:18:00 CET"));
     assert!(!prompt.contains("today="));
     assert!(!prompt.contains("Today is"));
     assert!(!prompt.contains("The current user datetime is"));
     assert!(prompt.contains("provider=openai"));
     assert!(prompt.contains("model=gpt-5"));
-    assert!(prompt.contains("data_dir=/home/moltis/.moltis"));
-    assert!(prompt.contains("files_dir=/home/moltis/.moltis/files"));
+    assert!(prompt.contains("data_dir=/home/antre/.antre"));
+    assert!(prompt.contains("files_dir=/home/antre/.antre/files"));
     assert!(prompt.contains("working_dir=/workspace/project"));
     assert!(prompt.contains("sudo_non_interactive=true"));
     assert!(prompt.contains("sudo_status=passwordless"));
@@ -427,7 +427,7 @@ fn test_runtime_context_injected_when_provided() {
     assert!(prompt.contains("Sandbox(exec): enabled=true"));
     assert!(prompt.contains("backend=docker"));
     assert!(prompt.contains("home=/home/sandbox"));
-    assert!(prompt.contains("workspace_path=/home/moltis/.moltis"));
+    assert!(prompt.contains("workspace_path=/home/antre/.antre"));
     assert!(prompt.contains("files_path=/home/sandbox/files"));
     assert!(prompt.contains("files_mount=ro"));
     assert!(prompt.contains("network=disabled"));
@@ -667,7 +667,7 @@ fn test_runtime_context_omits_location_when_none() {
 fn test_minimal_prompt_runtime_does_not_add_exec_routing_block() {
     let runtime = PromptRuntimeContext {
         host: PromptHostRuntimeContext {
-            host: Some("moltis-devbox".into()),
+            host: Some("antre-devbox".into()),
             ..Default::default()
         },
         sandbox: None,
@@ -689,7 +689,7 @@ fn test_minimal_prompt_runtime_does_not_add_exec_routing_block() {
     );
 
     assert!(prompt.contains("## Runtime"));
-    assert!(prompt.contains("Host: host=moltis-devbox"));
+    assert!(prompt.contains("Host: host=antre-devbox"));
     assert!(!prompt.contains("Sandbox(exec)"));
     assert!(!prompt.contains("Execution routing:"));
 }

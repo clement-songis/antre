@@ -1,4 +1,4 @@
-//! Antre shell spike: a Tauri 2 window around the Moltis web UI.
+//! Antre shell spike: a Tauri 2 window around the Antre web UI.
 //! See `plans/research/tauri-spike.md`.
 
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]

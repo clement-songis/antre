@@ -144,13 +144,13 @@ fn test_podman_socket_run_args_include_matching_env() {
 
     assert_eq!(args, vec![
         "-v".to_string(),
-        "/run/user/1000/podman/podman.sock:/tmp/moltis-host-podman.sock:rw".to_string(),
+        "/run/user/1000/podman/podman.sock:/tmp/antre-host-podman.sock:rw".to_string(),
         "--security-opt".to_string(),
         "label=disable".to_string(),
         "-e".to_string(),
-        "CONTAINER_HOST=unix:///tmp/moltis-host-podman.sock".to_string(),
+        "CONTAINER_HOST=unix:///tmp/antre-host-podman.sock".to_string(),
         "-e".to_string(),
-        "DOCKER_HOST=unix:///tmp/moltis-host-podman.sock".to_string(),
+        "DOCKER_HOST=unix:///tmp/antre-host-podman.sock".to_string(),
     ]);
 }
 
@@ -202,7 +202,7 @@ fn test_podman_host_mode_changes_when_socket_is_recreated() {
     assert!(!DockerSandbox::podman_mode_matches(Some(&first), &second));
     assert_eq!(DockerSandbox::podman_mode_label_args(&second), vec![
         "--label".to_string(),
-        format!("org.moltis.podman-mode={second}"),
+        format!("ai.antre.podman-mode={second}"),
     ]);
 }
 
@@ -246,7 +246,7 @@ async fn test_podman_mode_mismatch_recreates_running_container() {
     let cli: &'static str = Box::leak(fake_cli.display().to_string().into_boxed_str());
     let sandbox = DockerSandbox::podman_with_cli(
         SandboxConfig {
-            image: Some("moltis-sandbox:test".to_string()),
+            image: Some("antre-sandbox:test".to_string()),
             network: NetworkPolicy::Blocked,
             workspace_mount: WorkspaceMount::None,
             home_persistence: HomePersistence::Off,
@@ -262,8 +262,8 @@ async fn test_podman_mode_mismatch_recreates_running_container() {
     sandbox.ensure_ready(&id, None).await.unwrap();
 
     let calls = std::fs::read_to_string(log).unwrap();
-    assert!(calls.contains("rm -f moltis-sandbox-mode-transition"));
-    assert!(calls.contains("--label org.moltis.podman-mode=hardened"));
+    assert!(calls.contains("rm -f antre-sandbox-mode-transition"));
+    assert!(calls.contains("--label ai.antre.podman-mode=hardened"));
 }
 
 #[cfg(unix)]
@@ -311,7 +311,7 @@ fn test_podman_rootless_reexec_error_gets_actionable_context() {
 
     assert!(formatted.contains("NoNewPrivileges=true"));
     assert!(formatted.contains("Rootless Podman"));
-    assert!(formatted.contains("moltis-podman.conf"));
+    assert!(formatted.contains("antre-podman.conf"));
     assert!(formatted.contains("allow_host_podman=true"));
     assert!(formatted.contains("allow_nested_podman=true"));
 }
@@ -463,8 +463,8 @@ fn test_sandbox_config_serde() {
 
 #[test]
 fn test_runtime_sandbox_config_converts_managed_files_mount() {
-    let config = moltis_config::schema::SandboxConfig {
-        managed_files_mount: moltis_config::schema::ManagedFilesMountConfig::Rw,
+    let config = antre_config::schema::SandboxConfig {
+        managed_files_mount: antre_config::schema::ManagedFilesMountConfig::Rw,
         ..Default::default()
     };
 
@@ -505,20 +505,20 @@ fn test_docker_workspace_args_ro() {
     let args = docker.workspace_args();
     assert_eq!(args.len(), 2);
     assert_eq!(args[0], "-v");
-    let workspace_dir = moltis_config::data_dir();
+    let workspace_dir = antre_config::data_dir();
     let expected_volume = format!("{}:{}:ro", workspace_dir.display(), workspace_dir.display());
     assert_eq!(args[1], expected_volume);
 }
 
 #[test]
-fn test_workspace_mount_points_sandbox_at_moltis_data_dir_memory_files() {
+fn test_workspace_mount_points_sandbox_at_antre_data_dir_memory_files() {
     let config = SandboxConfig {
         workspace_mount: WorkspaceMount::Ro,
         ..Default::default()
     };
     let docker = DockerSandbox::new(config);
     let args = docker.workspace_args();
-    let workspace_dir = moltis_config::data_dir();
+    let workspace_dir = antre_config::data_dir();
     let guest_memory_file = workspace_dir.join("MEMORY.md");
     let guest_memory_dir = workspace_dir.join("memory");
 
@@ -526,7 +526,7 @@ fn test_workspace_mount_points_sandbox_at_moltis_data_dir_memory_files() {
     assert_eq!(args[0], "-v");
     assert!(
         args[1].contains(&format!(":{}:ro", workspace_dir.display())),
-        "workspace mount should expose the Moltis data dir inside the sandbox"
+        "workspace mount should expose the Antre data dir inside the sandbox"
     );
     assert_eq!(guest_memory_file, workspace_dir.join("MEMORY.md"));
     assert_eq!(guest_memory_dir, workspace_dir.join("memory"));
@@ -536,15 +536,15 @@ fn test_workspace_mount_points_sandbox_at_moltis_data_dir_memory_files() {
 fn test_docker_workspace_args_uses_host_data_dir_override() {
     let config = SandboxConfig {
         workspace_mount: WorkspaceMount::Ro,
-        host_data_dir: Some(PathBuf::from("/host/moltis-data")),
+        host_data_dir: Some(PathBuf::from("/host/antre-data")),
         ..Default::default()
     };
     let docker = DockerSandbox::new(config);
     let args = docker.workspace_args();
     assert_eq!(args.len(), 2);
     assert_eq!(args[0], "-v");
-    let guest_workspace_dir = moltis_config::data_dir();
-    let expected_volume = format!("/host/moltis-data:{}:ro", guest_workspace_dir.display());
+    let guest_workspace_dir = antre_config::data_dir();
+    let expected_volume = format!("/host/antre-data:{}:ro", guest_workspace_dir.display());
     assert_eq!(args[1], expected_volume);
 }
 
@@ -577,7 +577,7 @@ fn test_docker_workspace_args_none() {
 fn test_docker_managed_files_args_ro_with_legacy_override() {
     let docker = DockerSandbox::new(SandboxConfig::default());
     let args = docker.managed_files_args().unwrap();
-    let files_dir = moltis_config::managed_files_dir();
+    let files_dir = antre_config::managed_files_dir();
 
     assert_eq!(args, vec![
         "-v",
@@ -590,7 +590,7 @@ fn test_docker_managed_files_args_ro_with_legacy_override() {
 #[test]
 fn test_docker_managed_files_args_rw_uses_host_data_dir_override() {
     let temp_dir = tempfile::tempdir().unwrap();
-    let host_data_dir = temp_dir.path().join("host-moltis-data");
+    let host_data_dir = temp_dir.path().join("host-antre-data");
     let docker = DockerSandbox::new(SandboxConfig {
         managed_files_mount: ManagedFilesMount::Rw,
         host_data_dir: Some(host_data_dir.clone()),
@@ -606,7 +606,7 @@ fn test_docker_managed_files_args_rw_uses_host_data_dir_override() {
         &format!(
             "{}:{}:rw",
             host_files.display(),
-            moltis_config::managed_files_dir().display()
+            antre_config::managed_files_dir().display()
         ),
     ]);
 }
@@ -671,7 +671,7 @@ fn test_docker_managed_files_args_none_masks_canonical_and_legacy_paths() {
         "--tmpfs",
         &format!(
             "{}:ro,nosuid,nodev,noexec,size=64k",
-            moltis_config::managed_files_dir().display()
+            antre_config::managed_files_dir().display()
         ),
     ]);
 }
@@ -712,7 +712,7 @@ fn test_docker_home_persistence_args_default_shared() {
     let args = docker.home_persistence_args(&id).unwrap();
     assert_eq!(args.len(), 2);
     assert_eq!(args[0], "-v");
-    let expected_host_dir = moltis_config::data_dir()
+    let expected_host_dir = antre_config::data_dir()
         .join("sandbox")
         .join("home")
         .join("shared");
@@ -730,7 +730,7 @@ fn test_sandbox_home_persistence_is_separate_from_memory_workspace() {
 
     let home_dir =
         guest_visible_sandbox_home_persistence_host_dir(&config, &id).expect("shared home path");
-    let data_dir = moltis_config::data_dir();
+    let data_dir = antre_config::data_dir();
 
     assert_eq!(
         home_dir,
@@ -746,7 +746,7 @@ fn test_sandbox_home_persistence_is_separate_from_memory_workspace() {
 #[test]
 fn test_docker_home_persistence_args_default_shared_uses_host_data_dir_override() {
     let temp_dir = tempfile::tempdir().unwrap();
-    let host_data_dir = temp_dir.path().join("moltis-data");
+    let host_data_dir = temp_dir.path().join("antre-data");
     let config = SandboxConfig {
         host_data_dir: Some(host_data_dir.clone()),
         ..Default::default()
@@ -769,7 +769,7 @@ fn test_docker_home_persistence_args_default_shared_uses_host_data_dir_override(
 #[test]
 fn test_docker_home_persistence_args_custom_shared_absolute_path() {
     let config = SandboxConfig {
-        shared_home_dir: Some(PathBuf::from("/tmp/moltis-shared-home")),
+        shared_home_dir: Some(PathBuf::from("/tmp/antre-shared-home")),
         ..Default::default()
     };
     let docker = DockerSandbox::new(config);
@@ -780,7 +780,7 @@ fn test_docker_home_persistence_args_custom_shared_absolute_path() {
     let args = docker.home_persistence_args(&id).unwrap();
     assert_eq!(args.len(), 2);
     assert_eq!(args[0], "-v");
-    let expected_volume = "/tmp/moltis-shared-home:/home/sandbox:rw".to_string();
+    let expected_volume = "/tmp/antre-shared-home:/home/sandbox:rw".to_string();
     assert_eq!(args[1], expected_volume);
 }
 
@@ -798,7 +798,7 @@ fn test_docker_home_persistence_args_custom_shared_relative_path() {
     let args = docker.home_persistence_args(&id).unwrap();
     assert_eq!(args.len(), 2);
     assert_eq!(args[0], "-v");
-    let expected_host_dir = moltis_config::data_dir().join("sandbox/custom-shared");
+    let expected_host_dir = antre_config::data_dir().join("sandbox/custom-shared");
     let expected_volume = format!("{}:/home/sandbox:rw", expected_host_dir.display());
     assert_eq!(args[1], expected_volume);
 }
@@ -806,10 +806,10 @@ fn test_docker_home_persistence_args_custom_shared_relative_path() {
 #[test]
 fn test_docker_home_persistence_args_custom_shared_guest_absolute_path_uses_host_override() {
     let temp_dir = tempfile::tempdir().unwrap();
-    let host_data_dir = temp_dir.path().join("moltis-data");
+    let host_data_dir = temp_dir.path().join("antre-data");
     let config = SandboxConfig {
         host_data_dir: Some(host_data_dir.clone()),
-        shared_home_dir: Some(moltis_config::data_dir().join("sandbox/custom-shared")),
+        shared_home_dir: Some(antre_config::data_dir().join("sandbox/custom-shared")),
         ..Default::default()
     };
     let docker = DockerSandbox::new(config);
@@ -841,7 +841,7 @@ fn test_docker_home_persistence_args_session() {
     let args = docker.home_persistence_args(&id).unwrap();
     assert_eq!(args.len(), 2);
     assert_eq!(args[0], "-v");
-    let expected_host_dir = moltis_config::data_dir()
+    let expected_host_dir = antre_config::data_dir()
         .join("sandbox")
         .join("home")
         .join("session")
@@ -853,7 +853,7 @@ fn test_docker_home_persistence_args_session() {
 #[test]
 fn test_docker_home_persistence_args_session_uses_host_data_dir_override() {
     let temp_dir = tempfile::tempdir().unwrap();
-    let host_data_dir = temp_dir.path().join("moltis-data");
+    let host_data_dir = temp_dir.path().join("antre-data");
     let config = SandboxConfig {
         home_persistence: HomePersistence::Session,
         host_data_dir: Some(host_data_dir.clone()),
@@ -879,13 +879,13 @@ fn test_docker_home_persistence_args_session_uses_host_data_dir_override() {
 #[test]
 fn test_resolve_workspace_guest_path_on_host_uses_host_override() {
     let temp_dir = tempfile::tempdir().unwrap();
-    let host_data_dir = temp_dir.path().join("moltis-data");
+    let host_data_dir = temp_dir.path().join("antre-data");
     let config = SandboxConfig {
         workspace_mount: WorkspaceMount::Rw,
         host_data_dir: Some(host_data_dir.clone()),
         ..Default::default()
     };
-    let guest_file = moltis_config::data_dir().join("notes/todo.txt");
+    let guest_file = antre_config::data_dir().join("notes/todo.txt");
 
     let resolved =
         resolve_workspace_guest_path_on_host(&config, Some("docker"), &guest_file).unwrap();
@@ -895,7 +895,7 @@ fn test_resolve_workspace_guest_path_on_host_uses_host_override() {
 
 #[test]
 fn test_resolve_managed_files_path_precedes_canonical_and_legacy_mappings() {
-    let host_data_dir = PathBuf::from("/host/moltis-data");
+    let host_data_dir = PathBuf::from("/host/antre-data");
     let config = SandboxConfig {
         managed_files_mount: ManagedFilesMount::Ro,
         workspace_mount: WorkspaceMount::Rw,
@@ -905,7 +905,7 @@ fn test_resolve_managed_files_path_precedes_canonical_and_legacy_mappings() {
 
     for guest_file in [
         PathBuf::from(SANDBOX_FILES_DIR).join("nested/note.txt"),
-        moltis_config::managed_files_dir().join("nested/note.txt"),
+        antre_config::managed_files_dir().join("nested/note.txt"),
         PathBuf::from("/home/sandbox/other/../files/nested/note.txt"),
     ] {
         assert_eq!(
@@ -927,7 +927,7 @@ fn test_resolve_managed_files_path_none_is_unavailable_for_legacy_alias() {
         resolve_managed_files_guest_path_on_host(
             &config,
             Some("docker"),
-            &moltis_config::managed_files_dir().join("private.txt"),
+            &antre_config::managed_files_dir().join("private.txt"),
         ),
         ManagedFilesPath::Unavailable
     );
@@ -947,7 +947,7 @@ async fn test_docker_managed_files_ro_rejects_canonical_and_legacy_writes() {
 
     for guest_file in [
         PathBuf::from(SANDBOX_FILES_DIR).join("note.txt"),
-        moltis_config::managed_files_dir().join("note.txt"),
+        antre_config::managed_files_dir().join("note.txt"),
     ] {
         let payload = docker
             .write_file(&id, &guest_file.display().to_string(), b"blocked")
@@ -961,7 +961,7 @@ async fn test_docker_managed_files_ro_rejects_canonical_and_legacy_writes() {
 #[test]
 fn test_resolve_home_persistence_guest_path_on_host_uses_session_mount() {
     let temp_dir = tempfile::tempdir().unwrap();
-    let host_data_dir = temp_dir.path().join("moltis-data");
+    let host_data_dir = temp_dir.path().join("antre-data");
     let config = SandboxConfig {
         home_persistence: HomePersistence::Session,
         host_data_dir: Some(host_data_dir.clone()),
@@ -986,7 +986,7 @@ fn test_resolve_home_persistence_guest_path_on_host_uses_session_mount() {
 #[test]
 fn test_resolve_home_persistence_guest_path_on_host_uses_shared_mount() {
     let temp_dir = tempfile::tempdir().unwrap();
-    let host_data_dir = temp_dir.path().join("moltis-data");
+    let host_data_dir = temp_dir.path().join("antre-data");
     let config = SandboxConfig {
         host_data_dir: Some(host_data_dir.clone()),
         ..Default::default()
@@ -1013,7 +1013,7 @@ fn test_resolve_home_persistence_guest_path_on_host_uses_shared_mount() {
 #[tokio::test]
 async fn test_docker_read_file_uses_mounted_workspace_path() {
     let temp_dir = tempfile::tempdir().unwrap();
-    let host_data_dir = temp_dir.path().join("moltis-data");
+    let host_data_dir = temp_dir.path().join("antre-data");
     let host_file = host_data_dir.join("notes/todo.txt");
     std::fs::create_dir_all(host_file.parent().unwrap()).unwrap();
     std::fs::write(&host_file, "docker mounted read").unwrap();
@@ -1027,7 +1027,7 @@ async fn test_docker_read_file_uses_mounted_workspace_path() {
         scope: SandboxScope::Session,
         key: "test-docker-read".into(),
     };
-    let guest_file = moltis_config::data_dir().join("notes/todo.txt");
+    let guest_file = antre_config::data_dir().join("notes/todo.txt");
 
     let result = docker
         .read_file(&id, &guest_file.display().to_string(), 1024)
@@ -1042,7 +1042,7 @@ async fn test_docker_read_file_uses_mounted_workspace_path() {
 #[tokio::test]
 async fn test_docker_write_file_uses_mounted_workspace_path() {
     let temp_dir = tempfile::tempdir().unwrap();
-    let host_data_dir = temp_dir.path().join("moltis-data");
+    let host_data_dir = temp_dir.path().join("antre-data");
     let docker = DockerSandbox::new(SandboxConfig {
         workspace_mount: WorkspaceMount::Rw,
         host_data_dir: Some(host_data_dir.clone()),
@@ -1052,7 +1052,7 @@ async fn test_docker_write_file_uses_mounted_workspace_path() {
         scope: SandboxScope::Session,
         key: "test-docker-write".into(),
     };
-    let guest_file = moltis_config::data_dir().join("notes/todo.txt");
+    let guest_file = antre_config::data_dir().join("notes/todo.txt");
     std::fs::create_dir_all(host_data_dir.join("notes")).unwrap();
 
     let result = docker
@@ -1104,7 +1104,7 @@ async fn test_docker_write_file_falls_back_to_container_copy_when_host_mount_is_
         scope: SandboxScope::Session,
         key: "test-docker-write-fallback".into(),
     };
-    let guest_file = moltis_config::data_dir().join("notes/todo.txt");
+    let guest_file = antre_config::data_dir().join("notes/todo.txt");
 
     let result = docker
         .write_file(
@@ -1121,7 +1121,7 @@ async fn test_docker_write_file_falls_back_to_container_copy_when_host_mount_is_
 #[tokio::test]
 async fn test_docker_write_file_uses_mounted_home_path() {
     let temp_dir = tempfile::tempdir().unwrap();
-    let host_data_dir = temp_dir.path().join("moltis-data");
+    let host_data_dir = temp_dir.path().join("antre-data");
     let docker = DockerSandbox::new(SandboxConfig {
         home_persistence: HomePersistence::Session,
         host_data_dir: Some(host_data_dir.clone()),
@@ -1149,7 +1149,7 @@ async fn test_docker_write_file_uses_mounted_home_path() {
 #[tokio::test]
 async fn test_docker_list_files_remaps_mounted_workspace_paths() {
     let temp_dir = tempfile::tempdir().unwrap();
-    let host_data_dir = temp_dir.path().join("moltis-data");
+    let host_data_dir = temp_dir.path().join("antre-data");
     let host_root = host_data_dir.join("notes");
     std::fs::create_dir_all(host_root.join("nested")).unwrap();
     std::fs::write(host_root.join("todo.txt"), "a").unwrap();
@@ -1164,7 +1164,7 @@ async fn test_docker_list_files_remaps_mounted_workspace_paths() {
         scope: SandboxScope::Session,
         key: "test-docker-list".into(),
     };
-    let guest_root = moltis_config::data_dir().join("notes");
+    let guest_root = antre_config::data_dir().join("notes");
 
     let files = docker
         .list_files(&id, &guest_root.display().to_string())
@@ -1214,7 +1214,7 @@ async fn test_docker_list_files_falls_back_when_host_mount_is_inaccessible() {
         scope: SandboxScope::Session,
         key: "test-docker-list-fallback".into(),
     };
-    let guest_root = moltis_config::data_dir().join("notes");
+    let guest_root = antre_config::data_dir().join("notes");
 
     let files = docker
         .list_files(&id, &guest_root.display().to_string())
@@ -1243,7 +1243,7 @@ async fn test_docker_list_files_falls_back_when_host_mount_is_inaccessible() {
 #[tokio::test]
 async fn test_provisioning_guard_skips_second_call() {
     let docker = DockerSandbox::new(SandboxConfig::default());
-    let name = "moltis-sandbox-test-guard";
+    let name = "antre-sandbox-test-guard";
 
     // First insertion succeeds.
     {
@@ -1262,7 +1262,7 @@ async fn test_provisioning_guard_skips_second_call() {
 #[tokio::test]
 async fn test_provisioning_guard_cleared_on_cleanup_entry() {
     let docker = DockerSandbox::new(SandboxConfig::default());
-    let name = "moltis-sandbox-test-cleanup";
+    let name = "antre-sandbox-test-cleanup";
 
     // Mark as provisioned.
     docker.provisioned.lock().await.insert(name.to_string());

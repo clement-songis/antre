@@ -202,15 +202,15 @@ export class Session {
 
 // ── Store signals ────────────────────────────────────────────
 export const sessions = signal<Session[]>([]);
-export const activeSessionKey = signal<string>(localStorage.getItem("moltis-session") || "main");
+export const activeSessionKey = signal<string>(localStorage.getItem("antre-session") || "main");
 export const switchInProgress = signal<boolean>(false);
 export const refreshInProgressKey = signal<string>("");
 const runStateRevisions = new Map<string, number>();
 /** Session list tab filter: "all" | "sessions" | "cron" */
-export const sessionListTab = signal<string>(localStorage.getItem("moltis-session-tab") || "sessions");
-export const showArchivedSessions = signal<boolean>(localStorage.getItem("moltis-show-archived-sessions") === "1");
+export const sessionListTab = signal<string>(localStorage.getItem("antre-session-tab") || "sessions");
+export const showArchivedSessions = signal<boolean>(localStorage.getItem("antre-show-archived-sessions") === "1");
 
-const EXPANDED_SESSIONS_STORAGE_KEY = "moltis-expanded-sessions";
+const EXPANDED_SESSIONS_STORAGE_KEY = "antre-expanded-sessions";
 
 function loadExpandedSessionKeys(): Set<string> {
 	try {
@@ -318,7 +318,7 @@ export function remove(key: string): boolean {
 	if (activeSessionKey.value === key) {
 		const fallback = sessions.value.find((session) => session.key === "main")?.key || sessions.value[0]?.key || "main";
 		activeSessionKey.value = fallback;
-		localStorage.setItem("moltis-session", fallback);
+		localStorage.setItem("antre-session", fallback);
 	}
 	return true;
 }
@@ -359,19 +359,19 @@ export function getByKey(key: string): Session | null {
 /** Set the active session key. Persists to localStorage. */
 export function setActive(key: string): void {
 	activeSessionKey.value = key;
-	localStorage.setItem("moltis-session", key);
+	localStorage.setItem("antre-session", key);
 }
 
 /** Set the session list tab and persist it. */
 export function setSessionListTab(tab: string): void {
 	sessionListTab.value = tab;
-	localStorage.setItem("moltis-session-tab", tab);
+	localStorage.setItem("antre-session-tab", tab);
 }
 
 /** Toggle whether archived sessions are shown in the sidebar. */
 export function setShowArchivedSessions(show: boolean): void {
 	showArchivedSessions.value = !!show;
-	localStorage.setItem("moltis-show-archived-sessions", show ? "1" : "0");
+	localStorage.setItem("antre-show-archived-sessions", show ? "1" : "0");
 }
 
 /** Show or hide a session's sub-sessions in the sidebar tree. */

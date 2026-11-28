@@ -12,9 +12,9 @@ export const REASONING_SEP = "@reasoning-";
 
 // ── Signals ──────────────────────────────────────────────────
 export const models = signal<ModelInfo[]>([]);
-export const selectedModelId = signal<string>(localStorage.getItem("moltis-model") || "");
+export const selectedModelId = signal<string>(localStorage.getItem("antre-model") || "");
 export const reasoningEffort = signal<string>(
-	gon.get("reasoning_default") ?? (localStorage.getItem("moltis-reasoning-effort") || ""),
+	gon.get("reasoning_default") ?? (localStorage.getItem("antre-reasoning-effort") || ""),
 );
 let modelListGeneration = 0;
 
@@ -71,18 +71,18 @@ export function fetch(): Promise<boolean> {
 		if (generation !== modelListGeneration) return true;
 		models.value = res.payload || [];
 		if (models.value.length === 0) return true;
-		let saved = localStorage.getItem("moltis-model") || "";
+		let saved = localStorage.getItem("antre-model") || "";
 		// If the saved model has a reasoning suffix, strip it and restore the effort
 		const parsed = parseReasoningSuffix(saved);
 		if (parsed.effort) {
 			saved = parsed.baseId;
 			if (!gon.get("reasoning_default")) setReasoningEffort(parsed.effort);
-			localStorage.setItem("moltis-model", saved);
+			localStorage.setItem("antre-model", saved);
 		}
 		const found = models.value.find((m) => m.id === saved);
 		const model = found || models.value[0];
 		select(model.id);
-		if (!found) localStorage.setItem("moltis-model", model.id);
+		if (!found) localStorage.setItem("antre-model", model.id);
 		return true;
 	});
 }
@@ -95,7 +95,7 @@ export function select(id: string): void {
 /** Set the reasoning effort level. Empty string means off. */
 export function setReasoningEffort(effort: string): void {
 	reasoningEffort.value = effort || "";
-	localStorage.setItem("moltis-reasoning-effort", effort || "");
+	localStorage.setItem("antre-reasoning-effort", effort || "");
 }
 
 /** Look up a model by id. */

@@ -2,16 +2,16 @@ use std::{collections::HashSet, sync::Arc};
 
 use {
     super::*,
-    async_trait::async_trait,
-    moltis_channels::{
+    antre_channels::{
         ChannelRegistry, ChannelType,
         plugin::{
             ChannelOutbound, ChannelPlugin, ChannelStreamOutbound, ChannelThreadContext,
             StreamReceiver, ThreadMessage,
         },
     },
-    moltis_common::types::ReplyPayload,
-    moltis_connectors::ProjectionConfig,
+    antre_common::types::ReplyPayload,
+    antre_connectors::ProjectionConfig,
+    async_trait::async_trait,
     secrecy::Secret,
     serde_json::Value,
 };
@@ -27,7 +27,7 @@ impl ChannelThreadContext for FakeChannelHistory {
         _channel_id: &str,
         _thread_id: &str,
         limit: usize,
-    ) -> moltis_channels::Result<Vec<ThreadMessage>> {
+    ) -> antre_channels::Result<Vec<ThreadMessage>> {
         Ok(vec![ThreadMessage {
             message_id: "message-1".to_owned(),
             sender_id: "user-1".to_owned(),
@@ -49,7 +49,7 @@ impl ChannelOutbound for FakeChannelHistory {
         _to: &str,
         _text: &str,
         _reply_to: Option<&str>,
-    ) -> moltis_channels::Result<()> {
+    ) -> antre_channels::Result<()> {
         Ok(())
     }
 
@@ -59,7 +59,7 @@ impl ChannelOutbound for FakeChannelHistory {
         _to: &str,
         _payload: &ReplyPayload,
         _reply_to: Option<&str>,
-    ) -> moltis_channels::Result<()> {
+    ) -> antre_channels::Result<()> {
         Ok(())
     }
 }
@@ -72,7 +72,7 @@ impl ChannelStreamOutbound for FakeChannelHistory {
         _to: &str,
         _reply_to: Option<&str>,
         _stream: StreamReceiver,
-    ) -> moltis_channels::Result<()> {
+    ) -> antre_channels::Result<()> {
         Ok(())
     }
 }
@@ -105,12 +105,12 @@ impl ChannelPlugin for FakeChannelPlugin {
         &mut self,
         account_id: &str,
         _config: Value,
-    ) -> moltis_channels::Result<()> {
+    ) -> antre_channels::Result<()> {
         self.accounts.insert(account_id.to_owned());
         Ok(())
     }
 
-    async fn stop_account(&mut self, account_id: &str) -> moltis_channels::Result<()> {
+    async fn stop_account(&mut self, account_id: &str) -> antre_channels::Result<()> {
         self.accounts.remove(account_id);
         Ok(())
     }
@@ -119,7 +119,7 @@ impl ChannelPlugin for FakeChannelPlugin {
         Some(self.history.as_ref())
     }
 
-    fn status(&self) -> Option<&dyn moltis_channels::plugin::ChannelStatus> {
+    fn status(&self) -> Option<&dyn antre_channels::plugin::ChannelStatus> {
         None
     }
 
@@ -134,7 +134,7 @@ impl ChannelPlugin for FakeChannelPlugin {
     async fn account_config(
         &self,
         _account_id: &str,
-    ) -> Option<Box<dyn moltis_channels::config_view::ChannelConfigView>> {
+    ) -> Option<Box<dyn antre_channels::config_view::ChannelConfigView>> {
         None
     }
 
@@ -142,7 +142,7 @@ impl ChannelPlugin for FakeChannelPlugin {
         &self,
         _account_id: &str,
         _config: Value,
-    ) -> moltis_channels::Result<()> {
+    ) -> antre_channels::Result<()> {
         Ok(())
     }
 

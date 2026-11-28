@@ -8,11 +8,11 @@ use {
 };
 
 use {
-    moltis_common::{
+    antre_common::{
         Result,
         hooks::{HookAction, HookEvent, HookHandler, HookPayload},
     },
-    moltis_sessions::store::SessionStore,
+    antre_sessions::store::SessionStore,
 };
 
 /// Format current UTC date as YYYY-MM-DD.

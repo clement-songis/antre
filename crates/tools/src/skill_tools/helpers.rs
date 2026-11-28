@@ -134,8 +134,8 @@ pub(super) fn build_checked_skill_md(
 pub(super) fn parse_for_discovery(
     content: &str,
     skill_dir: &Path,
-) -> crate::Result<moltis_skills::types::SkillMetadata> {
-    moltis_skills::parse::parse_metadata(content, skill_dir).map_err(|e| {
+) -> crate::Result<antre_skills::types::SkillMetadata> {
+    antre_skills::parse::parse_metadata(content, skill_dir).map_err(|e| {
         Error::message(format!(
             "refusing to write a SKILL.md that skill discovery cannot load: {e}"
         ))
@@ -328,7 +328,7 @@ pub(super) async fn write_sidecar_files(
             rollback_written_files(&written_paths).await;
             return Err(Error::message("invalid file name"));
         };
-        let temp_name = format!(".{file_name}.moltis-tmp-{}", uuid::Uuid::new_v4());
+        let temp_name = format!(".{file_name}.antre-tmp-{}", uuid::Uuid::new_v4());
         let temp_path = parent.join(temp_name);
 
         tokio::fs::write(&temp_path, &file.content).await?;

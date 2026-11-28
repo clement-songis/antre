@@ -13,7 +13,7 @@
 use std::{sync::Arc, time::Duration};
 
 use {
-    moltis_observability::{
+    antre_observability::{
         BatchConfig, BatchSink, ExportProfile, ObservationKind, ObservationSink, RecorderSettings,
         TokenUsage, TraceScope, TurnRecorder,
         exporters::otlp::{OtlpConfig, OtlpTransport},
@@ -70,7 +70,7 @@ async fn run_turn_against(server: &MockServer, profile: ExportProfile) -> Vec<Va
         endpoint: format!("{}/v1/traces", server.uri()),
         headers: Default::default(),
         timeout: Duration::from_secs(5),
-        service_name: "moltis".into(),
+        service_name: "antre".into(),
         service_version: "20260726.01".into(),
         environment: Some("production".into()),
         profile,
@@ -231,7 +231,7 @@ async fn generic_otlp_profile_still_delivers_operational_signal() {
         raw.contains("gen_ai.usage.input_tokens"),
         "token counts missing"
     );
-    assert!(raw.contains("moltis.input.bytes"), "payload sizes missing");
+    assert!(raw.contains("antre.input.bytes"), "payload sizes missing");
     assert!(!raw.contains("gen_ai.conversation.id"));
 }
 

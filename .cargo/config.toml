@@ -1,7 +1,7 @@
 [env]
 # llama-cpp-sys-2 forwards CMAKE_* variables to llama.cpp's CMake build. Its
 # vendored cpp-httplib only needs OpenSSL for llama.cpp's own HTTPS model
-# downloads, which moltis never uses (it downloads models with reqwest).
+# downloads, which antre never uses (it downloads models with reqwest).
 # Without this, CMake picks whatever OpenSSL the machine has: OpenSSL 4 fails
 # to compile (const X509_NAME), and release binaries would link the build
 # host's libssl dylib.

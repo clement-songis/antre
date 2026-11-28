@@ -12,7 +12,7 @@ test.describe("Sandboxes page – Image tag truncation", () => {
 	test("long image hash tags are truncated in the cached images list", async ({ page }) => {
 		const pageErrors = watchPageErrors(page);
 		const longHash = "78e523c6835f0d509a9da736bea2cbaeac5983c8fe5468ed062b557b74518f66";
-		const fullTag = `moltis-sandbox:${longHash}`;
+		const fullTag = `antre-sandbox:${longHash}`;
 
 		// Intercept cached images API to inject a long-hash image
 		await page.route("**/api/images/cached", (route, request) => {
@@ -33,7 +33,7 @@ test.describe("Sandboxes page – Image tag truncation", () => {
 		await openSandboxContainersTab(page);
 
 		// The displayed text should be truncated (first 6 + … + last 6 of hash)
-		const truncated = `moltis-sandbox:${longHash.slice(0, 6)}\u2026${longHash.slice(-6)}`;
+		const truncated = `antre-sandbox:${longHash.slice(0, 6)}\u2026${longHash.slice(-6)}`;
 		const tagSpan = page.locator(".provider-item-name", { hasText: truncated });
 		await expect(tagSpan).toBeVisible();
 
@@ -60,8 +60,8 @@ test.describe("Sandboxes page – Shared home settings", () => {
 					body: JSON.stringify({
 						enabled: true,
 						mode: "shared",
-						path: "/tmp/moltis-shared",
-						configured_path: "/tmp/moltis-shared",
+						path: "/tmp/antre-shared",
+						configured_path: "/tmp/antre-shared",
 					}),
 				});
 			}
@@ -76,8 +76,8 @@ test.describe("Sandboxes page – Shared home settings", () => {
 						config: {
 							enabled: false,
 							mode: "off",
-							path: "/tmp/moltis-new-shared",
-							configured_path: "/tmp/moltis-new-shared",
+							path: "/tmp/antre-new-shared",
+							configured_path: "/tmp/antre-new-shared",
 						},
 					}),
 				});
@@ -92,10 +92,10 @@ test.describe("Sandboxes page – Shared home settings", () => {
 
 		await expect(sharedHomeSection.getByText("Shared home folder", { exact: true })).toBeVisible();
 		await expect(sharedHomeSection.getByLabel("Enable shared home folder")).toBeChecked();
-		await expect(sharedHomeSection.getByLabel("Shared folder location")).toHaveValue("/tmp/moltis-shared");
+		await expect(sharedHomeSection.getByLabel("Shared folder location")).toHaveValue("/tmp/antre-shared");
 
 		await sharedHomeSection.getByLabel("Enable shared home folder").uncheck();
-		await sharedHomeSection.getByLabel("Shared folder location").fill("/tmp/moltis-new-shared");
+		await sharedHomeSection.getByLabel("Shared folder location").fill("/tmp/antre-new-shared");
 		const saveResponse = page.waitForResponse(
 			(r) => r.url().includes("/api/sandbox/shared-home") && r.request().method() === "PUT" && r.status() === 200,
 		);
@@ -104,10 +104,10 @@ test.describe("Sandboxes page – Shared home settings", () => {
 
 		expect(savedBody).toEqual({
 			enabled: false,
-			path: "/tmp/moltis-new-shared",
+			path: "/tmp/antre-new-shared",
 		});
 		await expect(
-			sharedHomeSection.getByText("Saved. Restart Moltis to apply shared folder changes.", { exact: true }),
+			sharedHomeSection.getByText("Saved. Restart Antre to apply shared folder changes.", { exact: true }),
 		).toBeVisible();
 		await expect(sharedHomeSection.getByText("disabled (off)")).toBeVisible();
 
@@ -124,9 +124,9 @@ test.describe("Sandboxes page – Backend recommendations", () => {
 		const pageErrors = watchPageErrors(page);
 
 		await page.addInitScript(() => {
-			var m = window.__MOLTIS__ || {};
+			var m = window.__ANTRE__ || {};
 			m.sandbox = Object.assign(m.sandbox || {}, { backend: "docker", os: "macos" });
-			window.__MOLTIS__ = m;
+			window.__ANTRE__ = m;
 		});
 
 		await page.route("**/api/gon*", async (route) => {
@@ -191,15 +191,15 @@ test.describe("Sandboxes page – Backend recommendations", () => {
  * CI has no container daemon so gon/bootstrap report `backend: "none"`,
  * which disables buttons (changing their accessible name to a long hint).
  * This helper patches three layers:
- *   1. `window.__MOLTIS__` (gon data embedded in HTML) — via addInitScript
+ *   1. `window.__ANTRE__` (gon data embedded in HTML) — via addInitScript
  *   2. `/api/gon` responses — via route interception
  *   3. `/api/bootstrap` responses — via route interception
  */
 async function mockSandboxAvailable(page) {
 	await page.addInitScript(() => {
-		var m = window.__MOLTIS__ || {};
+		var m = window.__ANTRE__ || {};
 		m.sandbox = Object.assign(m.sandbox || {}, { backend: "docker" });
-		window.__MOLTIS__ = m;
+		window.__ANTRE__ = m;
 	});
 
 	await page.route("**/api/gon*", async (route) => {
@@ -447,7 +447,7 @@ test.describe("Sandboxes page – Container error handling", () => {
 					body: JSON.stringify({
 						containers: [
 							{
-								name: "moltis-sandbox-ghost",
+								name: "antre-sandbox-ghost",
 								image: "ubuntu:25.10",
 								state: "stopped",
 								backend: "apple-container",
@@ -464,7 +464,7 @@ test.describe("Sandboxes page – Container error handling", () => {
 		});
 
 		// Mock DELETE to return 500
-		await page.route("**/api/sandbox/containers/moltis-sandbox-ghost", (route, request) => {
+		await page.route("**/api/sandbox/containers/antre-sandbox-ghost", (route, request) => {
 			if (request.method() === "DELETE") {
 				return route.fulfill({
 					status: 500,
@@ -479,13 +479,13 @@ test.describe("Sandboxes page – Container error handling", () => {
 		await expect.poll(() => containerListFetches, { timeout: 10_000 }).toBeGreaterThan(0);
 
 		// Wait for the container row to render before clicking delete
-		await expect(page.getByText("moltis-sandbox-ghost")).toBeVisible({ timeout: 10_000 });
+		await expect(page.getByText("antre-sandbox-ghost")).toBeVisible({ timeout: 10_000 });
 		await page.getByRole("button", { name: "Delete", exact: true }).click();
 
 		// Error message should appear
 		const errorDiv = page.locator(".alert-error-text");
 		await expect(errorDiv).toBeVisible();
-		await expect(errorDiv).toContainText("Failed to delete moltis-sandbox-ghost");
+		await expect(errorDiv).toContainText("Failed to delete antre-sandbox-ghost");
 
 		expect(pageErrors).toEqual([]);
 	});
@@ -505,7 +505,7 @@ test.describe("Sandboxes page – Container error handling", () => {
 						body: JSON.stringify({
 							containers: [
 								{
-									name: "moltis-sandbox-ghost",
+									name: "antre-sandbox-ghost",
 									image: "ubuntu:25.10",
 									state: "stopped",
 									backend: "apple-container",
@@ -528,7 +528,7 @@ test.describe("Sandboxes page – Container error handling", () => {
 		});
 
 		// Mock DELETE to fail
-		await page.route("**/api/sandbox/containers/moltis-sandbox-ghost", (route, request) => {
+		await page.route("**/api/sandbox/containers/antre-sandbox-ghost", (route, request) => {
 			if (request.method() === "DELETE") {
 				return route.fulfill({
 					status: 500,

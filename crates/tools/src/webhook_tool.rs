@@ -3,9 +3,9 @@
 use std::sync::Arc;
 
 use {
+    antre_agents::tool_registry::AgentTool,
+    antre_service_traits::WebhooksService,
     async_trait::async_trait,
-    moltis_agents::tool_registry::AgentTool,
-    moltis_service_traits::WebhooksService,
     serde_json::{Value, json},
 };
 
@@ -123,7 +123,7 @@ impl AgentTool for WebhookTool {
 
     fn description(&self) -> &str {
         "Manage webhook subscriptions. External services (GitHub, GitLab, Stripe, etc.) \
-         POST events to Moltis, which either runs an agent in response or forwards the \
+         POST events to Antre, which either runs an agent in response or forwards the \
          event directly to a channel (deliver_only mode, zero LLM tokens).\n\n\
          Actions:\n\
          - list: List all webhooks\n\

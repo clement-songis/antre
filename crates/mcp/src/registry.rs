@@ -14,11 +14,11 @@ use {
 use crate::error::{Context, Result};
 
 /// MCP transport type shared with static configuration.
-pub type TransportType = moltis_config::schema::McpTransport;
+pub type TransportType = antre_config::schema::McpTransport;
 /// Trust tier shared with static configuration.
-pub type McpTrustTier = moltis_config::schema::McpTrustTier;
+pub type McpTrustTier = antre_config::schema::McpTrustTier;
 /// Sampling limits shared with static configuration.
-pub type McpSamplingConfig = moltis_config::schema::McpSamplingConfig;
+pub type McpSamplingConfig = antre_config::schema::McpSamplingConfig;
 
 /// Manual OAuth override for MCP servers that don't support standard discovery.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -27,8 +27,8 @@ pub struct McpOAuthConfig {
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
-        serialize_with = "moltis_oauth::types::serialize_option_secret",
-        deserialize_with = "moltis_oauth::types::deserialize_option_secret"
+        serialize_with = "antre_oauth::types::serialize_option_secret",
+        deserialize_with = "antre_oauth::types::deserialize_option_secret"
     )]
     pub client_secret: Option<Secret<String>>,
     pub auth_url: String,
@@ -61,8 +61,8 @@ pub struct McpServerConfig {
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
-        serialize_with = "moltis_oauth::types::serialize_option_secret",
-        deserialize_with = "moltis_oauth::types::deserialize_option_secret"
+        serialize_with = "antre_oauth::types::serialize_option_secret",
+        deserialize_with = "antre_oauth::types::deserialize_option_secret"
     )]
     pub url: Option<Secret<String>>,
     /// Custom headers for remote HTTP/SSE transport.

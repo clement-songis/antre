@@ -254,7 +254,7 @@ const BINARY_SNIFF_BYTES: usize = 8192;
 ///
 /// Claude Code's fs tools require absolute paths. We enforce the same to
 /// avoid silent resolution against the gateway's process cwd, which is
-/// almost never what the LLM means. See `moltis-ung` for context.
+/// almost never what the LLM means. See `antre-ung` for context.
 pub fn require_absolute(path: &str, field: &str) -> Result<()> {
     if path.is_empty() {
         return Err(Error::message(format!("{field} must not be empty")));

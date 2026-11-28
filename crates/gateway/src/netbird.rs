@@ -1,3 +1,3 @@
-//! Re-export NetBird functionality from the `moltis-netbird` crate.
+//! Re-export NetBird functionality from the `antre-netbird` crate.
 
-pub use moltis_netbird::*;
+pub use antre_netbird::*;

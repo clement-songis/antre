@@ -7,10 +7,10 @@
 //! agent is navigating an unfamiliar codebase.
 
 use {
+    antre_agents::tool_registry::AgentTool,
     async_trait::async_trait,
     globset::{Glob as GlobPattern, GlobMatcher},
     ignore::WalkBuilder,
-    moltis_agents::tool_registry::AgentTool,
     serde_json::{Value, json},
     std::{
         path::{Path, PathBuf},
@@ -21,7 +21,7 @@ use {
 };
 
 #[cfg(feature = "metrics")]
-use moltis_metrics::{counter, labels, tools as tools_metrics};
+use antre_metrics::{counter, labels, tools as tools_metrics};
 
 use crate::{
     Result,

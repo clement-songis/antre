@@ -4,12 +4,12 @@ use std::{
 };
 
 use {
-    moltis_caldav::{
+    antre_caldav::{
         client::{CalDavClient, CalDavConnectionOptions, LibDavCalDavClient},
         ical::{EventComponentIndex, IndexedProperty, index_event_components},
         types::{CalendarInfo, CalendarObject, CalendarObjectResult, CalendarResourceMetadata},
     },
-    moltis_connectors::{ConnectorItemInput, SourceDisposition, SourceObservation, SourceStateMap},
+    antre_connectors::{ConnectorItemInput, SourceDisposition, SourceObservation, SourceStateMap},
     sha2::{Digest, Sha256},
     time::{Date, Month},
 };
@@ -719,11 +719,11 @@ fn content_hash(content: &[u8]) -> String {
 fn record_operation(operation: &'static str, started: Instant, item_count: usize) {
     #[cfg(feature = "metrics")]
     {
-        metrics::counter!("moltis_connector_caldav_operations_total", "operation" => operation)
+        metrics::counter!("antre_connector_caldav_operations_total", "operation" => operation)
             .increment(1);
-        metrics::histogram!("moltis_connector_caldav_operation_duration_seconds", "operation" => operation)
+        metrics::histogram!("antre_connector_caldav_operation_duration_seconds", "operation" => operation)
             .record(started.elapsed().as_secs_f64());
-        metrics::histogram!("moltis_connector_caldav_observed_items", "operation" => operation)
+        metrics::histogram!("antre_connector_caldav_observed_items", "operation" => operation)
             .record(item_count as f64);
     }
     #[cfg(feature = "tracing")]

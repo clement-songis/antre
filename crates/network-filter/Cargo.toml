@@ -1,24 +1,24 @@
 [package]
 edition.workspace = true
-name              = "moltis-network-filter"
+name              = "antre-network-filter"
 version.workspace = true
 
 [features]
 default = ["metrics", "proxy", "service"]
-metrics = ["dep:moltis-metrics"]
+metrics = ["dep:antre-metrics"]
 proxy   = ["dep:uuid"]
 service = []
 
 [dependencies]
-async-trait    = { workspace = true }
-moltis-metrics = { optional = true, workspace = true }
-serde          = { workspace = true }
-serde_json     = { workspace = true }
-thiserror      = { workspace = true }
-time           = { workspace = true }
-tokio          = { workspace = true }
-tracing        = { workspace = true }
-uuid           = { optional = true, workspace = true }
+antre-metrics = { optional = true, workspace = true }
+async-trait   = { workspace = true }
+serde         = { workspace = true }
+serde_json    = { workspace = true }
+thiserror     = { workspace = true }
+time          = { workspace = true }
+tokio         = { workspace = true }
+tracing       = { workspace = true }
+uuid          = { optional = true, workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }

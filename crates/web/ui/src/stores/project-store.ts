@@ -8,8 +8,8 @@ import type { ProjectInfo, RpcResponse } from "../types";
 
 // ── Signals ──────────────────────────────────────────────────
 export const projects = signal<ProjectInfo[]>([]);
-export const activeProjectId = signal<string>(localStorage.getItem("moltis-project") || "");
-export const projectFilterId = signal<string>(localStorage.getItem("moltis-project-filter") || "");
+export const activeProjectId = signal<string>(localStorage.getItem("antre-project") || "");
+export const projectFilterId = signal<string>(localStorage.getItem("antre-project-filter") || "");
 
 // ── Methods ──────────────────────────────────────────────────
 
@@ -36,9 +36,9 @@ export function setActiveProjectId(id: string): void {
 export function setFilterId(id: string): void {
 	projectFilterId.value = id || "";
 	if (id) {
-		localStorage.setItem("moltis-project-filter", id);
+		localStorage.setItem("antre-project-filter", id);
 	} else {
-		localStorage.removeItem("moltis-project-filter");
+		localStorage.removeItem("antre-project-filter");
 	}
 }
 

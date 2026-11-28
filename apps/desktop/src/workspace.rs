@@ -8,7 +8,7 @@ use gpui::{
     prelude::*, px,
 };
 
-use moltis_client::protocol::client_api::ApprovalDecision;
+use antre_client::protocol::client_api::ApprovalDecision;
 
 use crate::{
     actions::*,
@@ -254,7 +254,7 @@ impl Workspace {
                 request.command.clone()
             } else {
                 format!(
-                    "{}… (open Moltis to review the full command)",
+                    "{}… (open Antre to review the full command)",
                     request
                         .command
                         .chars()
@@ -283,7 +283,7 @@ impl Workspace {
             };
             cx.show_system_notification(SystemNotification {
                 tag: format!("{APPROVAL_TAG}{}", request.request_id).into(),
-                title: "Moltis wants to run a command".into(),
+                title: "Antre wants to run a command".into(),
                 body: body.into(),
                 actions,
             });
