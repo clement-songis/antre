@@ -68,9 +68,9 @@ mod channel_tasks;
 use channel_tasks::channel_task_update;
 #[path = "run_with_tools/memory_recall.rs"]
 mod memory_recall;
-pub(crate) use memory_recall::format_recalled_context;
 #[cfg(feature = "metrics")]
 use memory_recall::record_prefetch_metric;
+pub(crate) use memory_recall::{PREFETCH_BREAKER, Recall, format_recalled_context};
 
 #[cfg(feature = "push-notifications")]
 use crate::channel_push::send_chat_push_notification;
@@ -207,8 +207,8 @@ pub(crate) async fn run_with_tools(
             let prefetch_start = Instant::now();
 
             let limit = persona.config.memory.prefetch_limit.clamp(1, 10);
-            match manager.search(query, limit).await {
-                Ok(results) if !results.is_empty() => {
+            match PREFETCH_BREAKER.recall(manager.search(query, limit)).await {
+                Recall::Found(results) if !results.is_empty() => {
                     let recalled = format_recalled_context(&results);
                     let mut combined = persona
                         .memory_text
@@ -228,14 +228,22 @@ pub(crate) async fn run_with_tools(
                         "memory prefetch: injected recalled context"
                     );
                 },
-                Ok(_) => {
+                Recall::Found(_) | Recall::Paused => {
                     #[cfg(feature = "metrics")]
                     record_prefetch_metric("miss", prefetch_start);
                 },
-                Err(e) => {
+                Recall::Failed(e) => {
                     #[cfg(feature = "metrics")]
                     record_prefetch_metric("error", prefetch_start);
                     warn!(error = %e, "memory prefetch failed");
+                },
+                Recall::TimedOut => {
+                    #[cfg(feature = "metrics")]
+                    record_prefetch_metric("timeout", prefetch_start);
+                    warn!(
+                        session = %session_key,
+                        "memory prefetch timed out; continuing without recalled context"
+                    );
                 },
             }
         }

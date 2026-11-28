@@ -159,8 +159,11 @@ pub(crate) async fn run_streaming(
             && let Some(manager) = state.memory_manager()
         {
             let limit = persona.config.memory.prefetch_limit.clamp(1, 10);
-            match manager.search(query, limit).await {
-                Ok(results) if !results.is_empty() => {
+            match crate::run_with_tools::PREFETCH_BREAKER
+                .recall(manager.search(query, limit))
+                .await
+            {
+                crate::run_with_tools::Recall::Found(results) if !results.is_empty() => {
                     let recalled = crate::run_with_tools::format_recalled_context(&results);
                     let mut combined = persona
                         .memory_text
@@ -178,9 +181,16 @@ pub(crate) async fn run_streaming(
                         "memory prefetch (streaming): injected recalled context"
                     );
                 },
-                Ok(_) => {},
-                Err(e) => {
+                crate::run_with_tools::Recall::Found(_) | crate::run_with_tools::Recall::Paused => {
+                },
+                crate::run_with_tools::Recall::Failed(e) => {
                     warn!(error = %e, "memory prefetch (streaming) failed");
+                },
+                crate::run_with_tools::Recall::TimedOut => {
+                    warn!(
+                        session = %session_key,
+                        "memory prefetch (streaming) timed out; continuing without recalled context"
+                    );
                 },
             }
         }
