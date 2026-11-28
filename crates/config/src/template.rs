@@ -338,6 +338,35 @@ loopback_http = true                # Plain HTTP on loopback binds: http://local
 # refresh_interval_hours = 12        # Minimum hours between downloads
 
 # ══════════════════════════════════════════════════════════════════════════════
+# LEARNING LOOP
+# ══════════════════════════════════════════════════════════════════════════════
+# After conversations, a cheap model reviews the chat and proposes skill and
+# memory changes; a curator ages and archives unused personal skills. Every
+# change lands in an append-only ledger and can be rolled back one by one.
+# See docs: learning.md.
+#
+# [learning]
+# enabled = false                    # Opt-in
+# write_approval = true              # Stage changes for review (learning.pending.*)
+# model = "anthropic::claude-haiku-5-5"  # Default: catalog utility model, then the session model
+#
+# [learning.review]
+# enabled = true                     # Review automatically after runs
+# every_user_turns = 10              # ...after this many user turns since the last review
+# every_tool_calls = 10              # ...or this many tool calls (0 disables a threshold)
+# max_changes = 3                    # Most changes one review may propose
+# skills = true                      # Propose skill patches
+# memory = true                      # Propose memory notes
+#
+# [learning.curator]
+# enabled = true
+# interval_hours = 168               # Between runs; the first run waits one interval
+# min_idle_hours = 2                 # Only run after this long without chat activity
+# stale_after_days = 14              # Unused personal skills turn stale...
+# archive_after_days = 30            # ...then get archived (restorable)
+# consolidate = false                # Ask the learning model to propose merges
+
+# ══════════════════════════════════════════════════════════════════════════════
 # CHAT SETTINGS
 # ══════════════════════════════════════════════════════════════════════════════
 

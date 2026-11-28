@@ -1023,6 +1023,36 @@ pub(super) fn build_schema_map() -> KnownKeys {
                 ("refresh_interval_hours", Leaf),
             ])),
         ),
+        (
+            "learning",
+            Struct(HashMap::from([
+                ("enabled", Leaf),
+                ("write_approval", Leaf),
+                ("model", Leaf),
+                (
+                    "review",
+                    Struct(HashMap::from([
+                        ("enabled", Leaf),
+                        ("every_user_turns", Leaf),
+                        ("every_tool_calls", Leaf),
+                        ("max_changes", Leaf),
+                        ("skills", Leaf),
+                        ("memory", Leaf),
+                    ])),
+                ),
+                (
+                    "curator",
+                    Struct(HashMap::from([
+                        ("enabled", Leaf),
+                        ("interval_hours", Leaf),
+                        ("min_idle_hours", Leaf),
+                        ("stale_after_days", Leaf),
+                        ("archive_after_days", Leaf),
+                        ("consolidate", Leaf),
+                    ])),
+                ),
+            ])),
+        ),
     ]))
 }
 

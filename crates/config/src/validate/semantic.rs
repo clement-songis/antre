@@ -403,6 +403,7 @@ pub(super) fn check_semantic_warnings(config: &MoltisConfig, diagnostics: &mut V
     }
 
     check_catalog(&config.catalog, diagnostics);
+    learning::check_learning(&config.learning, diagnostics);
     let quota_wait = &config.chat.quota_wait;
     if quota_wait.enabled
         && !(quota_wait.max_wait_hours > 0.0 && quota_wait.max_wait_hours <= 192.0)

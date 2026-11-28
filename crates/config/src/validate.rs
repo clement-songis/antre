@@ -7,6 +7,8 @@ use std::path::Path;
 
 use crate::schema::MoltisConfig;
 
+#[path = "validate/learning.rs"]
+mod learning;
 #[path = "validate/schema_map.rs"]
 mod schema_map;
 #[path = "validate/semantic.rs"]

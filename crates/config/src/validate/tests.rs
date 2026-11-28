@@ -19,6 +19,8 @@ mod common;
 mod defaults;
 #[path = "tests/instrumentation.rs"]
 mod instrumentation;
+#[path = "tests/learning.rs"]
+mod learning;
 #[path = "tests/memory.rs"]
 mod memory;
 #[path = "tests/mods.rs"]

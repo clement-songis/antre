@@ -553,6 +553,24 @@ pub mod skills {
     pub const MODIFICATIONS_TOTAL: &str = "moltis_skills_modifications_total";
 }
 
+/// Learning loop metrics (review, curator, ledger)
+pub mod learning {
+    /// Review passes, labelled by `success`
+    pub const REVIEWS_TOTAL: &str = "moltis_learning_reviews_total";
+    /// Review pass duration in seconds
+    pub const REVIEW_DURATION_SECONDS: &str = "moltis_learning_review_duration_seconds";
+    /// Proposals by `kind`: applied, staged, refused, duplicate, failed
+    pub const PROPOSALS_TOTAL: &str = "moltis_learning_proposals_total";
+    /// Staged proposals decided by a person, labelled by `operation`
+    pub const DECISIONS_TOTAL: &str = "moltis_learning_decisions_total";
+    /// Ledger rollbacks
+    pub const ROLLBACKS_TOTAL: &str = "moltis_learning_rollbacks_total";
+    /// Curator runs, labelled by `variant` (aging, consolidation)
+    pub const CURATOR_RUNS_TOTAL: &str = "moltis_learning_curator_runs_total";
+    /// Curator transitions by `kind`: stale, reactivated, archive
+    pub const CURATOR_TRANSITIONS_TOTAL: &str = "moltis_learning_curator_transitions_total";
+}
+
 /// Telegram channel metrics
 pub mod telegram {
     /// Messages received from Telegram

@@ -19,6 +19,8 @@ mod chat;
 mod code_index;
 #[path = "schema/hooks.rs"]
 mod hooks;
+#[path = "schema/learning.rs"]
+mod learning;
 mod mods;
 
 mod instrumentation;
@@ -41,8 +43,8 @@ mod voice;
 
 pub use {
     agents::*, canvas::*, catalog::*, chat::*, code_index::*, hooks::*, instrumentation::*,
-    memory::*, modes::*, mods::*, phone::*, providers::*, runtime::*, system::*, tools::*,
-    voice::*,
+    learning::*, memory::*, modes::*, mods::*, phone::*, providers::*, runtime::*, system::*,
+    tools::*, voice::*,
 };
 
 // ── Reasoning effort ──────────────────────────────────────────────────────
@@ -357,6 +359,9 @@ pub struct MoltisConfig {
     /// Model catalog refresh settings (`[catalog]`).
     #[serde(default)]
     pub catalog: CatalogConfig,
+    /// Background learning loop (`[learning]`).
+    #[serde(default)]
+    pub learning: LearningConfig,
     /// Upstream HTTP/SOCKS proxy for all outbound requests.
     ///
     /// Supports `http://`, `https://`, `socks5://`, and `socks5h://` schemes.
