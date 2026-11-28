@@ -11,6 +11,16 @@ models   = ["gpt-image-2.6-flare", "gpt-image-2.6-sunburst"]
 provider = "openai"
 
 [[role]]
+kind     = "image"
+models   = ["gemini-3-pro-image", "gemini-3.1-flash-lite-image"]
+provider = "gemini"
+
+[[role]]
+kind     = "image"
+models   = ["grok-imagine-image"]
+provider = "xai"
+
+[[role]]
 kind     = "tts"
 models   = ["gpt-4o-mini-tts"]
 provider = "openai"

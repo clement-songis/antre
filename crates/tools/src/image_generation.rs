@@ -1,4 +1,5 @@
-//! `generate_image` tool backed by OpenAI Codex OAuth image generation.
+//! `generate_image` tool backed by OpenAI Codex OAuth image generation or an
+//! API-key Images API (OpenAI, Gemini, xAI).
 //!
 //! The chat runner treats a `screenshot` data URI in a tool result as native
 //! image media for channel delivery, so this returns generated images using the
@@ -7,9 +8,8 @@
 use {
     async_trait::async_trait,
     moltis_agents::tool_registry::AgentTool,
-    moltis_providers::openai_codex_image::{
-        GeneratedImage, ImageGenerationRequest, OpenAiCodexImageProvider, default_image_model,
-        supported_image_models,
+    moltis_providers::images_api::{
+        GeneratedImage, ImageGenerationRequest, ImageGenerationResult, ImagesApi, ImagesApiProvider,
     },
     serde_json::{Value, json},
 };
@@ -34,10 +34,18 @@ const SUPPORTED_QUALITIES: &[&str] = &["low", "medium", "high", "auto"];
 const SUPPORTED_FORMATS: &[&str] = &["png", "jpeg", "webp"];
 const SUPPORTED_BACKGROUNDS: &[&str] = &["opaque", "transparent", "auto"];
 
-pub struct GenerateImageTool {
-    provider: OpenAiCodexImageProvider,
+enum Backend {
+    #[cfg(feature = "provider-openai-codex")]
+    Codex(moltis_providers::openai_codex_image::OpenAiCodexImageProvider),
+    Api(ImagesApiProvider),
 }
 
+pub struct GenerateImageTool {
+    backend: Backend,
+    description: String,
+}
+
+#[cfg(feature = "provider-openai-codex")]
 impl Default for GenerateImageTool {
     fn default() -> Self {
         Self::new()
@@ -45,21 +53,54 @@ impl Default for GenerateImageTool {
 }
 
 impl GenerateImageTool {
+    /// Image generation through the OpenAI Codex (ChatGPT) OAuth login.
+    #[cfg(feature = "provider-openai-codex")]
     #[must_use]
     pub fn new() -> Self {
         Self {
-            provider: OpenAiCodexImageProvider::new(),
+            backend: Backend::Codex(
+                moltis_providers::openai_codex_image::OpenAiCodexImageProvider::new(),
+            ),
+            description: "Generate an image from a text prompt using OpenAI gpt-image models via the existing OpenAI Codex OAuth login. Returns channel-sendable image media.".into(),
         }
     }
 
-    fn request_from_params(params: &Value) -> anyhow::Result<ImageGenerationRequest> {
+    /// Image generation through a provider's Images API with an API key.
+    #[must_use]
+    pub fn with_api(provider: ImagesApiProvider) -> Self {
+        let description = format!(
+            "Generate an image from a text prompt using {} image models (API key). Returns channel-sendable image media.",
+            provider.api().provider()
+        );
+        Self {
+            backend: Backend::Api(provider),
+            description,
+        }
+    }
+
+    /// The catalog provider whose image models this backend serves.
+    fn images_api(&self) -> ImagesApi {
+        match &self.backend {
+            #[cfg(feature = "provider-openai-codex")]
+            Backend::Codex(_) => ImagesApi::OpenAi,
+            Backend::Api(provider) => provider.api(),
+        }
+    }
+
+    fn request_from_params(
+        api: ImagesApi,
+        params: &Value,
+    ) -> anyhow::Result<ImageGenerationRequest> {
         let prompt = str_param(params, "prompt")
             .ok_or_else(|| Error::message("missing required parameter: prompt"))?;
 
-        let supported = supported_image_models();
+        let supported = api.supported_models();
         let model = str_param(params, "model")
             .map(str::to_string)
-            .unwrap_or_else(default_image_model);
+            .or_else(|| api.default_model())
+            .ok_or_else(|| {
+                Error::message(format!("no image model known for {}", api.provider()))
+            })?;
         if !supported.contains(&model) {
             return Err(Error::message(format!(
                 "unsupported image model '{model}' — supported: {}",
@@ -134,7 +175,7 @@ impl AgentTool for GenerateImageTool {
     }
 
     fn description(&self) -> &str {
-        "Generate an image from a text prompt using OpenAI gpt-image models via the existing OpenAI Codex OAuth login. Returns channel-sendable image media."
+        &self.description
     }
 
     fn parameters_schema(&self) -> Value {
@@ -148,8 +189,11 @@ impl AgentTool for GenerateImageTool {
                 },
                 "model": {
                     "type": "string",
-                    "enum": supported_image_models(),
-                    "description": format!("Image model to use. Defaults to {}.", default_image_model())
+                    "enum": self.images_api().supported_models(),
+                    "description": format!(
+                        "Image model to use. Defaults to {}.",
+                        self.images_api().default_model().unwrap_or_default()
+                    )
                 },
                 "size": {
                     "type": "string",
@@ -176,8 +220,12 @@ impl AgentTool for GenerateImageTool {
     }
 
     async fn execute(&self, params: Value) -> anyhow::Result<Value> {
-        let request = Self::request_from_params(&params)?;
-        let result = self.provider.generate_image(request.clone()).await?;
+        let request = Self::request_from_params(self.images_api(), &params)?;
+        let result: ImageGenerationResult = match &self.backend {
+            #[cfg(feature = "provider-openai-codex")]
+            Backend::Codex(provider) => provider.generate_image(request.clone()).await?,
+            Backend::Api(provider) => provider.generate_image(request.clone()).await?,
+        };
         let image = result
             .images
             .first()
@@ -193,13 +241,16 @@ mod tests {
 
     #[test]
     fn request_from_params_applies_defaults() {
-        let request = GenerateImageTool::request_from_params(&json!({
-            "prompt": "a neon fox"
-        }))
+        let request = GenerateImageTool::request_from_params(
+            ImagesApi::OpenAi,
+            &json!({
+                "prompt": "a neon fox"
+            }),
+        )
         .unwrap();
 
         assert_eq!(request.prompt, "a neon fox");
-        assert_eq!(request.model, default_image_model());
+        assert_eq!(Some(request.model), ImagesApi::OpenAi.default_model());
         assert_eq!(request.size, DEFAULT_SIZE);
         assert_eq!(request.quality, DEFAULT_QUALITY);
         assert_eq!(request.output_format, DEFAULT_OUTPUT_FORMAT);
@@ -208,11 +259,14 @@ mod tests {
 
     #[test]
     fn request_from_params_accepts_every_supported_model() {
-        for model in supported_image_models() {
-            let request = GenerateImageTool::request_from_params(&json!({
-                "prompt": "a neon fox",
-                "model": model
-            }))
+        for model in ImagesApi::OpenAi.supported_models() {
+            let request = GenerateImageTool::request_from_params(
+                ImagesApi::OpenAi,
+                &json!({
+                    "prompt": "a neon fox",
+                    "model": model
+                }),
+            )
             .unwrap();
             assert_eq!(request.model, model);
         }
@@ -220,10 +274,13 @@ mod tests {
 
     #[test]
     fn request_from_params_rejects_retired_model() {
-        let err = GenerateImageTool::request_from_params(&json!({
-            "prompt": "a neon fox",
-            "model": "gpt-image-2"
-        }))
+        let err = GenerateImageTool::request_from_params(
+            ImagesApi::OpenAi,
+            &json!({
+                "prompt": "a neon fox",
+                "model": "gpt-image-2"
+            }),
+        )
         .expect_err("retired model should fail");
 
         assert!(err.to_string().contains("unsupported image model"));
@@ -231,10 +288,13 @@ mod tests {
 
     #[test]
     fn request_from_params_rejects_invalid_quality() {
-        let err = GenerateImageTool::request_from_params(&json!({
-            "prompt": "a neon fox",
-            "quality": "ultra"
-        }))
+        let err = GenerateImageTool::request_from_params(
+            ImagesApi::OpenAi,
+            &json!({
+                "prompt": "a neon fox",
+                "quality": "ultra"
+            }),
+        )
         .expect_err("invalid quality should fail");
 
         assert!(err.to_string().contains("invalid quality"));
@@ -259,5 +319,40 @@ mod tests {
                 .starts_with("data:image/png;base64,")
         );
         assert_eq!(result["caption"], "Generated image: a neon fox");
+    }
+
+    #[tokio::test]
+    async fn api_backend_generates_with_the_provider_default_model() {
+        let mut server = mockito::Server::new_async().await;
+        let default = ImagesApi::Xai.default_model().unwrap();
+        let mock = server
+            .mock("POST", "/images/generations")
+            .match_body(mockito::Matcher::PartialJson(json!({"model": default})))
+            .with_body(r#"{"data":[{"b64_json":"iVBORw0KGgo="}]}"#)
+            .create_async()
+            .await;
+        let tool = GenerateImageTool::with_api(ImagesApiProvider::new(
+            ImagesApi::Xai,
+            server.url(),
+            secrecy::Secret::new("x".into()),
+        ));
+        assert!(tool.description().contains("xai"));
+        let schema = tool.parameters_schema();
+        assert_eq!(schema["properties"]["model"]["enum"][0], default);
+
+        let result = tool.execute(json!({"prompt": "a fox"})).await.unwrap();
+        mock.assert_async().await;
+        assert!(
+            result["screenshot"]
+                .as_str()
+                .unwrap()
+                .starts_with("data:image/png;base64,")
+        );
+
+        let err = tool
+            .execute(json!({"prompt": "a fox", "model": "gpt-image-2.6-flare"}))
+            .await
+            .expect_err("openai model on the xai backend");
+        assert!(err.to_string().contains("unsupported image model"));
     }
 }

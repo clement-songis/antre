@@ -477,6 +477,14 @@ Generated images are delivered through the same channel media path as
 screenshots and `send_image`, so supported chat channels receive the image as a
 native attachment.
 
+Without a Codex login, `generate_image` uses the Images API of the first of
+OpenAI, Gemini and xAI that has an API key (`[providers.<name>] api_key`,
+`OPENAI_API_KEY`, `GEMINI_API_KEY` / `GOOGLE_API_KEY`, `XAI_API_KEY`). The
+default model is the model catalog's image pick for that provider, and the
+tool lists the provider's other active image models. `size`, `quality`,
+`output_format` and `background` apply to OpenAI's gpt-image models only;
+Gemini and xAI receive the prompt and model.
+
 ### GitHub Copilot
 
 GitHub Copilot uses OAuth authentication.

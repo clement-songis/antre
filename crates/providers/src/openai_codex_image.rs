@@ -5,6 +5,10 @@ use {
     tracing::debug,
 };
 
+pub use crate::images_api::{
+    GeneratedImage, ImageGenerationRequest, ImageGenerationResult, default_image_model,
+    supported_image_models,
+};
 use crate::openai_codex::OpenAiCodexProvider;
 
 /// Orchestrators tried in order against the live Codex model list. Codex
@@ -12,85 +16,9 @@ use crate::openai_codex::OpenAiCodexProvider;
 /// so the first one the account still serves wins.
 const PREFERRED_ORCHESTRATORS: &[&str] = &["gpt-6.2-sol", "gpt-6.1-sol", "gpt-6-luna"];
 const FALLBACK_ORCHESTRATOR: &str = "gpt-6.2-sol";
-/// Used only if the catalog has no OpenAI image model at all.
-const FALLBACK_IMAGE_MODEL: &str = "gpt-image-2.6-flare";
-
-/// OpenAI's image role from the model catalog.
-#[must_use]
-pub fn default_image_model() -> String {
-    moltis_model_catalog::global::role_id_or(
-        "openai",
-        moltis_model_catalog::ModelKind::Image,
-        FALLBACK_IMAGE_MODEL,
-    )
-}
-
-/// Active OpenAI image models the catalog knows, the default first.
-#[must_use]
-pub fn supported_image_models() -> Vec<String> {
-    let default = default_image_model();
-    let mut models: Vec<String> = moltis_model_catalog::global::read(|catalog| {
-        catalog
-            .models_of_kind("openai", moltis_model_catalog::ModelKind::Image)
-            .into_iter()
-            .filter(|model| !model.status().is_deprecated())
-            .map(|model| model.spec.id)
-            .collect()
-    });
-    models.retain(|id| *id != default);
-    models.insert(0, default);
-    models
-}
-const DEFAULT_SIZE: &str = "1024x1024";
-const DEFAULT_QUALITY: &str = "medium";
-const DEFAULT_OUTPUT_FORMAT: &str = "png";
-const DEFAULT_BACKGROUND: &str = "opaque";
 const MAX_IMAGE_SSE_BYTES: usize = 64 * 1024 * 1024;
 const MAX_IMAGE_SSE_EVENTS: usize = 512;
 const MAX_IMAGE_BASE64_CHARS: usize = 64 * 1024 * 1024;
-
-#[derive(Debug, Clone)]
-pub struct ImageGenerationRequest {
-    pub prompt: String,
-    pub model: String,
-    pub size: String,
-    pub quality: String,
-    pub output_format: String,
-    pub background: String,
-}
-
-impl ImageGenerationRequest {
-    #[must_use]
-    pub fn new(prompt: impl Into<String>) -> Self {
-        Self {
-            prompt: prompt.into(),
-            model: default_image_model(),
-            size: DEFAULT_SIZE.to_string(),
-            quality: DEFAULT_QUALITY.to_string(),
-            output_format: DEFAULT_OUTPUT_FORMAT.to_string(),
-            background: DEFAULT_BACKGROUND.to_string(),
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct GeneratedImage {
-    pub media_type: String,
-    pub data: String,
-}
-
-impl GeneratedImage {
-    #[must_use]
-    pub fn data_uri(&self) -> String {
-        format!("data:{};base64,{}", self.media_type, self.data)
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ImageGenerationResult {
-    pub model: String,
-    pub images: Vec<GeneratedImage>,
-}
 
 pub struct OpenAiCodexImageProvider {
     base_url: String,

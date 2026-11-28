@@ -12,6 +12,7 @@ pub mod genai_provider;
 #[cfg(feature = "provider-github-copilot")]
 pub mod github_copilot;
 pub mod http;
+pub mod images_api;
 #[cfg(feature = "provider-kimi-code")]
 pub mod kimi_code;
 mod live_metadata;
