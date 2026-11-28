@@ -129,3 +129,10 @@ any supplementary files written alongside `SKILL.md`.
 
 Deleted skills can be restored from the returned `checkpointId` with
 `checkpoint_restore`, as long as the checkpoint still exists.
+
+## Learning from Conversations
+
+These tools let the agent write skills during a conversation. The opt-in
+[learning loop](learning.md) reviews finished conversations instead: a cheap
+model proposes skill and memory changes, you approve them, and each one can be
+rolled back from its ledger.

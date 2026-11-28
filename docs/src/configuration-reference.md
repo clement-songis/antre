@@ -51,6 +51,9 @@
   - [`modes`](#modes)
   - [`modes.presets.<name>`](#modespresetsname)
   - [`skills`](#skills)
+  - [`learning`](#learning)
+  - [`learning.review`](#learningreview)
+  - [`learning.curator`](#learningcurator)
 - **Tools — Execution**
   - [`tools.exec`](#toolsexec)
   - [`tools.exec.sandbox`](#toolsexecsandbox)
@@ -394,6 +397,41 @@ not create chat agents, change memory, or affect `spawn_agent` presets.
 | `auto_load` | array | `[]` | Skills to always load (by name) without explicit activation. |
 | `enable_agent_sidecar_files` | bool | `false` | Whether agents may write supplementary files inside personal skill directories. |
 | `enable_self_improvement` | bool | `true` | Include system prompt guidance encouraging the agent to autonomously create and update skills after complex tasks. |
+
+
+### `learning` — LearningConfig
+
+Background [learning loop](learning.md): a post-conversation review, a skill curator and a rollback ledger. Off by default.
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `enabled` | bool | `false` | Master switch for automatic reviews and the curator. |
+| `write_approval` | bool | `true` | Stage learned changes for review (`learning.pending.*`) instead of writing them. |
+| `model` | optional string | — | Registry id (`provider::model`) of the review and consolidation model. Unset: the catalog's utility model for the session's provider, then the session's model. |
+
+
+### `learning.review`
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `enabled` | bool | `true` | Review sessions automatically after runs. |
+| `every_user_turns` | integer | `10` | Review after this many user turns since the last review (0 disables this threshold). |
+| `every_tool_calls` | integer | `10` | Or after this many tool calls since the last review (0 disables this threshold). |
+| `max_changes` | integer | `3` | Most changes one review may propose. |
+| `skills` | bool | `true` | Propose skill patches. |
+| `memory` | bool | `true` | Propose memory notes (also limited by `memory.agent_write_mode`). |
+
+
+### `learning.curator`
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `enabled` | bool | `true` | Age personal skills by their last use. |
+| `interval_hours` | integer | `168` | Hours between runs; the first run waits one interval. |
+| `min_idle_hours` | float | `2.0` | Only run after this long without chat activity. |
+| `stale_after_days` | integer | `14` | Mark a personal skill stale after this many days without use. |
+| `archive_after_days` | integer | `30` | Archive it after this many days without use (restorable). |
+| `consolidate` | bool | `false` | Ask the learning model to propose merging overlapping skills. |
 
 ---
 
