@@ -63,6 +63,18 @@ pub const DELEGATE_ONLY_TOOLS: &[&str] = &[
 /// Callback for emitting events from the sub-agent back to the parent UI.
 pub type OnSpawnEvent = Arc<dyn Fn(RunnerEvent) + Send + Sync>;
 
+/// A background sub-agent finished (completed or failed, not cancelled).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BackgroundCompletion {
+    pub task_id: String,
+    /// The parent session that spawned it.
+    pub session_key: String,
+}
+
+/// Called when a background sub-agent spawned from a session finishes, so
+/// its outcome can reach the parent even after the parent's turn ended.
+pub type OnBackgroundComplete = Arc<dyn Fn(BackgroundCompletion) + Send + Sync>;
+
 /// Dependencies for building policy-aware session tools in sub-agents.
 #[derive(Clone)]
 pub struct SessionDeps {
@@ -88,6 +100,7 @@ pub struct SpawnAgentTool {
     on_event: Option<OnSpawnEvent>,
     session_deps: Option<SessionDeps>,
     task_store: Arc<SpawnTaskStore>,
+    on_background_complete: Option<OnBackgroundComplete>,
 }
 
 impl SpawnAgentTool {
@@ -104,6 +117,7 @@ impl SpawnAgentTool {
             on_event: None,
             session_deps: None,
             task_store: default_spawn_task_store(),
+            on_background_complete: None,
         }
     }
 
@@ -125,6 +139,12 @@ impl SpawnAgentTool {
     /// Provide session dependencies so sub-agents can get policy-aware session tools.
     pub fn with_session_deps(mut self, deps: SessionDeps) -> Self {
         self.session_deps = Some(deps);
+        self
+    }
+
+    /// Be told when a background sub-agent finishes.
+    pub fn with_on_background_complete(mut self, callback: OnBackgroundComplete) -> Self {
+        self.on_background_complete = Some(callback);
         self
     }
 
@@ -180,6 +200,7 @@ impl SpawnAgentTool {
             on_event: self.on_event.clone(),
             session_deps: self.session_deps.clone(),
             task_store: Arc::clone(&self.task_store),
+            on_background_complete: self.on_background_complete.clone(),
         }
     }
 
@@ -666,6 +687,8 @@ impl AgentTool for SpawnAgentTool {
             }
 
             let (abort_handle, abort_registration) = futures::future::AbortHandle::new_pair();
+            let parent_session = session_key.clone();
+            let on_background_complete = self.on_background_complete.clone();
             let task_entry = self
                 .task_store
                 .insert_running(
@@ -784,6 +807,14 @@ impl AgentTool for SpawnAgentTool {
                 };
 
                 store.complete(&task_id, update).await;
+                if let (Some(callback), Some(session_key)) =
+                    (on_background_complete, parent_session)
+                {
+                    callback(BackgroundCompletion {
+                        task_id: task_id.clone(),
+                        session_key,
+                    });
+                }
 
                 info!(
                     task_id = %task_id,

@@ -1,6 +1,7 @@
 //! `ChatService` trait implementation for `LiveChatService`.
 
 mod channel_security;
+mod inject;
 mod model_selection;
 mod public_context;
 mod queue_drain;
@@ -354,8 +355,10 @@ impl ChatService for LiveChatService {
         Ok(serde_json::json!(visible))
     }
 
-    async fn inject(&self, _params: Value) -> ServiceResult {
-        Err("inject not yet implemented".into())
+    async fn inject(&self, params: Value) -> ServiceResult {
+        self.inject_impl(params)
+            .await
+            .map_err(ServiceError::message)
     }
 
     async fn clear(&self, params: Value) -> ServiceResult {

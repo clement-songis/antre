@@ -281,6 +281,7 @@ struct Fixture {
     service: Arc<LiveChatService>,
     runtime: Arc<TestRuntime>,
     started: Arc<Semaphore>,
+    metadata: Arc<SqliteSessionMetadata>,
 }
 
 impl Fixture {
@@ -294,6 +295,11 @@ impl Fixture {
         let pool = sqlx::sqlite::SqlitePoolOptions::new()
             .max_connections(1)
             .connect("sqlite::memory:")
+            .await
+            .unwrap();
+        // Session rows reference projects; the stand-in table lets them exist.
+        sqlx::query("CREATE TABLE IF NOT EXISTS projects (id TEXT PRIMARY KEY)")
+            .execute(&pool)
             .await
             .unwrap();
         SqliteSessionMetadata::init(&pool).await.unwrap();
@@ -313,13 +319,14 @@ impl Fixture {
             }),
         );
         let runtime = Arc::new(TestRuntime::default());
+        let metadata = Arc::new(SqliteSessionMetadata::new(pool));
         let service = Arc::new(
             LiveChatService::new(
                 Arc::new(RwLock::new(registry)),
                 Arc::new(RwLock::new(DisabledModelsStore::default())),
                 runtime.clone(),
                 Arc::new(SessionStore::new(session_path)),
-                Arc::new(SqliteSessionMetadata::new(pool)),
+                Arc::clone(&metadata),
             )
             .with_config(moltis_config::MoltisConfig::default()),
         );
@@ -329,6 +336,7 @@ impl Fixture {
             service,
             runtime,
             started,
+            metadata,
         }
     }
 
@@ -624,4 +632,130 @@ async fn cancelling_the_queue_ends_a_waiting_send_sync() {
         .await
         .unwrap();
     assert!(fixture.runtime.outbound.replies.read().await.is_empty());
+}
+
+async fn history_texts(fixture: &Fixture) -> Vec<String> {
+    fixture
+        .service
+        .history(json!({ "sessionKey": SESSION }))
+        .await
+        .unwrap()
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|message| message["content"].as_str().map(String::from))
+        .collect()
+}
+
+/// `chat.inject` waits for the active turn, so the injected message lands
+/// after that turn's history rather than in the middle of it.
+#[tokio::test]
+async fn inject_waits_for_the_active_turn() {
+    let fixture = Fixture::new().await;
+    fixture
+        .service
+        .send(Fixture::params("HOLD", "held-anchor"))
+        .await
+        .unwrap();
+    fixture.started.acquire().await.unwrap().forget();
+
+    let injecting = {
+        let service = Arc::clone(&fixture.service);
+        tokio::spawn(async move {
+            service
+                .inject(json!({ "sessionKey": SESSION, "text": "injected note" }))
+                .await
+        })
+    };
+    tokio::time::sleep(Duration::from_millis(100)).await;
+    assert!(!injecting.is_finished(), "injected during the active turn");
+
+    fixture
+        .service
+        .abort(json!({ "sessionKey": SESSION }))
+        .await
+        .unwrap();
+    tokio::time::timeout(Duration::from_secs(10), injecting)
+        .await
+        .expect("inject finished")
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        history_texts(&fixture).await.last().map(String::as_str),
+        Some("injected note")
+    );
+    assert!(
+        fixture
+            .service
+            .inject(json!({ "sessionKey": SESSION }))
+            .await
+            .is_err(),
+        "text is required"
+    );
+}
+
+/// A background sub-agent's result reaches the parent session and its
+/// channel once, even though the parent's turn already ended.
+#[tokio::test]
+async fn background_task_outcome_is_posted_once_to_the_parent_and_its_channel() {
+    let fixture = Fixture::new().await;
+    fixture.metadata.upsert(SESSION, None).await.unwrap();
+    let binding = ChannelReplyTarget {
+        channel_type: ChannelType::Slack,
+        account_id: "test".into(),
+        chat_id: "room".into(),
+        message_id: None,
+        thread_id: None,
+        ack_message_id: None,
+        direct_chat: false,
+    };
+    fixture
+        .metadata
+        .set_channel_binding(SESSION, Some(serde_json::to_string(&binding).unwrap()))
+        .await;
+
+    let store = moltis_tools::spawn_agent_tasks::SpawnTaskStore::default();
+    let (abort, _) = futures::future::AbortHandle::new_pair();
+    let task = store
+        .insert_running(
+            "check the build".into(),
+            Some(SESSION.into()),
+            "m".into(),
+            None,
+            abort,
+        )
+        .await;
+    store
+        .complete(&task.id, moltis_tools::spawn_agent_tasks::SpawnTaskUpdate {
+            text: Some("build is green".into()),
+            iterations: 1,
+            tool_calls_made: 0,
+            error: None,
+        })
+        .await;
+
+    assert!(
+        fixture
+            .service
+            .announce_background_task(SESSION, &task.id, &store)
+            .await
+            .unwrap()
+    );
+    assert!(
+        !fixture
+            .service
+            .announce_background_task(SESSION, &task.id, &store)
+            .await
+            .unwrap(),
+        "announced twice"
+    );
+    let expected = "**Background task finished:** check the build\n\nbuild is green";
+    assert_eq!(
+        history_texts(&fixture).await.last().map(String::as_str),
+        Some(expected)
+    );
+    assert_eq!(*fixture.runtime.outbound.replies.read().await, vec![(
+        expected.to_string(),
+        None
+    )]);
 }

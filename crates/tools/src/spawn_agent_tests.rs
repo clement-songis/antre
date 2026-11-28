@@ -960,3 +960,103 @@ async fn test_timeout_cancels_long_running_agent() {
     assert!(result.is_err());
     assert!(result.unwrap_err().to_string().contains("timed out"));
 }
+
+#[tokio::test]
+async fn test_background_completion_is_reported_once_with_its_parent_session() {
+    let (provider, _) = MockProvider::with_capture("background result", "mock");
+    let store = Arc::new(SpawnTaskStore::default());
+    let (sender, mut receiver) = tokio::sync::mpsc::unbounded_channel();
+    let spawn_tool = SpawnAgentTool::new(
+        make_empty_provider_registry(),
+        provider,
+        Arc::new(ToolRegistry::new()),
+    )
+    .with_task_store(Arc::clone(&store))
+    .with_on_background_complete(Arc::new(move |completion| {
+        let _ = sender.send(completion);
+    }));
+
+    let result = spawn_tool
+        .execute(serde_json::json!({
+            "task": "summarize",
+            "nonblocking": true,
+            "_session_key": "parent",
+        }))
+        .await
+        .unwrap();
+    let task_id = result["task_id"].as_str().unwrap().to_string();
+    let completion = tokio::time::timeout(std::time::Duration::from_secs(5), receiver.recv())
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(completion, BackgroundCompletion {
+        task_id: task_id.clone(),
+        session_key: "parent".into(),
+    });
+
+    // The announcer claims the outcome once; a second claim gets nothing.
+    let claimed = store.take_unread_outcome(&task_id).await.unwrap();
+    assert_eq!(claimed.text.as_deref(), Some("background result"));
+    assert!(store.take_unread_outcome(&task_id).await.is_none());
+}
+
+#[tokio::test]
+async fn test_an_outcome_read_by_the_parent_is_not_announced() {
+    let (provider, _) = MockProvider::with_capture("done", "mock");
+    let store = Arc::new(SpawnTaskStore::default());
+    let (sender, mut receiver) = tokio::sync::mpsc::unbounded_channel();
+    let spawn_tool = SpawnAgentTool::new(
+        make_empty_provider_registry(),
+        provider,
+        Arc::new(ToolRegistry::new()),
+    )
+    .with_task_store(Arc::clone(&store))
+    .with_on_background_complete(Arc::new(move |completion| {
+        let _ = sender.send(completion);
+    }));
+    let result = spawn_tool
+        .execute(serde_json::json!({
+            "task": "t",
+            "nonblocking": true,
+            "_session_key": "parent",
+        }))
+        .await
+        .unwrap();
+    let task_id = result["task_id"].as_str().unwrap().to_string();
+    receiver.recv().await.unwrap();
+
+    SpawnResultTool::new(Arc::clone(&store))
+        .execute(serde_json::json!({ "task_id": task_id, "_session_key": "parent" }))
+        .await
+        .unwrap();
+    assert!(store.take_unread_outcome(&task_id).await.is_none());
+}
+
+#[tokio::test]
+async fn test_a_background_task_without_a_parent_session_is_not_reported() {
+    let (provider, _) = MockProvider::with_capture("done", "mock");
+    let store = Arc::new(SpawnTaskStore::default());
+    let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+    let counter = Arc::clone(&calls);
+    let spawn_tool = SpawnAgentTool::new(
+        make_empty_provider_registry(),
+        provider,
+        Arc::new(ToolRegistry::new()),
+    )
+    .with_task_store(Arc::clone(&store))
+    .with_on_background_complete(Arc::new(move |_| {
+        counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+    }));
+    let result = spawn_tool
+        .execute(serde_json::json!({ "task": "t", "nonblocking": true }))
+        .await
+        .unwrap();
+    let task_id = result["task_id"].as_str().unwrap().to_string();
+    for _ in 0..200 {
+        if store.take_unread_outcome(&task_id).await.is_some() {
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(5)).await;
+    }
+    assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 0);
+}

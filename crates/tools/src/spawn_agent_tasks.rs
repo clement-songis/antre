@@ -92,9 +92,21 @@ pub struct SpawnTask {
     pub iterations: usize,
     pub tool_calls_made: usize,
     pub error: Option<String>,
+    /// The parent read the outcome (`spawn_result`) or it was announced to
+    /// the parent session; either way it must not be announced again.
+    pub result_read: bool,
 }
 
 impl SpawnTask {
+    /// `true` once the task completed or failed (not cancelled, not running).
+    #[must_use]
+    pub fn has_outcome(&self) -> bool {
+        matches!(
+            self.status,
+            SpawnTaskStatus::Completed | SpawnTaskStatus::Failed
+        )
+    }
+
     fn is_expired(&self, now: OffsetDateTime, retention: &SpawnTaskRetention) -> bool {
         match (self.status.clone(), self.finished_at) {
             // Completed/failed tasks expire after one TTL from completion.
@@ -196,6 +208,7 @@ impl SpawnTaskStore {
             iterations: 0,
             tool_calls_made: 0,
             error: None,
+            result_read: false,
         };
         self.tasks
             .write()
@@ -275,12 +288,27 @@ impl SpawnTaskStore {
     pub async fn result(&self, id: &str, session_key: Option<&str>) -> crate::Result<Value> {
         let now = OffsetDateTime::now_utc();
         self.cleanup_expired(now).await;
-        let tasks = self.tasks.read().await;
+        let mut tasks = self.tasks.write().await;
         let task = tasks
-            .get(id)
+            .get_mut(id)
             .ok_or_else(|| Error::message(format!("spawn task not found: {id}")))?;
         task.assert_access(session_key)?;
+        if task.has_outcome() {
+            task.result_read = true;
+        }
         Ok(task.result_json(now))
+    }
+
+    /// Claim a finished task's outcome for announcing it, unless the parent
+    /// already read it. Exactly one of `result` and this call gets it.
+    pub async fn take_unread_outcome(&self, id: &str) -> Option<SpawnTask> {
+        let mut tasks = self.tasks.write().await;
+        let task = tasks.get_mut(id)?;
+        if !task.has_outcome() || task.result_read {
+            return None;
+        }
+        task.result_read = true;
+        Some(task.clone())
     }
 
     pub async fn list(&self, session_key: Option<&str>) -> Vec<Value> {

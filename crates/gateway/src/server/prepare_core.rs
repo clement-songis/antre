@@ -39,6 +39,7 @@ mod feedback;
 mod log_persistence;
 mod post_state;
 mod sandbox;
+mod spawn_tools;
 mod tool_registration;
 
 #[cfg(feature = "trusted-network")]

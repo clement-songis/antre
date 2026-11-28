@@ -1250,70 +1250,18 @@ pub(super) async fn complete_startup(
             map_provider,
         )));
 
+        let background_announcer = super::spawn_tools::BackgroundAnnouncer::new(
+            config.chat.delivery.announce_background_tasks,
+        );
         if let Some(default_provider) = registry.read().await.first_with_tools() {
-            let spawn_task_store =
-                Arc::new(moltis_tools::spawn_agent_tasks::SpawnTaskStore::default());
-            tool_registry.register(Box::new(
-                moltis_tools::spawn_agent_tasks::SpawnStatusTool::new(Arc::clone(
-                    &spawn_task_store,
-                )),
-            ));
-            tool_registry.register(Box::new(
-                moltis_tools::spawn_agent_tasks::SpawnResultTool::new(Arc::clone(
-                    &spawn_task_store,
-                )),
-            ));
-            tool_registry.register(Box::new(
-                moltis_tools::spawn_agent_tasks::SpawnListTool::new(Arc::clone(&spawn_task_store)),
-            ));
-            tool_registry.register(Box::new(
-                moltis_tools::spawn_agent_tasks::SpawnCancelTool::new(Arc::clone(
-                    &spawn_task_store,
-                )),
-            ));
-            let base_tools = Arc::new(tool_registry.clone_without(&[]));
-            let state_for_spawn = Arc::clone(&state);
-            let on_spawn_event: moltis_tools::spawn_agent::OnSpawnEvent = Arc::new(move |event| {
-                use moltis_agents::runner::RunnerEvent;
-                let state = Arc::clone(&state_for_spawn);
-                let payload = match &event {
-                    RunnerEvent::SubAgentStart { task, model, depth } => {
-                        serde_json::json!({
-                            "state": "sub_agent_start",
-                            "task": task,
-                            "model": model,
-                            "depth": depth,
-                        })
-                    },
-                    RunnerEvent::SubAgentEnd {
-                        task,
-                        model,
-                        depth,
-                        iterations,
-                        tool_calls_made,
-                    } => serde_json::json!({
-                        "state": "sub_agent_end",
-                        "task": task,
-                        "model": model,
-                        "depth": depth,
-                        "iterations": iterations,
-                        "toolCallsMade": tool_calls_made,
-                    }),
-                    _ => return,
-                };
-                tokio::spawn(async move {
-                    broadcast(&state, "chat", payload, BroadcastOpts::default()).await;
-                });
-            });
-            let spawn_tool = moltis_tools::spawn_agent::SpawnAgentTool::new(
-                Arc::clone(&registry),
+            super::spawn_tools::register_spawn_tools(
+                &mut tool_registry,
+                &registry,
                 default_provider,
-                base_tools,
-            )
-            .with_on_event(on_spawn_event)
-            .with_agents_config(agents_config)
-            .with_task_store(Arc::clone(&spawn_task_store));
-            tool_registry.register(Box::new(spawn_tool));
+                &state,
+                agents_config,
+                &background_announcer,
+            );
         }
 
         // Register after spawn_agent snapshots its tools so a narrowed parent
@@ -1350,6 +1298,7 @@ pub(super) async fn complete_startup(
         }
 
         let live_chat = Arc::new(chat_service);
+        background_announcer.attach(&live_chat);
         let inner_chat: Arc<dyn moltis_service_traits::ChatService> = live_chat.clone();
         let chat_with_external_agents = Arc::new(ExternalAgentChatService::new(
             inner_chat,
