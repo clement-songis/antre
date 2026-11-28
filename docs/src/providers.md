@@ -26,6 +26,78 @@ Configure providers through the web UI or directly in configuration files.
 | **Z.AI (Zhipu)** | `zai` | `Z_API_KEY` | Streaming, tools, model discovery |
 | **Z.AI Coding Plan** | `zai-code` | `Z_CODE_API_KEY` | Streaming, tools, model discovery (Coding plan billing endpoint) |
 
+### Hosted OpenAI-compatible providers
+
+These hosts and routers are one table entry each. Models come from the
+provider's `/models` endpoint; when it is unavailable, Moltis lists the
+provider's active chat models from the bundled model catalog. Strict tool
+schemas and the message `name` field are off by default, because these
+hosts proxy many backends.
+
+| Provider | Config Name | Env Variable | Default base URL |
+|----------|-------------|--------------|------------------|
+| **Together AI** | `together` | `TOGETHER_API_KEY` | `https://api.together.ai/v1` |
+| **SambaNova** | `sambanova` | `SAMBANOVA_API_KEY` | `https://api.sambanova.ai/v1` |
+| **Hugging Face** (router) | `huggingface` | `HF_TOKEN` | `https://router.huggingface.co/v1` |
+| **NVIDIA** | `nvidia` | `NVIDIA_API_KEY` | `https://integrate.api.nvidia.com/v1` |
+| **Novita** | `novita` | `NOVITA_API_KEY` | `https://api.novita.ai/openai` |
+| **Chutes** | `chutes` | `CHUTES_API_KEY` | `https://llm.chutes.ai/v1` |
+| **Nebius Token Factory** | `nebius` | `NEBIUS_API_KEY` | `https://api.tokenfactory.nebius.com/v1` |
+| **Vercel AI Gateway** | `vercel` | `AI_GATEWAY_API_KEY` | `https://ai-gateway.vercel.sh/v1` |
+| **Requesty** | `requesty` | `REQUESTY_API_KEY` | `https://router.requesty.ai/v1` |
+| **Cloudflare Workers AI** | `cloudflare` | `CLOUDFLARE_API_KEY` | `https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/v1` (`CLOUDFLARE_ACCOUNT_ID`) |
+| **Baseten** | `baseten` | `BASETEN_API_KEY` | `https://inference.baseten.co/v1` |
+| **StepFun** | `stepfun` | `STEPFUN_API_KEY` | `https://api.stepfun.ai/v1` |
+| **BytePlus ModelArk** | `byteplus` | `BYTEPLUS_API_KEY` | `https://ark.ap-southeast.bytepluses.com/api/v3` |
+| **Tencent TokenHub** | `tencent` | `TENCENT_TOKENHUB_API_KEY` | `https://tokenhub-intl.tencentcloudmaas.com/v1` |
+| **Xiaomi MiMo** | `xiaomi` | `XIAOMI_API_KEY` | `https://api.xiaomimimo.com/v1` |
+| **LongCat** | `longcat` | `LONGCAT_API_KEY` | `https://api.longcat.chat/openai` |
+| **Alibaba Model Studio** (Qwen pay-as-you-go) | `alibaba` | `DASHSCOPE_API_KEY` | `https://dashscope-intl.aliyuncs.com/compatible-mode/v1` |
+| **Cohere** (compatibility API) | `cohere` | `COHERE_API_KEY` | `https://api.cohere.ai/compatibility/v1` |
+| **Amazon Bedrock** | `bedrock` | `AWS_BEARER_TOKEN_BEDROCK` | `https://bedrock-mantle.{region}.api.aws/v1` (`AWS_REGION`, default `us-east-1`) |
+| **Azure OpenAI** | `azure` | `AZURE_API_KEY` | `https://{resource}.openai.azure.com/openai/v1` (`AZURE_RESOURCE_NAME`) |
+
+`{placeholder}` values come from the variable in parentheses and may only
+contain letters, digits, `-` and `_`. Setting `base_url` (or
+`<NAME>_BASE_URL`, for example `NOVITA_BASE_URL`) replaces the whole URL,
+which is how you pick another region (the China endpoints of StepFun,
+Tencent or Alibaba, for example).
+
+#### Amazon Bedrock and Azure
+
+Both use API keys sent as bearer tokens, not AWS SigV4 or Entra ID.
+
+- **Bedrock:** create a Bedrock API key and set `AWS_BEARER_TOKEN_BEDROCK`.
+  Model ids are Bedrock ids such as `anthropic.claude-sonnet-5-5` or
+  `openai.gpt-6-astra`, optionally with a cross-region prefix (`us.`,
+  `global.`).
+- **Azure:** `model` is your **deployment name**, so list deployments in
+  config; nothing is discovered.
+
+```toml
+[providers.azure]
+api_key = "${AZURE_API_KEY}"
+base_url = "https://contoso.openai.azure.com/openai/v1"
+models = ["my-gpt-deployment"]
+```
+
+Claude on either cloud speaks the Anthropic Messages API, through a
+custom Anthropic instance (both accept the key in `x-api-key`):
+
+```toml
+[providers.custom-bedrock-claude]
+wire_api = "anthropic"
+api_key = "${AWS_BEARER_TOKEN_BEDROCK}"
+base_url = "https://bedrock-mantle.us-east-1.api.aws/anthropic"
+models = ["anthropic.claude-sonnet-5-5"]
+
+[providers.custom-azure-claude]
+wire_api = "anthropic"
+api_key = "${AZURE_API_KEY}"
+base_url = "https://contoso.services.ai.azure.com/anthropic"
+models = ["my-claude-deployment"]
+```
+
 ### OAuth Providers
 
 | Provider | Config Name | Notes |

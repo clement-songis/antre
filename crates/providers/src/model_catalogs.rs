@@ -172,6 +172,36 @@ pub(crate) struct OpenAiCompatDef {
     pub(crate) local_only: bool,
     /// Explicit provider behavior policies. Never inferred from provider name or URL.
     pub(crate) capabilities: OpenAiProviderCapabilities,
+    /// Name shown on the onboarding card. Empty for providers whose card is
+    /// declared by hand in `moltis-provider-setup`.
+    pub(crate) display_name: &'static str,
+    /// Placeholders in `default_base_url` filled from the environment
+    /// (Cloudflare account id, AWS region, Azure resource name).
+    pub(crate) base_url_vars: &'static [BaseUrlVar],
+    /// Fall back to the catalog's chat models for this provider when `/models`
+    /// is unavailable, instead of registering nothing.
+    pub(crate) catalog_fallback: bool,
+    /// The provider serves user-named deployments, so models must be listed
+    /// in config (Azure).
+    pub(crate) requires_model: bool,
+}
+
+/// A `{placeholder}` in a default base URL, read from an environment variable.
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct BaseUrlVar {
+    pub(crate) placeholder: &'static str,
+    pub(crate) env_key: &'static str,
+    pub(crate) default: Option<&'static str>,
+}
+
+/// Values substituted into a hostname or path segment: anything else could
+/// redirect the request to another host.
+fn is_safe_url_segment(value: &str) -> bool {
+    !value.is_empty()
+        && value.len() <= 128
+        && value
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
 }
 
 impl OpenAiCompatDef {
@@ -185,8 +215,125 @@ impl OpenAiCompatDef {
         requires_api_key: true,
         local_only: false,
         capabilities: OpenAiProviderCapabilities::DEFAULT,
+        display_name: "",
+        base_url_vars: &[],
+        catalog_fallback: false,
+        requires_model: false,
     };
+
+    /// Base URL for this provider: config `base_url`, then the
+    /// `<NAME>_BASE_URL` variable, then the default with its placeholders
+    /// filled. `None` when a placeholder has no (valid) value.
+    pub(crate) fn resolve_base_url(
+        &self,
+        config: &moltis_config::schema::ProvidersConfig,
+        env_overrides: &std::collections::HashMap<String, String>,
+    ) -> Option<String> {
+        if let Some(url) = config
+            .get(self.config_name)
+            .and_then(|entry| entry.base_url.clone())
+            .or_else(|| crate::config_helpers::env_value(env_overrides, self.env_base_url_key))
+        {
+            return Some(url);
+        }
+        let mut url = self.default_base_url.to_string();
+        for var in self.base_url_vars {
+            let value = crate::config_helpers::env_value(env_overrides, var.env_key)
+                .or_else(|| var.default.map(str::to_string))?;
+            if !is_safe_url_segment(&value) {
+                tracing::warn!(
+                    provider = self.config_name,
+                    env = var.env_key,
+                    "ignoring provider: value must be letters, digits, '-' or '_'"
+                );
+                return None;
+            }
+            url = url.replace(var.placeholder, &value);
+        }
+        Some(url)
+    }
+
+    /// Catalog chat models for this provider, curated picks first, used when
+    /// live discovery is unavailable.
+    pub(crate) fn catalog_models(&self) -> Vec<crate::discovered_model::DiscoveredModel> {
+        if !self.catalog_fallback {
+            return Vec::new();
+        }
+        catalog_chat_models(self.config_name, CATALOG_FALLBACK_LIMIT)
+    }
 }
+
+const CATALOG_FALLBACK_LIMIT: usize = 40;
+
+/// Active chat models the catalog knows for `provider`: the curated role
+/// picks first (marked recommended), then the newest others.
+pub(crate) fn catalog_chat_models(
+    provider: &str,
+    limit: usize,
+) -> Vec<crate::discovered_model::DiscoveredModel> {
+    use moltis_model_catalog::{ModelKind, global};
+
+    let curated: Vec<String> = global::roles()
+        .recommended(provider, ModelKind::Chat)
+        .to_vec();
+    global::read(|catalog| {
+        let mut models: Vec<crate::discovered_model::DiscoveredModel> = Vec::new();
+        let mut push = |id: &str, recommended: bool| {
+            if models.len() >= limit || models.iter().any(|m| m.id == id) {
+                return;
+            }
+            let resolved = catalog.resolve(provider, id, None);
+            if resolved.kind() != ModelKind::Chat || resolved.status().is_deprecated() {
+                return;
+            }
+            models.push(
+                crate::discovered_model::DiscoveredModel::new(id, resolved.display_name().name)
+                    .with_recommended(recommended),
+            );
+        };
+        for id in &curated {
+            push(id, true);
+        }
+        for model in catalog.models_of_kind(provider, ModelKind::Chat) {
+            push(model.id(), false);
+        }
+        models
+    })
+}
+
+/// Onboarding card data for a table-driven provider.
+#[derive(Debug, Clone, Copy)]
+pub struct HostedProviderCard {
+    pub name: &'static str,
+    pub display_name: &'static str,
+    pub env_key: &'static str,
+    pub default_base_url: &'static str,
+    pub requires_model: bool,
+}
+
+/// Cards for the table-driven providers that declare a display name.
+#[must_use]
+pub fn hosted_provider_cards() -> Vec<HostedProviderCard> {
+    OPENAI_COMPAT_PROVIDERS
+        .iter()
+        .filter(|def| !def.display_name.is_empty())
+        .map(|def| HostedProviderCard {
+            name: def.config_name,
+            display_name: def.display_name,
+            env_key: def.env_key,
+            default_base_url: def.default_base_url,
+            requires_model: def.requires_model,
+        })
+        .collect()
+}
+
+/// Hosts and routers proxy many backends: `strict` tool schemas and the
+/// message `name` field are not reliably accepted.
+const HOSTED_CAPABILITIES: OpenAiProviderCapabilities = OpenAiProviderCapabilities {
+    supports_user_name: false,
+    default_strict_tools: false,
+    ..OpenAiProviderCapabilities::DEFAULT
+};
 
 pub(crate) const OPENAI_COMPAT_PROVIDERS: &[OpenAiCompatDef] = &[
     OpenAiCompatDef {
@@ -409,6 +556,234 @@ pub(crate) const OPENAI_COMPAT_PROVIDERS: &[OpenAiCompatDef] = &[
         },
         ..OpenAiCompatDef::DEFAULT
     },
+    // ── Hosted OpenAI-compatible providers: models come from `/models` or,
+    // failing that, from the catalog.
+    OpenAiCompatDef {
+        config_name: "together",
+        display_name: "Together AI",
+        env_key: "TOGETHER_API_KEY",
+        env_base_url_key: "TOGETHER_BASE_URL",
+        default_base_url: "https://api.together.ai/v1",
+        capabilities: HOSTED_CAPABILITIES,
+        catalog_fallback: true,
+        ..OpenAiCompatDef::DEFAULT
+    },
+    OpenAiCompatDef {
+        config_name: "sambanova",
+        display_name: "SambaNova",
+        env_key: "SAMBANOVA_API_KEY",
+        env_base_url_key: "SAMBANOVA_BASE_URL",
+        default_base_url: "https://api.sambanova.ai/v1",
+        capabilities: HOSTED_CAPABILITIES,
+        catalog_fallback: true,
+        ..OpenAiCompatDef::DEFAULT
+    },
+    OpenAiCompatDef {
+        config_name: "huggingface",
+        display_name: "Hugging Face",
+        env_key: "HF_TOKEN",
+        env_base_url_key: "HUGGINGFACE_BASE_URL",
+        default_base_url: "https://router.huggingface.co/v1",
+        capabilities: HOSTED_CAPABILITIES,
+        catalog_fallback: true,
+        ..OpenAiCompatDef::DEFAULT
+    },
+    OpenAiCompatDef {
+        config_name: "nvidia",
+        display_name: "NVIDIA",
+        env_key: "NVIDIA_API_KEY",
+        env_base_url_key: "NVIDIA_BASE_URL",
+        default_base_url: "https://integrate.api.nvidia.com/v1",
+        capabilities: HOSTED_CAPABILITIES,
+        catalog_fallback: true,
+        ..OpenAiCompatDef::DEFAULT
+    },
+    OpenAiCompatDef {
+        config_name: "novita",
+        display_name: "Novita",
+        env_key: "NOVITA_API_KEY",
+        env_base_url_key: "NOVITA_BASE_URL",
+        default_base_url: "https://api.novita.ai/openai",
+        capabilities: HOSTED_CAPABILITIES,
+        catalog_fallback: true,
+        ..OpenAiCompatDef::DEFAULT
+    },
+    OpenAiCompatDef {
+        config_name: "chutes",
+        display_name: "Chutes",
+        env_key: "CHUTES_API_KEY",
+        env_base_url_key: "CHUTES_BASE_URL",
+        default_base_url: "https://llm.chutes.ai/v1",
+        capabilities: HOSTED_CAPABILITIES,
+        catalog_fallback: true,
+        ..OpenAiCompatDef::DEFAULT
+    },
+    OpenAiCompatDef {
+        config_name: "nebius",
+        display_name: "Nebius Token Factory",
+        env_key: "NEBIUS_API_KEY",
+        env_base_url_key: "NEBIUS_BASE_URL",
+        default_base_url: "https://api.tokenfactory.nebius.com/v1",
+        capabilities: HOSTED_CAPABILITIES,
+        catalog_fallback: true,
+        ..OpenAiCompatDef::DEFAULT
+    },
+    OpenAiCompatDef {
+        config_name: "vercel",
+        display_name: "Vercel AI Gateway",
+        env_key: "AI_GATEWAY_API_KEY",
+        env_base_url_key: "VERCEL_BASE_URL",
+        default_base_url: "https://ai-gateway.vercel.sh/v1",
+        capabilities: HOSTED_CAPABILITIES,
+        catalog_fallback: true,
+        ..OpenAiCompatDef::DEFAULT
+    },
+    OpenAiCompatDef {
+        config_name: "requesty",
+        display_name: "Requesty",
+        env_key: "REQUESTY_API_KEY",
+        env_base_url_key: "REQUESTY_BASE_URL",
+        default_base_url: "https://router.requesty.ai/v1",
+        capabilities: HOSTED_CAPABILITIES,
+        catalog_fallback: true,
+        ..OpenAiCompatDef::DEFAULT
+    },
+    OpenAiCompatDef {
+        config_name: "cloudflare",
+        display_name: "Cloudflare Workers AI",
+        env_key: "CLOUDFLARE_API_KEY",
+        env_base_url_key: "CLOUDFLARE_BASE_URL",
+        default_base_url: "https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/v1",
+        // Workers AI has no OpenAI-style `/models` listing.
+        supports_model_discovery: false,
+        base_url_vars: &[BaseUrlVar {
+            placeholder: "{account_id}",
+            env_key: "CLOUDFLARE_ACCOUNT_ID",
+            default: None,
+        }],
+        capabilities: HOSTED_CAPABILITIES,
+        catalog_fallback: true,
+        ..OpenAiCompatDef::DEFAULT
+    },
+    OpenAiCompatDef {
+        config_name: "baseten",
+        display_name: "Baseten",
+        env_key: "BASETEN_API_KEY",
+        env_base_url_key: "BASETEN_BASE_URL",
+        default_base_url: "https://inference.baseten.co/v1",
+        capabilities: HOSTED_CAPABILITIES,
+        catalog_fallback: true,
+        ..OpenAiCompatDef::DEFAULT
+    },
+    OpenAiCompatDef {
+        config_name: "stepfun",
+        display_name: "StepFun",
+        env_key: "STEPFUN_API_KEY",
+        env_base_url_key: "STEPFUN_BASE_URL",
+        default_base_url: "https://api.stepfun.ai/v1",
+        capabilities: HOSTED_CAPABILITIES,
+        catalog_fallback: true,
+        ..OpenAiCompatDef::DEFAULT
+    },
+    OpenAiCompatDef {
+        config_name: "byteplus",
+        display_name: "BytePlus ModelArk",
+        env_key: "BYTEPLUS_API_KEY",
+        env_base_url_key: "BYTEPLUS_BASE_URL",
+        default_base_url: "https://ark.ap-southeast.bytepluses.com/api/v3",
+        capabilities: HOSTED_CAPABILITIES,
+        catalog_fallback: true,
+        ..OpenAiCompatDef::DEFAULT
+    },
+    OpenAiCompatDef {
+        config_name: "tencent",
+        display_name: "Tencent TokenHub",
+        env_key: "TENCENT_TOKENHUB_API_KEY",
+        env_base_url_key: "TENCENT_BASE_URL",
+        default_base_url: "https://tokenhub-intl.tencentcloudmaas.com/v1",
+        capabilities: HOSTED_CAPABILITIES,
+        catalog_fallback: true,
+        ..OpenAiCompatDef::DEFAULT
+    },
+    OpenAiCompatDef {
+        config_name: "xiaomi",
+        display_name: "Xiaomi MiMo",
+        env_key: "XIAOMI_API_KEY",
+        env_base_url_key: "XIAOMI_BASE_URL",
+        default_base_url: "https://api.xiaomimimo.com/v1",
+        capabilities: HOSTED_CAPABILITIES,
+        catalog_fallback: true,
+        ..OpenAiCompatDef::DEFAULT
+    },
+    OpenAiCompatDef {
+        config_name: "longcat",
+        display_name: "LongCat",
+        env_key: "LONGCAT_API_KEY",
+        env_base_url_key: "LONGCAT_BASE_URL",
+        default_base_url: "https://api.longcat.chat/openai",
+        capabilities: HOSTED_CAPABILITIES,
+        catalog_fallback: true,
+        ..OpenAiCompatDef::DEFAULT
+    },
+    OpenAiCompatDef {
+        config_name: "alibaba",
+        display_name: "Alibaba Model Studio",
+        env_key: "DASHSCOPE_API_KEY",
+        env_base_url_key: "ALIBABA_BASE_URL",
+        default_base_url: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+        capabilities: OpenAiProviderCapabilities {
+            qwen_models_require_single_leading_system: true,
+            ..HOSTED_CAPABILITIES
+        },
+        catalog_fallback: true,
+        ..OpenAiCompatDef::DEFAULT
+    },
+    OpenAiCompatDef {
+        config_name: "cohere",
+        display_name: "Cohere",
+        env_key: "COHERE_API_KEY",
+        env_base_url_key: "COHERE_BASE_URL",
+        default_base_url: "https://api.cohere.ai/compatibility/v1",
+        capabilities: HOSTED_CAPABILITIES,
+        catalog_fallback: true,
+        ..OpenAiCompatDef::DEFAULT
+    },
+    OpenAiCompatDef {
+        config_name: "bedrock",
+        display_name: "Amazon Bedrock",
+        env_key: "AWS_BEARER_TOKEN_BEDROCK",
+        env_base_url_key: "BEDROCK_BASE_URL",
+        default_base_url: "https://bedrock-mantle.{region}.api.aws/v1",
+        // Bedrock API keys are bearer tokens on the OpenAI-compatible
+        // mantle endpoint; SigV4 credentials are not supported here.
+        base_url_vars: &[BaseUrlVar {
+            placeholder: "{region}",
+            env_key: "AWS_REGION",
+            default: Some("us-east-1"),
+        }],
+        capabilities: HOSTED_CAPABILITIES,
+        catalog_fallback: true,
+        ..OpenAiCompatDef::DEFAULT
+    },
+    OpenAiCompatDef {
+        config_name: "azure",
+        display_name: "Azure OpenAI",
+        env_key: "AZURE_API_KEY",
+        env_base_url_key: "AZURE_BASE_URL",
+        default_base_url: "https://{resource}.openai.azure.com/openai/v1",
+        // `model` is the deployment name, which neither `/models` nor the
+        // catalog knows: models must be listed in config.
+        supports_model_discovery: false,
+        catalog_fallback: false,
+        requires_model: true,
+        base_url_vars: &[BaseUrlVar {
+            placeholder: "{resource}",
+            env_key: "AZURE_RESOURCE_NAME",
+            default: None,
+        }],
+        capabilities: HOSTED_CAPABILITIES,
+        ..OpenAiCompatDef::DEFAULT
+    },
 ];
 
 #[cfg(test)]
@@ -610,6 +985,134 @@ mod tests {
         assert!(!anthropic_ids.contains(&"claude-opus-4-6-20260301"));
         assert!(!anthropic_ids.contains(&"claude-sonnet-4-6-20260301"));
         assert!(!anthropic_ids.contains(&"claude-haiku-4-6-20260301"));
+    }
+
+    fn hosted(name: &str) -> &'static OpenAiCompatDef {
+        OPENAI_COMPAT_PROVIDERS
+            .iter()
+            .find(|def| def.config_name == name)
+            .expect("hosted provider")
+    }
+
+    #[test]
+    fn base_url_placeholders_are_filled_from_env() {
+        let config = moltis_config::schema::ProvidersConfig::default();
+        let env = std::collections::HashMap::from([
+            ("AWS_REGION".to_string(), "eu-west-3".to_string()),
+            ("CLOUDFLARE_ACCOUNT_ID".to_string(), "abc_123".to_string()),
+        ]);
+        assert_eq!(
+            hosted("bedrock").resolve_base_url(&config, &env).as_deref(),
+            Some("https://bedrock-mantle.eu-west-3.api.aws/v1")
+        );
+        assert_eq!(
+            hosted("cloudflare")
+                .resolve_base_url(&config, &env)
+                .as_deref(),
+            Some("https://api.cloudflare.com/client/v4/accounts/abc_123/ai/v1")
+        );
+    }
+
+    #[test]
+    fn base_url_placeholder_defaults_and_missing_values() {
+        let config = moltis_config::schema::ProvidersConfig::default();
+        let env = std::collections::HashMap::new();
+        if std::env::var_os("AWS_REGION").is_none() {
+            assert_eq!(
+                hosted("bedrock").resolve_base_url(&config, &env).as_deref(),
+                Some("https://bedrock-mantle.us-east-1.api.aws/v1")
+            );
+        }
+        if std::env::var_os("AZURE_RESOURCE_NAME").is_none() {
+            assert_eq!(hosted("azure").resolve_base_url(&config, &env), None);
+        }
+    }
+
+    #[test]
+    fn base_url_placeholder_rejects_values_that_change_the_host() {
+        let config = moltis_config::schema::ProvidersConfig::default();
+        for bad in ["evil.com/x", "a.b", "x?y", "", "a b"] {
+            let env =
+                std::collections::HashMap::from([("AZURE_RESOURCE_NAME".to_string(), bad.into())]);
+            assert_eq!(
+                hosted("azure").resolve_base_url(&config, &env),
+                None,
+                "{bad:?} accepted"
+            );
+        }
+    }
+
+    #[test]
+    fn configured_base_url_wins_over_the_template() {
+        let mut config = moltis_config::schema::ProvidersConfig::default();
+        config
+            .providers
+            .insert("azure".into(), moltis_config::schema::ProviderEntry {
+                base_url: Some("https://contoso.openai.azure.com/openai/v1".into()),
+                ..Default::default()
+            });
+        assert_eq!(
+            hosted("azure")
+                .resolve_base_url(&config, &std::collections::HashMap::new())
+                .as_deref(),
+            Some("https://contoso.openai.azure.com/openai/v1")
+        );
+    }
+
+    #[test]
+    fn catalog_fallback_lists_active_chat_models() {
+        let models = hosted("together").catalog_models();
+        assert!(!models.is_empty());
+        assert!(models.len() <= CATALOG_FALLBACK_LIMIT);
+        moltis_model_catalog::global::read(|catalog| {
+            for model in &models {
+                let resolved = catalog.resolve("together", &model.id, None);
+                assert_eq!(resolved.kind(), moltis_model_catalog::ModelKind::Chat);
+                assert!(!resolved.status().is_deprecated(), "{}", model.id);
+            }
+        });
+        assert!(hosted("azure").catalog_models().is_empty());
+        assert!(hosted("venice").catalog_models().is_empty());
+    }
+
+    #[test]
+    fn every_hosted_provider_maps_to_models_dev_and_has_a_card() {
+        let cards = hosted_provider_cards();
+        for def in OPENAI_COMPAT_PROVIDERS
+            .iter()
+            .filter(|def| !def.display_name.is_empty())
+        {
+            assert!(
+                !moltis_model_catalog::providers::models_dev_ids(def.config_name).is_empty(),
+                "{} has no models.dev mapping",
+                def.config_name
+            );
+            assert!(cards.iter().any(|card| card.name == def.config_name));
+            let template_vars = def.default_base_url.matches('{').count();
+            assert_eq!(
+                template_vars,
+                def.base_url_vars.len(),
+                "{}",
+                def.config_name
+            );
+        }
+    }
+
+    #[test]
+    fn catalog_fallback_providers_have_catalog_models() {
+        let catalog = moltis_model_catalog::ModelCatalog::bundled().expect("bundled catalog");
+        for def in OPENAI_COMPAT_PROVIDERS
+            .iter()
+            .filter(|def| def.catalog_fallback)
+        {
+            assert!(
+                !catalog
+                    .models_of_kind(def.config_name, moltis_model_catalog::ModelKind::Chat)
+                    .is_empty(),
+                "{} has no chat models in the bundled catalog",
+                def.config_name
+            );
+        }
     }
 
     #[test]

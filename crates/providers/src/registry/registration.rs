@@ -245,11 +245,9 @@ impl ProviderRegistry {
                 continue;
             };
 
-            let base_url = config
-                .get(def.config_name)
-                .and_then(|e| e.base_url.clone())
-                .or_else(|| env_value(env_overrides, def.env_base_url_key))
-                .unwrap_or_else(|| def.default_base_url.into());
+            let Some(base_url) = def.resolve_base_url(config, env_overrides) else {
+                continue;
+            };
             let alias = config.get(def.config_name).and_then(|e| e.alias.clone());
             let provider_label = alias.unwrap_or_else(|| def.config_name.into());
             let stream_transport = config
@@ -855,11 +853,9 @@ impl ProviderRegistry {
                 continue;
             };
 
-            let base_url = config
-                .get(def.config_name)
-                .and_then(|e| e.base_url.clone())
-                .or_else(|| env_value(env_overrides, def.env_base_url_key))
-                .unwrap_or_else(|| def.default_base_url.into());
+            let Some(base_url) = def.resolve_base_url(config, env_overrides) else {
+                continue;
+            };
 
             // Get alias if configured (for metrics differentiation).
             let alias = config.get(def.config_name).and_then(|e| e.alias.clone());
@@ -894,16 +890,23 @@ impl ProviderRegistry {
                 .get(def.config_name)
                 .is_some_and(|entry| entry.fetch_models);
             let try_fetch = def.supports_model_discovery || user_opted_in;
-            let static_catalog =
-                || -> Vec<DiscoveredModel> { catalog_to_discovered(def.models, 2) };
+            let static_catalog = || -> Vec<DiscoveredModel> {
+                if def.models.is_empty() {
+                    def.catalog_models()
+                } else {
+                    catalog_to_discovered(def.models, 2)
+                }
+            };
             let discovered =
                 if !skip_discovery && try_fetch && should_fetch_models(config, def.config_name) {
                     // Use pre-fetched results from parallel discovery.
                     match prefetched.get(def.config_name) {
-                        Some(models) => models.clone(),
-                        None => static_catalog(),
+                        Some(models) if !models.is_empty() => models.clone(),
+                        _ => static_catalog(),
                     }
-                } else if !def.supports_model_discovery && !def.models.is_empty() {
+                } else if !def.supports_model_discovery
+                    && (!def.models.is_empty() || def.catalog_fallback)
+                {
                     // Provider has no /models endpoint — use the static catalog.
                     static_catalog()
                 } else {

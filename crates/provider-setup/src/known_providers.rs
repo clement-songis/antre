@@ -53,6 +53,21 @@ impl KnownProvider {
     }
 }
 
+impl From<moltis_providers::model_catalogs::HostedProviderCard> for KnownProvider {
+    fn from(card: moltis_providers::model_catalogs::HostedProviderCard) -> Self {
+        Self {
+            name: card.name,
+            display_name: card.display_name,
+            auth_type: AuthType::ApiKey,
+            env_key: Some(card.env_key),
+            default_base_url: Some(card.default_base_url),
+            requires_model: card.requires_model,
+            key_optional: false,
+            local_only: false,
+        }
+    }
+}
+
 /// Build the known providers list at runtime, including local-llm if enabled.
 pub fn known_providers() -> Vec<KnownProvider> {
     let providers = vec![
@@ -278,6 +293,12 @@ pub fn known_providers() -> Vec<KnownProvider> {
             local_only: false,
         },
     ];
+    let mut providers = providers;
+    providers.extend(
+        moltis_providers::model_catalogs::hosted_provider_cards()
+            .into_iter()
+            .map(KnownProvider::from),
+    );
 
     // Add local-llm provider when the local-llm feature is enabled
     #[cfg(feature = "local-llm")]
@@ -385,6 +406,31 @@ mod tests {
         assert!(names.contains(&"lmstudio"), "missing lmstudio");
         // OAuth providers
         assert!(names.contains(&"github-copilot"), "missing github-copilot");
+    }
+
+    #[test]
+    fn hosted_compat_providers_get_api_key_cards() {
+        let providers = known_providers();
+        for name in [
+            "together",
+            "huggingface",
+            "bedrock",
+            "cloudflare",
+            "alibaba",
+        ] {
+            let card = providers
+                .iter()
+                .find(|p| p.name == name)
+                .unwrap_or_else(|| panic!("missing provider: {name}"));
+            assert_eq!(card.auth_type, AuthType::ApiKey);
+            assert!(card.env_key.is_some());
+            assert!(!card.requires_model, "{name} lists models itself");
+        }
+        let azure = providers
+            .iter()
+            .find(|p| p.name == "azure")
+            .expect("azure card");
+        assert!(azure.requires_model, "azure needs deployment names");
     }
 
     #[test]

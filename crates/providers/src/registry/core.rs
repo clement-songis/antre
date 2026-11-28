@@ -263,11 +263,9 @@ pub async fn fetch_discoverable_models(
             continue;
         };
 
-        let base_url = config
-            .get(def.config_name)
-            .and_then(|e| e.base_url.clone())
-            .or_else(|| env_value(env_overrides, def.env_base_url_key))
-            .unwrap_or_else(|| def.default_base_url.into());
+        let Some(base_url) = def.resolve_base_url(config, env_overrides) else {
+            continue;
+        };
 
         if def.local_only {
             let has_explicit_entry = config.get(def.config_name).is_some();
@@ -1143,11 +1141,9 @@ impl ProviderRegistry {
                 continue;
             };
 
-            let base_url = config
-                .get(def.config_name)
-                .and_then(|e| e.base_url.clone())
-                .or_else(|| env_value(env_overrides, def.env_base_url_key))
-                .unwrap_or_else(|| def.default_base_url.into());
+            let Some(base_url) = def.resolve_base_url(config, env_overrides) else {
+                continue;
+            };
 
             let preferred = configured_models_for_provider(config, def.config_name);
 

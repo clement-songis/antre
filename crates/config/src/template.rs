@@ -149,7 +149,15 @@ loopback_http = true                # Plain HTTP on loopback binds: http://local
 #   "deepseek", "fireworks", "mistral", "openrouter", "cerebras", "minimax",
 #   "moonshot", "zai", "zai-code", "venice", "nearai", "alibaba-coding",
 #   "ollama", "lmstudio", "local-llm", "openai-codex",
-#   "github-copilot", "kimi-code"
+#   "github-copilot", "kimi-code",
+# Hosted OpenAI-compatible providers (models from /models, else the catalog):
+#   "together", "sambanova", "huggingface", "nvidia", "novita", "chutes",
+#   "nebius", "vercel", "requesty", "cloudflare", "baseten", "stepfun",
+#   "byteplus", "tencent", "xiaomi", "longcat", "alibaba", "cohere",
+#   "bedrock", "azure"
+# Bedrock reads AWS_BEARER_TOKEN_BEDROCK and AWS_REGION (default us-east-1);
+# Cloudflare needs CLOUDFLARE_ACCOUNT_ID; Azure needs AZURE_RESOURCE_NAME (or
+# base_url) and `models = [...]` deployment names.
 
 # ── Anthropic (Claude) ────────────────────────────────────────
 # [providers.anthropic]

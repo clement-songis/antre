@@ -4,6 +4,8 @@ mod catalog_bridge;
 mod core;
 mod custom;
 mod genai;
+#[cfg(test)]
+mod hosted_tests;
 pub mod registration;
 #[cfg(test)]
 mod tests;
