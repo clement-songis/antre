@@ -4,6 +4,7 @@
 // browser (Ctrl+Shift+C opens devtools) use Alt+Shift instead.
 
 import { signal } from "@preact/signals";
+import { setSidebarCollapsed } from "../../app-shell";
 import { t } from "../../i18n";
 import { toggleSessions } from "../../mobile";
 import { startNewSession, switchSession } from "../../sessions";
@@ -13,7 +14,6 @@ import { copyToClipboard, showToast } from "../../ui";
 import type { AssistantItem } from "./transcript/model";
 import { transcriptItems } from "./transcript/store";
 
-const SIDEBAR_STORAGE_KEY = "moltis-sessions-collapsed";
 const PHONE_WIDTH = 768;
 
 export const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform || "");
@@ -51,31 +51,12 @@ function onChatPage(): boolean {
 	return window.location.pathname.startsWith("/chats");
 }
 
-function loadCollapsed(): boolean {
-	try {
-		return localStorage.getItem(SIDEBAR_STORAGE_KEY) === "1";
-	} catch {
-		return false;
-	}
-}
-
-/** Apply the remembered desktop sidebar state. */
-export function restoreSidebarState(): void {
-	document.body.classList.toggle("sessions-collapsed", loadCollapsed());
-}
-
 export function toggleSidebar(): void {
 	if (window.innerWidth < PHONE_WIDTH) {
 		toggleSessions();
 		return;
 	}
-	const collapsed = !document.body.classList.contains("sessions-collapsed");
-	document.body.classList.toggle("sessions-collapsed", collapsed);
-	try {
-		localStorage.setItem(SIDEBAR_STORAGE_KEY, collapsed ? "1" : "0");
-	} catch {
-		// Private mode: the state lasts for this page only.
-	}
+	setSidebarCollapsed(!document.body.classList.contains("sidebar-collapsed"));
 }
 
 export function focusComposer(): void {
@@ -182,6 +163,5 @@ let installed = false;
 export function installChatShortcuts(): void {
 	if (installed) return;
 	installed = true;
-	restoreSidebarState();
 	window.addEventListener("keydown", onKeyDown, true);
 }

@@ -468,12 +468,6 @@
     color: var(--muted);
     font-style: italic;
   }
-  /* Desktop session list hidden with the sidebar shortcut */
-  @media (min-width: 768px) {
-    body.sessions-collapsed #sessionsPanel {
-      display: none;
-    }
-  }
   .shortcut-key {
     min-width: 1.6em;
     padding: 1px 6px;

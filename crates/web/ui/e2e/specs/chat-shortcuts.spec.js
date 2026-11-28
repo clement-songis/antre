@@ -61,15 +61,17 @@ test.describe("Chat keyboard shortcuts", () => {
 
 	test("toggle the session list and focus the composer", async ({ page }) => {
 		const pageErrors = watchPageErrors(page);
-		const panel = page.locator("#sessionsPanel");
-		await expect(panel).toBeVisible();
+		const list = page.locator("#sessionList");
+		await expect(list).toBeVisible();
 		await page.keyboard.press(`${MOD}+Shift+KeyS`);
-		await expect(panel).toBeHidden();
+		await expect(page.locator("body")).toHaveClass(/sidebar-collapsed/);
+		await expect(list).toBeHidden();
+		await expect(page.locator("#newSessionBtn")).toBeVisible();
 		await page.reload();
 		await waitForWsConnected(page);
-		await expect(panel).toBeHidden();
+		await expect(list).toBeHidden();
 		await page.keyboard.press(`${MOD}+Shift+KeyS`);
-		await expect(panel).toBeVisible();
+		await expect(list).toBeVisible();
 
 		await page.locator("body").click({ position: { x: 1, y: 1 } });
 		await page.keyboard.press("Shift+Escape");

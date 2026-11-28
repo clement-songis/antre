@@ -15,7 +15,8 @@ makes, and lets you approve commands, rewind, edit and queue messages.
 | `@` | Composer, session bound to a project | File picker; inserts `@relative/path` |
 | Cmd/Ctrl+Shift+O | Anywhere | New chat |
 | Shift+Esc | Chat page | Focus the message box |
-| Cmd/Ctrl+Shift+S | Chat page | Show or hide the session list (remembered per browser) |
+| Cmd/Ctrl+Shift+S | Chat page | Collapse or expand the sidebar to its icon rail (remembered per browser) |
+| Cmd/Ctrl+B | Anywhere on desktop | Collapse or expand the sidebar |
 | Alt+Shift+↓ / ↑ | Chat page | Next / previous session, in sidebar order |
 | Alt+Shift+C | Chat page | Copy the last reply as Markdown |
 | Cmd/Ctrl+K | Anywhere | Command palette |
