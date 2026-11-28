@@ -1054,7 +1054,8 @@ pub(crate) fn should_use_docker_backend(
 /// How long a container runtime may take to answer a probe before startup
 /// treats it as unavailable. A hung Docker Desktop otherwise blocks `docker
 /// info` (and gateway startup) for minutes.
-pub(crate) const RUNTIME_PROBE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5);
+pub(crate) const RUNTIME_PROBE_TIMEOUT: std::time::Duration =
+    moltis_config::process_probe::RUNTIME_COMMAND_TIMEOUT;
 
 pub(crate) fn is_docker_daemon_available() -> bool {
     command_succeeds_within(
@@ -1069,44 +1070,15 @@ pub fn is_cli_available(name: &str) -> bool {
     command_succeeds_within(name, &["--version"], RUNTIME_PROBE_TIMEOUT)
 }
 
-/// Run `program args` with no I/O and report whether it exited successfully
-/// within `timeout`. A command still running at the deadline is killed and
-/// counts as a failure.
+/// Whether `program args` exited successfully within `timeout`. A command
+/// still running at the deadline is killed and counts as a failure.
 pub(crate) fn command_succeeds_within(
     program: &str,
     args: &[&str],
     timeout: std::time::Duration,
 ) -> bool {
-    let spawned = std::process::Command::new(program)
-        .args(args)
-        .stdin(std::process::Stdio::null())
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
-        .spawn();
-    let Ok(mut child) = spawned else {
-        return false;
-    };
-    let deadline = std::time::Instant::now() + timeout;
-    loop {
-        match child.try_wait() {
-            Ok(Some(status)) => return status.success(),
-            Ok(None) if std::time::Instant::now() < deadline => {
-                std::thread::sleep(std::time::Duration::from_millis(20));
-            },
-            Ok(None) => {
-                let _ = child.kill();
-                let _ = child.wait();
-                warn!(
-                    program,
-                    ?args,
-                    timeout_secs = timeout.as_secs_f32(),
-                    "runtime probe timed out; treating the runtime as unavailable"
-                );
-                return false;
-            },
-            Err(_) => return false,
-        }
-    }
+    moltis_config::process_probe::output_within(program, args, timeout)
+        .is_some_and(|output| output.status.success())
 }
 
 /// Return the name of the container CLI to use for OCI image operations
