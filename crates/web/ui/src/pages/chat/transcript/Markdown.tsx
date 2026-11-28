@@ -10,6 +10,7 @@ import { useEffect, useMemo, useRef } from "preact/hooks";
 import { highlightCodeBlocks } from "../../../code-highlight";
 import { renderMarkdown, splitMarkdownBlocks } from "../../../helpers";
 import { enhanceRichBlocks, hasRichBlocks } from "../../../rich-blocks";
+import { enhanceArtifactBlocks, hasArtifactBlocks } from "../canvas/artifact-blocks";
 
 interface BlockProps {
 	raw: string;
@@ -25,6 +26,7 @@ const MarkdownBlock = memo(
 			if (!(closed && ref.current)) return;
 			if (raw.includes("```")) void highlightCodeBlocks(ref.current);
 			if (hasRichBlocks(html)) void enhanceRichBlocks(ref.current);
+			if (hasArtifactBlocks(html)) enhanceArtifactBlocks(ref.current);
 		}, [closed, html]);
 		// biome-ignore lint/security/noDangerouslySetInnerHtml: renderMarkdown escapes its input first.
 		return <div ref={ref} className="md-block contents" dangerouslySetInnerHTML={{ __html: html }} />;

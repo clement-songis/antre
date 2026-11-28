@@ -63,4 +63,7 @@ export default {
 	appLoading: "Loading app…",
 	appUnavailable: "This app could not be shown: {{error}}",
 	openDesign: "Open in preview",
+	createdDesign: "Created design",
+	openedDesign: "Opened design",
+	designScreenshot: "Design screenshot",
 };

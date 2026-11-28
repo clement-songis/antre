@@ -63,4 +63,7 @@ export default {
 	appLoading: "正在載入應用程式…",
 	appUnavailable: "無法顯示此應用程式：{{error}}",
 	openDesign: "在預覽中開啟",
+	createdDesign: "已建立設計",
+	openedDesign: "已開啟設計",
+	designScreenshot: "設計截圖",
 };

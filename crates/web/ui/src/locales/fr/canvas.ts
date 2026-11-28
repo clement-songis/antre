@@ -64,4 +64,7 @@ export default {
 	appLoading: "Chargement de l’application…",
 	appUnavailable: "Impossible d’afficher cette application : {{error}}",
 	openDesign: "Ouvrir dans l’aperçu",
+	createdDesign: "Design créé",
+	openedDesign: "Design ouvert",
+	designScreenshot: "Capture du design",
 };

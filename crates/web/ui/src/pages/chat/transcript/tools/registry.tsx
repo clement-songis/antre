@@ -9,6 +9,7 @@ import { toolCallSummary } from "../../../../helpers";
 import { t } from "../../../../i18n";
 import { Markdown } from "../Markdown";
 import type { ToolItem } from "../model";
+import { McpAppView, mcpAppUri, mcpToolParts, OpenDesignButton } from "./apps";
 import { collapseContext, type DiffLine, diffLines, diffStats } from "./diff";
 import {
 	arg,
@@ -344,13 +345,18 @@ const renderTaskList: Renderer = (item) => {
 // ── MCP and fallback ─────────────────────────────────────────
 
 const renderMcp: Renderer = (item) => {
-	const [, server = "", tool = item.name] = item.name.split("__");
+	const parts = mcpToolParts(item.name);
+	const server = parts?.server ?? "";
+	const tool = parts?.tool ?? item.name;
+	const appUri = item.status === "ok" ? mcpAppUri(item) : null;
 	return {
 		icon: "icon-connectors",
 		verb: tool,
 		target: server ? t("chat:tools.via", { server }) : undefined,
+		openByDefault: appUri !== null,
 		body: (
 			<>
+				{appUri ? <McpAppView item={item} uri={appUri} /> : null}
 				<Section label={t("chat:tools.arguments")}>
 					<JsonBlock value={item.args} />
 				</Section>
@@ -407,7 +413,32 @@ const renderDefault: Renderer = (item) => {
 	};
 };
 
+// ── Design canvas ────────────────────────────────────────────
+
+function designIdOf(item: ToolItem): string {
+	const res = resultRecord(item);
+	return str(res?.design_id) || arg(item, "design_id");
+}
+
+function renderDesign(verbKey: string): Renderer {
+	return (item) => {
+		const res = resultRecord(item);
+		const designId = designIdOf(item);
+		const version = num(res?.version);
+		return {
+			icon: "icon-layers",
+			verb: t(verbKey),
+			target: str(res?.title) || arg(item, "title") || (designId ? designId.slice(0, 8) : undefined),
+			badge: version ? `v${version}` : undefined,
+			body: designId && item.status === "ok" ? <OpenDesignButton designId={designId} /> : undefined,
+		};
+	};
+}
+
 const RENDERERS: Record<string, Renderer> = {
+	design_create: renderDesign("canvas:createdDesign"),
+	design_open: renderDesign("canvas:openedDesign"),
+	design_screenshot: renderDesign("canvas:designScreenshot"),
 	exec: renderExec,
 	Read: renderRead,
 	Write: renderEdit,

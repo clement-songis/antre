@@ -14,7 +14,7 @@ function codeTextFor(button: HTMLElement): string | null {
 
 export function handleCodeCopyClick(e: MouseEvent): void {
 	const target = e.target as HTMLElement | null;
-	const button = target?.closest<HTMLButtonElement>(".code-copy-btn");
+	const button = target?.closest<HTMLButtonElement>(".code-copy-btn:not(.code-preview-btn)");
 	if (!button) return;
 	e.preventDefault();
 	const text = codeTextFor(button);
