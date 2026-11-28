@@ -777,28 +777,11 @@ pub(super) async fn complete_startup(
             moltis_tools::send_image::SendImageTool::new()
                 .with_sandbox_router(Arc::clone(&sandbox_router)),
         ));
-        // Codex OAuth first (covered by the ChatGPT plan), then the first of
-        // OpenAI, Gemini and xAI with an API key.
-        #[cfg(feature = "provider-openai-codex")]
-        let codex_images = moltis_providers::openai_codex::has_stored_tokens();
-        #[cfg(not(feature = "provider-openai-codex"))]
-        let codex_images = false;
-        #[cfg(feature = "provider-openai-codex")]
-        if codex_images {
-            tool_registry.register(Box::new(
-                moltis_tools::image_generation::GenerateImageTool::new(),
-            ));
-        }
-        if !codex_images
-            && let Some(images) = moltis_providers::images_api::ImagesApiProvider::from_config(
-                &effective_providers,
-                &runtime_env_overrides,
-            )
-        {
-            tool_registry.register(Box::new(
-                moltis_tools::image_generation::GenerateImageTool::with_api(images),
-            ));
-        }
+        super::tool_registration::register_image_generation_tool(
+            &mut tool_registry,
+            &effective_providers,
+            &runtime_env_overrides,
+        );
         tool_registry.register(Box::new(
             moltis_tools::send_document::SendDocumentTool::new()
                 .with_sandbox_router(Arc::clone(&sandbox_router))

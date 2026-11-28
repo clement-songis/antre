@@ -215,34 +215,3 @@ pub(super) fn check_mcp_sampling(
         }
     }
 }
-
-pub(super) fn check_voice_fallback<P: Copy + PartialEq>(
-    kind: &str,
-    path: &str,
-    active: Option<P>,
-    fallback: &[P],
-    name: impl Fn(P) -> &'static str,
-    diagnostics: &mut Vec<Diagnostic>,
-) {
-    for (idx, provider) in fallback.iter().enumerate() {
-        let is_active = active == Some(*provider);
-        let is_repeat = fallback[..idx].contains(provider);
-        if !is_active && !is_repeat {
-            continue;
-        }
-        let reason = if is_active {
-            "is already the active provider"
-        } else {
-            "is listed more than once"
-        };
-        diagnostics.push(Diagnostic {
-            severity: Severity::Warning,
-            category: "invalid-value",
-            path: format!("{path}[{idx}]"),
-            message: format!(
-                "{kind} fallback provider \"{}\" {reason}; it is tried only once",
-                name(*provider)
-            ),
-        });
-    }
-}

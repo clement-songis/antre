@@ -14,3 +14,26 @@ pub(super) async fn register_voice_call_tool(
         tool_registry.register(Box::new(voice_tool));
     }
 }
+
+/// `generate_image`: Codex OAuth first (covered by the ChatGPT plan), then
+/// the first of OpenAI, Gemini and xAI with an API key.
+pub(super) fn register_image_generation_tool(
+    tool_registry: &mut moltis_agents::tool_registry::ToolRegistry,
+    providers: &moltis_config::schema::ProvidersConfig,
+    env_overrides: &std::collections::HashMap<String, String>,
+) {
+    #[cfg(feature = "provider-openai-codex")]
+    if moltis_providers::openai_codex::has_stored_tokens() {
+        tool_registry.register(Box::new(
+            moltis_tools::image_generation::GenerateImageTool::new(),
+        ));
+        return;
+    }
+    if let Some(images) =
+        moltis_providers::images_api::ImagesApiProvider::from_config(providers, env_overrides)
+    {
+        tool_registry.register(Box::new(
+            moltis_tools::image_generation::GenerateImageTool::with_api(images),
+        ));
+    }
+}

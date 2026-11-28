@@ -5,6 +5,8 @@ use {
     std::path::Path,
 };
 
+#[path = "semantic/media.rs"]
+mod media;
 #[path = "semantic/secrets.rs"]
 mod secrets;
 #[path = "semantic/sections.rs"]
@@ -965,35 +967,7 @@ pub(super) fn check_semantic_warnings(config: &MoltisConfig, diagnostics: &mut V
         });
     }
 
-    if config.memory.reranker == Some(crate::schema::MemoryReranker::Custom)
-        && config.memory.rerank_base_url.is_none()
-    {
-        diagnostics.push(Diagnostic {
-            severity: Severity::Error,
-            category: "invalid-value",
-            path: "memory.rerank_base_url".into(),
-            message: "memory.reranker = \"custom\" needs memory.rerank_base_url".into(),
-        });
-    }
-
-    // Redundant voice fallback entries: the active provider or a repeat
-    // would be tried at most once anyway.
-    check_voice_fallback(
-        "STT",
-        "voice.stt.fallback",
-        config.voice.stt.provider,
-        &config.voice.stt.fallback,
-        |provider| provider.as_str(),
-        diagnostics,
-    );
-    check_voice_fallback(
-        "TTS",
-        "voice.tts.fallback",
-        config.voice.tts.provider,
-        &config.voice.tts.fallback,
-        |provider| provider.as_str(),
-        diagnostics,
-    );
+    media::check_media_settings(config, diagnostics);
 
     // Unknown hook event names
     let valid_hook_events = [
