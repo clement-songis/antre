@@ -72,7 +72,7 @@ export function UserActions({ item, sessionKey }: UserActionsProps) {
 			<div className="msg-user-edit flex flex-col gap-1.5 mt-2">
 				<textarea
 					ref={textareaRef}
-					className="msg-user-edit-input w-full min-h-[64px] rounded-md border border-[var(--border)] bg-[var(--bg)] text-[var(--text)] p-2 text-sm font-[var(--font-body)]"
+					className="msg-user-edit-input w-full min-h-[64px] rounded-md border border-line bg-ground text-ink p-2 text-sm font-text"
 					aria-label="Edit message"
 					defaultValue={item.text}
 					disabled={busy}

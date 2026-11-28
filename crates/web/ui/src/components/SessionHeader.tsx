@@ -705,12 +705,22 @@ export function SessionHeader({
 				</button>
 			)}
 			{showStop && canStop && (
-				<button className={actionButtonClass} onClick={onStop} title={sessionT("header.stopTooltip")} disabled={stopping}>
+				<button
+					className={actionButtonClass}
+					onClick={onStop}
+					title={sessionT("header.stopTooltip")}
+					disabled={stopping}
+				>
 					{stopping ? sessionT("header.stopping") : t("common:actions.stop")}
 				</button>
 			)}
 			{showClear && isMain && (
-				<button className={actionButtonClass} onClick={onClear} title={sessionT("header.clearTooltip")} disabled={clearing}>
+				<button
+					className={actionButtonClass}
+					onClick={onClear}
+					title={sessionT("header.clearTooltip")}
+					disabled={clearing}
+				>
 					{clearing ? sessionT("header.clearing") : sessionT("header.clear")}
 				</button>
 			)}
@@ -720,23 +730,29 @@ export function SessionHeader({
 	const sessionMenu = (): MenuSpec => {
 		const items: MenuItem[] = [];
 		if (canRename) {
-			items.push({ id: "rename", label: "Rename session", icon: "icon-code", onSelect: startRename });
+			items.push({
+				id: "rename",
+				label: sessionT("header.renameSessionTooltip"),
+				icon: "icon-code",
+				onSelect: startRename,
+			});
 			items.push({
 				id: "auto-title",
-				label: "Auto-title",
+				label: sessionT("header.autoTitle"),
 				icon: "icon-sparkles",
 				disabled: generatingTitle,
-				title: "Auto-generate title from conversation",
+				title: sessionT("header.generateTitleTooltip"),
 				onSelect: onGenerateTitle,
 			});
 		}
-		if (showFork && !isCron) items.push({ id: "fork", label: "Fork session", icon: "icon-layers", onSelect: onFork });
+		if (showFork && !isCron)
+			items.push({ id: "fork", label: sessionT("header.forkTooltip"), icon: "icon-layers", onSelect: onFork });
 		if (showShare && !isCron)
-			items.push({ id: "share", label: "Share snapshot", icon: "icon-share", onSelect: onShare });
+			items.push({ id: "share", label: sessionT("header.shareTooltip"), icon: "icon-share", onSelect: onShare });
 		if (showSaveMarkdown) {
 			items.push({
 				id: "markdown",
-				label: "Save as Markdown",
+				label: sessionT("header.saveMarkdownTooltip"),
 				icon: "icon-document",
 				disabled: savingMarkdown,
 				onSelect: onSaveMarkdown,
@@ -745,7 +761,7 @@ export function SessionHeader({
 		if (showArchive && canArchive) {
 			items.push({
 				id: "archive",
-				label: session?.archived ? "Unarchive session" : "Archive session",
+				label: session?.archived ? sessionT("header.unarchiveTooltip") : sessionT("header.archiveTooltip"),
 				icon: "icon-layers",
 				onSelect: onArchive,
 			});
@@ -753,21 +769,27 @@ export function SessionHeader({
 		if (canUnbindChannel) {
 			items.push({
 				id: "unbind",
-				label: "Release channel",
+				label: sessionT("header.releaseChannel"),
 				icon: "icon-link",
 				disabled: unbinding,
 				title: boundChannelLabel
-					? `Attached to ${boundChannelLabel}. Runs without tools or private context until released.`
-					: "Attached to a channel. Runs without tools or private context until released.",
+					? sessionT("header.attachedToNamedChannel", { channel: boundChannelLabel })
+					: sessionT("header.attachedToChannel"),
 				onSelect: onUnbindChannel,
 			});
 		}
 		if (showClear && isMain)
-			items.push({ id: "clear", label: "Clear session", icon: "icon-retry", disabled: clearing, onSelect: onClear });
+			items.push({
+				id: "clear",
+				label: sessionT("header.clearTooltip"),
+				icon: "icon-retry",
+				disabled: clearing,
+				onSelect: onClear,
+			});
 		if (showDelete) {
 			items.push({
 				id: "delete",
-				label: "Delete session",
+				label: sessionT("header.deleteTooltip"),
 				icon: "icon-x-circle",
 				danger: true,
 				separatorBefore: true,

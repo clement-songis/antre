@@ -80,7 +80,7 @@ function ApprovalCard({ approval, now, primary }: ApprovalCardProps) {
 				</button>
 			</div>
 			<div className="approval-countdown">{expired ? "expired" : left === null ? "" : `${left}s`}</div>
-			{approval.error ? <div className="approval-status text-[var(--error)]">{approval.error}</div> : null}
+			{approval.error ? <div className="approval-status text-state-error">{approval.error}</div> : null}
 		</section>
 	);
 }

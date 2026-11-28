@@ -39,10 +39,8 @@ function ScopeChoice({ sessionKey, point, points, onDone }: ScopeChoiceProps) {
 	};
 	return (
 		<div className="flex flex-col gap-2">
-			<div className="text-xs text-[var(--muted)]">Rewind to before:</div>
-			<blockquote className="rewind-quote m-0 text-sm border-l-2 border-[var(--border)] pl-2">
-				{preview(point.text)}
-			</blockquote>
+			<div className="text-xs text-ink-muted">Rewind to before:</div>
+			<blockquote className="rewind-quote m-0 text-sm border-l-2 border-line pl-2">{preview(point.text)}</blockquote>
 			<div className="flex flex-col gap-1.5">
 				<button ref={firstRef} type="button" className="provider-btn" disabled={busy} onClick={() => void run("both")}>
 					Restore conversation and files
@@ -67,11 +65,11 @@ function ScopeChoice({ sessionKey, point, points, onDone }: ScopeChoiceProps) {
 					Restore files only
 				</button>
 			</div>
-			<div className="text-xs text-[var(--muted)]">
+			<div className="text-xs text-ink-muted">
 				The conversation from this message on is removed; its text goes back to the composer.
 			</div>
 			{error ? (
-				<div className="text-xs text-[var(--error)]" role="alert">
+				<div className="text-xs text-state-error" role="alert">
 					{error}
 				</div>
 			) : null}
@@ -134,20 +132,18 @@ export function RewindDialog() {
 							}}
 						/>
 					) : points.length === 0 ? (
-						<div className="text-sm text-[var(--muted)]">Nothing to rewind yet.</div>
+						<div className="text-sm text-ink-muted">Nothing to rewind yet.</div>
 					) : (
 						<ul className="rewind-turns m-0 p-0 list-none flex flex-col gap-1 max-h-[50vh] overflow-y-auto">
 							{[...points].reverse().map((entry) => (
 								<li key={entry.index}>
 									<button
 										type="button"
-										className="rewind-turn w-full text-left text-sm px-2 py-1.5 rounded-md border border-[var(--border)] bg-transparent cursor-pointer hover:bg-[var(--surface2)]"
+										className="rewind-turn w-full text-left text-sm px-2 py-1.5 rounded-md border border-line bg-transparent cursor-pointer hover:bg-raised-2"
 										onClick={() => setPicked(entry)}
 									>
 										{preview(entry.text)}
-										{entry.runIds.length ? (
-											<span className="text-xs text-[var(--muted)]">{" · has changes"}</span>
-										) : null}
+										{entry.runIds.length ? <span className="text-xs text-ink-muted">{" · has changes"}</span> : null}
 									</button>
 								</li>
 							))}

@@ -250,6 +250,10 @@ export function appendReasoningDisclosure(
 	return details;
 }
 
+// The transcript mounts a new card on the next frame, so callers decorating
+// the card just added cannot find it in the DOM yet.
+let lastErrorCard: HTMLElement | null = null;
+
 export function chatAddErrorCard(err: ErrorCardData): HTMLElement | null {
 	if (!S.chatMsgBox) return null;
 	clearChatEmptyState();
@@ -299,13 +303,13 @@ export function chatAddErrorCard(err: ErrorCardData): HTMLElement | null {
 	}
 
 	appendNode(el);
+	lastErrorCard = el;
 	return el;
 }
 
 /** Add a Cancel button to the last error card of a run parked on a quota. */
 export function addQuotaWaitCancelButton(sessionKey: string): void {
-	const cards = S.chatMsgBox?.querySelectorAll<HTMLElement>(".error-card");
-	const lastCard = cards?.[cards.length - 1];
+	const lastCard = lastErrorCard;
 	if (!lastCard) return;
 	lastCard.dataset.quotaWaitSession = sessionKey;
 	const btn = document.createElement("button");

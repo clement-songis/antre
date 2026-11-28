@@ -228,4 +228,23 @@ export default {
 	queuedMessages: {
 		cancelAllTooltip: "取消所有排入佇列的訊息",
 	},
+	// ── Context menus ────────────────────────────────────────
+	menu: {
+		message: "訊息",
+		reply: "回覆",
+		copy: "複製",
+		copyMarkdown: "複製為 Markdown",
+		editResend: "編輯並重新傳送",
+		forkHere: "從此處分支",
+		rewindHere: "回到此訊息之前",
+		regenerate: "重新產生",
+		copyCommand: "複製指令",
+		copyTarget: "複製目標",
+		copyOutput: "複製輸出",
+		copyArgs: "複製參數 (JSON)",
+		disableMcp: "停用 MCP 工具",
+		enableMcp: "啟用 MCP 工具",
+		debugContext: "除錯內容",
+		fullContext: "完整 LLM 內容",
+	},
 };

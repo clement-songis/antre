@@ -2,6 +2,7 @@
 
 import type { MenuSpec } from "../../../components/ContextMenu";
 import { sendRpc } from "../../../helpers";
+import { t } from "../../../i18n";
 import { fetchSessions, switchSession } from "../../../sessions";
 import { sessionStore } from "../../../stores/session-store";
 import { copyToClipboard, showToast } from "../../../ui";
@@ -35,12 +36,12 @@ export function userMessageMenu(item: UserItem, sessionKey: string): MenuSpec {
 	const busy = replying(sessionKey);
 	const hasAttachments = item.images.length > 0 || item.documents.length > 0;
 	return {
-		label: "Message",
+		label: t("chat:menu.message"),
 		items: [
-			{ id: "copy", label: "Copy", icon: "icon-copy", onSelect: () => copy(item.text) },
+			{ id: "copy", label: t("chat:menu.copy"), icon: "icon-copy", onSelect: () => copy(item.text) },
 			{
 				id: "edit",
-				label: "Edit and resend",
+				label: t("chat:menu.editResend"),
 				icon: "icon-code",
 				disabled: busy || hasAttachments,
 				onSelect: () => {
@@ -49,7 +50,7 @@ export function userMessageMenu(item: UserItem, sessionKey: string): MenuSpec {
 			},
 			{
 				id: "fork",
-				label: "Fork from here",
+				label: t("chat:menu.forkHere"),
 				icon: "icon-git-fork",
 				onSelect: () => {
 					resolvePoint(item, sessionKey)
@@ -59,7 +60,7 @@ export function userMessageMenu(item: UserItem, sessionKey: string): MenuSpec {
 			},
 			{
 				id: "rewind",
-				label: "Rewind to before this",
+				label: t("chat:menu.rewindHere"),
 				icon: "icon-retry",
 				disabled: busy,
 				separatorBefore: true,
@@ -77,12 +78,12 @@ function isLastReply(item: AssistantItem): boolean {
 export function assistantMessageMenu(item: AssistantItem, sessionKey: string): MenuSpec {
 	const busy = replying(sessionKey);
 	return {
-		label: "Reply",
+		label: t("chat:menu.reply"),
 		items: [
-			{ id: "copy", label: "Copy as Markdown", icon: "icon-copy", onSelect: () => copy(item.text) },
+			{ id: "copy", label: t("chat:menu.copyMarkdown"), icon: "icon-copy", onSelect: () => copy(item.text) },
 			{
 				id: "regenerate",
-				label: "Regenerate",
+				label: t("chat:menu.regenerate"),
 				icon: "icon-retry",
 				disabled: busy || !item.final || !isLastReply(item),
 				onSelect: () => {
@@ -93,7 +94,7 @@ export function assistantMessageMenu(item: AssistantItem, sessionKey: string): M
 			},
 			{
 				id: "fork",
-				label: "Fork from here",
+				label: t("chat:menu.forkHere"),
 				icon: "icon-git-fork",
 				disabled: item.historyIndex === undefined,
 				onSelect: () => {
@@ -124,21 +125,21 @@ export function toolCardMenu(item: ToolItem): MenuSpec {
 		items: [
 			{
 				id: "copy-target",
-				label: item.name === "exec" ? "Copy command" : "Copy target",
+				label: item.name === "exec" ? t("chat:menu.copyCommand") : t("chat:menu.copyTarget"),
 				icon: "icon-copy",
 				disabled: !view.target,
 				onSelect: () => copy(item.name === "exec" ? String(item.args.command || view.target) : view.target || ""),
 			},
 			{
 				id: "copy-output",
-				label: "Copy output",
+				label: t("chat:menu.copyOutput"),
 				icon: "icon-document",
 				disabled: item.status === "running",
 				onSelect: () => copy(toolOutputText(item)),
 			},
 			{
 				id: "copy-args",
-				label: "Copy arguments (JSON)",
+				label: t("chat:menu.copyArgs"),
 				icon: "icon-code",
 				onSelect: () => copy(JSON.stringify(item.args, null, 2)),
 			},

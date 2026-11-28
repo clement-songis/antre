@@ -9,6 +9,7 @@ import { signal } from "@preact/signals";
 import type { ComponentChildren, JSX } from "preact";
 import { Fragment, render } from "preact";
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
+import { t } from "../i18n";
 
 export interface MenuItem {
 	id: string;
@@ -208,11 +209,20 @@ export function ContextMenuHost() {
 	useEffect(() => {
 		if (!open) return;
 		const close = () => closeContextMenu();
+		// Focus reaches the menu only after it is positioned; Esc must work before that.
+		const onEscape = (e: KeyboardEvent) => {
+			if (e.key !== "Escape") return;
+			e.preventDefault();
+			e.stopPropagation();
+			closeContextMenu();
+		};
 		window.addEventListener("resize", close);
 		window.addEventListener("blur", close);
+		window.addEventListener("keydown", onEscape, true);
 		return () => {
 			window.removeEventListener("resize", close);
 			window.removeEventListener("blur", close);
+			window.removeEventListener("keydown", onEscape, true);
 		};
 	}, [open]);
 
@@ -280,7 +290,7 @@ export function ContextMenuHost() {
 				))}
 				{open.sheet ? (
 					<button type="button" className="context-menu-item context-sheet-cancel" onClick={closeContextMenu}>
-						Cancel
+						{t("common:actions.cancel")}
 					</button>
 				) : null}
 			</div>

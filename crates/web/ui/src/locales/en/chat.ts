@@ -230,4 +230,23 @@ export default {
 	queuedMessages: {
 		cancelAllTooltip: "Cancel all queued",
 	},
+	// ── Context menus ────────────────────────────────────────
+	menu: {
+		message: "Message",
+		reply: "Reply",
+		copy: "Copy",
+		copyMarkdown: "Copy as Markdown",
+		editResend: "Edit and resend",
+		forkHere: "Fork from here",
+		rewindHere: "Rewind to before this",
+		regenerate: "Regenerate",
+		copyCommand: "Copy command",
+		copyTarget: "Copy target",
+		copyOutput: "Copy output",
+		copyArgs: "Copy arguments (JSON)",
+		disableMcp: "Disable MCP tools",
+		enableMcp: "Enable MCP tools",
+		debugContext: "Debug context",
+		fullContext: "Full LLM context",
+	},
 };

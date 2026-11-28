@@ -60,6 +60,8 @@ export default {
 		themeSystem: "Thème système",
 		themeDark: "Thème sombre",
 		signOut: "Se déconnecter",
+		discussions: "Discussions",
+		commandPalette: "Palette de commandes",
 	},
 	banners: {
 		authDisabled:

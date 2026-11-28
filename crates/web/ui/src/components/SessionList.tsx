@@ -240,7 +240,7 @@ function SessionRenameInput({ session }: { session: Session }): VNode {
 	return (
 		<input
 			ref={ref}
-			className="session-rename-input min-w-0 flex-1 text-xs bg-[var(--surface2)] border border-[var(--border)] rounded px-1 text-[var(--text)]"
+			className="session-rename-input min-w-0 flex-1 text-xs bg-raised-2 border border-line rounded px-1 text-ink"
 			aria-label="Session name"
 			defaultValue={session.label || ""}
 			onClick={(e) => {
@@ -341,7 +341,7 @@ function SessionItem({
 					)}
 					<SessionIcon session={session} isBranch={isBranch} />
 					{pinnedSessionKeys.value.has(session.key) ? (
-						<span className="icon icon-xs icon-list-plus text-[var(--muted)]" title="Pinned" aria-hidden="true" />
+						<span className="icon icon-xs icon-list-plus text-ink-muted" title="Pinned" aria-hidden="true" />
 					) : null}
 					{renaming ? (
 						<SessionRenameInput session={session} />

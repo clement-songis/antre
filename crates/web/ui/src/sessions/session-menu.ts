@@ -1,6 +1,7 @@
 // ── Session context menu ────────────────────────────────────
 
 import { type MenuItem, type MenuSpec, openContextMenu } from "../components/ContextMenu";
+import { t } from "../i18n";
 import { projectStore } from "../stores/project-store";
 import type { Session } from "../stores/session-store";
 import {
@@ -24,12 +25,12 @@ function projectMenu(session: Session, anchor: { x: number; y: number }): void {
 	}));
 	items.push({
 		id: "project-none",
-		label: "No project",
+		label: t("sessions:menu.noProject"),
 		separatorBefore: items.length > 0,
 		disabled: !session.projectId,
 		onSelect: () => void moveSessionToProject(session.key, ""),
 	});
-	openContextMenu({ label: "Move to project", items }, anchor);
+	openContextMenu({ label: t("sessions:menu.moveToProjectTitle"), items }, anchor);
 }
 
 export function sessionMenu(session: Session): MenuSpec {
@@ -40,7 +41,7 @@ export function sessionMenu(session: Session): MenuSpec {
 		items: [
 			{
 				id: "rename",
-				label: "Rename",
+				label: t("sessions:menu.rename"),
 				icon: "icon-code",
 				disabled: !canRenameSession(session.key),
 				onSelect: () => {
@@ -49,13 +50,13 @@ export function sessionMenu(session: Session): MenuSpec {
 			},
 			{
 				id: "pin",
-				label: pinned ? "Unpin" : "Pin",
+				label: pinned ? t("sessions:menu.unpin") : t("sessions:menu.pin"),
 				icon: "icon-list-plus",
 				onSelect: () => togglePinned(session.key),
 			},
 			{
 				id: "move",
-				label: "Move to project\u2026",
+				label: t("sessions:menu.moveToProject"),
 				icon: "icon-folder",
 				disabled: isCron,
 				onSelect: () => {
@@ -68,7 +69,7 @@ export function sessionMenu(session: Session): MenuSpec {
 			},
 			{
 				id: "fork",
-				label: "Fork",
+				label: t("sessions:header.fork"),
 				icon: "icon-git-fork",
 				disabled: isCron,
 				separatorBefore: true,
@@ -76,21 +77,21 @@ export function sessionMenu(session: Session): MenuSpec {
 			},
 			{
 				id: "share",
-				label: "Share\u2026",
+				label: t("sessions:menu.share"),
 				icon: "icon-share",
 				disabled: isCron,
 				onSelect: () => void shareSession(session.key),
 			},
 			{
 				id: "archive",
-				label: session.archived ? "Unarchive" : "Archive",
+				label: session.archived ? t("sessions:header.unarchive") : t("sessions:header.archive"),
 				icon: "icon-layers",
 				disabled: session.key === "main",
 				onSelect: () => void setArchived(session.key, !session.archived),
 			},
 			{
 				id: "delete",
-				label: "Delete",
+				label: t("sessions:header.delete"),
 				icon: "icon-x-circle",
 				danger: true,
 				separatorBefore: true,

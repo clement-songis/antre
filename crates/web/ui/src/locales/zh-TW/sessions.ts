@@ -111,4 +111,14 @@ export default {
 		noMatching: "沒有符合的專案",
 		filterTooltip: "依專案篩選工作階段",
 	},
+	// ── Context menus ────────────────────────────────────────
+	menu: {
+		rename: "重新命名",
+		pin: "釘選",
+		unpin: "取消釘選",
+		moveToProject: "移至專案…",
+		moveToProjectTitle: "移至專案",
+		noProject: "無專案",
+		share: "分享…",
+	},
 };

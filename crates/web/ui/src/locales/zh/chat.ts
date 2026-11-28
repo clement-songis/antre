@@ -228,4 +228,23 @@ export default {
 	queuedMessages: {
 		cancelAllTooltip: "取消所有排队消息",
 	},
+	// ── Context menus ────────────────────────────────────────
+	menu: {
+		message: "消息",
+		reply: "回复",
+		copy: "复制",
+		copyMarkdown: "复制为 Markdown",
+		editResend: "编辑并重新发送",
+		forkHere: "从此处分叉",
+		rewindHere: "回退到此消息之前",
+		regenerate: "重新生成",
+		copyCommand: "复制命令",
+		copyTarget: "复制目标",
+		copyOutput: "复制输出",
+		copyArgs: "复制参数 (JSON)",
+		disableMcp: "禁用 MCP 工具",
+		enableMcp: "启用 MCP 工具",
+		debugContext: "调试上下文",
+		fullContext: "完整 LLM 上下文",
+	},
 };

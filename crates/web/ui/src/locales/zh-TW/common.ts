@@ -60,6 +60,8 @@ export default {
 		themeSystem: "系統主題",
 		themeDark: "深色主題",
 		signOut: "登出",
+		discussions: "討論",
+		commandPalette: "命令面板",
 	},
 	banners: {
 		authDisabled: "身分驗證已停用。任何能連到 Moltis 的人，都能控制 Moltis 和這台電腦。",

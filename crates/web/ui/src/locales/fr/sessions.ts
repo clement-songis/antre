@@ -113,4 +113,14 @@ export default {
 		noMatching: "No matching projects",
 		filterTooltip: "Filter sessions by project",
 	},
+	// ── Context menus ────────────────────────────────────────
+	menu: {
+		rename: "Renommer",
+		pin: "Épingler",
+		unpin: "Désépingler",
+		moveToProject: "Déplacer vers un projet…",
+		moveToProjectTitle: "Déplacer vers un projet",
+		noProject: "Aucun projet",
+		share: "Partager…",
+	},
 };

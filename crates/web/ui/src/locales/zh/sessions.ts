@@ -111,4 +111,14 @@ export default {
 		noMatching: "没有匹配的项目",
 		filterTooltip: "按项目筛选会话",
 	},
+	// ── Context menus ────────────────────────────────────────
+	menu: {
+		rename: "重命名",
+		pin: "置顶",
+		unpin: "取消置顶",
+		moveToProject: "移动到项目…",
+		moveToProjectTitle: "移动到项目",
+		noProject: "无项目",
+		share: "分享…",
+	},
 };

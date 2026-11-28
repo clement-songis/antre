@@ -210,16 +210,16 @@
   }
   .queued-action {
     background: none;
-    border: 1px solid var(--border);
+    border: 1px solid var(--line);
     border-radius: 4px;
-    color: var(--muted);
+    color: var(--ink-muted);
     cursor: pointer;
     padding: 1px 6px;
     font-size: 0.72rem;
   }
   .queued-action:hover {
-    color: var(--text);
-    border-color: var(--text);
+    color: var(--ink);
+    border-color: var(--ink);
   }
   .queued-action:disabled,
   .queued-cancel:disabled {
@@ -417,13 +417,13 @@
     border-color: var(--error);
   }
   .msg.exec-card.exec-cancelled {
-    border-color: var(--border);
+    border-color: var(--line);
     border-style: dashed;
     opacity: 0.75;
   }
   .exec-cancelled-detail {
     font-size: 0.72rem;
-    color: var(--muted);
+    color: var(--ink-muted);
     font-style: italic;
   }
   .exec-prompt {
@@ -486,22 +486,22 @@
   .context-menu-backdrop {
     position: fixed;
     inset: 0;
-    z-index: 1000;
+    z-index: var(--layer-menu);
   }
   .context-menu-backdrop.is-sheet {
-    background: color-mix(in srgb, var(--bg) 55%, transparent);
+    background: color-mix(in srgb, var(--ground) 55%, transparent);
     display: flex;
     align-items: flex-end;
   }
   .context-menu {
     position: fixed;
-    min-width: 180px;
+    min-width: 220px;
     max-width: min(320px, calc(100vw - 16px));
-    padding: 4px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    box-shadow: 0 8px 24px color-mix(in srgb, var(--text) 18%, transparent);
+    padding: var(--space-1);
+    background: var(--overlay);
+    border: 1px solid var(--line);
+    border-radius: var(--corner-m);
+    box-shadow: var(--elev-2);
     display: flex;
     flex-direction: column;
   }
@@ -509,12 +509,13 @@
     position: static;
     width: 100%;
     max-width: none;
-    border-radius: var(--radius) var(--radius) 0 0;
-    padding: 8px 8px calc(8px + var(--safe-bottom, 0px));
+    border-radius: var(--corner-xl) var(--corner-xl) 0 0;
+    box-shadow: var(--elev-3);
+    padding: var(--space-2) var(--space-4) calc(var(--space-6) + var(--safe-bottom, 0px));
   }
   .context-sheet-title {
     font-size: 0.75rem;
-    color: var(--muted);
+    color: var(--ink-muted);
     padding: 6px 10px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -523,25 +524,28 @@
   .context-menu-item {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--space-2);
     width: 100%;
-    padding: 6px 10px;
+    min-height: 32px;
+    padding: 0 var(--space-2);
     background: transparent;
     border: none;
-    border-radius: var(--radius-sm);
-    color: var(--text);
+    border-radius: var(--corner-s);
+    color: var(--ink);
     font: inherit;
-    font-size: 0.82rem;
+    font-size: 13px;
     text-align: left;
     cursor: pointer;
   }
   .context-sheet .context-menu-item {
-    padding: 12px 10px;
-    font-size: 0.95rem;
+    min-height: 48px;
+    padding: 0 var(--space-3);
+    font-size: 15px;
   }
   .context-menu-item:hover,
   .context-menu-item:focus-visible {
-    background: var(--surface2);
+    background: var(--raised-2);
+    color: var(--ink-strong);
     outline: none;
   }
   .context-menu-item:disabled {
@@ -549,25 +553,25 @@
     cursor: default;
   }
   .context-menu-item.is-danger {
-    color: var(--error);
+    color: var(--state-error);
   }
   .context-menu-separator {
     border: none;
     height: 1px;
     margin: 4px 6px;
-    background: var(--border);
+    background: var(--line);
   }
   .context-sheet-cancel {
     justify-content: center;
     margin-top: 4px;
-    border-top: 1px solid var(--border);
+    border-top: 1px solid var(--line);
   }
   .toast-action-btn {
     margin-left: 12px;
     padding: 2px 8px;
     background: transparent;
     border: 1px solid currentColor;
-    border-radius: var(--radius-sm);
+    border-radius: var(--corner-s);
     color: inherit;
     font: inherit;
     font-weight: 600;
@@ -599,7 +603,7 @@
   }
   .sidebar-account-btn:hover,
   .sidebar-account-btn:focus-visible {
-    background: var(--surface2);
+    background: var(--raised-2);
   }
   .menu-trigger-btn {
     display: inline-flex;
@@ -610,15 +614,15 @@
     padding: 0;
     background: transparent;
     border: none;
-    border-radius: var(--radius-sm);
-    color: var(--muted);
+    border-radius: var(--corner-s);
+    color: var(--ink-muted);
     cursor: pointer;
   }
   .menu-trigger-btn:hover,
   .menu-trigger-btn:focus-visible,
   .menu-trigger-btn[aria-expanded="true"] {
-    color: var(--text);
-    background: var(--surface2);
+    color: var(--ink);
+    background: var(--raised-2);
   }
 
   /* Collapsible tool cards (per-tool renderers) */
@@ -679,7 +683,7 @@
     padding: 5px 10px;
     background: transparent;
     border: none;
-    color: var(--text);
+    color: var(--ink);
     font: inherit;
     font-size: 0.8rem;
     text-align: left;
@@ -687,11 +691,11 @@
   }
   .tool-card-header:focus-visible,
   .tool-group-header:focus-visible {
-    outline: 2px solid var(--accent);
+    outline: 2px solid var(--lake);
     outline-offset: -2px;
   }
   .tool-card-icon {
-    color: var(--muted);
+    color: var(--ink-muted);
     flex-shrink: 0;
   }
   .tool-card-verb {
@@ -699,9 +703,9 @@
     flex-shrink: 0;
   }
   .tool-card-target {
-    font-family: var(--font-mono);
+    font-family: var(--font-code);
     font-size: 0.76rem;
-    color: var(--muted);
+    color: var(--ink-muted);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -709,7 +713,7 @@
   }
   .tool-card-badge {
     font-size: 0.72rem;
-    color: var(--muted);
+    color: var(--ink-muted);
     flex-shrink: 0;
   }
   .tool-card-meta {
@@ -722,21 +726,21 @@
   }
   .tool-card-elapsed {
     font-size: 0.7rem;
-    color: var(--muted);
+    color: var(--ink-muted);
     font-variant-numeric: tabular-nums;
   }
   .tool-card-status {
-    color: var(--ok);
+    color: var(--state-ok);
   }
   .exec-err .tool-card-status {
-    color: var(--error);
+    color: var(--state-error);
   }
   .exec-cancelled .tool-card-status,
   .exec-retry .tool-card-status {
-    color: var(--muted);
+    color: var(--ink-muted);
   }
   .tool-card-chevron {
-    color: var(--muted);
+    color: var(--ink-muted);
     transition: transform 0.15s;
   }
   .expanded > .tool-card-header .tool-card-chevron,
@@ -766,26 +770,26 @@
     display: none;
   }
   .tool-path {
-    font-family: var(--font-mono);
+    font-family: var(--font-code);
     font-size: 0.72rem;
-    color: var(--muted);
+    color: var(--ink-muted);
     word-break: break-all;
   }
   .tool-section-label {
     font-size: 0.68rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: var(--muted);
+    color: var(--ink-muted);
     margin-bottom: 2px;
   }
   .tool-diff {
-    font-family: var(--font-mono);
+    font-family: var(--font-code);
     font-size: 0.76rem;
     line-height: 1.45;
     margin: 0;
     padding: 4px 0;
-    background: var(--bg);
-    border: 1px solid var(--border);
+    background: var(--ground);
+    border: 1px solid var(--line);
     border-radius: 4px;
     max-height: 360px;
     overflow: auto;
@@ -797,19 +801,19 @@
     padding: 0 8px;
   }
   .tool-diff-add {
-    background: color-mix(in srgb, var(--ok) 16%, transparent);
+    background: var(--diff-add-bg);
   }
   .tool-diff-del {
-    background: color-mix(in srgb, var(--error) 16%, transparent);
+    background: var(--diff-del-bg);
   }
   .tool-diff-gap {
-    color: var(--muted);
+    color: var(--ink-muted);
   }
   .tool-diff-badge-add {
-    color: var(--ok);
+    color: var(--state-ok);
   }
   .tool-diff-badge-del {
-    color: var(--error);
+    color: var(--state-error);
   }
   .tool-link-list {
     margin: 0;
@@ -833,9 +837,9 @@
     align-self: flex-start;
     padding: 3px 8px;
     background: transparent;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    color: var(--muted);
+    border: 1px solid var(--line);
+    border-radius: var(--corner-s);
+    color: var(--ink-muted);
     font: inherit;
     font-size: 0.76rem;
     cursor: pointer;
@@ -845,7 +849,7 @@
     flex-direction: column;
     gap: 4px;
     padding-left: 10px;
-    border-left: 2px solid var(--border);
+    border-left: 2px solid var(--line);
   }
   .tool-group-body[hidden] {
     display: none;
@@ -870,24 +874,24 @@
   .task-checklist-mark {
     width: 1em;
     text-align: center;
-    color: var(--muted);
+    color: var(--ink-muted);
     flex-shrink: 0;
   }
   .task-in_progress .task-checklist-mark {
-    color: var(--accent);
+    color: var(--lake);
   }
   .task-completed .task-checklist-mark {
-    color: var(--ok);
+    color: var(--state-ok);
   }
   .task-completed .task-checklist-subject {
-    color: var(--muted);
+    color: var(--ink-muted);
     text-decoration: line-through;
   }
   .msg.pinned-task-checklist {
     align-self: flex-start;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
+    background: var(--raised);
+    border: 1px solid var(--line);
+    border-radius: var(--corner-s);
     padding: 8px 12px;
     max-width: min(560px, 85%);
   }
@@ -1233,8 +1237,8 @@
   }
   .approval-always {
     background: transparent;
-    color: var(--ok);
-    border: 1px solid var(--ok);
+    color: var(--state-ok);
+    border: 1px solid var(--state-ok);
   }
   .approval-btns {
     flex-wrap: wrap;

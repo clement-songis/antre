@@ -165,7 +165,7 @@ export function slashShowMenu(filter: string): void {
 		item.appendChild(nameSpan);
 		if (cmd.args) {
 			const argsSpan = document.createElement("span");
-			argsSpan.className = "slash-args text-[var(--muted)] font-mono text-xs";
+			argsSpan.className = "slash-args text-ink-muted font-mono text-xs";
 			argsSpan.textContent = cmd.args;
 			item.appendChild(argsSpan);
 		}

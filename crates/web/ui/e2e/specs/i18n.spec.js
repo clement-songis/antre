@@ -1,6 +1,13 @@
 const { expect, test } = require("../base-test");
 const { expectPageContentMounted, navigateAndWait, waitForWsConnected, watchPageErrors } = require("../helpers");
 
+async function expectTitleMenuItem(page, name) {
+	await page.getByRole("button", { name: "Session actions", exact: true }).click();
+	await expect(page.getByRole("menuitem", { name, exact: true })).toBeVisible();
+	await page.keyboard.press("Escape");
+	await expect(page.getByRole("menu")).toHaveCount(0);
+}
+
 test.describe("i18n", () => {
 	test("i18next initialises and English strings render", async ({ page }) => {
 		const pageErrors = watchPageErrors(page);
@@ -43,7 +50,7 @@ test.describe("i18n", () => {
 		// Default locale should be English (or start with "en").
 		expect(translated.locale).toMatch(/^en/);
 		await expect(page.locator("#modelComboBtn")).toHaveAttribute("title", "Select model or ACP agent");
-		await expect(page.getByRole("button", { name: "Share", exact: true })).toBeVisible();
+		await expectTitleMenuItem(page, "Share snapshot");
 
 		expect(pageErrors).toEqual([]);
 	});
@@ -220,7 +227,7 @@ test.describe("i18n", () => {
 	test("French model and session controls update when switching locales", async ({ page }) => {
 		const pageErrors = await navigateAndWait(page, "/chats/main");
 		await expect(page.locator("#modelComboBtn")).toHaveAttribute("title", "Select model or ACP agent");
-		await expect(page.getByRole("button", { name: "Save as Markdown", exact: true })).toBeVisible();
+		await expectTitleMenuItem(page, "Save as Markdown");
 
 		await page.evaluate(async () => {
 			const appScript = document.querySelector('script[type="module"][src*="js/app.js"]');
@@ -231,7 +238,7 @@ test.describe("i18n", () => {
 		});
 		await expect(page.locator("html")).toHaveAttribute("lang", "fr");
 		await expect(page.locator("#modelComboBtn")).toHaveAttribute("title", "Sélectionner un modèle ou un agent ACP");
-		await expect(page.getByRole("button", { name: "Enregistrer au format Markdown", exact: true })).toBeVisible();
+		await expectTitleMenuItem(page, "Enregistrer au format Markdown");
 
 		await page.evaluate(async () => {
 			const appScript = document.querySelector('script[type="module"][src*="js/app.js"]');
@@ -241,7 +248,7 @@ test.describe("i18n", () => {
 			await i18n.setLocale("en");
 		});
 		await expect(page.locator("#modelComboBtn")).toHaveAttribute("title", "Select model or ACP agent");
-		await expect(page.getByRole("button", { name: "Save as Markdown", exact: true })).toBeVisible();
+		await expectTitleMenuItem(page, "Save as Markdown");
 		expect(pageErrors).toEqual([]);
 	});
 
@@ -274,7 +281,7 @@ test.describe("i18n", () => {
 		expect(translated.locale).toBe("zh-TW");
 
 		await expect(page.locator("#modelComboBtn")).toHaveAttribute("title", "選擇模型或 ACP 助理");
-		await expect(page.getByRole("button", { name: "分享", exact: true })).toBeVisible();
+		await expectTitleMenuItem(page, "分享快照");
 
 		await page.evaluate(async () => {
 			const appScript = document.querySelector('script[type="module"][src*="js/app.js"]');
@@ -284,7 +291,7 @@ test.describe("i18n", () => {
 			await i18n.setLocale("en");
 		});
 		await expect(page.locator("#modelComboBtn")).toHaveAttribute("title", "Select model or ACP agent");
-		await expect(page.getByRole("button", { name: "Share", exact: true })).toBeVisible();
+		await expectTitleMenuItem(page, "Share snapshot");
 		expect(pageErrors).toEqual([]);
 	});
 

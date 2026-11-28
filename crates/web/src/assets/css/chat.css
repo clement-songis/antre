@@ -511,11 +511,11 @@
 
 .code-copy-btn {
   font-size: 0.7em;
-  font-family: var(--font-body);
-  color: var(--muted);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  font-family: var(--font-text);
+  color: var(--ink-muted);
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: var(--corner-s);
   padding: 1px 6px;
   cursor: pointer;
   opacity: 0;

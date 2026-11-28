@@ -69,7 +69,7 @@ export function OutputBlock({ text, className = "", maxChars = 20_000 }: OutputP
 		<pre className={`exec-output ${className}`.trim()}>
 			{shown.text}
 			{shown.truncated ? (
-				<span className="text-[var(--muted)]">{`\n[${text.length - maxChars} more characters]`}</span>
+				<span className="text-ink-muted">{`\n[${text.length - maxChars} more characters]`}</span>
 			) : null}
 		</pre>
 	);

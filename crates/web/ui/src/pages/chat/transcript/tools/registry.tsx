@@ -261,7 +261,7 @@ const renderWebSearch: Renderer = (item) => {
 									<span>{str(r.title) || url}</span>
 								)}
 								{str(r.description) || str(r.snippet) ? (
-									<div className="text-[var(--muted)] text-xs">
+									<div className="text-ink-muted text-xs">
 										{truncateText(str(r.description) || str(r.snippet), 240).text}
 									</div>
 								) : null}

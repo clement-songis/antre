@@ -60,6 +60,8 @@ export default {
 		themeSystem: "System theme",
 		themeDark: "Dark theme",
 		signOut: "Sign out",
+		discussions: "Discussions",
+		commandPalette: "Command palette",
 	},
 	banners: {
 		authDisabled: "Authentication is disabled. Anyone with network access can control moltis and your computer.",
