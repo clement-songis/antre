@@ -304,12 +304,12 @@
 
 .cron-badge.error, .cron-badge.failed {
   color: var(--error);
-  background: #ef44441f;
+  background: var(--state-error-wash);
 }
 
 .cron-badge.running {
   color: var(--warn);
-  background: #f59e0b1f;
+  background: var(--state-warn-wash);
 }
 
 .cron-actions {

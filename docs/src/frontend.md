@@ -87,8 +87,14 @@ The Antre visual identity lives in `crates/web/ui/src/theme/`:
 | `components.css`, `icons.css` | Component classes prefixed `an-` (buttons, tool cards, diffs, approval card, composer, panes…) and mask icons (`an-i an-i-<name>`). |
 
 After editing `tokens.json`, run `npm run build:theme` then `npm run build:css`.
-Token names do not overlap the legacy variables (`--bg`, `--accent`, `--ok`…),
-so existing pages keep their look until they move to the new classes.
+The legacy variables (`--bg`, `--surface`, `--text`, `--accent`, `--ok`…) are
+aliases of these tokens, defined at the top of `ui/input.css`; prefer the token
+names and Tailwind utilities in new code.
+
+The app shell (left sidebar, phone top bar and drawer) is markup in
+`crates/web/src/templates/index.html`, wired by `ui/src/app-shell.ts` and styled
+in the "App shell" section of `ui/input.css`. The template is compiled into the
+binary, so changing it needs a Rust rebuild.
 The fonts (Geologica, Atkinson Hyperlegible Next and Mono) fall back to system
 faces until they are vendored.
 

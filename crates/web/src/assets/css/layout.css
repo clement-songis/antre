@@ -273,8 +273,8 @@
 }
 
 .model-item-unsupported {
-  background: rgba(245, 158, 11, 0.12);
-  border: 1px solid rgba(245, 158, 11, 0.42);
+  background: var(--state-warn-wash);
+  border: 1px solid color-mix(in srgb, var(--state-warn) 42%, transparent);
   color: var(--warn);
   border-radius: 9999px;
   padding: 1px 6px;

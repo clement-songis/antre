@@ -401,6 +401,24 @@ test.describe("Onboarding wizard", () => {
 		expect(pageErrors).toEqual([]);
 	});
 
+	test("brand header and wizard fit a phone screen", async ({ page }) => {
+		const pageErrors = watchPageErrors(page);
+		await page.setViewportSize({ width: 390, height: 844 });
+		await page.goto("/onboarding");
+		await page.waitForLoadState("networkidle");
+
+		await expect(page.locator(".onboarding-brand-mark")).toBeVisible();
+		await expect(page.locator(".onboarding-brand-tagline")).toHaveText(/Nothing leaves this machine/);
+		const card = page.locator(".onboarding-card");
+		await expect(card).toBeVisible();
+		const box = await card.boundingBox();
+		expect(box?.x ?? -1).toBeGreaterThanOrEqual(0);
+		expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(390);
+		const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+		expect(overflow).toBeLessThanOrEqual(0);
+		expect(pageErrors).toEqual([]);
+	});
+
 	test("step indicator shows first step", async ({ page }) => {
 		await page.goto("/onboarding");
 		await page.waitForLoadState("networkidle");

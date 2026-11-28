@@ -1964,11 +1964,11 @@
   }
   .cron-badge.error,
   .cron-badge.failed {
-    background: rgba(239, 68, 68, 0.12);
+    background: var(--state-error-wash);
     color: var(--error);
   }
   .cron-badge.running {
-    background: rgba(245, 158, 11, 0.12);
+    background: var(--state-warn-wash);
     color: var(--warn);
   }
   .cron-actions {

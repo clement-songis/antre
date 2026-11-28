@@ -36,8 +36,25 @@ from the bottom of the screen.
   regenerate.
 - **Tool cards**: copy the command or target, the output, the arguments.
 
-Settings, theme, the command palette and sign-out are in the menu at the
-bottom of the session sidebar.
+## Layout
+
+The left sidebar holds everything outside the conversation:
+
+- the agent name and connection status, **New chat** and **Search** (the
+  command palette, Cmd/Ctrl+K);
+- the project filter, a session filter and the Sessions / Cron tabs, then the
+  session list;
+- at the bottom, your account (its menu has settings, theme, links and
+  sign-out), a settings button, the light / system / dark switch and, when a
+  password or passkey is set, sign-out.
+
+Collapse the sidebar to an icon rail with its button or Cmd/Ctrl+B; the
+choice is remembered per browser. Settings opens as a full page with its
+sections listed on the left.
+
+On a phone the top bar has a menu button that opens the sidebar as a drawer,
+the agent name and a new-chat button. Settings opens on its section list;
+pick one to open it.
 
 ## Command approvals
 
