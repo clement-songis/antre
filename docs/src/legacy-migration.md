@@ -17,6 +17,7 @@ what it owns on first start.
 | `org.moltis.gateway` / `org.moltis.node` launchd agents, `moltis.service` / `moltis-node.service` systemd units | `ai.antre.*`, `antre*.service` | stopped and removed by `antre service install` / `antre node install` |
 | Desktop app keychain items `moltis-desktop://…` | `antre-desktop://…` | copied on first read, then the old item is deleted (macOS may ask once to allow access) |
 | Web UI `moltis-*` localStorage keys | `antre-*` | copied on first page load |
+| PWA service worker caches `moltis-state` / `moltis-shell-*` | `antre-state` / `antre-shell-*` | push state copied when the new worker activates, old caches deleted |
 
 Every step is logged at startup. Nothing is deleted or overwritten:
 

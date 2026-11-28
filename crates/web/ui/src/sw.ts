@@ -29,6 +29,29 @@ const STATE_KEYS = {
 } as const;
 const PUSH_STATE_LOCK = "antre-push-state";
 
+// rebrand:keep-start Caches written before the Moltis -> Antre rename.
+const LEGACY_CACHE_PREFIX = "moltis-";
+const LEGACY_STATE_CACHE = "moltis-state";
+const LEGACY_STATE_PATH = /^\/__moltis__\//;
+// rebrand:keep-end
+
+/** Carry the pre-rename flag store over once, then drop the pre-rename caches. */
+async function adoptLegacyCaches(): Promise<void> {
+	const names = await caches.keys();
+	if (names.includes(LEGACY_STATE_CACHE)) {
+		const legacy = await caches.open(LEGACY_STATE_CACHE);
+		const current = await caches.open(STATE_CACHE);
+		for (const request of await legacy.keys()) {
+			const url = new URL(request.url);
+			url.pathname = url.pathname.replace(LEGACY_STATE_PATH, "/__antre__/");
+			if (await current.match(url.href)) continue;
+			const response = await legacy.match(request);
+			if (response) await current.put(url.href, response);
+		}
+	}
+	await Promise.all(names.filter((name) => name.startsWith(LEGACY_CACHE_PREFIX)).map((name) => caches.delete(name)));
+}
+
 const REQUIRED_ASSETS: string[] = [
 	OFFLINE_URL,
 	"/manifest.json",
@@ -77,6 +100,7 @@ sw.addEventListener("install", (event: ExtendableEvent) => {
 sw.addEventListener("activate", (event: ExtendableEvent) => {
 	event.waitUntil(
 		(async () => {
+			await adoptLegacyCaches();
 			const cacheNames = await caches.keys();
 			await Promise.all(
 				cacheNames

@@ -325,6 +325,33 @@ test.describe("service worker", () => {
 		expect(appSource).not.toContain("sw-update-available");
 	});
 
+	test("adopts the pre-rename flag store and drops pre-rename caches", async ({ page }) => {
+		const pageErrors = watchPageErrors(page);
+		// The offline page does not register the worker, so these caches exist
+		// before its first activation, as on an upgraded pre-rename install.
+		await page.goto("/offline.html");
+		await page.evaluate(async () => {
+			const legacy = await caches.open("moltis-state"); // rebrand:keep
+			await legacy.put("/__moltis__/push-disabled", new Response("1")); // rebrand:keep
+			await (await caches.open("moltis-shell-old")).put("/offline.html", new Response("old")); // rebrand:keep
+		});
+
+		await navigateAndWait(page, "/chats");
+		await page.evaluate(async () => {
+			await navigator.serviceWorker.ready;
+		});
+
+		await expect
+			.poll(() => page.evaluate(async () => (await caches.keys()).filter((name) => name.startsWith("moltis-")))) // rebrand:keep
+			.toEqual([]);
+		const pushDisabled = await page.evaluate(async () => {
+			const response = await (await caches.open("antre-state")).match("/__antre__/push-disabled");
+			return response ? await response.text() : null;
+		});
+		expect(pushDisabled).toBe("1");
+		expect(pageErrors).toEqual([]);
+	});
+
 	test("requires the offline shell but tolerates missing generated assets", async ({ page }) => {
 		const source = await (await page.request.get("/sw.js")).text();
 		expect(source).not.toContain("addAll");
