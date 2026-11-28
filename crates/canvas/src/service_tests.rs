@@ -566,3 +566,43 @@ fn ensure_tokens_link_handles_documents_without_head() {
     let linked = "<link href=\"tokens.css\">";
     assert_eq!(ensure_tokens_link(linked), linked);
 }
+
+#[tokio::test]
+async fn comments_pin_to_versions_and_emit_events() {
+    let (_tmp, service, sink) = service_with(None).await;
+    let created = create(&service, "Pins").await;
+    let id = &created.design.id;
+    let note = |body: &str| crate::NewComment {
+        mid: Some("hero".into()),
+        body: body.into(),
+        ..crate::NewComment::default()
+    };
+    let on_current = service.add_comment(id, None, note("bigger")).await.unwrap();
+    assert_eq!(on_current.version, 1);
+    assert!(service.add_comment(id, Some(9), note("x")).await.is_err());
+    assert_eq!(service.comments(id, Some(1), false).await.unwrap().len(), 1);
+    assert_eq!(
+        service
+            .resolve_comments(id, std::slice::from_ref(&on_current.id))
+            .await
+            .unwrap(),
+        1
+    );
+    assert!(service.comments(id, None, false).await.unwrap().is_empty());
+    assert!(service.delete_comment(id, &on_current.id).await.unwrap());
+    assert!(!service.delete_comment(id, &on_current.id).await.unwrap());
+    let changes = sink
+        .names()
+        .into_iter()
+        .filter(|name| *name == "canvas.comments.changed")
+        .count();
+    assert_eq!(changes, 3);
+    let missing = DesignId::generate();
+    assert!(
+        service
+            .comments(&missing, None, false)
+            .await
+            .unwrap_err()
+            .is_not_found()
+    );
+}

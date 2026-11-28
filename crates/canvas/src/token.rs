@@ -26,6 +26,24 @@ pub struct TokenClaims {
     pub expires_at: i64,
 }
 
+/// What a valid frame token grants access to: one staged document.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FrameClaims {
+    pub frame_id: DesignId,
+    pub expires_at: i64,
+}
+
+/// Prefix of frame token payloads, covered by the MAC so a design token can
+/// never be replayed as a frame token or the reverse.
+const FRAME_PREFIX: &str = "f";
+
+fn expiry(ttl_secs: u64) -> i64 {
+    let ttl = i64::try_from(ttl_secs).unwrap_or(i64::MAX);
+    OffsetDateTime::now_utc()
+        .unix_timestamp()
+        .saturating_add(ttl)
+}
+
 /// Signs and verifies render-origin tokens.
 pub struct TokenSigner {
     key: [u8; 32],
@@ -65,26 +83,16 @@ impl TokenSigner {
     /// Token for `design_id` valid for `ttl_secs` from now.
     #[must_use]
     pub fn sign(&self, design_id: &DesignId, version: Option<u32>, ttl_secs: u64) -> String {
-        let ttl = i64::try_from(ttl_secs).unwrap_or(i64::MAX);
-        let expires_at = OffsetDateTime::now_utc()
-            .unix_timestamp()
-            .saturating_add(ttl);
-        self.sign_until(design_id, version, expires_at)
+        self.sign_until(design_id, version, expiry(ttl_secs))
     }
 
-    fn sign_until(&self, design_id: &DesignId, version: Option<u32>, expires_at: i64) -> String {
-        let version = version.map_or_else(|| "live".to_string(), |v| v.to_string());
-        let payload = format!("{design_id}.{version}.{expires_at}");
+    fn seal(&self, payload: String) -> String {
         let tag = URL_SAFE_NO_PAD.encode(self.mac(&payload).finalize().into_bytes());
         format!("{payload}.{tag}")
     }
 
-    /// Check signature and expiry.
-    pub fn verify(&self, token: &str) -> Result<TokenClaims> {
-        self.verify_at(token, OffsetDateTime::now_utc().unix_timestamp())
-    }
-
-    fn verify_at(&self, token: &str, now: i64) -> Result<TokenClaims> {
+    /// Payload of a well-formed token whose MAC matches.
+    fn open<'a>(&self, token: &'a str) -> Result<&'a str> {
         let invalid = || Error::Invalid("invalid or expired link".into());
         if token.len() > 256 {
             return Err(invalid());
@@ -94,7 +102,52 @@ impl TokenSigner {
         self.mac(payload)
             .verify_slice(&tag)
             .map_err(|_| invalid())?;
+        Ok(payload)
+    }
 
+    /// Token for staged document `frame_id`, valid for `ttl_secs` from now.
+    #[must_use]
+    pub fn sign_frame(&self, frame_id: &DesignId, ttl_secs: u64) -> String {
+        self.seal(format!("{FRAME_PREFIX}.{frame_id}.{}", expiry(ttl_secs)))
+    }
+
+    /// Check a frame token's signature and expiry.
+    pub fn verify_frame(&self, token: &str) -> Result<FrameClaims> {
+        self.verify_frame_at(token, OffsetDateTime::now_utc().unix_timestamp())
+    }
+
+    fn verify_frame_at(&self, token: &str, now: i64) -> Result<FrameClaims> {
+        let invalid = || Error::Invalid("invalid or expired link".into());
+        let payload = self.open(token)?;
+        let mut parts = payload.split('.');
+        let (Some(FRAME_PREFIX), Some(id), Some(expires_at), None) =
+            (parts.next(), parts.next(), parts.next(), parts.next())
+        else {
+            return Err(invalid());
+        };
+        let expires_at: i64 = expires_at.parse().map_err(|_| invalid())?;
+        if expires_at < now {
+            return Err(invalid());
+        }
+        Ok(FrameClaims {
+            frame_id: id.parse().map_err(|_| invalid())?,
+            expires_at,
+        })
+    }
+
+    fn sign_until(&self, design_id: &DesignId, version: Option<u32>, expires_at: i64) -> String {
+        let version = version.map_or_else(|| "live".to_string(), |v| v.to_string());
+        self.seal(format!("{design_id}.{version}.{expires_at}"))
+    }
+
+    /// Check signature and expiry.
+    pub fn verify(&self, token: &str) -> Result<TokenClaims> {
+        self.verify_at(token, OffsetDateTime::now_utc().unix_timestamp())
+    }
+
+    fn verify_at(&self, token: &str, now: i64) -> Result<TokenClaims> {
+        let invalid = || Error::Invalid("invalid or expired link".into());
+        let payload = self.open(token)?;
         let mut parts = payload.split('.');
         let (Some(id), Some(version), Some(expires_at), None) =
             (parts.next(), parts.next(), parts.next(), parts.next())
@@ -160,6 +213,31 @@ mod tests {
         for garbage in ["", "abc", "a.b.c.d", "x".repeat(300).as_str()] {
             assert!(signer.verify(garbage).is_err());
         }
+    }
+
+    #[test]
+    fn frame_tokens_are_separate_from_design_tokens() {
+        let signer = TokenSigner::with_key([3; 32]);
+        let id = DesignId::generate();
+        let frame = signer.sign_frame(&id, 60);
+        assert_eq!(signer.verify_frame(&frame).unwrap().frame_id, id);
+        assert!(
+            signer.verify(&frame).is_err(),
+            "frame token is not a design token"
+        );
+        let design = signer.sign(&id, None, 60);
+        assert!(signer.verify_frame(&design).is_err());
+        assert!(TokenSigner::with_key([4; 32]).verify_frame(&frame).is_err());
+
+        let expired = signer.seal(format!("f.{id}.1000"));
+        assert!(signer.verify_frame_at(&expired, 1_000).is_ok());
+        assert!(signer.verify_frame_at(&expired, 1_001).is_err());
+        let other = DesignId::generate();
+        assert!(
+            signer
+                .verify_frame(&frame.replacen(id.as_str(), other.as_str(), 1))
+                .is_err()
+        );
     }
 
     #[test]

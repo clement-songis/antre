@@ -39,6 +39,25 @@ pub struct CspOptions<'a> {
     pub extra_script_sources: &'a [String],
     pub allow_eval: bool,
     pub framing: Framing,
+    /// `https://` origins an MCP App declared for `connect-src`.
+    pub connect_sources: &'a [String],
+    /// `https://` origins an MCP App declared for scripts, styles, images,
+    /// fonts and media.
+    pub resource_sources: &'a [String],
+}
+
+fn valid_sources(sources: &[String]) -> impl Iterator<Item = &str> {
+    sources
+        .iter()
+        .map(String::as_str)
+        .filter(|source| moltis_config::schema::is_https_origin(source))
+}
+
+fn with_sources(base: &str, sources: &[String]) -> String {
+    std::iter::once(base)
+        .chain(valid_sources(sources))
+        .collect::<Vec<_>>()
+        .join(" ")
 }
 
 /// CSP of a design page on the render origin.
@@ -55,13 +74,16 @@ pub fn design_policy(options: &CspOptions<'_>) -> String {
     if options.allow_eval {
         scripts.push("'unsafe-eval'".to_string());
     }
-    scripts.extend(
-        options
-            .extra_script_sources
-            .iter()
-            .filter(|source| moltis_config::schema::is_https_origin(source))
-            .cloned(),
-    );
+    scripts.extend(valid_sources(options.extra_script_sources).map(str::to_string));
+    scripts.extend(valid_sources(options.resource_sources).map(str::to_string));
+    let resources = options.resource_sources;
+    let connect = if valid_sources(options.connect_sources).next().is_some() {
+        valid_sources(options.connect_sources)
+            .collect::<Vec<_>>()
+            .join(" ")
+    } else {
+        "'none'".to_string()
+    };
     let frame_ancestors = match options.framing {
         Framing::AnyAncestor => "*".to_string(),
         Framing::TopLevelOnly => "'none'".to_string(),
@@ -71,11 +93,23 @@ pub fn design_policy(options: &CspOptions<'_>) -> String {
         format!("sandbox {SANDBOX_FLAGS}"),
         "default-src 'none'".to_string(),
         format!("script-src {}", scripts.join(" ")),
-        format!("style-src 'unsafe-inline' {origin}"),
-        format!("img-src {origin} data: blob:"),
-        format!("font-src {origin} data:"),
-        format!("media-src {origin} data: blob:"),
-        "connect-src 'none'".to_string(),
+        format!(
+            "style-src {}",
+            with_sources(&format!("'unsafe-inline' {origin}"), resources)
+        ),
+        format!(
+            "img-src {}",
+            with_sources(&format!("{origin} data: blob:"), resources)
+        ),
+        format!(
+            "font-src {}",
+            with_sources(&format!("{origin} data:"), resources)
+        ),
+        format!(
+            "media-src {}",
+            with_sources(&format!("{origin} data: blob:"), resources)
+        ),
+        format!("connect-src {connect}"),
         "worker-src 'none'".to_string(),
         "frame-src 'none'".to_string(),
         "child-src 'none'".to_string(),
@@ -185,7 +219,43 @@ mod tests {
             extra_script_sources: extra,
             allow_eval: false,
             framing: Framing::AnyAncestor,
+            connect_sources: &[],
+            resource_sources: &[],
         }
+    }
+
+    #[test]
+    fn declared_app_domains_are_validated() {
+        let connect = vec!["https://api.example.com".to_string(), "*".to_string()];
+        let resources = vec![
+            "https://cdn.example.com".to_string(),
+            "https://x; script-src *".to_string(),
+        ];
+        let mut opts = options(&[]);
+        opts.connect_sources = &connect;
+        opts.resource_sources = &resources;
+        let policy = design_policy(&opts);
+        let parts = directives(&policy);
+        assert!(parts.contains(&"connect-src https://api.example.com".to_string()));
+        for prefix in [
+            "script-src",
+            "style-src",
+            "img-src",
+            "font-src",
+            "media-src",
+        ] {
+            let directive = parts.iter().find(|d| d.starts_with(prefix)).unwrap();
+            assert!(
+                directive.ends_with("https://cdn.example.com"),
+                "{directive}"
+            );
+        }
+        assert!(!policy.contains("script-src *"));
+        assert!(!policy.contains("connect-src *"));
+
+        let invalid_only = vec!["http://plain.example.com".to_string()];
+        opts.connect_sources = &invalid_only;
+        assert!(directives(&design_policy(&opts)).contains(&"connect-src 'none'".to_string()));
     }
 
     #[test]

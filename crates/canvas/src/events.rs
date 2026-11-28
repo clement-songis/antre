@@ -41,6 +41,13 @@ pub enum CanvasEvent {
         #[serde(rename = "shareId")]
         share_id: String,
     },
+    CommentsChanged {
+        #[serde(rename = "designId")]
+        design_id: DesignId,
+        /// Version whose pins changed; `None` when several may have.
+        #[serde(rename = "commentsVersion", skip_serializing_if = "Option::is_none")]
+        version: Option<u32>,
+    },
 }
 
 impl CanvasEvent {
@@ -52,6 +59,7 @@ impl CanvasEvent {
             Self::VersionCreated { .. } => "canvas.version.created",
             Self::Published { .. } => "canvas.design.published",
             Self::Unpublished { .. } => "canvas.design.unpublished",
+            Self::CommentsChanged { .. } => "canvas.comments.changed",
         }
     }
 }

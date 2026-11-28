@@ -16,18 +16,31 @@ struct BuiltIn {
     name: &'static str,
     description: &'static str,
     bytes: &'static [u8],
+    /// Served but not offered to designs (the render origin injects it).
+    listed: bool,
 }
+
+/// Name of the preview bridge script, injected into previewed HTML.
+pub const BRIDGE_SCRIPT: &str = "canvas-bridge.js";
 
 const BUILT_INS: &[BuiltIn] = &[
     BuiltIn {
         name: "preact.js",
         description: "Preact 10.29.1 UMD build, exposes window.preact",
         bytes: include_bytes!("../vendor/preact.js"),
+        listed: true,
     },
     BuiltIn {
         name: "preact-hooks.js",
         description: "Preact hooks 10.29.1 UMD build, exposes window.preactHooks",
         bytes: include_bytes!("../vendor/preact-hooks.js"),
+        listed: true,
+    },
+    BuiltIn {
+        name: BRIDGE_SCRIPT,
+        description: "Preview bridge (element pick, comment pins, resize, errors)",
+        bytes: include_bytes!("../vendor/canvas-bridge.js"),
+        listed: false,
     },
 ];
 
@@ -122,6 +135,7 @@ impl Vendor {
     pub async fn list(&self) -> Vec<VendorEntry> {
         let mut entries: Vec<VendorEntry> = BUILT_INS
             .iter()
+            .filter(|entry| entry.listed)
             .map(|entry| VendorEntry {
                 name: entry.name.to_string(),
                 path: format!("{}{}", crate::csp::VENDOR_PREFIX, entry.name),
@@ -145,7 +159,10 @@ async fn list_extra(dir: &Path, built_ins: &[VendorEntry]) -> Vec<VendorEntry> {
         let Some(name) = entry.file_name().to_str().map(str::to_string) else {
             continue;
         };
-        if !valid_name(&name) || built_ins.iter().any(|known| known.name == name) {
+        if !valid_name(&name)
+            || BUILT_INS.iter().any(|known| known.name == name)
+            || built_ins.iter().any(|known| known.name == name)
+        {
             continue;
         }
         let Ok(path) = crate::paths::resolve_in_dir(dir, &name) else {
@@ -181,7 +198,12 @@ mod tests {
             "source maps are not vendored"
         );
         let listed = vendor.list().await;
-        assert_eq!(listed.len(), BUILT_INS.len());
+        assert_eq!(
+            listed.len(),
+            BUILT_INS.iter().filter(|entry| entry.listed).count()
+        );
+        assert!(listed.iter().all(|entry| entry.name != BRIDGE_SCRIPT));
+        assert!(vendor.get(BRIDGE_SCRIPT).await.is_some());
         assert!(
             listed
                 .iter()

@@ -2,7 +2,7 @@
 //!
 //! It shares nothing with the app origin: no cookies are read or set, no
 //! `/api` routes exist, and access is granted only by signed links
-//! (`/d/<token>/...`) or published share ids (`/p/<id>`).
+//! (`/d/<token>/...`, `/f/<token>/`) or published share ids (`/p/<id>`).
 
 use std::{net::SocketAddr, sync::Arc};
 
@@ -21,11 +21,13 @@ use {
 
 use crate::{
     CanvasService, Error, Result,
+    bridge::inject_bridge,
     csp::{
         ASSET_POLICY, CspOptions, Framing, SANDBOX_FLAGS, apply_common_headers, apply_policy,
         design_policy, request_origin,
     },
     export::ENTRY_FILE,
+    frames::FrameKind,
     publish::valid_share_id,
 };
 
@@ -39,6 +41,8 @@ pub fn router(service: Arc<CanvasService>) -> Router {
         .route("/d/{token}", get(design_root_redirect))
         .route("/d/{token}/", get(design_index_handler))
         .route("/d/{token}/{*path}", get(design_file_handler))
+        .route("/f/{token}", get(frame_root_redirect))
+        .route("/f/{token}/", get(frame_handler))
         .route("/p/{share_id}", get(published_wrapper_handler))
         .route("/p/{share_id}/content", get(published_content_handler))
         .fallback(|| async { not_found() })
@@ -174,11 +178,18 @@ async fn serve_design_file(
             extra_script_sources: &service.settings.script_sources,
             allow_eval: service.settings.allow_eval,
             framing: Framing::AnyAncestor,
+            connect_sources: &[],
+            resource_sources: &[],
         })
     } else {
         ASSET_POLICY.to_string()
     };
-    let mut response = finish(bytes_response(file.bytes, &file.content_type), &policy);
+    let bytes = if file.is_html {
+        with_bridge(file.bytes)
+    } else {
+        file.bytes
+    };
+    let mut response = finish(bytes_response(bytes, &file.content_type), &policy);
     if is_font(&file.content_type) {
         // Fonts are fetched in CORS mode and the sandboxed page's origin is
         // opaque (`Origin: null`).
@@ -191,6 +202,53 @@ async fn serve_design_file(
     moltis_metrics::histogram!(moltis_metrics::canvas::PAGE_SERVE_DURATION_SECONDS)
         .record(started.elapsed().as_secs_f64());
     response
+}
+
+/// Previewed HTML with the bridge script; non-UTF-8 documents are served
+/// unchanged rather than corrupted.
+fn with_bridge(bytes: Vec<u8>) -> Vec<u8> {
+    match String::from_utf8(bytes) {
+        Ok(html) => inject_bridge(&html).into_bytes(),
+        Err(error) => error.into_bytes(),
+    }
+}
+
+async fn frame_root_redirect(Path(token): Path<String>) -> Response {
+    finish(
+        Redirect::permanent(&format!("/f/{token}/")).into_response(),
+        ASSET_POLICY,
+    )
+}
+
+async fn frame_handler(
+    State(service): State<AppState>,
+    Path(token): Path<String>,
+    headers: HeaderMap,
+) -> Response {
+    let frame = match service.frame_for_token(&token) {
+        Ok(frame) => frame,
+        Err(error) => return error_response(&error),
+    };
+    let Some(origin) = origin_for(&service, &headers) else {
+        return not_found();
+    };
+    let (body, network) = match frame.kind {
+        FrameKind::Artifact => (inject_bridge(&frame.html), None),
+        FrameKind::McpApp => (frame.html.clone(), Some(&frame.network)),
+    };
+    let policy = design_policy(&CspOptions {
+        origin: &origin,
+        design_path: None,
+        extra_script_sources: &service.settings.script_sources,
+        allow_eval: service.settings.allow_eval,
+        framing: Framing::AnyAncestor,
+        connect_sources: network.map_or(&[], |network| &network.connect_domains),
+        resource_sources: network.map_or(&[], |network| &network.resource_domains),
+    });
+    finish(
+        bytes_response(body.into_bytes(), "text/html; charset=utf-8"),
+        &policy,
+    )
 }
 
 fn is_font(content_type: &str) -> bool {
@@ -288,6 +346,8 @@ async fn published_content_handler(
         extra_script_sources: &service.settings.script_sources,
         allow_eval: service.settings.allow_eval,
         framing: Framing::RenderOrigin,
+        connect_sources: &[],
+        resource_sources: &[],
     });
     finish(
         bytes_response(snapshot.html.into_bytes(), "text/html; charset=utf-8"),

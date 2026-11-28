@@ -6,11 +6,14 @@
 //! The agent edits it with the regular file tools; [`hook`] versions it once
 //! per turn. See `docs/src/canvas.md`.
 
+pub mod bridge;
+pub mod comments;
 pub mod csp;
 pub mod design_systems;
 pub mod error;
 pub mod events;
 pub mod export;
+pub mod frames;
 pub mod hook;
 pub mod paths;
 pub mod publish;
@@ -24,8 +27,10 @@ pub mod vendor;
 pub mod versions;
 
 pub use {
+    comments::{Comment, NewComment},
     error::{Error, Result},
     events::{CanvasEvent, CanvasEventSink, Visibility},
+    frames::{FrameKind, FrameNetwork, StageFrame},
     paths::DesignId,
     publish::{CreatedShare, PublishedSnapshot, ShareBackend},
     render::{BrowserRenderer, DesignRenderer},

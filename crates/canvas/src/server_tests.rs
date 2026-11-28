@@ -335,3 +335,113 @@ async fn spawn_binds_and_records_address() {
     handle.abort();
     drop(service);
 }
+
+#[tokio::test]
+async fn previews_get_the_bridge_but_files_and_exports_do_not() {
+    let (_tmp, service, app, id) = setup().await;
+    let link = service.preview_link(&id, None, None).await.unwrap();
+    let path = token_path(&link.url);
+    let html = body(get(&app, &path).await).await;
+    assert!(
+        html.contains("<head><script src=\"/_vendor/canvas-bridge.js\"></script>"),
+        "{html}"
+    );
+    let css = body(get(&app, &format!("{path}app.css")).await).await;
+    assert!(!css.contains("canvas-bridge"));
+    let exported = service.single_file(&id, None).await.unwrap();
+    assert!(!exported.contains("canvas-bridge"));
+
+    let bridge = get(&app, "/_vendor/canvas-bridge.js").await;
+    assert_eq!(bridge.status(), StatusCode::OK);
+    assert!(body(bridge).await.contains("antre.canvas/1"));
+}
+
+#[tokio::test]
+async fn staged_frames_are_served_by_token_only() {
+    use crate::frames::{FrameKind, FrameNetwork, StageFrame};
+
+    let (_tmp, service, app, _id) = setup().await;
+    let artifact = service
+        .stage_frame(
+            StageFrame {
+                kind: FrameKind::Artifact,
+                html: "<!doctype html><p>snippet</p>".into(),
+                network: FrameNetwork {
+                    connect_domains: vec!["https://api.example.com".into()],
+                    resource_domains: Vec::new(),
+                },
+            },
+            Some("localhost:9"),
+        )
+        .unwrap();
+    assert!(artifact.url.starts_with("http://localhost:18790/f/"));
+    let path = artifact
+        .url
+        .trim_start_matches("http://localhost:18790")
+        .to_string();
+    let response = get(&app, &path).await;
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_common_headers(&response);
+    let policy = csp(&response);
+    assert!(policy.starts_with("sandbox allow-scripts;"));
+    assert!(
+        policy.contains("connect-src 'none'"),
+        "artifacts never get network, even when declared: {policy}"
+    );
+    let html = body(response).await;
+    assert!(html.starts_with("<!doctype html><script src=\"/_vendor/canvas-bridge.js\">"));
+
+    let app_frame = service
+        .stage_frame(
+            StageFrame {
+                kind: FrameKind::McpApp,
+                html: "<html><head></head><body>app</body></html>".into(),
+                network: FrameNetwork {
+                    connect_domains: vec!["https://api.example.com".into(), "*".into()],
+                    resource_domains: vec!["https://cdn.example.com".into()],
+                },
+            },
+            None,
+        )
+        .unwrap();
+    let response = get(&app, &token_path(&app_frame.url)).await;
+    let policy = csp(&response);
+    assert!(
+        policy.contains("connect-src https://api.example.com;"),
+        "{policy}"
+    );
+    assert!(policy.contains("https://cdn.example.com"));
+    assert!(!policy.contains(" *;"));
+    let html = body(response).await;
+    assert!(
+        !html.contains("canvas-bridge"),
+        "MCP Apps bring their own protocol"
+    );
+
+    let redirect = get(&app, token_path(&app_frame.url).trim_end_matches('/')).await;
+    assert_eq!(redirect.status(), StatusCode::PERMANENT_REDIRECT);
+
+    let design_link = service.preview_link(&_id, None, None).await.unwrap();
+    let design_token = token_path(&design_link.url)
+        .trim_start_matches("/d/")
+        .trim_end_matches('/')
+        .to_string();
+    assert_eq!(
+        get(&app, &format!("/f/{design_token}/")).await.status(),
+        StatusCode::NOT_FOUND,
+        "a design token is not a frame token"
+    );
+    assert_eq!(
+        get(&app, "/f/garbage/").await.status(),
+        StatusCode::NOT_FOUND
+    );
+}
+
+#[tokio::test]
+async fn app_frame_sources_name_the_render_port() {
+    let (_tmp, service, _app, _id) = setup().await;
+    assert_eq!(service.frame_sources(), vec![
+        "http://*:18790".to_string(),
+        "https://*:18790".to_string()
+    ]);
+}
