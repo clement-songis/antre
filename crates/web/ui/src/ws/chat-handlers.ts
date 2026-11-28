@@ -12,6 +12,7 @@ import {
 import { localizeStructuredError, renderMarkdown } from "../helpers";
 import { t } from "../i18n";
 import { maybeRefreshFullContext, renderCompactCard } from "../pages/ChatPage";
+import { noteReplyFinished } from "../pages/chat/background-notify";
 import { clearQueuedMessages, handleQueueItemRemoved } from "../pages/chat/queue";
 import {
 	addNotice,
@@ -342,9 +343,11 @@ function handleChatFinal(p: ChatPayload, isActive: boolean, isChatPage: boolean,
 		return;
 	}
 	updateSessionHistoryIndex(eventSession, p.messageIndex);
+	const wasReplying = evtSession?.replying.value === true;
 	setSessionReplying(eventSession, false);
 	setSessionActiveRunId(eventSession, null);
 	if (!isActive) setSessionUnread(eventSession, true);
+	if (hasVisibleFinal) noteReplyFinished(eventSession, wasReplying);
 	if (!(isActive && isChatPage)) {
 		S.setVoicePending(false);
 		return;

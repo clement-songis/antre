@@ -13,6 +13,13 @@ makes, and lets you approve commands, rewind, edit and queue messages.
 | Enter / A / Esc | A command approval is pending | Allow once / always allow / deny |
 | `/` | Composer | Slash command menu: Enter runs a command without arguments, Tab inserts it |
 | `@` | Composer, session bound to a project | File picker; inserts `@relative/path` |
+| Cmd/Ctrl+Shift+O | Anywhere | New chat |
+| Shift+Esc | Chat page | Focus the message box |
+| Cmd/Ctrl+Shift+S | Chat page | Show or hide the session list (remembered per browser) |
+| Alt+Shift+↓ / ↑ | Chat page | Next / previous session, in sidebar order |
+| Alt+Shift+C | Chat page | Copy the last reply as Markdown |
+| Cmd/Ctrl+K | Anywhere | Command palette |
+| Cmd/Ctrl+/ | Anywhere | List these shortcuts |
 
 ## Menus
 
@@ -87,6 +94,13 @@ that message next.
 Code blocks have a copy button. Mermaid code fences render as diagrams, and
 TeX between `$$…$$`, `\[…\]`, `$…$` or `\(…\)` renders with KaTeX. Both
 libraries load only when a reply contains a diagram or a formula.
+
+## Background sessions
+
+The tab title starts with the number of sessions holding replies you have
+not read, for example `(2) moltis`. When a reply you started in another
+session finishes, a toast offers to open it. Channel and cron sessions
+count in the title but do not raise a toast.
 
 ## Reconnecting
 

@@ -789,7 +789,7 @@ function bindChatShortcuts(): void {
 		handleApprovalShortcut(e);
 	};
 	escapeStopHandler = (e: KeyboardEvent) => {
-		if (e.key !== "Escape" || e.defaultPrevented || e.isComposing) return;
+		if (e.key !== "Escape" || e.shiftKey || e.defaultPrevented || e.isComposing) return;
 		if (anyChatModalOpen()) return;
 		const btn = S.chatSendBtn as HTMLButtonElement | null;
 		if (btn?.dataset.mode === "stop" && !btn.disabled) {

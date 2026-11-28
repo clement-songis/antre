@@ -6,6 +6,8 @@
 
 import { signal } from "@preact/signals";
 import * as gon from "../gon";
+import { t } from "../i18n";
+import { copyLastReply, shortcutsHelpOpen, shortcutText, toggleSidebar } from "../pages/chat/shortcuts";
 import { navigate } from "../router";
 import { routes, settingsPath } from "../routes";
 import { applyTheme } from "../theme";
@@ -318,10 +320,40 @@ export function buildCommands(): Command[] {
 			label: "New Session",
 			group: "actions",
 			icon: "icon-chat",
+			shortcut: shortcutText("new-chat"),
 			keywords: ["create", "start", "new"],
 			action: () => {
 				const btn = document.getElementById("newSessionBtn");
 				if (btn) btn.click();
+			},
+		},
+		{
+			id: "act-toggle-sessions",
+			label: t("chat:shortcuts.toggleSidebar"),
+			group: "actions",
+			icon: "icon-layers",
+			shortcut: shortcutText("sidebar"),
+			keywords: ["sidebar", "sessions", "hide", "show"],
+			action: toggleSidebar,
+		},
+		{
+			id: "act-copy-last-reply",
+			label: t("chat:shortcuts.copyLast"),
+			group: "actions",
+			icon: "icon-copy",
+			shortcut: shortcutText("copy"),
+			keywords: ["copy", "answer", "reply", "last"],
+			action: copyLastReply,
+		},
+		{
+			id: "act-shortcuts",
+			label: t("chat:shortcuts.title"),
+			group: "actions",
+			icon: "icon-settings",
+			shortcut: shortcutText("help"),
+			keywords: ["keyboard", "shortcuts", "keys", "help"],
+			action: () => {
+				shortcutsHelpOpen.value = true;
 			},
 		},
 		{

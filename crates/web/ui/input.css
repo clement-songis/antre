@@ -482,6 +482,24 @@
     color: var(--muted);
     font-style: italic;
   }
+  /* Desktop session list hidden with the sidebar shortcut */
+  @media (min-width: 768px) {
+    body.sessions-collapsed #sessionsPanel {
+      display: none;
+    }
+  }
+  .shortcut-key {
+    min-width: 1.6em;
+    padding: 1px 6px;
+    border: 1px solid var(--line);
+    border-bottom-width: 2px;
+    border-radius: var(--corner-xs);
+    background: var(--raised-2);
+    color: var(--ink-strong);
+    font-family: var(--font-code);
+    font-size: 11px;
+    text-align: center;
+  }
   /* Context menus (popover on desktop, bottom sheet on phones) */
   .context-menu-backdrop {
     position: fixed;

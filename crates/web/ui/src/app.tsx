@@ -14,6 +14,9 @@ import * as _deliveryEvents from "./delivery-events";
 import * as _events from "./events";
 import { onEvent } from "./events";
 import * as gon from "./gon";
+import { installBackgroundNotify } from "./pages/chat/background-notify";
+import { mountShortcutsDialog } from "./pages/chat/ShortcutsDialog";
+import { installChatShortcuts } from "./pages/chat/shortcuts";
 import "./github-stats";
 import * as _helpers from "./helpers";
 import * as _i18n from "./i18n";
@@ -362,7 +365,13 @@ window.addEventListener("resize", () => {
 });
 installCodeCopyHandler();
 mountContextMenuHost();
-mountSidebarAccount();
+// Both render translated labels, so wait for the locale bundles.
+void i18nReady.then(() => {
+	mountSidebarAccount();
+	mountShortcutsDialog();
+});
+installChatShortcuts();
+installBackgroundNotify();
 document.addEventListener("keydown", (e) => {
 	if (e.key === "Escape") closeMobileMenu();
 	if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
