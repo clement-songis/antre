@@ -107,6 +107,11 @@ const READ_METHODS: &[&str] = &[
     "canvas.versions",
     "canvas.preview_url",
     "canvas.design_systems",
+    "learning.status",
+    "learning.pending.list",
+    "learning.pending.get",
+    "learning.ledger.list",
+    "learning.ledger.diff",
     "instrumentation.status",
     "heartbeat.status",
     "heartbeat.runs",
@@ -295,6 +300,13 @@ const WRITE_METHODS: &[&str] = &[
     "canvas.rename",
     "canvas.publish",
     "canvas.unpublish",
+    // Learned changes write skills and memory, or start a model call.
+    "learning.pending.approve",
+    "learning.pending.reject",
+    "learning.ledger.rollback",
+    "learning.skill.set",
+    "learning.review.run",
+    "learning.curator.run",
     "instrumentation.test",
     "heartbeat.update",
     "heartbeat.run",
@@ -579,6 +591,30 @@ mod tests {
                 authorize_method(method, "operator", &scopes(&["operator.write"])).is_none(),
                 "{method}"
             );
+        }
+    }
+
+    #[test]
+    fn learning_reads_need_read_and_changes_need_write() {
+        for method in [
+            "learning.status",
+            "learning.pending.list",
+            "learning.ledger.diff",
+        ] {
+            assert!(authorize_method(method, "operator", &scopes(&["operator.read"])).is_none());
+        }
+        for method in [
+            "learning.pending.approve",
+            "learning.ledger.rollback",
+            "learning.skill.set",
+            "learning.review.run",
+            "learning.curator.run",
+        ] {
+            assert_error_code(
+                authorize_method(method, "operator", &scopes(&["operator.read"])),
+                "UNAUTHORIZED",
+            );
+            assert!(authorize_method(method, "operator", &scopes(&["operator.write"])).is_none());
         }
     }
 

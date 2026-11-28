@@ -7900,6 +7900,7 @@ dependencies = [
  "moltis-external-agents",
  "moltis-hermes-import",
  "moltis-home-assistant",
+ "moltis-learning",
  "moltis-matrix",
  "moltis-mcp",
  "moltis-mcp-agent-bridge",

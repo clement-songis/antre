@@ -37,6 +37,7 @@ pub mod cron;
 pub mod external_agents;
 pub mod files;
 #[cfg(feature = "local-llm")]
+pub(crate) mod learning;
 pub mod local_llm_setup;
 pub mod logs;
 pub mod mcp_agent_tools;

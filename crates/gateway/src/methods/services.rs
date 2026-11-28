@@ -541,6 +541,7 @@ mod core;
 mod feedback;
 mod heartbeat_patch;
 mod instrumentation;
+mod learning;
 pub(crate) mod mcp_features;
 mod modes;
 #[cfg(feature = "mods")]
@@ -568,6 +569,7 @@ pub(super) fn register(reg: &mut MethodRegistry) {
     admin::register(reg);
     feedback::register(reg);
     instrumentation::register(reg);
+    learning::register(reg);
     mcp_features::register(reg);
     #[cfg(feature = "voice")]
     voice_personas::register(reg);

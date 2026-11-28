@@ -349,6 +349,14 @@ impl ChatRuntime for GatewayChatRuntime {
             crate::session::title::generate_title_if_needed(&state, &key).await;
         });
     }
+
+    async fn on_run_started(&self, session_key: &str) {
+        crate::learning::on_run_started(session_key);
+    }
+
+    async fn on_run_finished(&self, session_key: &str) {
+        crate::learning::on_run_finished(&self.state, session_key);
+    }
 }
 
 #[cfg(test)]

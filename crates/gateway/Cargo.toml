@@ -51,6 +51,7 @@ moltis-media              = { workspace = true }
 moltis-memory             = { workspace = true }
 moltis-memory-zvec        = { optional = true, workspace = true }
 moltis-metrics            = { optional = true, workspace = true }
+moltis-learning           = { workspace = true }
 moltis-model-catalog      = { workspace = true }
 moltis-mods               = { optional = true, workspace = true }
 moltis-msteams            = { optional = true, workspace = true }

@@ -1098,6 +1098,7 @@ impl LiveChatService {
                 return;
             }
             let permit = permit; // hold permit until agent run completes
+            state.on_run_started(&session_key_clone).await;
             let ctx_ref = project_context.as_deref();
             if let Some(target) = deferred_channel_target {
                 // Register the channel reply target only after we own the
@@ -1407,6 +1408,9 @@ impl LiveChatService {
                 && !queued_replay
             {
                 state.trigger_auto_title(&session_key_clone).await;
+            }
+            if private_context && !ephemeral && !queued_replay {
+                state.on_run_finished(&session_key_clone).await;
             }
 
             let _ =

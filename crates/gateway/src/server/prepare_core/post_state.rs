@@ -8,6 +8,7 @@ use {
     },
     tracing::{debug, info, warn},
 };
+mod background;
 mod credential_env;
 mod webauthn;
 mod webhook_security;
@@ -1357,17 +1358,7 @@ pub(super) async fn complete_startup(
             Arc::clone(&session_metadata),
         ));
         state.set_chat(chat_with_external_agents);
-        moltis_chat::quota_wait::configure(
-            config.chat.quota_wait.clone(),
-            Some(
-                moltis_config::data_dir()
-                    .join("chat")
-                    .join("quota-waits.json"),
-            ),
-        );
-        moltis_chat::quota_wait::restore(&crate::chat::GatewayChatRuntime::from_state(Arc::clone(
-            &state,
-        )));
+        background::start(&state, &data_dir);
 
         live_mcp
             .set_tool_registry(Arc::clone(&shared_tool_registry))

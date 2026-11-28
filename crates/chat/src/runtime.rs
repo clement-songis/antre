@@ -248,4 +248,12 @@ pub trait ChatRuntime: Send + Sync {
     /// Called after the first assistant response. The gateway implements this
     /// to spawn a background LLM call; the default is a no-op.
     async fn trigger_auto_title(&self, _session_key: &str) {}
+
+    /// A run started in a session. The gateway cancels background work about
+    /// that session (the learning review) so it never competes with the user.
+    async fn on_run_started(&self, _session_key: &str) {}
+
+    /// A run finished in a session whose context allows private data. The
+    /// gateway may schedule a learning review; the default is a no-op.
+    async fn on_run_finished(&self, _session_key: &str) {}
 }
