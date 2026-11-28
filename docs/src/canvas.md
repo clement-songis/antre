@@ -4,8 +4,52 @@ The design canvas lets the agent build visual designs (mockups, landing
 pages, UI screens, slides, one-pagers) as plain HTML, shows them in a
 sandboxed live preview, keeps every version, and exports or publishes them.
 
-This page covers the backend: storage, agent tools, the render origin, the
-API and the contract the web UI preview panel uses.
+This page covers the preview pane in the web UI, storage, agent tools, the
+render origin, the API and the `postMessage` contract between the app and
+previewed pages.
+
+## Preview pane
+
+When the agent creates or changes a design of the current chat, a preview
+pane opens next to the conversation (the header's pane button shows or hides
+it; closing it keeps it closed for that design until you reopen it).
+
+- **Live reload**: the preview reloads on every new version.
+- **Versions**: the version menu shows any past version; *Revert to vN*
+  restores it as a new version.
+- **Viewport**: phone (390 px), tablet (768 px) or full width. *Full screen*
+  fills the window; Esc leaves it.
+- **Select**: click an element to attach it to your next message as a chip.
+  The message then names the element (`data-mid` or CSS selector), its tag
+  and text, and the design id and version, so the agent knows what "this"
+  is. Hold Alt to pick the exact element instead of its `data-mid` block.
+- **Comment**: click an element and type a note. Comments are pinned on that
+  version (numbered badges in the preview) and kept in `moltis.db`.
+  *Send to agent* turns all open comments into one message and marks them
+  resolved.
+- **Errors**: uncaught errors in the preview are listed under it; *Send to
+  agent* forwards them.
+- **Export**: HTML (single file), ZIP, PNG or PDF of the shown version.
+- **Publish**: a private (access key) or public link to the shown version.
+  Publishing the latest version first records the live files as a version.
+
+The pane is resizable (drag or arrow keys on its left edge) and takes the
+whole screen on phones.
+
+### Inline frames
+
+The same isolated frame host shows two more kinds of untrusted HTML inside
+the conversation:
+
+- **MCP Apps**: an MCP tool whose definition names a `ui://` resource
+  (`_meta.ui.resourceUri`) gets its view rendered in its tool card, once
+  the call succeeded. Enable `mcp.apps_enabled` so servers know the host can
+  show views.
+- **HTML snippets**: ```` ```html ```` and ```` ```svg ```` blocks in replies
+  get a *Preview* button.
+
+Both are staged in memory on the render origin (`canvas.stage`) behind a
+signed link, never served by the app.
 
 ## Designs and versions
 
@@ -88,6 +132,7 @@ proxy). It has no API, reads no cookies and sets none.
 | Path | Content |
 |---|---|
 | `/d/<token>/<file>` | A design file. `<token>` is an HMAC-signed link naming the design, the version (or the live files) and an expiry. |
+| `/f/<token>/` | A staged single document (MCP App view or reply snippet), kept in memory until the link expires (at most 128 documents, 64 MiB). |
 | `/p/<share-id>?k=<key>` | A published design, wrapped in a notice banner and a sandboxed iframe. |
 | `/p/<share-id>/content?k=<key>` | The published single-file HTML (only frameable by the wrapper). |
 | `/_vendor/<name>` | Vendored scripts. |
@@ -124,7 +169,27 @@ frame-ancestors *
   paths, no hidden segments) and the resolved file must stay inside the
   design directory after symlinks are resolved.
 - Preview links expire after `canvas.token_ttl_secs`; the signing key is
-  random per process, so links also die on restart.
+  random per process, so links also die on restart. Design and document
+  links are signed differently, so neither can be replayed as the other.
+- HTML served for previews (design pages and reply snippets) gets the
+  preview bridge `<script src="/_vendor/canvas-bridge.js">` injected as the
+  first element of `<head>`. Design files, versions, exports and published
+  pages never contain it.
+- MCP App views may declare origins in their resource's `_meta.ui.csp`
+  (`connectDomains`, `resourceDomains`). Bare `https://` origins are added
+  to `connect-src` and to the script, style, image, font and media sources
+  of that view only; anything else is dropped. Reply snippets never get
+  network access.
+
+```admonish note title="WebKit frame rate"
+WebKit (Safari, and the WKWebView of a desktop shell) throttles
+opaque-origin iframes to about 20 frames per second until the user first
+interacts with them. Every preview is opaque-origin by design, so
+animations in a design look choppy there until you click into the preview.
+Chromium and Firefox are not affected. Isolation comes from the separate
+render origin; keep it rather than serving previews from the app origin to
+work around the throttling.
+```
 
 Vendored scripts (Preact and Preact hooks) are compiled into the binary.
 Operators can add `.js`/`.css` files to `~/.moltis/canvas/vendor/`; they are
@@ -189,11 +254,21 @@ authentication. Reads need `operator.read`, writes `operator.write`.
 | `canvas.versions {designId, limit?}` | `GET /api/canvas/designs/{id}/versions` | read |
 | `canvas.preview_url {designId, version?, host?}` | `GET /api/canvas/designs/{id}/preview-url?version=` | read |
 | `canvas.design_systems` | (in `config`) | read |
+| `canvas.stage {kind: "artifact"\|"mcp-app", html, network?, host?}` | — | read |
+| `canvas.comments.list {designId, version?, includeResolved?}` | — | read |
 | — | `GET /api/canvas/designs/{id}/export/{html,zip,png,pdf}?version=&width=&height=&fullPage=` | read |
+| `canvas.create {title, html?, designSystem?, sessionKey?, projectId?}` | — | write |
 | `canvas.revert {designId, version}` | `POST /api/canvas/designs/{id}/revert` | write |
 | `canvas.rename {designId, title}` | — | write |
 | `canvas.publish {designId, version?, visibility?, host?}` | `POST /api/canvas/designs/{id}/publish` | write |
 | `canvas.unpublish {shareId}` | `DELETE /api/canvas/shares/{shareId}` | write |
+| `canvas.comments.add {designId, version?, mid?, selector?, elementText?, x?, y?, body}` | — | write |
+| `canvas.comments.resolve {designId, commentIds}` | — | write |
+| `canvas.comments.delete {designId, commentId}` | — | write |
+
+`canvas.get` also returns the design's directory (`dir`). Comments need an
+anchor (`mid`, `selector`, or both `x` and `y`) and at most 2000
+characters; a version holds at most 500.
 
 `host` is the web UI's `location.host`. Without `canvas.public_url`,
 preview links reuse that host name with the render port, so they work on
@@ -209,11 +284,13 @@ Pushed on the WebSocket event bus:
 | `canvas.version.created` | `{designId, version, revertedFrom?}` |
 | `canvas.design.published` | `{designId, shareId, version, visibility}` |
 | `canvas.design.unpublished` | `{designId, shareId}` |
+| `canvas.comments.changed` | `{designId, commentsVersion?}` |
 
-## Preview panel contract (for the web UI)
+## Preview contract
 
-The preview panel and the element-pick bridge are built in the web UI.
-This is the contract they rely on.
+The preview pane (`crates/web/ui/src/pages/chat/canvas/`) and the bridge
+script (`crates/canvas/vendor/canvas-bridge.js`) talk through this
+contract.
 
 ### Framing
 
@@ -245,6 +322,7 @@ Frame → host:
 | `pick.cancel` | — |
 | `resize` | `height: number` (document height, for auto-height frames) |
 | `error` | `message: string`, `source?: string`, `line?: number` (uncaught page errors, to feed back to the agent) |
+| `pin.open` | `id: string` (a comment badge was clicked) |
 
 Host → frame:
 
@@ -253,6 +331,7 @@ Host → frame:
 | `pick.start` | — (hover highlight on, next click reports `pick.result`) |
 | `pick.stop` | — |
 | `highlight` | `mid?: string`, `selector?: string` (outline one element; neither clears) |
+| `pins` | `pins: {id, n, mid?, selector?, x?, y?}[]` (numbered comment badges; at most 200) |
 
 Validation rules:
 
@@ -269,8 +348,19 @@ Validation rules:
 - No secrets cross the boundary in either direction; the frame never
   receives tokens, session data or file paths.
 - The bridge never evaluates message content.
+- Host messages go to the frame with target `"*"`: an opaque origin cannot
+  be named, which is why nothing secret is ever sent.
 
-The bridge script itself will ship as a vendored file
-(`/_vendor/canvas-bridge.js`, already allowed by `script-src`) that the
-render origin injects into HTML responses of preview links. That injection
-is part of the UI work.
+### MCP Apps host
+
+MCP App views do not get the bridge: they speak MCP Apps JSON-RPC 2.0 over
+`postMessage`. The host answers `ui/initialize` (inline display mode, theme,
+locale), sends `ui/notifications/tool-input` and
+`ui/notifications/tool-result` once the view sends
+`ui/notifications/initialized`, and follows `ui/notifications/size-changed`
+(60 to 2000 px). The result is rebuilt from what the gateway kept: one text
+item, plus `structuredContent` when the result is a JSON object.
+
+Requests that would act for the user (`tools/call`, `ui/open-link`,
+`ui/message`, `resources/read`, ...) are answered with a JSON-RPC "method
+not found" error for now.
