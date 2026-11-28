@@ -16,6 +16,7 @@ import {
 	renderDocument,
 	tokenSpeedTone,
 } from "../../../helpers";
+import { t } from "../../../i18n";
 import { appendMessageActions } from "../../../message-actions";
 import { upsertTtsProviderFooter } from "../../../message-voice";
 import { showThinkingTail } from "../../../ws/shared";
@@ -100,7 +101,7 @@ function ReasoningDisclosure({ text }: { text: string }) {
 	if (!normalized) return null;
 	return (
 		<details className="msg-reasoning">
-			<summary className="msg-reasoning-summary">Reasoning</summary>
+			<summary className="msg-reasoning-summary">{t("chat:a11y.reasoning")}</summary>
 			<div className="msg-reasoning-body">{normalized}</div>
 		</details>
 	);
@@ -203,7 +204,7 @@ export function AssistantMessage({ item, sessionKey, isLast, children }: Assista
 			) : null}
 			{item.final ? (
 				<div className="msg-menu-slot">
-					<MenuButton label="More actions" getMenu={() => assistantMessageMenu(item, sessionKey)} />
+					<MenuButton label={t("chat:a11y.moreActions")} getMenu={() => assistantMessageMenu(item, sessionKey)} />
 				</div>
 			) : null}
 			{children}
@@ -253,7 +254,7 @@ export function ThinkingIndicator({ item }: { item: ThinkingItem }) {
 					<span />
 				</span>
 			)}
-			{loading ? <span className="session-loading-label">{item.text || "Loading session…"}</span> : null}
+			{loading ? <span className="session-loading-label">{item.text || t("chat:a11y.loadingSession")}</span> : null}
 		</div>
 	);
 }

@@ -17,7 +17,7 @@ function replying(sessionKey: string): boolean {
 }
 
 function copy(text: string): void {
-	void copyToClipboard(text, "Copied", "Could not copy \u2014 please copy manually.");
+	void copyToClipboard(text, t("chat:menu.copied"), t("chat:menu.copyFailed"));
 }
 
 /** Fork the session so it keeps the first `forkPoint` messages, and open the fork. */

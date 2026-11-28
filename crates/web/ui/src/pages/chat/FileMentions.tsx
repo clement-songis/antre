@@ -6,6 +6,7 @@
 
 import { signal } from "@preact/signals";
 import { sendRpc } from "../../helpers";
+import { t } from "../../i18n";
 import * as S from "../../state";
 import { sessionStore } from "../../stores/session-store";
 
@@ -114,7 +115,7 @@ export function FileMentionMenu() {
 	const state = mentionState.value;
 	if (!state) return null;
 	return (
-		<div className="slash-menu file-mention-menu" role="listbox" aria-label="Files">
+		<div className="slash-menu file-mention-menu" role="listbox" aria-label={t("chat:a11y.files")}>
 			{state.files.map((path, index) => {
 				const slash = path.lastIndexOf("/");
 				return (

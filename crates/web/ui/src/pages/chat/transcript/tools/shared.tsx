@@ -1,6 +1,7 @@
 // ── Building blocks shared by tool renderers ────────────────
 
 import type { ComponentChildren } from "preact";
+import { t } from "../../../../i18n";
 import type { ToolItem } from "../model";
 
 export type JsonRecord = Record<string, unknown>;
@@ -52,8 +53,22 @@ export function truncateText(text: string, max: number): { text: string; truncat
 	return { text: `${text.slice(0, max)}…`, truncated: true };
 }
 
-export function plural(count: number, word: string): string {
-	return `${count} ${word}${count === 1 ? "" : "s"}`;
+export type CountUnit =
+	| "line"
+	| "file"
+	| "match"
+	| "result"
+	| "task"
+	| "command"
+	| "read"
+	| "edit"
+	| "search"
+	| "mcp"
+	| "tool";
+
+/** "3 files", localized with plural forms. */
+export function countLabel(count: number, unit: CountUnit): string {
+	return t(`chat:tools.count_${unit}`, { count });
 }
 
 interface OutputProps {
@@ -69,7 +84,7 @@ export function OutputBlock({ text, className = "", maxChars = 20_000 }: OutputP
 		<pre className={`exec-output ${className}`.trim()}>
 			{shown.text}
 			{shown.truncated ? (
-				<span className="text-ink-muted">{`\n[${text.length - maxChars} more characters]`}</span>
+				<span className="text-ink-muted">{`\n${t("chat:tools.moreChars", { count: text.length - maxChars })}`}</span>
 			) : null}
 		</pre>
 	);

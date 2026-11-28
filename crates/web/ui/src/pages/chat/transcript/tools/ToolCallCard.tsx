@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import { contextMenuTrigger, MenuButton } from "../../../../components/ContextMenu";
+import { t } from "../../../../i18n";
 import { navigate } from "../../../../router";
 import type { ToolResult } from "../../../../types/ws-events";
 import { appendToolResult, type ToolResultParts } from "../../../../ws/tool-helpers";
@@ -9,7 +10,7 @@ import { ReasoningDisclosure, UsageFooter } from "../Messages";
 import { toolCardMenu } from "../message-menu";
 import type { ToolItem } from "../model";
 import { toolNoun, toolView } from "./registry";
-import { isRecord, plural } from "./shared";
+import { type CountUnit, countLabel, isRecord } from "./shared";
 
 const VALIDATION_ERROR_MARKERS = ["missing field", "missing required", "missing 'action'", "missing 'url'"];
 
@@ -80,10 +81,9 @@ function GenericResult({ item, sessionKey, parts }: GenericResultProps) {
 }
 
 function SkillHint({ name }: { name: string }) {
-	const verb = name === "create_skill" ? "created" : "updated";
 	return (
 		<div className="skill-hint">
-			{`Skill ${verb} — available in your `}
+			{name === "create_skill" ? t("chat:tools.skillCreated") : t("chat:tools.skillUpdated")}
 			<a
 				href="/skills"
 				onClick={(e) => {
@@ -91,7 +91,7 @@ function SkillHint({ name }: { name: string }) {
 					navigate("/skills");
 				}}
 			>
-				personal skills
+				{t("chat:tools.personalSkills")}
 			</a>
 		</div>
 	);
@@ -146,7 +146,7 @@ export function ToolCallCard({ item, sessionKey }: ToolCallCardProps) {
 					) : null}
 					{view.badge ? <span className="tool-card-badge">{view.badge}</span> : null}
 					<span className="tool-card-meta">
-						{item.status === "running" ? <span className="exec-status">running{"…"}</span> : null}
+						{item.status === "running" ? <span className="exec-status">{t("chat:tools.running")}</span> : null}
 						{elapsed ? <span className="tool-card-elapsed">{elapsed}</span> : null}
 						{STATUS_ICON[state] ? (
 							<span className={`icon icon-xs ${STATUS_ICON[state]} tool-card-status`} aria-hidden="true" />
@@ -154,7 +154,7 @@ export function ToolCallCard({ item, sessionKey }: ToolCallCardProps) {
 						<span className="icon icon-xs icon-chevron-right tool-card-chevron" aria-hidden="true" />
 					</span>
 				</button>
-				<MenuButton className="tool-card-menu-btn" label="Tool call actions" getMenu={() => toolCardMenu(item)} />
+				<MenuButton className="tool-card-menu-btn" label={t("chat:tools.actions")} getMenu={() => toolCardMenu(item)} />
 			</div>
 			<div className="tool-card-body" id={bodyId} hidden={!expanded}>
 				{view.body}
@@ -181,12 +181,12 @@ export function ToolCallCard({ item, sessionKey }: ToolCallCardProps) {
 }
 
 function groupSummary(items: ToolItem[]): string {
-	const counts = new Map<string, number>();
+	const counts = new Map<CountUnit, number>();
 	for (const item of items) {
 		const noun = toolNoun(item);
 		counts.set(noun, (counts.get(noun) || 0) + 1);
 	}
-	return [...counts.entries()].map(([noun, count]) => plural(count, noun)).join(", ");
+	return [...counts.entries()].map(([noun, count]) => countLabel(count, noun)).join(", ");
 }
 
 interface ToolGroupProps {
@@ -212,7 +212,7 @@ export function ToolGroup({ items, sessionKey }: ToolGroupProps) {
 			<button type="button" className="tool-group-header" aria-expanded={expanded} onClick={() => setOpen(!expanded)}>
 				<span className="icon icon-xs icon-chevron-right tool-card-chevron" aria-hidden="true" />
 				<span className="tool-group-summary">{groupSummary(items)}</span>
-				{running ? <span className="exec-status">running{"…"}</span> : null}
+				{running ? <span className="exec-status">{t("chat:tools.running")}</span> : null}
 				{elapsed ? <span className="tool-card-elapsed">{elapsed}</span> : null}
 			</button>
 			<div className="tool-group-body" hidden={!expanded}>

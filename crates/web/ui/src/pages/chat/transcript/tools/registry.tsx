@@ -6,17 +6,19 @@
 
 import type { ComponentChildren } from "preact";
 import { toolCallSummary } from "../../../../helpers";
+import { t } from "../../../../i18n";
 import { Markdown } from "../Markdown";
 import type { ToolItem } from "../model";
 import { collapseContext, type DiffLine, diffLines, diffStats } from "./diff";
 import {
 	arg,
+	type CountUnit,
+	countLabel,
 	isRecord,
 	JsonBlock,
 	type JsonRecord,
 	num,
 	OutputBlock,
-	plural,
 	resultRecord,
 	Section,
 	shortPath,
@@ -100,11 +102,11 @@ const renderEdit: Renderer = (item) => {
 	const verb =
 		item.name === "Write"
 			? item.status === "running"
-				? "Writing"
-				: "Wrote"
+				? t("chat:tools.writing")
+				: t("chat:tools.wrote")
 			: item.status === "running"
-				? "Editing"
-				: "Edited";
+				? t("chat:tools.editing")
+				: t("chat:tools.edited");
 	const replaceAll = item.args.replace_all === true;
 	return {
 		icon: "icon-code",
@@ -116,7 +118,7 @@ const renderEdit: Renderer = (item) => {
 				{path ? (
 					<div className="tool-path" title={path}>
 						{path}
-						{replaceAll ? " · all occurrences" : ""}
+						{replaceAll ? t("chat:tools.allOccurrences") : ""}
 					</div>
 				) : null}
 				{diffs.map((lines, index) => (
@@ -136,13 +138,16 @@ const renderRead: Renderer = (item) => {
 	const offset = num(item.args.offset);
 	const limit = num(item.args.limit);
 	const total = num(res?.total_lines);
-	const range = offset || limit ? ` lines ${offset ?? 1}–${(offset ?? 1) + (limit ?? 0) - (limit ? 1 : 0) || ""}` : "";
+	const range =
+		offset || limit
+			? t("chat:tools.lines", { range: `${offset ?? 1}–${(offset ?? 1) + (limit ?? 0) - (limit ? 1 : 0) || ""}` })
+			: "";
 	const content = str(res?.content);
 	return {
 		icon: "icon-file",
-		verb: item.status === "running" ? "Reading" : "Read",
+		verb: item.status === "running" ? t("chat:tools.reading") : t("chat:tools.read"),
 		target: shortPath(path) + range,
-		badge: total === null ? undefined : plural(total, "line"),
+		badge: total === null ? undefined : countLabel(total, "line"),
 		body: (
 			<>
 				{path ? (
@@ -169,13 +174,15 @@ const renderGlob: Renderer = (item) => {
 	return {
 		icon: "icon-search",
 		verb: "Glob",
-		target: `${arg(item, "pattern")}${where ? ` in ${shortPath(where)}` : ""}`,
-		badge: res ? `${plural(paths.length, "file")}${res.truncated ? "+" : ""}` : undefined,
+		target: where
+			? t("chat:tools.inPath", { pattern: arg(item, "pattern"), path: shortPath(where) })
+			: arg(item, "pattern"),
+		badge: res ? `${countLabel(paths.length, "file")}${res.truncated ? "+" : ""}` : undefined,
 		body: <OutputBlock text={paths.join("\n")} />,
 	};
 };
 
-function grepLines(res: JsonRecord | null): { lines: string[]; count: number; unit: string } {
+function grepLines(res: JsonRecord | null): { lines: string[]; count: number; unit: "match" | "file" } {
 	if (!res) return { lines: [], count: 0, unit: "match" };
 	if (Array.isArray(res.matches)) {
 		const lines = res.matches.filter(isRecord).map((m) => `${str(m.path)}:${num(m.line) ?? ""}: ${str(m.match)}`);
@@ -196,10 +203,10 @@ const renderGrep: Renderer = (item) => {
 	return {
 		icon: "icon-search",
 		verb: "Grep",
-		target: `${arg(item, "pattern")}${where ? ` in ${shortPath(where)}` : ""}`,
-		badge: res
-			? `${plural(count, unit === "match" ? "match" : "file").replace("matchs", "matches")}${res.truncated ? "+" : ""}`
-			: undefined,
+		target: where
+			? t("chat:tools.inPath", { pattern: arg(item, "pattern"), path: shortPath(where) })
+			: arg(item, "pattern"),
+		badge: res ? `${countLabel(count, unit)}${res.truncated ? "+" : ""}` : undefined,
 		body: <OutputBlock text={lines.join("\n")} />,
 	};
 };
@@ -211,9 +218,9 @@ const renderExec: Renderer = (item) => {
 	const exit = num(res?.exit_code);
 	return {
 		icon: "icon-terminal",
-		verb: item.status === "running" ? "Running" : "Ran",
+		verb: item.status === "running" ? t("chat:tools.runningCmd") : t("chat:tools.ran"),
 		target: toolCallSummary("exec", item.args as Parameters<typeof toolCallSummary>[1]),
-		badge: exit !== null && exit !== 0 ? `exit ${exit}` : undefined,
+		badge: exit !== null && exit !== 0 ? t("chat:tools.exit", { code: exit }) : undefined,
 		body: (
 			<div className="exec-prompt">
 				<span className="exec-prompt-char">$</span>
@@ -230,9 +237,9 @@ const renderWebFetch: Renderer = (item) => {
 	const content = str(res?.content);
 	return {
 		icon: "icon-globe",
-		verb: item.status === "running" ? "Fetching" : "Fetched",
+		verb: item.status === "running" ? t("chat:tools.fetching") : t("chat:tools.fetched"),
 		target: arg(item, "url") || str(res?.url),
-		badge: res?.truncated ? "truncated" : undefined,
+		badge: res?.truncated ? t("chat:tools.truncated") : undefined,
 		body: <OutputBlock text={content} maxChars={6_000} />,
 	};
 };
@@ -242,9 +249,9 @@ const renderWebSearch: Renderer = (item) => {
 	const results = Array.isArray(res?.results) ? res.results.filter(isRecord) : [];
 	return {
 		icon: "icon-search",
-		verb: "Searched",
+		verb: t("chat:tools.searched"),
 		target: `“${arg(item, "query")}”`,
-		badge: res ? plural(results.length, "result") : undefined,
+		badge: res ? countLabel(results.length, "result") : undefined,
 		body:
 			results.length > 0 ? (
 				<ul className="tool-link-list">
@@ -275,7 +282,7 @@ const renderWebSearch: Renderer = (item) => {
 
 const renderBrowser: Renderer = (item) => ({
 	icon: "icon-monitor",
-	verb: `Browser ${arg(item, "action") || ""}`.trim(),
+	verb: t("chat:tools.browser", { action: arg(item, "action") }).trim(),
 	target: arg(item, "url", "selector", "text"),
 	body: null,
 });
@@ -289,23 +296,23 @@ const renderSpawnAgent: Renderer = (item) => {
 	const output = str(res?.result) || str(res?.output) || str(res?.text);
 	return {
 		icon: "icon-users",
-		verb: item.status === "running" ? "Delegating" : "Sub-agent",
+		verb: item.status === "running" ? t("chat:tools.delegating") : t("chat:tools.subAgent"),
 		target: truncateText(task.split("\n")[0] || "", 90).text,
 		badge: status || (str(res?.model) ? str(res?.model) : undefined),
 		body: (
 			<>
 				{task ? (
-					<Section label="Task">
+					<Section label={t("chat:tools.task")}>
 						<Markdown text={task} />
 					</Section>
 				) : null}
 				{arg(item, "context") ? (
-					<Section label="Context">
+					<Section label={t("chat:tools.context")}>
 						<Markdown text={arg(item, "context")} />
 					</Section>
 				) : null}
 				{output ? (
-					<Section label="Result">
+					<Section label={t("chat:tools.result")}>
 						<Markdown text={output} />
 					</Section>
 				) : res ? (
@@ -322,8 +329,13 @@ const renderTaskList: Renderer = (item) => {
 	const subject = arg(item, "subject");
 	return {
 		icon: "icon-check-circle",
-		verb: action === "create" ? "Added task" : action === "update" ? "Updated task" : "Tasks",
-		target: subject || (tasks.length ? plural(tasks.length, "task") : action),
+		verb:
+			action === "create"
+				? t("chat:tools.addedTask")
+				: action === "update"
+					? t("chat:tools.updatedTask")
+					: t("chat:tools.tasks"),
+		target: subject || (tasks.length ? countLabel(tasks.length, "task") : action),
 		badge: arg(item, "status") || undefined,
 		body: tasks.length ? <TaskChecklist tasks={tasks} /> : <JsonBlock value={item.result} />,
 	};
@@ -336,14 +348,14 @@ const renderMcp: Renderer = (item) => {
 	return {
 		icon: "icon-connectors",
 		verb: tool,
-		target: server ? `via ${server}` : undefined,
+		target: server ? t("chat:tools.via", { server }) : undefined,
 		body: (
 			<>
-				<Section label="Arguments">
+				<Section label={t("chat:tools.arguments")}>
 					<JsonBlock value={item.args} />
 				</Section>
 				{item.result === undefined ? null : (
-					<Section label="Result">
+					<Section label={t("chat:tools.result")}>
 						<JsonBlock value={item.result} />
 					</Section>
 				)}
@@ -381,12 +393,12 @@ const renderDefault: Renderer = (item) => {
 		body: (
 			<>
 				{hasArgs ? (
-					<Section label="Arguments">
+					<Section label={t("chat:tools.arguments")}>
 						<JsonBlock value={item.args} />
 					</Section>
 				) : null}
 				{extraResult ? (
-					<Section label="Result">
+					<Section label={t("chat:tools.result")}>
 						<JsonBlock value={res} />
 					</Section>
 				) : null}
@@ -417,7 +429,7 @@ export function toolView(item: ToolItem): ToolView {
 }
 
 /** Tools whose header names a file; used to summarise a group of calls. */
-export function toolNoun(item: ToolItem): string {
+export function toolNoun(item: ToolItem): CountUnit {
 	switch (item.name) {
 		case "exec":
 			return "command";
@@ -432,6 +444,6 @@ export function toolNoun(item: ToolItem): string {
 		case "web_search":
 			return "search";
 		default:
-			return item.name.startsWith("mcp__") ? "MCP call" : "tool call";
+			return item.name.startsWith("mcp__") ? "mcp" : "tool";
 	}
 }

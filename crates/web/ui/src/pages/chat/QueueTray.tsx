@@ -1,11 +1,13 @@
 // ── Queued messages tray ────────────────────────────────────
 
 import { useLayoutEffect, useState } from "preact/hooks";
+import { useTranslation } from "../../i18n";
 import { sessionStore } from "../../stores/session-store";
 import { showToast } from "../../ui";
 import { editQueued, type QueuedEntry, queuedForSession, queuedMessages, removeQueued, steerQueued } from "./queue";
 
 function QueuedItem({ entry, first }: { entry: QueuedEntry; first: boolean }) {
+	const { t } = useTranslation("chat");
 	const [busy, setBusy] = useState(false);
 	const act = async (action: (e: QueuedEntry) => Promise<boolean>, failure: string) => {
 		setBusy(true);
@@ -19,32 +21,32 @@ function QueuedItem({ entry, first }: { entry: QueuedEntry; first: boolean }) {
 		<div className="msg user queued" data-queued-seq={entry.seq}>
 			<div className="queued-text">{entry.text}</div>
 			<div className="queued-badge">
-				<span className="queued-label">{first ? "Next" : "Queued"}</span>
+				<span className="queued-label">{first ? t("queue.next") : t("queue.queued")}</span>
 				<button
 					type="button"
 					className="queued-action"
 					disabled={busy}
-					title="Stop the current reply and answer this message now"
-					onClick={() => void act(steerQueued, "Could not send it now")}
+					title={t("queue.sendNowTitle")}
+					onClick={() => void act(steerQueued, t("queue.sendNowFailed"))}
 				>
-					Send now
+					{t("queue.sendNow")}
 				</button>
 				<button
 					type="button"
 					className="queued-action"
 					disabled={busy}
-					title="Take it back to the composer"
-					onClick={() => void act(editQueued, "Could not edit the queued message")}
+					title={t("queue.editTitle")}
+					onClick={() => void act(editQueued, t("queue.editFailed"))}
 				>
-					Edit
+					{t("queue.edit")}
 				</button>
 				<button
 					type="button"
 					className="queued-cancel"
 					disabled={busy}
-					title="Remove from the queue"
-					aria-label="Remove from the queue"
-					onClick={() => void act(removeQueued, "Could not remove the queued message")}
+					title={t("queue.remove")}
+					aria-label={t("queue.remove")}
+					onClick={() => void act(removeQueued, t("queue.removeFailed"))}
 				>
 					{"✕"}
 				</button>

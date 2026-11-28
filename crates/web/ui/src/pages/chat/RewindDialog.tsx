@@ -5,11 +5,12 @@
 // later turns changed, or both.
 
 import { useEffect, useRef, useState } from "preact/hooks";
+import { t, useTranslation } from "../../i18n";
 import { showToast } from "../../ui";
 import { type RewindPoint, type RewindScope, rewindPickerOpen, rewindTarget, rewindTo, runIdsFrom } from "./rewind";
 
 function preview(text: string): string {
-	const line = text.trim().split("\n")[0] || "(attachment)";
+	const line = text.trim().split("\n")[0] || t("chat:rewind.attachment");
 	return line.length > 120 ? `${line.slice(0, 120)}…` : line;
 }
 
@@ -21,6 +22,7 @@ interface ScopeChoiceProps {
 }
 
 function ScopeChoice({ sessionKey, point, points, onDone }: ScopeChoiceProps) {
+	const { t: chatT } = useTranslation("chat");
 	const [busy, setBusy] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const hasFileChanges = runIdsFrom(point, points).length > 0;
@@ -33,17 +35,17 @@ function ScopeChoice({ sessionKey, point, points, onDone }: ScopeChoiceProps) {
 			await rewindTo(sessionKey, point, points, scope);
 			onDone();
 		} catch (err) {
-			setError(err instanceof Error ? err.message : "Rewind failed");
+			setError(err instanceof Error ? err.message : chatT("rewind.failed"));
 			setBusy(false);
 		}
 	};
 	return (
 		<div className="flex flex-col gap-2">
-			<div className="text-xs text-ink-muted">Rewind to before:</div>
+			<div className="text-xs text-ink-muted">{chatT("rewind.before")}</div>
 			<blockquote className="rewind-quote m-0 text-sm border-l-2 border-line pl-2">{preview(point.text)}</blockquote>
 			<div className="flex flex-col gap-1.5">
 				<button ref={firstRef} type="button" className="provider-btn" disabled={busy} onClick={() => void run("both")}>
-					Restore conversation and files
+					{chatT("rewind.both")}
 				</button>
 				<button
 					type="button"
@@ -51,23 +53,19 @@ function ScopeChoice({ sessionKey, point, points, onDone }: ScopeChoiceProps) {
 					disabled={busy}
 					onClick={() => void run("conversation")}
 				>
-					Restore conversation only
+					{chatT("rewind.conversation")}
 				</button>
 				<button
 					type="button"
 					className="provider-btn provider-btn-secondary"
 					disabled={busy || !hasFileChanges}
-					title={
-						hasFileChanges ? "Undo file changes made after this message" : "No file checkpoints after this message"
-					}
+					title={hasFileChanges ? chatT("rewind.filesTitle") : chatT("rewind.noFiles")}
 					onClick={() => void run("files")}
 				>
-					Restore files only
+					{chatT("rewind.files")}
 				</button>
 			</div>
-			<div className="text-xs text-ink-muted">
-				The conversation from this message on is removed; its text goes back to the composer.
-			</div>
+			<div className="text-xs text-ink-muted">{chatT("rewind.explain")}</div>
 			{error ? (
 				<div className="text-xs text-state-error" role="alert">
 					{error}
@@ -78,6 +76,7 @@ function ScopeChoice({ sessionKey, point, points, onDone }: ScopeChoiceProps) {
 }
 
 export function RewindDialog() {
+	const { t: chatT } = useTranslation("chat");
 	const target = rewindTarget.value;
 	const picker = rewindPickerOpen.value;
 	const [picked, setPicked] = useState<RewindPoint | null>(null);
@@ -113,12 +112,12 @@ export function RewindDialog() {
 				className="provider-modal rewind-dialog w-[min(520px,94vw)]"
 				role="dialog"
 				aria-modal="true"
-				aria-label="Rewind"
+				aria-label={chatT("rewind.title")}
 			>
 				<div className="provider-modal-header">
-					<div className="provider-item-name">Rewind</div>
+					<div className="provider-item-name">{chatT("rewind.title")}</div>
 					<button type="button" className="provider-btn provider-btn-secondary provider-btn-sm" onClick={close}>
-						Close
+						{chatT("rewind.close")}
 					</button>
 				</div>
 				<div className="provider-modal-body">
@@ -132,7 +131,7 @@ export function RewindDialog() {
 							}}
 						/>
 					) : points.length === 0 ? (
-						<div className="text-sm text-ink-muted">Nothing to rewind yet.</div>
+						<div className="text-sm text-ink-muted">{chatT("rewind.empty")}</div>
 					) : (
 						<ul className="rewind-turns m-0 p-0 list-none flex flex-col gap-1 max-h-[50vh] overflow-y-auto">
 							{[...points].reverse().map((entry) => (
@@ -143,7 +142,9 @@ export function RewindDialog() {
 										onClick={() => setPicked(entry)}
 									>
 										{preview(entry.text)}
-										{entry.runIds.length ? <span className="text-xs text-ink-muted">{" · has changes"}</span> : null}
+										{entry.runIds.length ? (
+											<span className="text-xs text-ink-muted">{chatT("rewind.hasChanges")}</span>
+										) : null}
 									</button>
 								</li>
 							))}
@@ -157,5 +158,5 @@ export function RewindDialog() {
 
 /** Toast an error from a rewind action started outside the dialog. */
 export function reportRewindError(err: unknown): void {
-	showToast(err instanceof Error ? err.message : "Rewind failed", "error");
+	showToast(err instanceof Error ? err.message : t("chat:rewind.failed"), "error");
 }

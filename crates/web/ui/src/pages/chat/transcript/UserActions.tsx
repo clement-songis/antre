@@ -1,8 +1,9 @@
 // ── Edit and rewind actions on a user message ───────────────
 
 import { signal } from "@preact/signals";
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useLayoutEffect, useRef, useState } from "preact/hooks";
 import { MenuButton } from "../../../components/ContextMenu";
+import { t, useTranslation } from "../../../i18n";
 import { sessionStore } from "../../../stores/session-store";
 import { reportRewindError } from "../RewindDialog";
 import { editAndResend, fetchRewindPoints, pointForUserItem, rewindTarget } from "../rewind";
@@ -20,7 +21,7 @@ export const editingUserItemId = signal<string | null>(null);
 export async function resolvePoint(item: UserItem, sessionKey: string) {
 	const points = await fetchRewindPoints(sessionKey);
 	const point = pointForUserItem(item, points);
-	if (!point) throw new Error("This message is not in the saved history yet");
+	if (!point) throw new Error(t("chat:rewind.notSaved"));
 	return { point, points };
 }
 
@@ -35,6 +36,7 @@ export async function openRewindFor(item: UserItem, sessionKey: string): Promise
 }
 
 export function UserActions({ item, sessionKey }: UserActionsProps) {
+	const { t: chatT } = useTranslation("chat");
 	const editing = editingUserItemId.value === item.id;
 	const setEditing = (value: boolean) => {
 		editingUserItemId.value = value ? item.id : null;
@@ -44,10 +46,12 @@ export function UserActions({ item, sessionKey }: UserActionsProps) {
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const replying = sessionStore.getByKey(sessionKey)?.replying.value === true;
 
-	useEffect(() => {
+	useLayoutEffect(() => {
 		if (!editing) return;
 		const el = textareaRef.current;
 		if (!el) return;
+		// Set before paint so nothing typed meanwhile is overwritten.
+		el.value = item.text;
 		el.focus();
 		el.setSelectionRange(el.value.length, el.value.length);
 	}, [editing]);
@@ -73,8 +77,7 @@ export function UserActions({ item, sessionKey }: UserActionsProps) {
 				<textarea
 					ref={textareaRef}
 					className="msg-user-edit-input w-full min-h-[64px] rounded-md border border-line bg-ground text-ink p-2 text-sm font-text"
-					aria-label="Edit message"
-					defaultValue={item.text}
+					aria-label={chatT("editMessage.label")}
 					disabled={busy}
 					onInput={(e) => setHasText((e.target as HTMLTextAreaElement).value.trim().length > 0)}
 					onKeyDown={(e) => {
@@ -95,16 +98,16 @@ export function UserActions({ item, sessionKey }: UserActionsProps) {
 						disabled={busy}
 						onClick={() => setEditing(false)}
 					>
-						Cancel
+						{chatT("editMessage.cancel")}
 					</button>
 					<button
 						type="button"
 						className="provider-btn provider-btn-sm"
 						disabled={busy || !hasText}
-						title="Fork the conversation before this message and send the edited text there (Ctrl/Cmd+Enter)"
+						title={chatT("editMessage.sendTitle")}
 						onClick={() => void submitEdit()}
 					>
-						{busy ? "Sending…" : "Send as new branch"}
+						{busy ? chatT("editMessage.sending") : chatT("editMessage.send")}
 					</button>
 				</div>
 			</div>
@@ -113,12 +116,12 @@ export function UserActions({ item, sessionKey }: UserActionsProps) {
 
 	return (
 		<div className="msg-user-actions">
-			<MenuButton label="More actions" getMenu={() => userMessageMenu(item, sessionKey)} />
+			<MenuButton label={chatT("a11y.moreActions")} getMenu={() => userMessageMenu(item, sessionKey)} />
 			<button
 				type="button"
 				className="msg-action-btn"
-				title="Edit and resend in a new branch"
-				aria-label="Edit message"
+				title={chatT("editMessage.buttonTitle")}
+				aria-label={chatT("editMessage.label")}
 				disabled={replying || item.images.length > 0 || item.documents.length > 0}
 				onClick={() => {
 					setHasText(item.text.trim().length > 0);
@@ -130,8 +133,8 @@ export function UserActions({ item, sessionKey }: UserActionsProps) {
 			<button
 				type="button"
 				className="msg-action-btn"
-				title="Rewind to before this message"
-				aria-label="Rewind"
+				title={chatT("rewind.rewindTitle")}
+				aria-label={chatT("rewind.title")}
 				disabled={replying}
 				onClick={() => void openRewind()}
 			>

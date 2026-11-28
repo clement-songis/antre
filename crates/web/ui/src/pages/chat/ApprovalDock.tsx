@@ -5,6 +5,7 @@
 // first request (when the composer holds no text).
 
 import { useEffect, useState } from "preact/hooks";
+import { useTranslation } from "../../i18n";
 import { switchSession } from "../../sessions";
 import {
 	type ApprovalChoice,
@@ -37,6 +38,7 @@ interface ApprovalCardProps {
 }
 
 function ApprovalCard({ approval, now, primary }: ApprovalCardProps) {
+	const { t } = useTranslation("chat");
 	const left = secondsLeft(approval.expiresAtMs, now);
 	const expired = left === 0;
 	const disabled = approval.resolving || expired;
@@ -46,9 +48,9 @@ function ApprovalCard({ approval, now, primary }: ApprovalCardProps) {
 			className={`msg approval-card${expired ? " approval-expired" : ""}`}
 			id={`approval-${approval.requestId}`}
 			data-request-id={approval.requestId}
-			aria-label="Command approval"
+			aria-label={t("approvals.region")}
 		>
-			<div className="approval-label">Command requires approval:</div>
+			<div className="approval-label">{t("approvals.requires")}</div>
 			<code className="approval-cmd">{approval.command}</code>
 			<div className="approval-btns">
 				<button
@@ -56,30 +58,32 @@ function ApprovalCard({ approval, now, primary }: ApprovalCardProps) {
 					className="approval-btn approval-allow"
 					disabled={disabled}
 					onClick={() => choose("once")}
-					title={primary ? "Allow once (Enter)" : "Allow once"}
+					title={primary ? t("approvals.allowOnceKey") : t("approvals.allowOnce")}
 				>
-					Allow once
+					{t("approvals.allowOnce")}
 				</button>
 				<button
 					type="button"
 					className="approval-btn approval-always"
 					disabled={disabled}
 					onClick={() => choose("always")}
-					title={primary ? "Always allow this exact command (A)" : "Always allow this exact command"}
+					title={primary ? t("approvals.alwaysAllowKey") : t("approvals.alwaysAllowTitle")}
 				>
-					Always allow
+					{t("approvals.alwaysAllow")}
 				</button>
 				<button
 					type="button"
 					className="approval-btn approval-deny"
 					disabled={disabled}
 					onClick={() => choose("deny")}
-					title={primary ? "Deny (Esc)" : "Deny"}
+					title={primary ? t("approvals.denyKey") : t("approvals.deny")}
 				>
-					Deny
+					{t("approvals.deny")}
 				</button>
 			</div>
-			<div className="approval-countdown">{expired ? "expired" : left === null ? "" : `${left}s`}</div>
+			<div className="approval-countdown">
+				{expired ? t("approvals.expired") : left === null ? "" : t("approvals.secondsLeft", { count: left })}
+			</div>
 			{approval.error ? <div className="approval-status text-state-error">{approval.error}</div> : null}
 		</section>
 	);
@@ -101,7 +105,7 @@ export function handleApprovalShortcut(e: KeyboardEvent): boolean {
 	if (isTypingTarget(e.target)) return false;
 	let choice: ApprovalChoice | null = null;
 	if (e.key === "Enter" && !e.shiftKey) choice = "once";
-	else if (e.key === "Escape") choice = "deny";
+	else if (e.key === "Escape" && !e.shiftKey) choice = "deny";
 	else if ((e.key === "a" || e.key === "A") && !e.shiftKey) choice = "always";
 	if (!choice) return false;
 	e.preventDefault();
@@ -128,16 +132,17 @@ export function ApprovalDock() {
 
 /** Toolbar badge counting approvals waiting in other sessions. */
 export function ApprovalsBadge() {
+	const { t } = useTranslation("chat");
 	const activeKey = sessionStore.activeSessionKey.value;
 	const elsewhere = pendingApprovals.value.filter((a) => a.sessionKey && a.sessionKey !== activeKey);
 	if (elsewhere.length === 0) return null;
 	const target = elsewhere[0].sessionKey as string;
-	const label = `${elsewhere.length} approval${elsewhere.length === 1 ? "" : "s"} waiting`;
+	const label = t("approvals.waiting", { count: elsewhere.length });
 	return (
 		<button
 			type="button"
-			className="approvals-badge text-xs border border-[var(--warn)] text-[var(--warn)] px-2 py-1 rounded-md bg-transparent cursor-pointer inline-flex items-center gap-1"
-			title={`${label} in other sessions; click to open`}
+			className="approvals-badge text-xs border border-state-warn text-state-warn px-2 py-1 rounded-md bg-transparent cursor-pointer inline-flex items-center gap-1"
+			title={t("approvals.waitingElsewhere", { label })}
 			aria-label={label}
 			onClick={() => switchSession(target)}
 		>

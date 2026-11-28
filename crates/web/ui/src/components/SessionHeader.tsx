@@ -809,7 +809,11 @@ export function SessionHeader({
 							<div className="flex items-center gap-1 min-w-0">
 								{nameControl}
 								{slots.actionsAsMenu ? (
-									<MenuButton className="session-title-menu-btn" label="Session actions" getMenu={sessionMenu} />
+									<MenuButton
+										className="session-title-menu-btn"
+										label={t("chat:a11y.sessionActions")}
+										getMenu={sessionMenu}
+									/>
 								) : (
 									renameCta
 								)}

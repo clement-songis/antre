@@ -5,7 +5,7 @@
 
 import { render } from "preact";
 import * as gon from "../gon";
-import { t } from "../i18n";
+import { t, useTranslation } from "../i18n";
 import { navigate } from "../router";
 import { routes } from "../routes";
 import { togglePalette } from "../stores/command-store";
@@ -77,24 +77,25 @@ function accountMenu(): MenuSpec {
 			onSelect: () => logoutBtn?.click(),
 		});
 	}
-	return { label: "Settings and account", items };
+	return { label: t("chat:a11y.accountMenu"), items };
 }
 
 export function SidebarAccount() {
+	const { t: commonT } = useTranslation("common");
 	const identity = gon.get("identity");
-	const name = identity?.user_name || "Settings";
+	const name = identity?.user_name || commonT("header.settings");
 	return (
 		<div className="sidebar-account flex items-center gap-2 px-3 py-2">
 			<button
 				type="button"
 				className="sidebar-account-btn flex-1 min-w-0 flex items-center gap-2 text-xs text-ink bg-transparent border-0 cursor-pointer text-left p-1 rounded"
 				onClick={() => navigate(routes.profile as string)}
-				title="Settings"
+				title={commonT("header.settings")}
 			>
 				<span className="icon icon-sm icon-settings shrink-0" aria-hidden="true" />
 				<span className="truncate">{name}</span>
 			</button>
-			<MenuButton label="Settings and account" getMenu={accountMenu} />
+			<MenuButton label={commonT("chat:a11y.accountMenu")} getMenu={accountMenu} />
 		</div>
 	);
 }

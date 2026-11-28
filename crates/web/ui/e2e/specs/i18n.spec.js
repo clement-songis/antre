@@ -1,8 +1,8 @@
 const { expect, test } = require("../base-test");
 const { expectPageContentMounted, navigateAndWait, waitForWsConnected, watchPageErrors } = require("../helpers");
 
-async function expectTitleMenuItem(page, name) {
-	await page.getByRole("button", { name: "Session actions", exact: true }).click();
+async function expectTitleMenuItem(page, name, button = "Session actions") {
+	await page.getByRole("button", { name: button, exact: true }).click();
 	await expect(page.getByRole("menuitem", { name, exact: true })).toBeVisible();
 	await page.keyboard.press("Escape");
 	await expect(page.getByRole("menu")).toHaveCount(0);
@@ -238,7 +238,7 @@ test.describe("i18n", () => {
 		});
 		await expect(page.locator("html")).toHaveAttribute("lang", "fr");
 		await expect(page.locator("#modelComboBtn")).toHaveAttribute("title", "Sélectionner un modèle ou un agent ACP");
-		await expectTitleMenuItem(page, "Enregistrer au format Markdown");
+		await expectTitleMenuItem(page, "Enregistrer au format Markdown", "Actions de la session");
 
 		await page.evaluate(async () => {
 			const appScript = document.querySelector('script[type="module"][src*="js/app.js"]');
@@ -281,7 +281,7 @@ test.describe("i18n", () => {
 		expect(translated.locale).toBe("zh-TW");
 
 		await expect(page.locator("#modelComboBtn")).toHaveAttribute("title", "選擇模型或 ACP 助理");
-		await expectTitleMenuItem(page, "分享快照");
+		await expectTitleMenuItem(page, "分享快照", "工作階段操作");
 
 		await page.evaluate(async () => {
 			const appScript = document.querySelector('script[type="module"][src*="js/app.js"]');

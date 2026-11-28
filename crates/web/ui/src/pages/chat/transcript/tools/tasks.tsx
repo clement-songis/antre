@@ -5,6 +5,7 @@
 // each task, which the pinned checklist shows live.
 
 import { computed } from "@preact/signals";
+import { t } from "../../../../i18n";
 import type { ToolItem } from "../model";
 import { transcriptItems } from "../store";
 import { isRecord, num, resultRecord, str } from "./shared";
@@ -79,8 +80,8 @@ export function PinnedTaskChecklist() {
 	if (tasks.length === 0 || tasks.every((task) => task.status === "completed")) return null;
 	const done = tasks.filter((task) => task.status === "completed").length;
 	return (
-		<section className="msg pinned-task-checklist" aria-label="Task progress">
-			<div className="tool-section-label">{`Tasks · ${done}/${tasks.length} done`}</div>
+		<section className="msg pinned-task-checklist" aria-label={t("chat:tools.taskProgress")}>
+			<div className="tool-section-label">{t("chat:tools.tasksDone", { done, total: tasks.length })}</div>
 			<TaskChecklist tasks={tasks} />
 		</section>
 	);

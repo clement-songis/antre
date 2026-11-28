@@ -5,6 +5,7 @@
 
 import { signal } from "@preact/signals";
 import { sendRpc } from "../helpers";
+import { t } from "../i18n";
 import { fetchSessions, removeSessionFromClientState, switchSession } from "../sessions";
 import { projectStore } from "../stores/project-store";
 import { sessionStore } from "../stores/session-store";
@@ -53,7 +54,7 @@ export async function renameSession(key: string, label: string): Promise<boolean
 	if (!trimmed) return false;
 	const res = await sendRpc("sessions.patch", { key, label: trimmed });
 	if (!res?.ok) {
-		showToast(errorMessage(res, "Rename failed"), "error");
+		showToast(errorMessage(res, t("sessions:menu.renameFailed")), "error");
 		return false;
 	}
 	const session = sessionStore.getByKey(key);
@@ -68,7 +69,7 @@ export async function renameSession(key: string, label: string): Promise<boolean
 export async function moveSessionToProject(key: string, projectId: string): Promise<void> {
 	const res = await sendRpc("sessions.patch", { key, projectId });
 	if (!res?.ok) {
-		showToast(errorMessage(res, "Move failed"), "error");
+		showToast(errorMessage(res, t("sessions:menu.moveFailed")), "error");
 		return;
 	}
 	const session = sessionStore.getByKey(key);
@@ -77,7 +78,12 @@ export async function moveSessionToProject(key: string, projectId: string): Prom
 		session.dataVersion.value++;
 	}
 	const project = projectStore.getById(projectId);
-	showToast(projectId ? `Moved to ${project?.label || projectId}` : "Removed from its project", "success");
+	showToast(
+		projectId
+			? t("sessions:menu.movedTo", { project: project?.label || projectId })
+			: t("sessions:menu.removedFromProject"),
+		"success",
+	);
 	fetchSessions();
 }
 
@@ -85,7 +91,7 @@ export async function forkSession(key: string): Promise<void> {
 	const res = await sendRpc<{ sessionKey?: string }>("sessions.fork", { key });
 	const forkKey = res?.payload?.sessionKey;
 	if (!(res?.ok && forkKey)) {
-		showToast(errorMessage(res, "Fork failed"), "error");
+		showToast(errorMessage(res, t("sessions:menu.forkFailed")), "error");
 		return;
 	}
 	fetchSessions();
@@ -108,7 +114,7 @@ export async function shareSession(key: string): Promise<void> {
 	if (!visibility) return;
 	const res = await sendRpc<SharePayload>("sessions.share.create", { key, visibility });
 	if (!(res?.ok && res.payload?.path)) {
-		showToast(errorMessage(res, "Failed to create share link"), "error");
+		showToast(errorMessage(res, t("sessions:menu.shareFailed")), "error");
 		return;
 	}
 	const url = shareUrl(res.payload);
@@ -118,7 +124,7 @@ export async function shareSession(key: string): Promise<void> {
 	fetchSessions();
 	try {
 		await navigator.clipboard.writeText(url);
-		showToast("Share link copied", "success");
+		showToast(t("sessions:menu.shareCopied"), "success");
 	} catch {
 		await shareLinkDialog(url, visibility);
 	}
@@ -127,7 +133,10 @@ export async function shareSession(key: string): Promise<void> {
 export async function setArchived(key: string, archived: boolean): Promise<void> {
 	const res = await sendRpc("sessions.patch", { key, archived });
 	if (!res?.ok) {
-		showToast(errorMessage(res, archived ? "Archive failed" : "Unarchive failed"), "error");
+		showToast(
+			errorMessage(res, archived ? t("sessions:menu.archiveFailed") : t("sessions:menu.unarchiveFailed")),
+			"error",
+		);
 		return;
 	}
 	const session = sessionStore.getByKey(key);
@@ -159,7 +168,7 @@ function neighbourKey(key: string): string {
  */
 export function deleteSessionWithUndo(key: string): void {
 	if (key === "main") {
-		showToast("The main session cannot be deleted", "error");
+		showToast(t("sessions:menu.mainNotDeletable"), "error");
 		return;
 	}
 	const wasActive = sessionStore.activeSessionKey.value === key;
@@ -167,11 +176,11 @@ export function deleteSessionWithUndo(key: string): void {
 	setPendingDelete(key, true);
 	if (wasActive) switchSession(next);
 	let undone = false;
-	const label = sessionStore.getByKey(key)?.label || "Session";
-	showToast(`Deleted “${label}”`, "info", {
+	const label = sessionStore.getByKey(key)?.label || t("sessions:menu.untitled");
+	showToast(t("sessions:menu.deleted", { name: label }), "info", {
 		durationMs: DELETE_UNDO_MS,
 		action: {
-			label: "Undo",
+			label: t("sessions:menu.undo"),
 			onClick: () => {
 				undone = true;
 				setPendingDelete(key, false);
@@ -184,7 +193,7 @@ export function deleteSessionWithUndo(key: string): void {
 		sendRpc("sessions.delete", { key }).then((res) => {
 			setPendingDelete(key, false);
 			if (!res?.ok) {
-				showToast(errorMessage(res, "Failed to delete session"), "error");
+				showToast(errorMessage(res, t("sessions:menu.deleteFailed")), "error");
 				fetchSessions();
 				return;
 			}

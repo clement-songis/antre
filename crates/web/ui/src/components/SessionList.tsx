@@ -5,6 +5,7 @@
 
 import type { VNode } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
+import { useTranslation } from "../i18n";
 import {
 	makeBranchIcon,
 	makeChatIcon,
@@ -267,6 +268,7 @@ function SessionItem({
 	descendantCount,
 	expanded,
 }: SessionItemProps): VNode {
+	const { t: chatT } = useTranslation("chat");
 	const isBranch = depth > 0;
 	const active = session.key === activeKey;
 	// Read per-session signals — auto-subscribes for re-render.
@@ -341,7 +343,11 @@ function SessionItem({
 					)}
 					<SessionIcon session={session} isBranch={isBranch} />
 					{pinnedSessionKeys.value.has(session.key) ? (
-						<span className="icon icon-xs icon-list-plus text-ink-muted" title="Pinned" aria-hidden="true" />
+						<span
+							className="icon icon-xs icon-list-plus text-ink-muted"
+							title={chatT("a11y.pinned")}
+							aria-hidden="true"
+						/>
 					) : null}
 					{renaming ? (
 						<SessionRenameInput session={session} />
@@ -363,7 +369,7 @@ function SessionItem({
 					)}
 					<MenuButton
 						className="session-menu-btn"
-						label={`Actions for ${session.label || session.key}`}
+						label={chatT("a11y.actionsFor", { name: session.label || session.key })}
 						getMenu={() => sessionMenu(session)}
 					/>
 				</div>
