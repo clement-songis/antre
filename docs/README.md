@@ -34,6 +34,7 @@ flowchart LR
     tokens["crates/web/ui/src/theme/tokens.css"]
     install["install.sh"]
     releases["GitHub releases"]
+    shots["Site screenshots workflow<br/>(weekly, manual)"] --> branch["branch site-screenshots"]
   end
   subgraph site["antre-ai/antre-ai.github.io"]
     pages["Pages workflow<br/>push, manual run, hourly check"]
@@ -42,6 +43,7 @@ flowchart LR
   tokens --> pages
   install --> pages
   releases -- "releases.json" --> pages
+  branch -- "public clone" --> pages
   pages -- "deploy-pages (OIDC)" --> web["https://antre-ai.github.io/<br/>/ landing, /docs/ docs"]
 ```
 
@@ -53,6 +55,14 @@ flowchart LR
   branch, tag or commit of this repo to preview.
 - The site also serves `install.sh` from the root of this repo and builds
   `releases.json` (the update checker's manifest) from this repo's releases.
+- The landing page shows real app screenshots. `.github/workflows/site-screenshots.yml`
+  builds the gateway every Monday (or on demand), injects a demo conversation in the
+  web UI (no LLM involved) and captures it with
+  `crates/web/ui/e2e/site-screenshots/site.screens.js`, then force-pushes the PNGs as a
+  single commit to the `site-screenshots` branch. The site's next hourly check picks
+  them up. To capture locally against a running gateway:
+  `ANTRE_SITE_SCREENSHOTS_URL=http://127.0.0.1:13131 npx playwright test -c playwright.site-screenshots.config.cjs`
+  in `crates/web/ui` (PNGs land in `target/site-screenshots/`).
 - The docs are built with the base path `/docs` and links go through
   `withBase()`. The Docs workflow here checks them in that layout on every
   pull request.
