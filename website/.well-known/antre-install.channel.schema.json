@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://moltis.org/.well-known/antre-install.channel.schema.json",
+  "$id": "https://antre-ai.github.io/.well-known/antre-install.channel.schema.json",
   "title": "Antre Install Channel Manifest",
   "type": "object",
   "additionalProperties": false,

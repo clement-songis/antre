@@ -5,7 +5,7 @@ Get Antre running in under 5 minutes.
 ## 1. Install
 
 ```bash
-curl -fsSL https://www.moltis.org/install.sh | sh
+curl -fsSL https://antre-ai.github.io/install.sh | sh
 ```
 
 Or via Homebrew:
@@ -154,6 +154,6 @@ Add knowledge by placing Markdown files in `~/.antre/memory/`.
 
 ## Getting Help
 
-- **Documentation**: [docs.moltis.org](https://docs.moltis.org)
+- **Documentation**: [antre-ai.github.io/docs](https://antre-ai.github.io/docs/)
 - **GitHub Issues**: [github.com/antre-ai/antre/issues](https://github.com/antre-ai/antre/issues)
 - **Discussions**: [github.com/antre-ai/antre/discussions](https://github.com/antre-ai/antre/discussions)

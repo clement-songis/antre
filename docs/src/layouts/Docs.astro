@@ -1,6 +1,6 @@
 ---
 import Base from "./Base.astro"
-import { getDocsIndex, getPrevNext, type DocPage } from "../lib/docs"
+import { getDocsIndex, getPrevNext, withBase, type DocPage } from "../lib/docs"
 
 interface Props {
   page: DocPage
@@ -9,7 +9,9 @@ interface Props {
 const { page } = Astro.props
 const sections = await getDocsIndex()
 const { previous, next } = await getPrevNext(page.slug)
-const currentPath = Astro.url.pathname === "/" ? "/index.html" : Astro.url.pathname
+const docsRoot = withBase("/")
+const currentPath = [docsRoot, docsRoot.replace(/\/$/, "")].includes(Astro.url.pathname) ? withBase("/index.html") : Astro.url.pathname
+const pagefindUrl = withBase("/pagefind/pagefind.js")
 const searchPages = sections.flatMap((section) => section.pages)
 ---
 
@@ -21,14 +23,15 @@ const searchPages = sections.flatMap((section) => section.pages)
         <span></span>
         <span></span>
       </button>
-      <a class="brand" href="/index.html" aria-label="Antre documentation home">
-        <img class="brand-mark" src="/antre-icon.svg" alt="" width="30" height="30" aria-hidden="true" />
-        <span>Antre</span>
+      <a class="brand" href="/" aria-label="Antre home">
+        <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path class="brand-arch" d="M7 25.5V16a9 9 0 0 1 18 0v9.5" /><path class="brand-arch" d="M4 25.5h24" /><circle class="brand-dot" cx="16" cy="20" r="2.6" /></svg>
+        <span>antre</span>
       </a>
+      <a class="brand-section" href={withBase("/index.html")}>docs</a>
       <nav class="topnav" aria-label="Primary">
-        <a href="/quickstart.html">Quickstart</a>
-        <a href="/providers.html">Providers</a>
-        <a href="/security.html">Security</a>
+        <a href={withBase("/quickstart.html")}>Quickstart</a>
+        <a href={withBase("/providers.html")}>Providers</a>
+        <a href={withBase("/security.html")}>Security</a>
         <a href="https://github.com/antre-ai/antre">GitHub</a>
       </nav>
       <div class="theme-toggle" role="group" aria-label="Theme">
@@ -47,7 +50,7 @@ const searchPages = sections.flatMap((section) => section.pages)
     <aside class="sidebar" aria-label="Documentation navigation">
       <div class="sidebar-search">
         <label class="search-label" for="docs-search">Search docs</label>
-        <input id="docs-search" type="search" placeholder="Search pages..." autocomplete="off" />
+        <input id="docs-search" type="search" placeholder="Search the docs..." autocomplete="off" />
         <div id="search-results" class="search-results" hidden></div>
       </div>
       {
@@ -67,10 +70,10 @@ const searchPages = sections.flatMap((section) => section.pages)
     </aside>
 
     <main class="page-grid">
-      <article class="content-card">
-        <div class="eyebrow">{page.section}</div>
+      <article class="content-card" data-pagefind-body>
+        <div class="eyebrow" data-pagefind-ignore>{page.section}</div>
         <slot />
-        <nav class="pager" aria-label="Page navigation">
+        <nav class="pager" aria-label="Page navigation" data-pagefind-ignore>
           {previous && <a class="pager-link" href={previous.url}><span>Previous</span>{previous.title}</a>}
           {next && <a class="pager-link next" href={next.url}><span>Next</span>{next.title}</a>}
         </nav>
@@ -82,7 +85,7 @@ const searchPages = sections.flatMap((section) => section.pages)
     </main>
   </div>
 
-  <script define:vars={{ searchPages }}>
+  <script define:vars={{ searchPages, pagefindUrl }}>
     const navToggle = document.querySelector('.nav-toggle')
     const scrim = document.querySelector('.mobile-scrim')
     const sidebar = document.querySelector('.sidebar')
@@ -94,7 +97,7 @@ const searchPages = sections.flatMap((section) => section.pages)
       const resolved = choice === 'auto' ? (themeMedia.matches ? 'dark' : 'light') : choice
       document.documentElement.dataset.theme = resolved
       document.documentElement.dataset.themeChoice = choice
-      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', resolved === 'dark' ? '#111214' : '#f7f7f5')
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', resolved === 'dark' ? '#0d1214' : '#f5f7f7')
       themeButtons.forEach((button) => {
         const active = button.dataset.themeOption === choice
         button.classList.toggle('active', active)
@@ -102,17 +105,17 @@ const searchPages = sections.flatMap((section) => section.pages)
       })
     }
 
-    const storedTheme = localStorage.getItem('antre-docs-theme') || 'auto'
+    const storedTheme = localStorage.getItem('antre-site-theme') || 'auto'
     applyTheme(storedTheme)
     themeButtons.forEach((button) => {
       button.addEventListener('click', () => {
         const choice = button.dataset.themeOption || 'auto'
-        localStorage.setItem('antre-docs-theme', choice)
+        localStorage.setItem('antre-site-theme', choice)
         applyTheme(choice)
       })
     })
     themeMedia.addEventListener('change', () => {
-      if ((localStorage.getItem('antre-docs-theme') || 'auto') === 'auto') {
+      if ((localStorage.getItem('antre-site-theme') || 'auto') === 'auto') {
         applyTheme('auto')
       }
     })
@@ -187,27 +190,64 @@ const searchPages = sections.flatMap((section) => section.pages)
 
     const search = document.getElementById('docs-search')
     const results = document.getElementById('search-results')
-    search?.addEventListener('input', () => {
-      const query = search.value.trim().toLowerCase()
-      if (!query || !results) {
-        results.hidden = true
-        return
+    let pagefind
+    async function loadPagefind() {
+      try {
+        pagefind ??= await import(pagefindUrl)
+      } catch {
+        pagefind = null
       }
-      const matches = searchPages
-        .filter((page) => `${page.title} ${page.section}`.toLowerCase().includes(query))
-        .slice(0, 8)
+      return pagefind
+    }
 
+    function titleMatches(query) {
+      return searchPages
+        .filter((page) => `${page.title} ${page.section}`.toLowerCase().includes(query))
+        .map((page) => ({ url: page.url, label: page.section, title: page.title }))
+    }
+
+    async function fullTextMatches(query) {
+      const engine = await loadPagefind()
+      if (!engine) return []
+      const found = await engine.debouncedSearch(query)
+      if (!found) return null
+      const data = await Promise.all(found.results.slice(0, 8).map((result) => result.data()))
+      return data.map((item) => ({ url: item.url, label: item.meta.title || '', excerpt: item.excerpt }))
+    }
+
+    function renderResults(items) {
       results.replaceChildren()
-      matches.forEach((page) => {
+      items.forEach((item) => {
         const link = document.createElement('a')
-        const section = document.createElement('span')
-        link.href = page.url
-        section.textContent = page.section
-        link.appendChild(section)
-        link.appendChild(document.createTextNode(page.title))
+        const label = document.createElement('span')
+        link.href = item.url
+        label.textContent = item.label
+        link.appendChild(label)
+        if (item.title) link.appendChild(document.createTextNode(item.title))
+        if (item.excerpt) {
+          const excerpt = document.createElement('small')
+          // Pagefind excerpts are plain text with <mark> highlights only.
+          excerpt.innerHTML = item.excerpt
+          link.appendChild(excerpt)
+        }
         results.appendChild(link)
       })
-      results.hidden = matches.length === 0
+      results.hidden = items.length === 0
+    }
+
+    search?.addEventListener('focus', loadPagefind, { once: true })
+    search?.addEventListener('input', async () => {
+      const query = search.value.trim().toLowerCase()
+      if (!query || !results) {
+        if (results) results.hidden = true
+        return
+      }
+      const titles = titleMatches(query)
+      renderResults(titles.slice(0, 8))
+      const fullText = await fullTextMatches(query)
+      if (fullText === null || search.value.trim().toLowerCase() !== query) return
+      const seen = new Set(titles.map((item) => item.url))
+      renderResults([...titles.slice(0, 4), ...fullText.filter((item) => !seen.has(item.url))].slice(0, 10))
     })
   </script>
 </Base>

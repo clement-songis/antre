@@ -2009,6 +2009,7 @@ jobs:
     name: Update deploy template tags
     permissions:
       contents: write
+      actions: write
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
@@ -2104,3 +2105,6 @@ jobs:
             -X PATCH -f sha="${COMMIT_SHA}"
 
           echo "Updated deploy templates to ${VERSION} (commit ${COMMIT_SHA})"
+
+          # Commits made with GITHUB_TOKEN trigger no push workflow, so republish the site explicitly.
+          gh workflow run site.yml --repo "${REPO}" --ref main

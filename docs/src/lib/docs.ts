@@ -18,6 +18,11 @@ export interface DocSection {
 const DOCS_ROOT = join(process.cwd(), "src")
 const SUMMARY_PATH = join(DOCS_ROOT, "SUMMARY.md")
 
+/** Prefixes a site-absolute path with the configured base ("/docs"). */
+export function withBase(path: string): string {
+  return `${import.meta.env.BASE_URL.replace(/\/$/, "")}${path}`
+}
+
 let cachedIndex: Promise<DocSection[]> | undefined
 
 export async function getDocsIndex(): Promise<DocSection[]> {
@@ -78,7 +83,7 @@ async function loadDocsIndex(): Promise<DocSection[]> {
       title: pageMatch[2],
       slug: normalizedSlug,
       sourcePath,
-      url: normalizedSlug === "index" ? "/index.html" : `/${normalizedSlug}.html`,
+      url: withBase(normalizedSlug === "index" ? "/index.html" : `/${normalizedSlug}.html`),
       section: current.title,
       depth: Math.floor(pageMatch[1].length / 2),
     })

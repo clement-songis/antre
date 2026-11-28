@@ -109,4 +109,4 @@ ranking projects.
 
 - [OpenClaw](https://github.com/openclaw/openclaw) and [OpenClaw docs](https://docs.openclaw.ai)
 - [Hermes Agent](https://github.com/NousResearch/hermes-agent) and [Hermes docs](https://hermes-agent.nousresearch.com/docs/)
-- [Antre](https://github.com/antre-ai/antre) and [Antre docs](https://docs.moltis.org)
+- [Antre](https://github.com/antre-ai/antre) and [Antre docs](https://antre-ai.github.io/docs/)

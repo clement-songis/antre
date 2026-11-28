@@ -7,7 +7,7 @@ Antre is distributed as a single self-contained binary. Choose the installation 
 The fastest way to get started on macOS or Linux:
 
 ```bash
-curl -fsSL https://www.moltis.org/install.sh | sh
+curl -fsSL https://antre-ai.github.io/install.sh | sh
 ```
 
 This downloads the latest release for your platform and installs it to `~/.local/bin`.
@@ -28,21 +28,21 @@ Package filenames are versioned on every release. Use the installer script below
 
 ```bash
 # Install the latest .deb package
-curl -fsSL https://www.moltis.org/install.sh | sh -s -- --method=deb
+curl -fsSL https://antre-ai.github.io/install.sh | sh -s -- --method=deb
 ```
 
 ### Fedora / RHEL (.rpm)
 
 ```bash
 # Install the latest .rpm package
-curl -fsSL https://www.moltis.org/install.sh | sh -s -- --method=rpm
+curl -fsSL https://antre-ai.github.io/install.sh | sh -s -- --method=rpm
 ```
 
 ### Arch Linux (.pkg.tar.zst)
 
 ```bash
 # Install the latest package
-curl -fsSL https://www.moltis.org/install.sh | sh -s -- --method=arch
+curl -fsSL https://antre-ai.github.io/install.sh | sh -s -- --method=arch
 ```
 
 ### Snap
@@ -55,7 +55,7 @@ sudo snap install antre
 
 ```bash
 # Install the latest AppImage
-curl -fsSL https://www.moltis.org/install.sh | sh -s -- --method=appimage
+curl -fsSL https://antre-ai.github.io/install.sh | sh -s -- --method=appimage
 ```
 
 ## Docker

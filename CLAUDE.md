@@ -388,7 +388,7 @@ with exact commands), `## Manual QA`. Include concrete test steps.
 
 ## Documentation
 
-Source in `docs/src/` (mdBook). Auto-deployed to docs.moltis.org on push to main.
+Source in `docs/src/` (Astro, mdBook-style `SUMMARY.md`). Published under https://antre-ai.github.io/docs/ by `.github/workflows/site.yml` on push to main (see `website/README.md`).
 Update `docs/src/SUMMARY.md` when adding pages. Preview: `cd docs && mdbook serve`.
 
 **Keep docs in sync with code.** When adding or changing user-facing features

@@ -2,13 +2,15 @@
   "name": "antre-website",
   "private": true,
   "scripts": {
-    "build": "node scripts/build-statement.mjs && node scripts/build-changelog.mjs --published-only",
+    "build": "node scripts/build-site.mjs",
     "build:changelog": "node scripts/build-changelog.mjs --published-only",
     "install-manifest:update": "node scripts/generate-install-release-manifest.mjs",
-    "i18n:validate": "node scripts/validate-i18n.mjs",
-    "test": "node --test tests/*.test.mjs && npm run i18n:validate"
+    "test": "node --test tests/*.test.mjs"
   },
   "devDependencies": {
-    "jsdom": "^30.0.1"
-  }
+    "@fontsource-variable/atkinson-hyperlegible-mono": "5.3.0",
+    "@fontsource-variable/atkinson-hyperlegible-next": "5.3.0",
+    "@fontsource-variable/geologica": "5.3.0"
+  },
+  "version": "0.0.0"
 }

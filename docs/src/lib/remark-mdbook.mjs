@@ -18,7 +18,7 @@ function escapeHtml(value) {
     .replaceAll('"', "&quot;")
 }
 
-function renderInlineMarkdown(value) {
+function renderInlineMarkdown(value, base) {
   const tokens = []
   let text = escapeHtml(value)
 
@@ -29,7 +29,7 @@ function renderInlineMarkdown(value) {
   })
   text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, label, href) => {
     const token = `@@TOKEN${tokens.length}@@`
-    tokens.push(`<a href="${escapeHtml(rewriteMarkdownHref(href))}">${label}</a>`)
+    tokens.push(`<a href="${escapeHtml(rewriteMarkdownHref(href, base))}">${label}</a>`)
     return token
   })
   text = text.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
@@ -37,28 +37,28 @@ function renderInlineMarkdown(value) {
   return tokens.reduce((rendered, token, index) => rendered.replace(`@@TOKEN${index}@@`, token), text)
 }
 
-function renderParagraph(lines) {
-  return `<p>${lines.map(renderInlineMarkdown).join("<br>")}</p>`
+function renderParagraph(lines, base) {
+  return `<p>${lines.map((line) => renderInlineMarkdown(line, base)).join("<br>")}</p>`
 }
 
-function renderList(lines) {
+function renderList(lines, base) {
   const items = lines
     .map((line) => line.replace(/^\s*[-*]\s+/, "").trim())
     .filter(Boolean)
-    .map((line) => `<li>${renderInlineMarkdown(line)}</li>`)
+    .map((line) => `<li>${renderInlineMarkdown(line, base)}</li>`)
     .join("")
 
   return `<ul>${items}</ul>`
 }
 
-function renderAdmonitionBody(value) {
+function renderAdmonitionBody(value, base) {
   return value
     .split(/\n{2,}/)
     .map((block) => block.trim())
     .filter(Boolean)
     .map((block) => {
       const lines = block.split("\n")
-      return lines.every((line) => /^\s*[-*]\s+/.test(line)) ? renderList(lines) : renderParagraph(lines)
+      return lines.every((line) => /^\s*[-*]\s+/.test(line)) ? renderList(lines, base) : renderParagraph(lines, base)
     })
     .join("\n")
 }
@@ -75,14 +75,14 @@ function parseAdmonition(meta) {
   }
 }
 
-function renderAdmonition(node) {
+function renderAdmonition(node, base) {
   const { kind, title } = parseAdmonition(node.meta)
-  const body = renderAdmonitionBody(node.value)
+  const body = renderAdmonitionBody(node.value, base)
 
   return `<aside class="admonition admonition-${escapeHtml(kind)}"><div class="admonition-title">${escapeHtml(title)}</div><div class="admonition-body">${body}</div></aside>`
 }
 
-function rewriteMarkdownHref(href) {
+export function rewriteMarkdownHref(href, base = "") {
   if (!href || href.startsWith("http://") || href.startsWith("https://") || href.startsWith("#")) {
     return href
   }
@@ -93,20 +93,20 @@ function rewriteMarkdownHref(href) {
     return href
   }
 
-  const rewritten = path === "index.md" ? "/index.html" : `/${path.replace(/\.md$/, ".html")}`
+  const rewritten = path === "index.md" ? `${base}/index.html` : `${base}/${path.replace(/\.md$/, ".html")}`
   return fragment ? `${rewritten}#${fragment}` : rewritten
 }
 
-export function mdbookCompat() {
+export function mdbookCompat({ base = "" } = {}) {
   return (tree) => {
     visit(tree, (node) => {
       if (node.type === "link") {
-        node.url = rewriteMarkdownHref(node.url)
+        node.url = rewriteMarkdownHref(node.url, base)
       }
 
       if (node.type === "code" && node.lang === "admonish") {
         node.type = "html"
-        node.value = renderAdmonition(node)
+        node.value = renderAdmonition(node, base)
         delete node.lang
         delete node.meta
       }

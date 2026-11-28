@@ -1,7 +1,7 @@
 {
   "name": "Antre Install Profile",
   "description": "Discovery metadata for agents that want to install and bootstrap Antre.",
-  "url": "https://moltis.org",
+  "url": "https://antre-ai.github.io",
   "version": "1.1.0",
   "default_input_modes": [
     "text/plain"
@@ -23,12 +23,12 @@
     }
   ],
   "links": {
-    "install_root_manifest": "https://moltis.org/.well-known/antre-install.json",
-    "install_root_schema": "https://moltis.org/.well-known/antre-install.schema.json",
-    "install_channel_schema": "https://moltis.org/.well-known/antre-install.channel.schema.json",
-    "install_release_schema": "https://moltis.org/.well-known/antre-install.release.schema.json",
-    "install_stable_channel": "https://moltis.org/.well-known/antre-install/channels/stable.json",
-    "llms_txt": "https://moltis.org/llms.txt",
-    "docs": "https://docs.moltis.org"
+    "install_root_manifest": "https://antre-ai.github.io/.well-known/antre-install.json",
+    "install_root_schema": "https://antre-ai.github.io/.well-known/antre-install.schema.json",
+    "install_channel_schema": "https://antre-ai.github.io/.well-known/antre-install.channel.schema.json",
+    "install_release_schema": "https://antre-ai.github.io/.well-known/antre-install.release.schema.json",
+    "install_stable_channel": "https://antre-ai.github.io/.well-known/antre-install/channels/stable.json",
+    "llms_txt": "https://antre-ai.github.io/llms.txt",
+    "docs": "https://antre-ai.github.io/docs/"
   }
 }

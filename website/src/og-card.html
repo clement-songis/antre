@@ -1,0 +1,21 @@
+<!doctype html>
+<!-- Source of og-social.png / og-social.jpg (1200x630); render steps in website/README.md. -->
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="/assets/site.css">
+  <style>
+    body { width: 1200px; height: 630px; margin: 0; display: flex; flex-direction: column; justify-content: center; padding: 0 96px; position: relative; overflow: hidden; }
+    body::before { content: ""; position: absolute; right: -160px; top: -120px; width: 760px; height: 760px; background: radial-gradient(closest-side, var(--lantern-wash), transparent 70%); }
+    .mark { width: 120px; height: 120px; position: relative; }
+    h1 { font-size: 76px; line-height: 1.05; letter-spacing: -0.03em; margin-top: 40px; position: relative; }
+    h1 span { color: var(--lake); }
+    p { margin-top: 24px; font-size: 28px; color: var(--ink-muted); position: relative; }
+  </style>
+</head>
+<body>
+  <svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><path class="logo__arch" d="M7 25.5V16a9 9 0 0 1 18 0v9.5"/><path class="logo__arch" d="M4 25.5h24"/><circle class="logo__dot" cx="16" cy="20" r="2.6"/></svg>
+  <h1>A home for your <span>AI agent</span>.</h1>
+  <p>Self-hosted, sandboxed, one Rust binary.</p>
+</body>
+</html>

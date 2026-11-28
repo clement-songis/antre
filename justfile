@@ -321,7 +321,7 @@ build-test: build-web-assets
 release-preflight: lint
     cargo +{{nightly_toolchain}} fmt --all -- --check
 
-# Sync repo-root install.sh into website/install.sh for Cloudflare deployment.
+# Sync repo-root install.sh into website/install.sh (the site build publishes the repo-root copy).
 sync-website-install:
     ./scripts/sync-website-install.sh
 
@@ -531,7 +531,14 @@ courier-deploy:
 courier-run *ARGS:
     cargo run -p antre-courier -- {{ARGS}}
 
-# Serve the website locally with SSR partial injection (default 127.0.0.1:4000).
-website-dev:
-    node website/scripts/build-changelog.mjs
-    node website/scripts/dev-server.mjs
+# Build the public site (landing page + docs under /docs/) into website/dist.
+site-build:
+    npm ci --prefix docs
+    npm ci --prefix website
+    npm run build --prefix docs
+    npm test --prefix website
+    node website/scripts/build-site.mjs --require-docs
+
+# Build the public site and serve it at http://127.0.0.1:4317.
+site-serve: site-build
+    python3 -m http.server 4317 --bind 127.0.0.1 --directory website/dist

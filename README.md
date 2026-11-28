@@ -1,6 +1,6 @@
 <div align="center">
 
-<a href="https://moltis.org"><img src="https://raw.githubusercontent.com/antre-ai/antre/main/website/favicon.svg" alt="Antre" width="64"></a>
+<a href="https://antre-ai.github.io/"><img src="https://raw.githubusercontent.com/antre-ai/antre/main/website/favicon.svg" alt="Antre" width="64"></a>
 
 # Antre — A secure persistent personal agent server in Rust
 
@@ -22,7 +22,7 @@ One binary — sandboxed, secure, yours.
 > **Antre is a fork of [Moltis](https://github.com/moltis-org/moltis) by Fabien Penso.** <!-- rebrand:keep -->
 > The lineage runs OpenClaw (the claw), Moltis (the molt), Antre (the lair: a self-hosted home for your agent). <!-- rebrand:keep -->
 > Existing Moltis installs migrate on first start, see [Migrating from Moltis](docs/src/legacy-migration.md). <!-- rebrand:keep -->
-> Antre has published nothing yet: the install script below still comes from moltis.org and the `antre-ai` packages and images do not exist yet, so build from source or use the Nix flake (`nix run github:clement-songis/antre`). <!-- rebrand:keep -->
+> Antre has published nothing yet: the `antre-ai` releases, packages and images behind the commands below do not exist yet, so build from source or use the Nix flake (`nix run github:clement-songis/antre`). <!-- rebrand:keep -->
 
 **Secure by design** — Your keys never leave your machine. Every command runs in a sandboxed container, never on your host.
 
@@ -36,7 +36,7 @@ One binary — sandboxed, secure, yours.
 
 ```bash
 # One-liner install script (macOS / Linux)
-curl -fsSL https://www.moltis.org/install.sh | sh
+curl -fsSL https://antre-ai.github.io/install.sh | sh
 
 # macOS / Linux via Homebrew
 brew install antre-ai/tap/antre
@@ -66,7 +66,7 @@ cargo install antre --git https://github.com/antre-ai/antre
 
 \* LoC measured with `tokei`, excluding `node_modules`, generated build output, `dist`, and `target`.
 
-> [Full comparison in the docs →](https://docs.moltis.org/comparison.html)
+> [Full comparison in the docs →](https://antre-ai.github.io/docs/comparison.html)
 
 ## Architecture — Crate Map
 
@@ -119,8 +119,8 @@ Use `--no-default-features --features lightweight` for constrained devices (Rasp
 - **Hook gating** — `BeforeToolCall` hooks can inspect/block any tool invocation
 - **Supply chain integrity** — [artifact attestations](https://github.com/antre-ai/antre/attestations), Sigstore keyless signing, GPG signing (YubiKey), SHA-256/SHA-512 checksums
 
-See [Security Architecture](https://docs.moltis.org/security.html) for details.
-Verify releases with `gh attestation verify <artifact> -R antre-ai/antre` or see [Release Verification](https://docs.moltis.org/release-verification.html).
+See [Security Architecture](https://antre-ai.github.io/docs/security.html) for details.
+Verify releases with `gh attestation verify <artifact> -R antre-ai/antre` or see [Release Verification](https://antre-ai.github.io/docs/release-verification.html).
 
 ## Features
 
@@ -183,7 +183,7 @@ can meet you across channels without handing your data to a cloud relay.
                └───────────────┘
 ```
 
-See [Quickstart](https://docs.moltis.org/quickstart.html) for gateway startup, message flow, sessions, and memory details.
+See [Quickstart](https://antre-ai.github.io/docs/quickstart.html) for gateway startup, message flow, sessions, and memory details.
 
 ## Getting Started
 
@@ -228,7 +228,7 @@ docker run -d \
 
 Open `https://localhost:13131` and complete the setup. For unattended Docker
 deployments, set `ANTRE_PASSWORD`, `ANTRE_PROVIDER`, and `ANTRE_API_KEY`
-before first boot to skip the setup wizard. See [Docker docs](https://docs.moltis.org/docker.html)
+before first boot to skip the setup wizard. See [Docker docs](https://antre-ai.github.io/docs/docker.html)
 for Podman, OrbStack, TLS trust, and persistence details.
 
 ### Cloud Deployment
@@ -245,7 +245,7 @@ fly secrets set ANTRE_PASSWORD="your-password"
 ```
 
 All cloud configs use `--no-tls` because the provider handles TLS termination.
-See [Cloud Deploy docs](https://docs.moltis.org/cloud-deploy.html) for details.
+See [Cloud Deploy docs](https://antre-ai.github.io/docs/cloud-deploy.html) for details.
 
 ## License
 

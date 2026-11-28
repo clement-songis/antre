@@ -1,5 +1,10 @@
 ---
+import "@fontsource-variable/geologica/wght.css"
+import "@fontsource-variable/atkinson-hyperlegible-next/wght.css"
+import "@fontsource-variable/atkinson-hyperlegible-next/wght-italic.css"
+import "@fontsource-variable/atkinson-hyperlegible-mono/wght.css"
 import "../styles/global.css"
+import { withBase } from "../lib/docs"
 
 interface Props {
   title: string
@@ -15,19 +20,17 @@ const { title, description = "Documentation for Antre, a secure persistent perso
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
-    <meta name="theme-color" content="#f7f7f5" />
+    <meta name="theme-color" content="#f5f7f7" />
     <title>{title}</title>
     <script is:inline>
-      const storedTheme = localStorage.getItem('antre-docs-theme') || 'auto'
+      const storedTheme = localStorage.getItem('antre-site-theme') || 'auto'
       const media = window.matchMedia('(prefers-color-scheme: dark)')
       const resolvedTheme = storedTheme === 'auto' ? (media.matches ? 'dark' : 'light') : storedTheme
       document.documentElement.dataset.theme = resolvedTheme
       document.documentElement.dataset.themeChoice = storedTheme
-      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', resolvedTheme === 'dark' ? '#111214' : '#f7f7f5')
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', resolvedTheme === 'dark' ? '#0d1214' : '#f5f7f7')
     </script>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:opsz,wght@14..32,400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="icon" href={withBase("/antre-icon.svg")} type="image/svg+xml" />
   </head>
   <body>
     <slot />

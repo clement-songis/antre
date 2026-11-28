@@ -74,4 +74,6 @@ labels: the ones Moltis created are left alone and new ones are built.
 Remove the old ones by hand (`docker ps -a --filter name=moltis-`,
 `docker images 'moltis-*'`, or the podman equivalents).
 
-The `moltis.org` hosts stay until a domain is chosen.
+The website, docs and install script now live at <https://antre-ai.github.io/>.
+The update checker and shared-session pages still use `moltis.org` hosts until a
+domain is chosen.

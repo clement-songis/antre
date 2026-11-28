@@ -12,7 +12,7 @@ Antre compiles your entire AI gateway — web UI, LLM providers, tools, and all 
 
 ```bash
 # Quick install (macOS / Linux)
-curl -fsSL https://www.moltis.org/install.sh | sh
+curl -fsSL https://antre-ai.github.io/install.sh | sh
 ```
 
 ## Why Antre?
@@ -47,7 +47,7 @@ See the full list of [supported providers](providers.md).
 
 ```bash
 # Install
-curl -fsSL https://www.moltis.org/install.sh | sh
+curl -fsSL https://antre-ai.github.io/install.sh | sh
 
 # Run
 antre

@@ -9,14 +9,21 @@ const copyButtonTransformer = {
   },
 }
 
+// The docs are served under /docs/ of the site built by website/scripts/build-site.mjs.
+const siteDomain = process.env.SITE_DOMAIN?.trim()
+const site = siteDomain ? `https://${siteDomain}` : "https://antre-ai.github.io"
+const base = "/docs"
+
 export default defineConfig({
-  site: "https://docs.moltis.org",
+  site,
+  base,
+  trailingSlash: "ignore",
   integrations: [mdx()],
   build: {
     format: "file",
   },
   markdown: {
-    remarkPlugins: [mdbookCompat],
+    remarkPlugins: [[mdbookCompat, { base }]],
     shikiConfig: {
       themes: {
         light: "min-light",

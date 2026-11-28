@@ -1,27 +1,27 @@
 {
   "manifest_version": "1",
-  "id": "moltis.org/install",
+  "id": "antre-ai.github.io/install",
   "name": "Antre",
-  "homepage": "https://moltis.org",
-  "docs": "https://docs.moltis.org",
+  "homepage": "https://antre-ai.github.io",
+  "docs": "https://antre-ai.github.io/docs/",
   "discovery": {
-    "llms_txt_uri": "https://moltis.org/llms.txt",
-    "agent_card_uri": "https://moltis.org/.well-known/agent-card.json",
-    "api_catalog_uri": "https://moltis.org/.well-known/api-catalog"
+    "llms_txt_uri": "https://antre-ai.github.io/llms.txt",
+    "agent_card_uri": "https://antre-ai.github.io/.well-known/agent-card.json",
+    "api_catalog_uri": "https://antre-ai.github.io/.well-known/api-catalog"
   },
   "release_channels": {
     "default_channel": "stable",
     "channels": {
       "stable": {
-        "manifest": "https://moltis.org/.well-known/antre-install/channels/stable.json"
+        "manifest": "https://antre-ai.github.io/.well-known/antre-install/channels/stable.json"
       }
     }
   },
   "install": {
     "strategy": "shell_script",
-    "script_url": "https://www.moltis.org/install.sh",
-    "command_preview": "curl -fsSL https://www.moltis.org/install.sh | sh",
-    "release_manifest_schema": "https://moltis.org/.well-known/antre-install.release.schema.json",
+    "script_url": "https://antre-ai.github.io/install.sh",
+    "command_preview": "curl -fsSL https://antre-ai.github.io/install.sh | sh",
+    "release_manifest_schema": "https://antre-ai.github.io/.well-known/antre-install.release.schema.json",
     "verify": {
       "release_page_url": "https://github.com/antre-ai/antre/releases"
     }

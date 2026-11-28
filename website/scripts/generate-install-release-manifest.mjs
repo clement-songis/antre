@@ -4,7 +4,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 
-const DEFAULT_SITE = "https://moltis.org";
+const DEFAULT_SITE = "https://antre-ai.github.io";
 const DEFAULT_REPO = "antre-ai/antre";
 const DEFAULT_CHANNEL = "stable";
 
@@ -25,7 +25,7 @@ Options:
   --published-at <YYYY-MM-DD> Release date (default: UTC today)
   --channel <name>            Channel to update (default: stable)
   --repo <owner/repo>         GitHub repo (default: antre-ai/antre)
-  --site <https://host>       Site origin (default: https://moltis.org)
+  --site <https://host>       Site origin (default: https://antre-ai.github.io)
   --checksums-file <path>     File containing lines: <sha256> <filename>
   --allow-missing-sha         Allow missing SHA256 entries
 `);

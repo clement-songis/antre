@@ -1,35 +1,60 @@
 :root {
-  --bg: #f7f7f5;
-  --bg-weak: #eeeeeb;
-  --text: #191a1c;
-  --text-muted: #5b5f66;
-  --text-faint: #8a8f98;
-  --border: rgba(25, 26, 28, 0.14);
-  --border-strong: rgba(25, 26, 28, 0.26);
-  --accent: #2f5fef;
-  --accent-soft: rgba(47, 95, 239, 0.1);
-  --brand-icon: #f97316;
-  --code-bg: #e9e9e5;
-  --sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* Antre design tokens (crates/web/ui/src/theme/tokens.json), light theme. */
+  color-scheme: light;
+  --bg: #f5f7f7;
+  --bg-weak: #eaeef0;
+  --text: #27343a;
+  --text-strong: #0f1a1e;
+  --text-muted: #55646b;
+  --text-faint: #88959b;
+  --border: #dce2e4;
+  --border-strong: #829095;
+  --accent: #0b6d79;
+  --accent-soft: #dcf0f2;
+  --brand-icon: #a86d08;
+  --code-bg: #eef2f3;
+  --sans: "Atkinson Hyperlegible Next Variable", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --display: "Geologica Variable", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --mono: "Atkinson Hyperlegible Mono Variable", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   --container: 1260px;
   --sidebar: 238px;
 }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #111214;
-  --bg-weak: #1b1d21;
-  --text: #f1f2f4;
-  --text-muted: #b2b6bf;
-  --text-faint: #7f858f;
-  --border: rgba(241, 242, 244, 0.14);
-  --border-strong: rgba(241, 242, 244, 0.28);
-  --accent: #8aa4ff;
-  --accent-soft: rgba(138, 164, 255, 0.13);
-  --brand-icon: #fb923c;
-  --code-bg: #202329;
+  --bg: #0d1214;
+  --bg-weak: #141a1d;
+  --text: #d3dcdf;
+  --text-strong: #f0f5f6;
+  --text-muted: #93a1a7;
+  --text-faint: #66767d;
+  --border: #253035;
+  --border-strong: #5b6c74;
+  --accent: #52c3ce;
+  --accent-soft: #123238;
+  --brand-icon: #e9b04f;
+  --code-bg: #0a0f11;
 }
+
+h1, h2, h3, h4, .brand, .topnav, .eyebrow, .toc-title, .sidebar-section h2, .pager-link {
+  font-family: var(--display);
+}
+
+.brand-arch { fill: none; stroke: var(--text-strong); stroke-width: 3.2; stroke-linecap: round; }
+.brand-dot { fill: var(--brand-icon); }
+.brand { font-weight: 600; font-size: 1.15rem; letter-spacing: -0.02em; color: var(--text-strong); }
+.brand-section { margin-left: 10px; padding: 2px 8px; border: 1px solid var(--border); border-radius: 999px; color: var(--text-muted); font-family: var(--display); font-size: 0.75rem; font-weight: 600; text-decoration: none; }
+.brand-section:hover { color: var(--text-strong); border-color: var(--border-strong); }
+
+.search-results small {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.search-results mark { background: var(--accent-soft); color: var(--text-strong); }
 
 * { box-sizing: border-box; }
 
@@ -580,4 +605,11 @@ a { color: inherit; }
 
   .pager { grid-template-columns: 1fr; }
   .pager-link.next { grid-column: auto; text-align: left; }
+}
+
+.search-results small {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
