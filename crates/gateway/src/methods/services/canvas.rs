@@ -4,7 +4,10 @@
 use std::sync::Arc;
 
 use {
-    moltis_canvas::{CanvasService, DesignFilter, DesignId, Visibility},
+    moltis_canvas::{
+        CanvasService, DesignFilter, DesignId, FrameKind, FrameNetwork, NewComment, StageFrame,
+        Visibility,
+    },
     moltis_protocol::{ErrorShape, error_codes},
     serde::{Deserialize, de::DeserializeOwned},
     serde_json::{Value, json},
@@ -113,6 +116,65 @@ struct UnpublishParams {
     share_id: String,
 }
 
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CreateParams {
+    title: String,
+    #[serde(default)]
+    html: Option<String>,
+    #[serde(default)]
+    design_system: Option<String>,
+    #[serde(default)]
+    session_key: Option<String>,
+    #[serde(default)]
+    project_id: Option<String>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct StageParams {
+    kind: FrameKind,
+    html: String,
+    #[serde(default)]
+    network: FrameNetwork,
+    #[serde(default)]
+    host: Option<String>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CommentListParams {
+    design_id: String,
+    #[serde(default)]
+    version: Option<u32>,
+    #[serde(default)]
+    include_resolved: bool,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CommentAddParams {
+    design_id: String,
+    #[serde(default)]
+    version: Option<u32>,
+    #[serde(flatten)]
+    comment: NewComment,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CommentResolveParams {
+    design_id: String,
+    comment_ids: Vec<String>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CommentDeleteParams {
+    design_id: String,
+    comment_id: String,
+}
+
 /// Register the `canvas.*` namespace.
 pub(super) fn register(reg: &mut MethodRegistry) {
     reg.register(
@@ -157,6 +219,7 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                     .map_err(|error| error_shape(&error))?;
                 Ok(json!({
                     "design": to_value(&details.design)?,
+                    "dir": to_value(&details.dir)?,
                     "files": to_value(&details.files)?,
                     "versions": to_value(&details.versions)?,
                 }))
@@ -268,6 +331,120 @@ pub(super) fn register(reg: &mut MethodRegistry) {
     );
 
     reg.register(
+        "canvas.create",
+        Box::new(|ctx| {
+            Box::pin(async move {
+                let service = service(&ctx)?;
+                let params: CreateParams = params(&ctx)?;
+                let created = service
+                    .create(moltis_canvas::service::CreateDesign {
+                        title: params.title,
+                        html: params.html,
+                        design_system: params.design_system,
+                        session_key: params.session_key,
+                        project_id: params.project_id,
+                        run_id: None,
+                    })
+                    .await
+                    .map_err(|error| error_shape(&error))?;
+                Ok(json!({
+                    "design": to_value(&created.design)?,
+                    "version": to_value(&created.version)?,
+                }))
+            })
+        }),
+    );
+
+    reg.register(
+        "canvas.stage",
+        Box::new(|ctx| {
+            Box::pin(async move {
+                let service = service(&ctx)?;
+                let params: StageParams = params(&ctx)?;
+                let link = service
+                    .stage_frame(
+                        StageFrame {
+                            kind: params.kind,
+                            html: params.html,
+                            network: params.network,
+                        },
+                        params.host.as_deref(),
+                    )
+                    .map_err(|error| error_shape(&error))?;
+                to_value(&link)
+            })
+        }),
+    );
+
+    reg.register(
+        "canvas.comments.list",
+        Box::new(|ctx| {
+            Box::pin(async move {
+                let service = service(&ctx)?;
+                let params: CommentListParams = params(&ctx)?;
+                let comments = service
+                    .comments(
+                        &design_id(&params.design_id)?,
+                        params.version,
+                        params.include_resolved,
+                    )
+                    .await
+                    .map_err(|error| error_shape(&error))?;
+                Ok(json!({ "comments": to_value(&comments)? }))
+            })
+        }),
+    );
+
+    reg.register(
+        "canvas.comments.add",
+        Box::new(|ctx| {
+            Box::pin(async move {
+                let service = service(&ctx)?;
+                let params: CommentAddParams = params(&ctx)?;
+                let comment = service
+                    .add_comment(
+                        &design_id(&params.design_id)?,
+                        params.version,
+                        params.comment,
+                    )
+                    .await
+                    .map_err(|error| error_shape(&error))?;
+                Ok(json!({ "comment": to_value(&comment)? }))
+            })
+        }),
+    );
+
+    reg.register(
+        "canvas.comments.resolve",
+        Box::new(|ctx| {
+            Box::pin(async move {
+                let service = service(&ctx)?;
+                let params: CommentResolveParams = params(&ctx)?;
+                let resolved = service
+                    .resolve_comments(&design_id(&params.design_id)?, &params.comment_ids)
+                    .await
+                    .map_err(|error| error_shape(&error))?;
+                Ok(json!({ "resolved": resolved }))
+            })
+        }),
+    );
+
+    reg.register(
+        "canvas.comments.delete",
+        Box::new(|ctx| {
+            Box::pin(async move {
+                let service = service(&ctx)?;
+                let params: CommentDeleteParams = params(&ctx)?;
+                let deleted = service
+                    .delete_comment(&design_id(&params.design_id)?, &params.comment_id)
+                    .await
+                    .map_err(|error| error_shape(&error))?;
+                Ok(json!({ "deleted": deleted }))
+            })
+        }),
+    );
+
+    reg.register(
         "canvas.unpublish",
         Box::new(|ctx| {
             Box::pin(async move {
@@ -307,6 +484,32 @@ mod tests {
             error_shape(&moltis_canvas::Error::message("boom")).code,
             error_codes::INTERNAL
         );
+    }
+
+    #[test]
+    fn stage_and_comment_params_parse() {
+        let stage: StageParams = serde_json::from_value(json!({
+            "kind": "mcp-app",
+            "html": "<p>x</p>",
+            "network": {"connectDomains": ["https://a.example.com"]},
+        }))
+        .unwrap();
+        assert_eq!(stage.kind, FrameKind::McpApp);
+        assert_eq!(stage.network.connect_domains, vec!["https://a.example.com"]);
+        assert!(
+            serde_json::from_value::<StageParams>(json!({"kind": "script", "html": "x"})).is_err()
+        );
+
+        let add: CommentAddParams = serde_json::from_value(json!({
+            "designId": DesignId::generate(),
+            "mid": "hero",
+            "elementText": "Welcome",
+            "body": "Bigger",
+        }))
+        .unwrap();
+        assert_eq!(add.comment.mid.as_deref(), Some("hero"));
+        assert_eq!(add.comment.element_text.as_deref(), Some("Welcome"));
+        assert_eq!(add.version, None);
     }
 
     #[test]

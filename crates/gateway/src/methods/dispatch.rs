@@ -107,6 +107,8 @@ const READ_METHODS: &[&str] = &[
     "canvas.versions",
     "canvas.preview_url",
     "canvas.design_systems",
+    "canvas.stage",
+    "canvas.comments.list",
     "learning.status",
     "learning.pending.list",
     "learning.pending.get",
@@ -296,10 +298,14 @@ const WRITE_METHODS: &[&str] = &[
     "webhooks.delete",
     // Writes a score against a trace: a mutation, not a read.
     "feedback.submit",
+    "canvas.create",
     "canvas.revert",
     "canvas.rename",
     "canvas.publish",
     "canvas.unpublish",
+    "canvas.comments.add",
+    "canvas.comments.resolve",
+    "canvas.comments.delete",
     // Learned changes write skills and memory, or start a model call.
     "learning.pending.approve",
     "learning.pending.reject",
@@ -571,6 +577,8 @@ mod tests {
             "canvas.list",
             "canvas.get",
             "canvas.preview_url",
+            "canvas.stage",
+            "canvas.comments.list",
         ] {
             assert!(
                 authorize_method(method, "operator", &scopes(&["operator.read"])).is_none(),
@@ -578,10 +586,14 @@ mod tests {
             );
         }
         for method in [
+            "canvas.create",
             "canvas.revert",
             "canvas.rename",
             "canvas.publish",
             "canvas.unpublish",
+            "canvas.comments.add",
+            "canvas.comments.resolve",
+            "canvas.comments.delete",
         ] {
             assert_error_code(
                 authorize_method(method, "operator", &scopes(&["operator.read"])),

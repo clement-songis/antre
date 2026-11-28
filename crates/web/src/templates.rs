@@ -1003,6 +1003,7 @@ pub(crate) async fn render_spa_template(
         },
     };
 
+    let frame_src = canvas_frame_src(gateway);
     let csp = format!(
         "default-src 'self'; \
          script-src 'self' 'nonce-{nonce}' 'wasm-unsafe-eval'; \
@@ -1011,6 +1012,7 @@ pub(crate) async fn render_spa_template(
          media-src 'self' blob:; \
          font-src 'self'; \
          connect-src 'self' ws: wss:; \
+         {frame_src}\
          frame-ancestors 'none'; \
          form-action 'self'; \
          base-uri 'self'; \
@@ -1020,6 +1022,21 @@ pub(crate) async fn render_spa_template(
     let mut response = Html(body).into_response();
     insert_standard_headers(&mut response, &csp);
     response
+}
+
+/// `frame-src` directive letting the app frame the design canvas render
+/// origin, or nothing when the canvas is off.
+fn canvas_frame_src(gateway: &GatewayState) -> String {
+    #[cfg(feature = "canvas")]
+    if let Some(canvas) = gateway.services.canvas.as_ref() {
+        let sources = canvas.frame_sources();
+        if !sources.is_empty() {
+            return format!("frame-src 'self' {}; ", sources.join(" "));
+        }
+    }
+    #[cfg(not(feature = "canvas"))]
+    let _ = gateway;
+    String::new()
 }
 
 // ── Onboarding helpers ───────────────────────────────────────────────────────
