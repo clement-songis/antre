@@ -28,6 +28,9 @@ async function waitForOnboardingStepLoaded(page) {
 	await expect(page.getByText("Checking voice providers…", { exact: true })).not.toBeVisible({
 		timeout: 10_000,
 	});
+	await expect(page.getByText("Loading LLMs…", { exact: true })).not.toBeVisible({
+		timeout: 10_000,
+	});
 	await expect(page.getByText("Loading summary…", { exact: true })).not.toBeVisible({
 		timeout: 10_000,
 	});
