@@ -124,8 +124,6 @@ jobs:
           persist-credentials: false
       - name: Check Rust file size limit
         run: ./scripts/check-file-size.sh
-      - name: Check website install script sync
-        run: ./scripts/check-website-install-sync.sh
       - name: Check install script package names match release workflow
         run: ./scripts/check-install-package-names.sh
       - name: Check install docs avoid stale asset URLs

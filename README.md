@@ -1,6 +1,6 @@
 <div align="center">
 
-<a href="https://antre-ai.github.io/"><img src="https://raw.githubusercontent.com/antre-ai/antre/main/website/favicon.svg" alt="Antre" width="64"></a>
+<a href="https://antre-ai.github.io/"><img src="https://raw.githubusercontent.com/antre-ai/antre/main/docs/public/antre-icon.svg" alt="Antre" width="64"></a>
 
 # Antre — A secure persistent personal agent server in Rust
 

@@ -321,14 +321,6 @@ build-test: build-web-assets
 release-preflight: lint
     cargo +{{nightly_toolchain}} fmt --all -- --check
 
-# Sync repo-root install.sh into website/install.sh (the site build publishes the repo-root copy).
-sync-website-install:
-    ./scripts/sync-website-install.sh
-
-# Ensure repo-root install.sh and website/install.sh are identical.
-check-website-install-sync:
-    ./scripts/check-website-install-sync.sh
-
 # Dispatch release workflow from GitHub Actions (normal mode).
 release-workflow ref='main':
     gh workflow run release.yml --ref {{ref}} -f dry_run=false
@@ -531,14 +523,8 @@ courier-deploy:
 courier-run *ARGS:
     cargo run -p antre-courier -- {{ARGS}}
 
-# Build the public site (landing page + docs under /docs/) into website/dist.
-site-build:
+# Build the docs as published under /docs/ and serve them at http://127.0.0.1:4321/docs/.
+docs-serve:
     npm ci --prefix docs
-    npm ci --prefix website
     npm run build --prefix docs
-    npm test --prefix website
-    node website/scripts/build-site.mjs --require-docs
-
-# Build the public site and serve it at http://127.0.0.1:4317.
-site-serve: site-build
-    python3 -m http.server 4317 --bind 127.0.0.1 --directory website/dist
+    npm run preview --prefix docs

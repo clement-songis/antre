@@ -9,7 +9,7 @@ const copyButtonTransformer = {
   },
 }
 
-// The docs are served under /docs/ of the site built by website/scripts/build-site.mjs.
+// Served under /docs/ of https://antre-ai.github.io, built by the antre-ai/antre-ai.github.io repo.
 const siteDomain = process.env.SITE_DOMAIN?.trim()
 const site = siteDomain ? `https://${siteDomain}` : "https://antre-ai.github.io"
 const base = "/docs"

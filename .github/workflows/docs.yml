@@ -1,0 +1,75 @@
+# Validates the documentation. Publishing happens in antre-ai/antre-ai.github.io, whose
+# Pages workflow checks out this repo and serves docs/ under /docs/ (see docs/README.md).
+name: Docs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - ".github/workflows/docs.yml"
+  pull_request:
+    paths:
+      - "docs/**"
+      - ".github/workflows/docs.yml"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  zizmor:
+    name: Workflow Security
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
+      - uses: zizmorcore/zizmor-action@135698455da5c3b3e55f73f4419e481ab68cdd95 # v0.4.1
+        with:
+          advanced-security: false
+          online-audits: false
+
+  build:
+    name: Build and check docs
+    needs: zizmor
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: docs/package-lock.json
+
+      - uses: taiki-e/install-action@f176c07a0a40cbfdd08ee9aa8bf1655701d11e69 # v2.67.25
+        with:
+          tool: mdbook-lint@0.14.3,lychee@0.24.2
+
+      - name: Install documentation dependencies
+        run: npm ci --prefix docs
+
+      - name: Lint documentation markdown
+        working-directory: docs
+        run: mdbook-lint lint --enable MD001,MD003,MD009,MD010,MD011,MD014 src
+
+      - name: Build documentation
+        run: npm run build --prefix docs
+
+      # The docs are served under /docs/ next to a landing page that lives in another repo.
+      - name: Check documentation links
+        run: |
+          mkdir -p site
+          cp -R docs/dist site/docs
+          echo '<!doctype html><title>landing page</title>' > site/index.html
+          lychee --offline --root-dir "$PWD/site" --no-progress site
