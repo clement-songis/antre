@@ -22,6 +22,7 @@ use crate::exec::EnvVarProvider;
 
 mod brave;
 mod keenable;
+mod ollama;
 
 mod perplexity;
 
@@ -70,6 +71,9 @@ enum SearchProvider {
         base_url: String,
     },
     Keenable {
+        base_url: String,
+    },
+    Ollama {
         base_url: String,
     },
 }
@@ -245,6 +249,27 @@ impl WebSearchTool {
                     config.duckduckgo_fallback,
                 ))
             },
+            ConfigSearchProvider::Ollama => {
+                let api_key = config
+                    .api_key
+                    .as_ref()
+                    .map(|s| s.expose_secret().clone())
+                    .or_else(|| env_value_with_overrides(env_overrides, "OLLAMA_API_KEY"))
+                    .unwrap_or_default();
+                if api_key.is_empty() && !config.duckduckgo_fallback {
+                    return None;
+                }
+                Some(Self::new(
+                    SearchProvider::Ollama {
+                        base_url: ollama::BASE_URL.into(),
+                    },
+                    Secret::new(api_key),
+                    config.max_results,
+                    Duration::from_secs(config.timeout_seconds),
+                    Duration::from_secs(config.cache_ttl_minutes * 60),
+                    config.duckduckgo_fallback,
+                ))
+            },
         }
     }
 
@@ -356,6 +381,7 @@ impl WebSearchTool {
             #[cfg(feature = "firecrawl")]
             SearchProvider::Firecrawl { .. } => &["FIRECRAWL_API_KEY"],
             SearchProvider::Keenable { .. } => &["KEENABLE_API_KEY"],
+            SearchProvider::Ollama { .. } => &["OLLAMA_API_KEY"],
         }
     }
 
@@ -858,6 +884,17 @@ impl AgentTool for WebSearchTool {
                 },
                 SearchProvider::Keenable { base_url } => {
                     keenable::search(
+                        crate::shared_http_client(),
+                        base_url,
+                        &api_key,
+                        query,
+                        count,
+                        self.timeout,
+                    )
+                    .await?
+                },
+                SearchProvider::Ollama { base_url } => {
+                    ollama::search(
                         crate::shared_http_client(),
                         base_url,
                         &api_key,

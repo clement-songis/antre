@@ -292,6 +292,8 @@ pub enum SearchProvider {
     Perplexity,
     Firecrawl,
     Keenable,
+    /// Ollama hosted web search (`OLLAMA_API_KEY`).
+    Ollama,
 }
 
 /// Web search tool configuration.

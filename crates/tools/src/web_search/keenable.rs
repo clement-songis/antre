@@ -133,7 +133,7 @@ fn parse_results(body: SearchResponse) -> Vec<SearchResult> {
 
 /// Collapse whitespace runs (snippets keep the page's line breaks) and cap the
 /// length at a char boundary.
-fn compact_snippet(text: &str) -> String {
+pub(super) fn compact_snippet(text: &str) -> String {
     const ELLIPSIS: &str = "...";
     let mut out = String::new();
     let mut char_count = 0usize;

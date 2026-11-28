@@ -197,7 +197,7 @@ Configure the built-in `web_search` tool:
 ```toml
 [tools.web.search]
 enabled = true
-provider = "brave"               # "brave", "perplexity", or "keenable"
+provider = "brave"               # "brave", "perplexity", "keenable", "firecrawl" or "ollama"
 max_results = 5                  # 1-10
 timeout_seconds = 30
 cache_ttl_minutes = 15
@@ -223,6 +223,10 @@ If no search API key is configured:
 
 `provider = "keenable"` needs no API key: Moltis calls Keenable's public search endpoint.
 Set `KEENABLE_API_KEY` (or `api_key`) only to raise the keyless rate limits.
+
+`provider = "ollama"` uses Ollama's hosted web search with an ollama.com API
+key (`OLLAMA_API_KEY` or `api_key`), the same key as Ollama Cloud models. It
+returns at most 10 results.
 
 ## Skills
 
