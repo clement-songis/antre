@@ -1,6 +1,9 @@
 // ── Onboarding Chinese (Simplified) strings ─────────────────
 
 export default {
+	brand: {
+		tagline: "你的智能体，就在家里。未经你允许，任何数据都不会离开这台机器。",
+	},
 	steps: {
 		security: "安全",
 		import: "导入",

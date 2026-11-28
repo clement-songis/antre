@@ -69,4 +69,44 @@ test.describe("App shell", () => {
 
 		expect(pageErrors).toEqual([]);
 	});
+
+	test("mods settings shows the placeholder and the kinds of mods", async ({ page }) => {
+		const pageErrors = watchPageErrors(page);
+		await navigateAndWait(page, "/settings/mods");
+
+		await expect(page.getByRole("heading", { name: "Mods", exact: true })).toBeVisible();
+		await expect(page.getByText("No mods installed", { exact: true })).toBeVisible();
+		await expect(page.locator("[data-mod-kind]")).toHaveCount(5);
+		await expect(page.locator('.settings-nav-item[data-section="mods"]')).toHaveClass(/active/);
+
+		expect(pageErrors).toEqual([]);
+	});
+
+	test("logs and network audit pages have a title", async ({ page }) => {
+		const pageErrors = watchPageErrors(page);
+		await navigateAndWait(page, "/settings/logs");
+		await expect(page.getByRole("heading", { name: "Logs", exact: true })).toBeVisible();
+		await navigateAndWait(page, "/settings/network-audit");
+		await expect(page.getByRole("heading", { name: "Network Audit", exact: true })).toBeVisible();
+
+		expect(pageErrors).toEqual([]);
+	});
+
+	test("phone command palette opens as a bottom sheet", async ({ page }) => {
+		const pageErrors = watchPageErrors(page);
+		await page.setViewportSize({ width: 390, height: 844 });
+		await navigateAndWait(page, "/");
+
+		await page.getByRole("button", { name: "Open sidebar" }).click();
+		await page.locator("#commandPaletteBtn").click();
+		const palette = page.locator(".cmd-palette");
+		await expect(palette).toBeVisible();
+		await expect(page.locator("#sessionsPanel")).not.toHaveClass(/open/);
+		const box = await palette.boundingBox();
+		expect(box?.width ?? 0).toBeGreaterThanOrEqual(388);
+		expect(Math.round((box?.y ?? 0) + (box?.height ?? 0))).toBeGreaterThanOrEqual(843);
+		await page.keyboard.press("Escape");
+
+		expect(pageErrors).toEqual([]);
+	});
 });

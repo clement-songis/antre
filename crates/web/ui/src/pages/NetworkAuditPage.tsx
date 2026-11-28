@@ -42,8 +42,8 @@ function actionColor(action: string): string {
 }
 
 function actionBg(action: string): string {
-	if (action === "denied") return "var(--state-error-wash)";
-	if (action === "timeout") return "var(--state-warn-wash)";
+	if (action === "denied") return "color-mix(in srgb, var(--state-error) 9%, transparent)";
+	if (action === "timeout") return "color-mix(in srgb, var(--state-warn) 7%, transparent)";
 	return "transparent";
 }
 
@@ -258,6 +258,9 @@ function NetworkAuditPage(): VNode {
 
 	return (
 		<>
+			<div className="logs-page-head">
+				<h2>Network Audit</h2>
+			</div>
 			<Toolbar />
 			<div ref={areaRef} id="networkAuditArea" className="logs-area" />
 		</>

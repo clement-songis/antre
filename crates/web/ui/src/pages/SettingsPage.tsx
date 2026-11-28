@@ -46,6 +46,7 @@ import { IdentitySection } from "./sections/IdentitySection";
 import { ImportSection } from "./sections/ImportSection";
 import { InstrumentationSection } from "./sections/InstrumentationSection";
 import { MemorySection } from "./sections/MemorySection";
+import { ModsSection } from "./sections/ModsSection";
 import { NotificationsSection } from "./sections/NotificationsSection";
 import { PhoneSection } from "./sections/PhoneSection";
 import { RemoteAccessSection } from "./sections/RemoteAccessSection";
@@ -194,6 +195,11 @@ const sections: SectionItem[] = [
 		label: "Skills",
 		icon: <span className="icon icon-sparkles" />,
 		page: true,
+	},
+	{
+		id: "mods",
+		label: "Mods",
+		icon: <span className="icon icon-puzzle" />,
 	},
 	{
 		id: "import",
@@ -421,6 +427,7 @@ function SettingsPage(): VNode {
 							</div>
 						)
 					) : null}
+					{section === "mods" ? <ModsSection /> : null}
 					{section === "phone" ? <PhoneSection /> : null}
 					{section === "notifications" ? <NotificationsSection /> : null}
 					{section === "import" ? <ImportSection /> : null}

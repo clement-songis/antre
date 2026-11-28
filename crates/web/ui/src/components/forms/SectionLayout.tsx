@@ -18,8 +18,8 @@ export function SectionHeading({ title, subtitle, children }: SectionHeadingProp
 	return (
 		<div className="flex items-center justify-between mb-4">
 			<div>
-				<h2 className="text-lg font-medium text-[var(--text-strong)]">{title}</h2>
-				{subtitle && <p className="text-xs text-[var(--muted)] mt-0.5">{subtitle}</p>}
+				<h2 className="font-display text-title text-ink-strong">{title}</h2>
+				{subtitle && <p className="text-small text-ink-muted mt-1 max-w-[640px]">{subtitle}</p>}
 			</div>
 			{children}
 		</div>
@@ -35,7 +35,7 @@ interface SubHeadingProps {
 
 export function SubHeading({ title, className }: SubHeadingProps): VNode {
 	return (
-		<h3 className={className ?? "text-sm font-medium text-[var(--text-strong)]"} style={{ marginBottom: "8px" }}>
+		<h3 className={className ?? "font-display text-heading text-ink-strong"} style={{ marginBottom: "8px" }}>
 			{title}
 		</h3>
 	);

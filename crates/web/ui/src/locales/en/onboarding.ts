@@ -1,6 +1,9 @@
 // ── Onboarding English strings ──────────────────────────────
 
 export default {
+	brand: {
+		tagline: "Your agent, at home. Nothing leaves this machine unless you send it.",
+	},
 	steps: {
 		security: "Security",
 		import: "Import",

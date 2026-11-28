@@ -1249,6 +1249,10 @@
   -webkit-mask-image: url("../icons/masks/mask-a35ea41b36d9889b.svg");
   mask-image: url("../icons/masks/mask-a35ea41b36d9889b.svg");
 }
+.settings-nav-item[data-section="mods"]::before {
+  -webkit-mask-image: url("../icons/masks/mask-puzzle.svg");
+  mask-image: url("../icons/masks/mask-puzzle.svg");
+}
 .settings-nav-item[data-section="skills"]::before {
   -webkit-mask-image: url("../icons/masks/mask-459dd5c95de89b9a.svg");
   mask-image: url("../icons/masks/mask-459dd5c95de89b9a.svg");

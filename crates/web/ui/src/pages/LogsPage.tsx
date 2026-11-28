@@ -46,8 +46,8 @@ function levelColor(level: string): string {
 
 function levelBg(level: string): string {
 	const l = level.toUpperCase();
-	if (l === "ERROR") return "var(--state-error-wash)";
-	if (l === "WARN") return "var(--state-warn-wash)";
+	if (l === "ERROR") return "color-mix(in srgb, var(--state-error) 9%, transparent)";
+	if (l === "WARN") return "color-mix(in srgb, var(--state-warn) 7%, transparent)";
 	return "transparent";
 }
 
@@ -273,6 +273,9 @@ function LogsPage(): VNode {
 
 	return (
 		<>
+			<div className="logs-page-head">
+				<h2>Logs</h2>
+			</div>
 			<Toolbar />
 			<div ref={logAreaRef} id="logsArea" className="logs-area" />
 		</>

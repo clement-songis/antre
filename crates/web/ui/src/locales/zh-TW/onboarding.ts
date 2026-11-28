@@ -1,6 +1,9 @@
 // ── Onboarding Traditional Chinese (Taiwan) strings ─────────
 
 export default {
+	brand: {
+		tagline: "你的智慧體，就在家裡。未經你允許，任何資料都不會離開這台機器。",
+	},
 	steps: {
 		security: "安全性",
 		import: "匯入",

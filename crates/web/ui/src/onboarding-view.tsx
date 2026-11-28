@@ -678,6 +678,36 @@ function OnboardingPage(): VNode {
 	);
 }
 
+// ── Brand header above the wizard ───────────────────────────
+
+function OnboardingBrand(): VNode {
+	return (
+		<div className="onboarding-brand">
+			<svg className="onboarding-brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+				<path
+					d="M7 25.5V16a9 9 0 0 1 18 0v9.5"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="3.2"
+					stroke-linecap="round"
+				/>
+				<path d="M4 25.5h24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" />
+				<circle className="onboarding-brand-dot" cx="16" cy="20" r="2.6" />
+			</svg>
+			<p className="onboarding-brand-tagline">{t("onboarding:brand.tagline")}</p>
+		</div>
+	);
+}
+
+function OnboardingShell(): VNode {
+	return (
+		<div className="onboarding-shell">
+			<OnboardingBrand />
+			<OnboardingPage />
+		</div>
+	);
+}
+
 // ── Page registration ───────────────────────────────────────
 
 let containerRef: HTMLElement | null = null;
@@ -686,7 +716,7 @@ export function mountOnboarding(container: HTMLElement): void {
 	containerRef = container;
 	container.style.cssText =
 		"display:flex;align-items:flex-start;justify-content:center;min-height:100vh;padding:max(0.75rem, env(safe-area-inset-top)) max(0.75rem, env(safe-area-inset-right)) max(0.75rem, env(safe-area-inset-bottom)) max(0.75rem, env(safe-area-inset-left));box-sizing:border-box;width:100%;max-width:100vw;overflow-x:hidden;overflow-y:auto;";
-	render(<OnboardingPage />, container);
+	render(<OnboardingShell />, container);
 }
 
 export function unmountOnboarding(): void {
