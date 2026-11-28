@@ -3,7 +3,6 @@
 // Mod is Cmd on macOS and Ctrl elsewhere. Shortcuts that would fight the
 // browser (Ctrl+Shift+C opens devtools) use Alt+Shift instead.
 
-import { signal } from "@preact/signals";
 import { setSidebarCollapsed } from "../../app-shell";
 import { t } from "../../i18n";
 import { toggleSessions } from "../../mobile";
@@ -11,41 +10,11 @@ import { startNewSession, switchSession } from "../../sessions";
 import * as S from "../../state";
 import { sessionStore } from "../../stores/session-store";
 import { copyToClipboard, showToast } from "../../ui";
+import { isMac, shortcutsHelpOpen } from "./shortcut-keys";
 import type { AssistantItem } from "./transcript/model";
 import { transcriptItems } from "./transcript/store";
 
 const PHONE_WIDTH = 768;
-
-export const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform || "");
-const MOD = isMac ? "⌘" : "Ctrl";
-
-export interface ShortcutSpec {
-	id: string;
-	/** Translation key under `chat:shortcuts`. */
-	labelKey: string;
-	keys: string[];
-}
-
-/** Every shortcut, in the order the help dialog lists them. */
-export const SHORTCUTS: ShortcutSpec[] = [
-	{ id: "new-chat", labelKey: "newChat", keys: [MOD, "Shift", "O"] },
-	{ id: "focus", labelKey: "focusComposer", keys: ["Shift", "Esc"] },
-	{ id: "sidebar", labelKey: "toggleSidebar", keys: [MOD, "Shift", "S"] },
-	{ id: "next", labelKey: "nextSession", keys: ["Alt", "Shift", "↓"] },
-	{ id: "prev", labelKey: "prevSession", keys: ["Alt", "Shift", "↑"] },
-	{ id: "copy", labelKey: "copyLast", keys: ["Alt", "Shift", "C"] },
-	{ id: "stop", labelKey: "stop", keys: ["Esc"] },
-	{ id: "rewind", labelKey: "rewind", keys: ["Esc", "Esc"] },
-	{ id: "palette", labelKey: "palette", keys: [MOD, "K"] },
-	{ id: "help", labelKey: "help", keys: [MOD, "/"] },
-];
-
-export function shortcutText(id: string): string {
-	const spec = SHORTCUTS.find((entry) => entry.id === id);
-	return spec ? spec.keys.join(isMac ? "" : "+") : "";
-}
-
-export const shortcutsHelpOpen = signal(false);
 
 function onChatPage(): boolean {
 	return window.location.pathname.startsWith("/chats");

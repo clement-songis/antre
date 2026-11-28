@@ -3,7 +3,7 @@
 import { render } from "preact";
 import { useEffect } from "preact/hooks";
 import { useTranslation } from "../../i18n";
-import { SHORTCUTS, shortcutsHelpOpen } from "./shortcuts";
+import { SHORTCUTS, shortcutsHelpOpen } from "./shortcut-keys";
 
 export function ShortcutsDialog() {
 	const { t } = useTranslation("chat");

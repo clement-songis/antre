@@ -7,7 +7,7 @@
 import { signal } from "@preact/signals";
 import * as gon from "../gon";
 import { t } from "../i18n";
-import { copyLastReply, shortcutsHelpOpen, shortcutText, toggleSidebar } from "../pages/chat/shortcuts";
+import { shortcutsHelpOpen, shortcutText } from "../pages/chat/shortcut-keys";
 import { navigate } from "../router";
 import { routes, settingsPath } from "../routes";
 import { applyTheme } from "../theme";
@@ -334,7 +334,9 @@ export function buildCommands(): Command[] {
 			icon: "icon-layers",
 			shortcut: shortcutText("sidebar"),
 			keywords: ["sidebar", "sessions", "hide", "show"],
-			action: toggleSidebar,
+			action: () => {
+				void import("../pages/chat/shortcuts").then((mod) => mod.toggleSidebar());
+			},
 		},
 		{
 			id: "act-copy-last-reply",
@@ -343,7 +345,9 @@ export function buildCommands(): Command[] {
 			icon: "icon-copy",
 			shortcut: shortcutText("copy"),
 			keywords: ["copy", "answer", "reply", "last"],
-			action: copyLastReply,
+			action: () => {
+				void import("../pages/chat/shortcuts").then((mod) => mod.copyLastReply());
+			},
 		},
 		{
 			id: "act-shortcuts",
