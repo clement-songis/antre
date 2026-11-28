@@ -22,9 +22,16 @@ conditional on this spike.
      near-empty page gets 20 fps too, and the same heavy design served
      same-origin runs at 60 fps. Canvas/artifact/MCP-App animations will
      look choppy until clicked. Static designs are unaffected.
-- **Not measured:** WebKitGTK (Linux) and Android WebView, the two engines
-  the original recommendation was most worried about. They need a Linux box
-  and an Android device or emulator; this is the main open item.
+- **WebKitGTK, measured in a container** (§2.7, software rendering, no
+  GPU): the chat passes, a heavy animated canvas does not.
+  - Chat: 400 tok/s streams at 54 fps; the 2,000-message transcript scrolls
+    at 58 fps.
+  - Heavy canvas: 4–14 fps, where Chromium in the same container keeps
+    60 fps.
+  - A real click lifts the opaque-origin iframe throttle (25 → 49 fps),
+    which confirms limit 2 above.
+  - Still unmeasured: WebKitGTK on a real Linux machine with a GPU, and
+    Android WebView.
 - **End to end works**: the shell spawns the daemon, the real web UI loads
   and connects its WebSocket, and quitting stops the daemon.
 - **Gateway findings that matter for any desktop shell:** a cold daemon took
@@ -224,7 +231,7 @@ same-origin. This matches WebKit's throttling of `requestAnimationFrame` in
 cross-origin frames the user has not interacted with (an anti-ad/energy
 measure); the sandbox without `allow-same-origin` gives the frame an opaque
 origin, which counts as cross-origin. WebKit lifts it after a user gesture in
-the frame (not verified here: the harness cannot produce a trusted click).
+the frame (not verified on macOS, where the harness cannot produce a trusted click; verified in WebKitGTK, §2.7).
 `allow-same-origin` is not an acceptable fix for untrusted designs: combined
 with `allow-scripts` it lets the frame remove its own sandbox. Options:
 accept it (designs become smooth once touched), or serve canvas content from
@@ -272,6 +279,118 @@ debug daemon from the main checkout):
 - Not tried: the remote mode against a real remote TLS daemon (the probes and
   URL rules are unit-tested against a local fake server).
 
+### 2.7 WebKitGTK (Linux), in a container
+
+Run 2026-11-28 on branch `claude/webkitgtk-bench`. No Linux machine was
+available, so the same pages ran in WebKitGTK inside a Linux container on
+this Mac, with Chromium in the same container as the baseline.
+
+**Method and caveats:**
+- **Image:** Debian trixie arm64, `libwebkit2gtk-4.1-0` **2.54.3** (the
+  library Tauri 2 links on Linux) driven through its `MiniBrowser`, and
+  Debian's Chromium 156. Both run under Xvfb at 1280×860, DPR 1.
+  - The container runs in Docker Desktop's linuxkit VM (kernel 7.0, 12
+    vCPU, 8 GB), so there is no GPU: **both engines render in software**.
+  - Xvfb has no vsync. WebKitGTK paces `requestAnimationFrame` on a timer
+    (50–56 Hz measured); Chromium paces it at 60 Hz.
+- **Harness:** `apps/tauri/bench/webkitgtk/` (Dockerfile, `harness/run.py`,
+  README).
+  - It serves the same `dist/` bundle as §2 and gets results back through
+    an injected script instead of Tauri IPC.
+  - It samples RSS from `ps`.
+  - `--click-on` sends a real X11 click (xdotool), which the macOS harness
+    could not do.
+- **Not the Tauri shell:** MiniBrowser uses the same engine but not wry's
+  WebView settings. Raw JSON is in
+  `apps/tauri/bench/results/2026-11-28-webkitgtk/`, 3 runs per column, and
+  the tables show medians.
+- **Read the columns against each other,** not against §2.2–2.4: different
+  CPU budget, no GPU, DPR 1, 60 Hz.
+
+| Metric | WebKitGTK 2.54 | WebKitGTK, `WEBKIT_DISABLE_COMPOSITING_MODE=1` | Chromium 156 |
+|---|---:|---:|---:|
+| **Stream** | | | |
+| Refresh rate seen by rAF (Hz) | 53 | 50 | 60 |
+| Flat out: max tokens/s | 1,454 | 1,836 | 2,704 |
+| Flat out: per-delta ms, last 10% of reply | 3.9 | 3.0 | 2.0 |
+| 400 tok/s: fps / dropped frames | 54.4 / 4.4% | 60.1 / 0% | 60 / 0% |
+| 400 tok/s: worst frame (ms) | 46 | 21 | 16.8 |
+| 400 tok/s: delta handler p95 (ms) | 9 | 3 | 2.3 |
+| 100 tok/s: fps / worst frame (ms) | 54.8 / 65 | 86 / 29 | 60 / 16.8 |
+| Shiki after the stream (ms) | 234 | 170 | 157 |
+| **Transcript (2,000 messages)** | | | |
+| Markdown (ms) | 46 | – | 27.5 |
+| DOM insert + layout (ms) | 186 | – | 136 |
+| Time to first paint (ms) | 345 | – | 230 |
+| Shiki on 198 code blocks (ms) | 382 | – | 318 |
+| Scroll 8 s: fps / dropped / worst frame (ms) | 57.6 / 0% / 24 | – | 60 / 0% / 16.8 |
+| Jump to a position, p95 (ms) | 42 | – | 38 |
+| **Memory (stream page)** | | | |
+| Page process RSS (MB) | 588 | 485 | 407 |
+| All engine processes (MB) | 807 | – | 1,048 |
+
+Canvas page (heavy 788 KB design in `<iframe sandbox="allow-scripts" srcdoc>`):
+
+| Metric | WebKitGTK 2.54 | WebKitGTK + real click | WebKitGTK, no compositing | Chromium 156 |
+|---|---:|---:|---:|---:|
+| First mount: design script runs (ms) | 44 | 47 | 148 | 60 |
+| Remount, mean of 5 (ms) | 33 | 25 | 74 | 42 |
+| Idle animations 3 s: iframe fps (dropped) | 14.2 (75%) | 27.5 (58%) | 22.7 (44%) | 60 (0%) |
+| Scroll inside the design 4 s: iframe fps | 4.3 | 6 | 15.1 | 60 |
+| Host page fps during that scroll | 4.3 | 6 | 15.6 | 60 |
+| **Near-empty page, same sandbox: iframe fps** | **25.7** | **49.2** ¹ | 25.3 | 60 |
+| Heavy design, `allow-same-origin`: iframe fps | 15.4 | 26.1 | 22.8 | 60 |
+| All engine processes (MB) | 795 | – | – | 1,179 |
+
+¹ A separate run with the click sent into the near-empty iframe instead
+(`--click-on variants`). The "+ real click" column otherwise clicks the
+heavy design once, right after its first mount.
+
+Reading:
+
+- **Chat surfaces pass in software rendering.**
+  - **Streaming:** 400 tok/s streams at 54 fps with 4% dropped frames and
+    no frame over 50 ms.
+  - **Transcript:** the 2,000-message transcript scrolls at 58 fps with no
+    dropped frame and paints in 0.35 s.
+  - WebKitGTK is 1.3–2× slower than Chromium per operation (Markdown, layout,
+    per-delta render), roughly the WKWebView/Chromium gap on macOS. Both chat
+    figures stay above the ~45 fps no-go line of §4 with no GPU at all.
+- **Heavy animated canvases do not pass in software rendering.**
+  - The 5,000-element design (gradients, shadows, `backdrop-filter`, an
+    animated `<canvas>`) idles at 14 fps and scrolls at 4 fps in WebKitGTK.
+    It also drags the host page down with it: the iframe shares the page's
+    web process.
+  - Chromium draws the same design at 60 fps in the same software
+    environment, so its CPU rasteriser is far faster on this content.
+  - Whether a GPU closes the gap is the main thing a real Linux machine must
+    tell. The likely culprits are WebKitGTK's GPU-less paths for
+    `backdrop-filter` and large blurred shadows.
+- **The opaque-origin iframe throttle is WebKit-wide, and a user gesture
+  lifts it.**
+  - A near-empty sandboxed page gets ~25 fps in WebKitGTK (macOS: ~20) and
+    49 fps after one real click inside it.
+  - This confirms the §2.4 hypothesis that macOS could not check. Designs
+    become smooth once touched, on Linux and very likely on macOS too.
+- **`WEBKIT_DISABLE_COMPOSITING_MODE=1`** (a common Tauri-on-Linux
+  workaround) helps without a GPU: streaming has no dropped frames, and the
+  heavy scroll rises from 4 to 15 fps.
+  - Costs: rAF is no longer tied to a display refresh (86 "fps" at
+    100 tok/s), and iframe mounts are 3× slower.
+  - It is a per-machine workaround, not a default. Re-measure it on real
+    hardware.
+- **Memory:** the WebKitGTK web process is larger than Chromium's renderer
+  (588 vs 407 MB). WebKitGTK still uses ~25% less in total (807 vs
+  1,048 MB) because it has no separate GPU process and a lighter UI
+  process. As on macOS, RSS is an order of magnitude only.
+
+Still to do on a real Linux machine (procedure in
+`apps/tauri/bench/webkitgtk/README.md`, "On a Linux machine"):
+
+- A GPU and a real display, on X11 and Wayland.
+- The distro's own WebKitGTK.
+- `antre-shell --bench` itself rather than MiniBrowser.
+
 ## 3. Platforms
 
 ### 3.1 Windows (WebView2)
@@ -302,9 +421,12 @@ debug daemon from the main checkout):
   compositing is often disabled by default on NVIDIA/Wayland setups
   (`WEBKIT_DISABLE_COMPOSITING_MODE`, `WEBKIT_DISABLE_DMABUF_RENDERER` are
   common workarounds), and media codecs depend on the distro's GStreamer
-  plugins. Expect lower frame rates than macOS on the same content; this spike
-  could not measure it (no Linux machine) and that measurement is the main open
-  item (§4).
+  plugins.
+  - §2.7 measured it in a container (software rendering): chat streaming and
+    scrolling pass, with WebKitGTK 1.3–2× slower than Chromium per operation.
+  - A heavy animated design falls to 4–14 fps, where Chromium keeps 60 fps
+    on the same CPU.
+  - A real Linux machine with a GPU is still the open item (§4).
 - Packages: `.deb`, `.rpm`, AppImage from `tauri build`; Flatpak via a
   manifest on the GNOME runtime (which ships a current WebKitGTK, a reason to
   prefer Flatpak); the repo already has `flatpak/` and `snap/` packaging for
@@ -434,13 +556,23 @@ Why sidecar, not embedded:
 
 Conditions before committing (in order):
 
-1. **Measure WebKitGTK and Android WebView** with the same bench (it is
-   engine-agnostic: `bench/run.mjs` + the shell's `--bench` mode; on Linux
-   run the shell, on Android load `dist/` in a WebView or Chrome Android).
-   No-go trigger: scroll or 400 tok/s streaming below ~45 fps on a mid-range
-   Linux laptop with a stock distro WebKitGTK and no compositing workarounds.
-   Fallback if WebKitGTK fails: Tauri 3's CEF runtime on Linux only, or
-   Electron on Linux only.
+1. **Measure WebKitGTK on real hardware, and Android WebView,** with the
+   same bench.
+   - Done so far: WebKitGTK in a container, in software rendering only
+     (§2.7). The chat clears the bar there: 400 tok/s at 54 fps, scroll at
+     58 fps.
+   - Left for WebKitGTK: a mid-range Linux laptop with a GPU, the distro's
+     WebKitGTK, no compositing workarounds, through `antre-shell --bench`.
+     The procedure is in `apps/tauri/bench/webkitgtk/README.md`.
+   - Left for Android: load `dist/` in a WebView or in Chrome for Android.
+   - No-go trigger: scroll or 400 tok/s streaming below ~45 fps on that
+     laptop.
+   - Heavy animated canvases already fall well below that bar in software,
+     so check them there too. If they stay slow, the fallback for canvases
+     is to tone down or freeze heavy effects on WebKitGTK, not to drop the
+     shell.
+   - Fallback if the chat itself fails: Tauri 3's CEF runtime on Linux only,
+     or Electron on Linux only.
 2. **Fix the daemon's cold start** (time-box the Docker probe, listen first,
    initialise sandboxes in the background) and make fixed
    ports (`18791` proxy) configurable or ephemeral, so a sidecar can coexist
@@ -448,9 +580,11 @@ Conditions before committing (in order):
    wait visible.
 3. **Remote auth**: an API-key or pairing-code → session-cookie exchange in
    the gateway (needed for remote desktop mode and for every mobile client).
-4. **Decide the canvas iframe origin model** knowing WKWebView throttles
-   opaque-origin frames to ~20 fps until interaction (and iOS WKWebView does
-   the same and caps at 60 Hz).
+4. **Decide the canvas iframe origin model** knowing WebKit throttles
+   opaque-origin frames until the user interacts with them.
+   - Measured: ~20 fps in WKWebView and ~25 fps in WebKitGTK.
+   - WebKitGTK reaches 49 fps after one real click (§2.7).
+   - iOS WKWebView very likely behaves the same and caps at 60 Hz.
 5. **Incremental Markdown rendering** for streaming (re-parse only the open
    block) before supporting very long replies.
 
@@ -458,16 +592,17 @@ Risks:
 
 | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|
-| WebKitGTK too slow or glitchy on common Linux setups | Medium | High (one of five platforms) | Measure first; Flatpak on the GNOME runtime for a current WebKitGTK; CEF runtime (Tauri 3) or Electron on Linux as fallback. |
+| WebKitGTK too slow or glitchy on common Linux setups | Medium (chat: low; heavy canvases: high) | High (one of five platforms) | Chat passes in software (§2.7); measure on real GPUs; lighter canvas effects on WebKitGTK; Flatpak on the GNOME runtime for a current WebKitGTK; CEF runtime (Tauri 3) or Electron on Linux as fallback. |
 | 60 Hz cap in WKWebView (macOS, iOS) | Certain | Low–medium (feel, not function) | Accept; revisit when WebKit lifts it; a private-preference plugin is possible but risky for the App Store. |
-| Opaque-origin iframe throttling (WebKit) | Certain | Medium for animated canvases | Accept "smooth after first touch", or a dedicated canvas origin if WebKit treats it better (to test). |
+| Opaque-origin iframe throttling (WebKit) | Certain | Medium for animated canvases | A real click lifts it (verified in WebKitGTK, §2.7): accept "smooth after first touch", or test whether a dedicated canvas origin is treated better. |
 | Tauri mobile gaps (push, background, share extension) | Certain | High for a mobile-first experience | Community push plugins; native Swift/Kotlin plugins; keep the Swift iOS app until parity; mobile is a remote client only. |
 | Tauri 3 migration (alpha now) | Medium | Low | The shell is small; Tauri 3 mostly changes runtime selection. |
 | Daemon assumptions about owning the machine (fixed ports, cold start, credential import) | Certain | Medium | Gateway fixes listed above; isolated sidecar data dir in the shell. |
 | Divergent engines (WebView2 vs WebKit) cause UI bugs | Medium | Medium | Playwright E2E already exists for Chromium; add a WebKit project (Playwright WebKit is close to WKWebView). |
 
 What this spike did not do: package or sign anything, run on Windows,
-Linux, Android or iOS, measure a release build of the shell, test real LLM
+Linux hardware (WebKitGTK only ran in a container, §2.7), Android or iOS,
+measure a release build of the shell, test real LLM
 streaming end to end through the shell (the bench uses the UI's renderer on
 synthetic deltas).
 

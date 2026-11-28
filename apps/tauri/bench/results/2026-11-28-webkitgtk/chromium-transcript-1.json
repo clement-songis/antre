@@ -1,0 +1,59 @@
+{
+ "engine": "chromium",
+ "page": "transcript",
+ "run": 1,
+ "clickOn": null,
+ "wallMs": 12642,
+ "peakRssMb": {
+  "browser": 489,
+  "gpu": 169,
+  "renderer": 444
+ },
+ "result": {
+  "bench": "transcript",
+  "env": {
+   "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+   "engine": "browser",
+   "devicePixelRatio": 1,
+   "viewport": "1279x803",
+   "refreshMs": 16.7,
+   "refreshHz": 60
+  },
+  "messages": 2000,
+  "chars": 673908,
+  "domNodes": 28061,
+  "scrollHeightPx": 280954,
+  "render": {
+   "markdownMs": 29.4,
+   "domAndLayoutMs": 140.9,
+   "firstPaintMs": 232.8
+  },
+  "highlight": {
+   "ms": 320.8,
+   "codeBlocks": 198
+  },
+  "scroll8s": {
+   "durationMs": 7999.7,
+   "frames": 481,
+   "fps": 60,
+   "droppedFrames": 0,
+   "droppedPct": 0,
+   "framesOver50ms": 0,
+   "worstFrameMs": 16.8,
+   "frameP95Ms": 16.8
+  },
+  "jumpToPositionMs": {
+   "count": 40,
+   "mean": 33.4,
+   "p50": 33.2,
+   "p95": 38.5,
+   "p99": 39.9,
+   "max": 39.9,
+   "total": 1335.9
+  },
+  "jsHeapMb": {
+   "start": 3,
+   "end": 7.4
+  }
+ }
+}

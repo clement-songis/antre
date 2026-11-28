@@ -1,0 +1,106 @@
+{
+ "engine": "webkitgtk",
+ "page": "stream",
+ "run": 3,
+ "clickOn": null,
+ "tag": "nocompositing",
+ "env": {
+  "WEBKIT_DISABLE_COMPOSITING_MODE": "1"
+ },
+ "wallMs": 58067,
+ "peakRssMb": {
+  "ui": 174,
+  "networking": 74,
+  "webContent": 485
+ },
+ "result": {
+  "bench": "stream",
+  "env": {
+   "userAgent": "Mozilla/5.0 (X11; Linux aarch64) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/60.5 Safari/605.1.15",
+   "engine": "browser",
+   "devicePixelRatio": 1,
+   "viewport": "1280x822",
+   "refreshMs": 21,
+   "refreshHz": 48
+  },
+  "reply": {
+   "chars": 16658,
+   "tokens": 4165,
+   "deltas": 1389,
+   "tokensPerDelta": 3
+  },
+  "flatOut": {
+   "deltas": 1389,
+   "totalMs": 2250,
+   "maxTokensPerSec": 1851,
+   "firstTenthMeanMs": 0.326,
+   "lastTenthMeanMs": 2.993,
+   "perDeltaMs": {
+    "count": 1389,
+    "mean": 1.62,
+    "p50": 2,
+    "p95": 3,
+    "p99": 4,
+    "max": 6,
+    "total": 2250
+   },
+   "domNodes": 293
+  },
+  "paced": [
+   {
+    "targetTokensPerSec": 100,
+    "renderedTokensPerSec": 100,
+    "lagMs": 9,
+    "handlerMs": {
+     "count": 1389,
+     "mean": 2.59,
+     "p50": 3,
+     "p95": 5,
+     "p99": 5,
+     "max": 7,
+     "total": 3592
+    },
+    "frames": {
+     "durationMs": 41629,
+     "frames": 3588,
+     "fps": 86.2,
+     "droppedFrames": 0,
+     "droppedPct": 0,
+     "framesOver50ms": 0,
+     "worstFrameMs": 29,
+     "frameP95Ms": 23
+    }
+   },
+   {
+    "targetTokensPerSec": 400,
+    "renderedTokensPerSec": 399.4,
+    "lagMs": 19,
+    "handlerMs": {
+     "count": 1389,
+     "mean": 1.88,
+     "p50": 2,
+     "p95": 3,
+     "p99": 4,
+     "max": 4,
+     "total": 2614
+    },
+    "frames": {
+     "durationMs": 10421,
+     "frames": 627,
+     "fps": 60.1,
+     "droppedFrames": 0,
+     "droppedPct": 0,
+     "framesOver50ms": 0,
+     "worstFrameMs": 21,
+     "frameP95Ms": 20
+    }
+   }
+  ],
+  "finalHighlightMs": 170,
+  "codeBlocks": 6,
+  "jsHeapMb": {
+   "start": null,
+   "end": null
+  }
+ }
+}

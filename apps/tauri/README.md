@@ -54,3 +54,6 @@ node bench/summarize.mjs bench/results/<date>/matrix   # Markdown tables (median
 compile time. Keep the display awake and unlocked: WKWebView stops `requestAnimationFrame`
 and throttles timers when the window is hidden or the display sleeps. The
 bench window is focused and kept on top for the same reason.
+
+WebKitGTK (Linux): `bench/webkitgtk/README.md` runs the same pages in a
+container, or natively on a Linux machine.

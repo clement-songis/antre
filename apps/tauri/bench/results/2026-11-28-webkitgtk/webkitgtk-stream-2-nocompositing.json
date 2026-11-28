@@ -1,0 +1,106 @@
+{
+ "engine": "webkitgtk",
+ "page": "stream",
+ "run": 2,
+ "clickOn": null,
+ "tag": "nocompositing",
+ "env": {
+  "WEBKIT_DISABLE_COMPOSITING_MODE": "1"
+ },
+ "wallMs": 58007,
+ "peakRssMb": {
+  "ui": 180,
+  "networking": 76,
+  "webContent": 494
+ },
+ "result": {
+  "bench": "stream",
+  "env": {
+   "userAgent": "Mozilla/5.0 (X11; Linux aarch64) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/60.5 Safari/605.1.15",
+   "engine": "browser",
+   "devicePixelRatio": 1,
+   "viewport": "1280x822",
+   "refreshMs": 20,
+   "refreshHz": 50
+  },
+  "reply": {
+   "chars": 16658,
+   "tokens": 4165,
+   "deltas": 1389,
+   "tokensPerDelta": 3
+  },
+  "flatOut": {
+   "deltas": 1389,
+   "totalMs": 2268,
+   "maxTokensPerSec": 1836,
+   "firstTenthMeanMs": 0.486,
+   "lastTenthMeanMs": 2.978,
+   "perDeltaMs": {
+    "count": 1389,
+    "mean": 1.63,
+    "p50": 2,
+    "p95": 3,
+    "p99": 4,
+    "max": 8,
+    "total": 2268
+   },
+   "domNodes": 293
+  },
+  "paced": [
+   {
+    "targetTokensPerSec": 100,
+    "renderedTokensPerSec": 100,
+    "lagMs": 11,
+    "handlerMs": {
+     "count": 1389,
+     "mean": 2.53,
+     "p50": 3,
+     "p95": 5,
+     "p99": 5,
+     "max": 6,
+     "total": 3512
+    },
+    "frames": {
+     "durationMs": 41625,
+     "frames": 3582,
+     "fps": 86,
+     "droppedFrames": 0,
+     "droppedPct": 0,
+     "framesOver50ms": 0,
+     "worstFrameMs": 28,
+     "frameP95Ms": 23
+    }
+   },
+   {
+    "targetTokensPerSec": 400,
+    "renderedTokensPerSec": 399.8,
+    "lagMs": 7,
+    "handlerMs": {
+     "count": 1389,
+     "mean": 1.86,
+     "p50": 2,
+     "p95": 3,
+     "p99": 4,
+     "max": 4,
+     "total": 2586
+    },
+    "frames": {
+     "durationMs": 10412,
+     "frames": 627,
+     "fps": 60.1,
+     "droppedFrames": 0,
+     "droppedPct": 0,
+     "framesOver50ms": 0,
+     "worstFrameMs": 21,
+     "frameP95Ms": 19
+    }
+   }
+  ],
+  "finalHighlightMs": 152,
+  "codeBlocks": 6,
+  "jsHeapMb": {
+   "start": null,
+   "end": null
+  }
+ }
+}

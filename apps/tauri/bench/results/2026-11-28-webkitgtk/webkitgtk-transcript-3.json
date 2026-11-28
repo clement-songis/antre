@@ -1,0 +1,59 @@
+{
+ "engine": "webkitgtk",
+ "page": "transcript",
+ "run": 3,
+ "clickOn": null,
+ "wallMs": 13332,
+ "peakRssMb": {
+  "ui": 158,
+  "networking": 63,
+  "webContent": 615
+ },
+ "result": {
+  "bench": "transcript",
+  "env": {
+   "userAgent": "Mozilla/5.0 (X11; Linux aarch64) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/60.5 Safari/605.1.15",
+   "engine": "browser",
+   "devicePixelRatio": 1,
+   "viewport": "1280x822",
+   "refreshMs": 19,
+   "refreshHz": 53
+  },
+  "messages": 2000,
+  "chars": 673908,
+  "domNodes": 28061,
+  "scrollHeightPx": 278178,
+  "render": {
+   "markdownMs": 46,
+   "domAndLayoutMs": 186,
+   "firstPaintMs": 345
+  },
+  "highlight": {
+   "ms": 382,
+   "codeBlocks": 198
+  },
+  "scroll8s": {
+   "durationMs": 7986,
+   "frames": 438,
+   "fps": 54.7,
+   "droppedFrames": 0,
+   "droppedPct": 0,
+   "framesOver50ms": 0,
+   "worstFrameMs": 22,
+   "frameP95Ms": 22
+  },
+  "jumpToPositionMs": {
+   "count": 40,
+   "mean": 36.2,
+   "p50": 36,
+   "p95": 42,
+   "p99": 43,
+   "max": 43,
+   "total": 1448
+  },
+  "jsHeapMb": {
+   "start": null,
+   "end": null
+  }
+ }
+}

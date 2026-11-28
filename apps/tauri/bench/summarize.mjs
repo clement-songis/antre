@@ -1,16 +1,40 @@
 // Print Markdown tables (median over runs) from bench/results.
-//   node bench/summarize.mjs [DIR]
-import { readFileSync } from "node:fs";
+//   node bench/summarize.mjs [DIR] [--labels key=Label,key=Label]
+//
+// DIR holds one JSON per engine/page/run, listed in index.json (bench/run.mjs)
+// or found by name (bench/webkitgtk/harness/run.py). Runs made with a
+// harness click (`clickOn`) count as a separate engine, `<engine>+click`.
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const dir = resolve(process.argv[2] ?? join(dirname(fileURLToPath(import.meta.url)), "results"));
-const index = JSON.parse(readFileSync(join(dir, "index.json"), "utf8"));
-const records = index.map((entry) => ({ ...entry, data: JSON.parse(readFileSync(join(dir, entry.file.split("/").at(-1)), "utf8")) }));
-const ENGINES = [
-	["tauri", "WKWebView (Tauri)"],
-	["chromium", "Chromium 145"],
-];
+const args = process.argv.slice(2);
+const labelsAt = args.indexOf("--labels");
+const labelArg = labelsAt >= 0 ? args.splice(labelsAt, 2)[1] : "";
+const dir = resolve(args[0] ?? join(dirname(fileURLToPath(import.meta.url)), "results"));
+const indexFile = join(dir, "index.json");
+const entries = existsSync(indexFile)
+	? JSON.parse(readFileSync(indexFile, "utf8")).map((entry) => ({ ...entry, file: entry.file.split("/").at(-1) }))
+	: readdirSync(dir)
+			.filter((file) => file.endsWith(".json"))
+			.sort()
+			.map((file) => ({ file }));
+const records = entries.map((entry) => {
+	const data = JSON.parse(readFileSync(join(dir, entry.file), "utf8"));
+	const engine = (entry.engine ?? data.engine) + (data.tag ? `+${data.tag}` : data.clickOn ? "+click" : "");
+	return { page: entry.page ?? data.page, engine, data };
+});
+const LABELS = {
+	tauri: "WKWebView (Tauri)",
+	chromium: "Chromium 145",
+	...Object.fromEntries(
+		labelArg
+			.split(",")
+			.filter(Boolean)
+			.map((pair) => pair.split("=")),
+	),
+};
+const ENGINES = [...new Set(records.map((record) => record.engine))].map((engine) => [engine, LABELS[engine] ?? engine]);
 
 function median(values) {
 	const sorted = values.filter((v) => typeof v === "number").sort((a, b) => a - b);
@@ -22,11 +46,13 @@ function median(values) {
 
 function table(page, rows) {
 	const runs = (engine) => records.filter((r) => r.engine === engine && r.page === page).map((r) => r.data);
+	const present = ENGINES.filter(([engine]) => runs(engine).length);
+	if (!present.length) return;
 	console.log(`\n### ${page}\n`);
-	console.log(`| Metric | ${ENGINES.map(([, label]) => label).join(" | ")} |`);
-	console.log(`|---|${ENGINES.map(() => "---:").join("|")}|`);
+	console.log(`| Metric | ${present.map(([, label]) => label).join(" | ")} |`);
+	console.log(`|---|${present.map(() => "---:").join("|")}|`);
 	for (const [label, pick] of rows) {
-		const cells = ENGINES.map(([engine]) => median(runs(engine).map((d) => {
+		const cells = present.map(([engine]) => median(runs(engine).map((d) => {
 			try {
 				return pick(d);
 			} catch {
@@ -35,7 +61,7 @@ function table(page, rows) {
 		})));
 		console.log(`| ${label} | ${cells.join(" | ")} |`);
 	}
-	const counts = ENGINES.map(([engine]) => runs(engine).length).join(" / ");
+	const counts = present.map(([engine]) => runs(engine).length).join(" / ");
 	console.log(`\nRuns: ${counts}.`);
 }
 
