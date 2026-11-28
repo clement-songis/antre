@@ -354,6 +354,13 @@ pub trait ChatService: Send + Sync {
     async fn steer(&self, _params: Value) -> ServiceResult {
         Err("steering queued messages is not supported".into())
     }
+
+    /// Cancel a session's run that waits for a provider quota, and let the
+    /// turns queued behind it run.
+    async fn cancel_quota_wait(&self, _params: Value) -> ServiceResult {
+        Err("quota waits are not supported".into())
+    }
+
     async fn history(&self, params: Value) -> ServiceResult;
     async fn inject(&self, params: Value) -> ServiceResult;
     async fn clear(&self, params: Value) -> ServiceResult;

@@ -1,5 +1,6 @@
 //! `LiveChatService` struct, constructors, and helper methods.
 
+mod admission;
 mod chat_impl;
 mod queue;
 mod types;

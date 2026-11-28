@@ -213,22 +213,34 @@ fn schedule(state: Arc<dyn ChatRuntime>, wait: QuotaWait) -> AbortHandle {
         let delay = std::time::Duration::try_from(wait.resets_at - OffsetDateTime::now_utc())
             .unwrap_or_default();
         tokio::time::sleep(delay + jitter()).await;
-        let still_waiting = with_registry(|registry| {
-            let removed = registry.waits.remove(&wait.session_key).is_some();
-            if removed {
-                persist(registry);
-            }
-            removed
-        });
-        if !still_waiting {
+        if !with_registry(|registry| is_current(registry, &wait)) {
             return;
         }
         info!(session = %wait.session_key, provider = %wait.provider, "quota reset, resuming parked run");
-        if let Err(error) = state.chat_service().await.send(wait.params).await {
+        // The wait stays registered until the resume is admitted, so the
+        // session's lane is never open in between for a newer message to
+        // start first.
+        let result = state.chat_service().await.send(wait.params.clone()).await;
+        with_registry(|registry| {
+            if is_current(registry, &wait) {
+                registry.waits.remove(&wait.session_key);
+                persist(registry);
+            }
+        });
+        if let Err(error) = result {
             warn!(session = %wait.session_key, %error, "resuming parked run failed");
         }
     })
     .abort_handle()
+}
+
+/// `true` while `wait` is still the session's registered wait (not
+/// cancelled, not replaced by a newer park).
+fn is_current(registry: &Registry, wait: &QuotaWait) -> bool {
+    registry
+        .waits
+        .get(&wait.session_key)
+        .is_some_and(|(current, _)| current == wait)
 }
 
 /// Park the run noted under `run_id`: persist its parameters and schedule
@@ -468,11 +480,19 @@ mod tests {
     #[derive(Default)]
     struct RecordingChat {
         sent: Mutex<Vec<Value>>,
+        /// Whether the session still showed a parked run when the resume
+        /// was sent (it must, so no newer turn could start first).
+        parked_at_send: Mutex<Vec<bool>>,
     }
 
     #[async_trait::async_trait]
     impl moltis_service_traits::ChatService for RecordingChat {
         async fn send(&self, params: Value) -> moltis_service_traits::ServiceResult {
+            let session = params["_session_key"].as_str().unwrap_or_default();
+            self.parked_at_send
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .push(pending(session).is_some());
             self.sent
                 .lock()
                 .unwrap_or_else(|e| e.into_inner())
@@ -557,6 +577,7 @@ mod tests {
         assert_eq!(replayed.len(), 1);
         assert!(is_resume(&replayed[0]));
         assert_eq!(replayed[0]["text"], "hello");
+        assert_eq!(*chat.parked_at_send.lock().unwrap(), vec![true]);
         assert!(pending("s1").is_none());
         assert!(stored(&path).is_empty());
 

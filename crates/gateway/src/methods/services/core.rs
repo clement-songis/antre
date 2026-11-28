@@ -822,28 +822,11 @@ pub(super) fn register(reg: &mut MethodRegistry) {
         "chat.cancel_quota_wait",
         Box::new(|ctx| {
             Box::pin(async move {
-                let session_key = ctx
-                    .params
-                    .get("sessionKey")
-                    .and_then(serde_json::Value::as_str)
-                    .ok_or_else(|| {
-                        ErrorShape::new(error_codes::INVALID_REQUEST, "missing sessionKey")
-                    })?
-                    .to_string();
-                let cancelled = moltis_chat::quota_wait::cancel(&session_key);
-                if cancelled {
-                    broadcast(
-                        &ctx.state,
-                        "chat",
-                        serde_json::json!({
-                            "sessionKey": session_key,
-                            "state": "quota_wait_cancelled",
-                        }),
-                        BroadcastOpts::default(),
-                    )
-                    .await;
-                }
-                Ok(serde_json::json!({ "cancelled": cancelled }))
+                ctx.state
+                    .chat()
+                    .cancel_quota_wait(ctx.params.clone())
+                    .await
+                    .map_err(ErrorShape::from)
             })
         }),
     );

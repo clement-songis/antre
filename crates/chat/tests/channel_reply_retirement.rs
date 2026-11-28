@@ -531,3 +531,97 @@ async fn abort_retires_channel_reply_target() {
     );
     fixture.assert_only_next_answer().await;
 }
+
+/// `send_sync` on a busy session (cron, webhooks, `sessions_send` with a
+/// wait) used to fail with "session already has an active turn". It now
+/// queues behind the active turn and returns its own answer once that turn
+/// ends, without the two runs overlapping.
+#[tokio::test]
+async fn send_sync_waits_for_the_active_turn_instead_of_failing() {
+    let fixture = Fixture::new().await;
+    let held = fixture
+        .service
+        .send(Fixture::params("HOLD", "held-anchor"))
+        .await
+        .unwrap();
+    assert!(held.get("runId").is_some());
+    fixture.started.acquire().await.unwrap().forget();
+
+    let waiting = {
+        let service = Arc::clone(&fixture.service);
+        tokio::spawn(async move {
+            service
+                .send_sync(Fixture::params("VISIBLE", "queued-anchor"))
+                .await
+        })
+    };
+    // Give the queued turn every chance to run early: it must not.
+    tokio::time::sleep(Duration::from_millis(100)).await;
+    assert!(!waiting.is_finished(), "ran beside the active turn");
+    assert!(fixture.runtime.outbound.replies.read().await.is_empty());
+
+    fixture
+        .service
+        .abort(json!({ "sessionKey": SESSION }))
+        .await
+        .unwrap();
+    let answer = tokio::time::timeout(Duration::from_secs(10), waiting)
+        .await
+        .expect("queued send_sync finished")
+        .unwrap()
+        .unwrap();
+    assert_eq!(answer["text"], "VISIBLE-ANSWER");
+    assert_eq!(*fixture.runtime.outbound.replies.read().await, vec![(
+        "VISIBLE-ANSWER".to_string(),
+        Some("queued-anchor".to_string())
+    )]);
+}
+
+/// Cancelling the queue ends a waiting `send_sync` with an error rather
+/// than leaving its caller hanging.
+#[tokio::test]
+async fn cancelling_the_queue_ends_a_waiting_send_sync() {
+    let fixture = Fixture::new().await;
+    fixture
+        .service
+        .send(Fixture::params("HOLD", "held-anchor"))
+        .await
+        .unwrap();
+    fixture.started.acquire().await.unwrap().forget();
+
+    let waiting = {
+        let service = Arc::clone(&fixture.service);
+        tokio::spawn(async move {
+            service
+                .send_sync(Fixture::params("VISIBLE", "queued-anchor"))
+                .await
+        })
+    };
+    let mut cleared = 0;
+    for _ in 0..200 {
+        let result = fixture
+            .service
+            .cancel_queued(json!({ "sessionKey": SESSION }))
+            .await
+            .unwrap();
+        cleared = result["cleared"].as_u64().unwrap_or_default();
+        if cleared > 0 {
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(5)).await;
+    }
+    assert_eq!(cleared, 1);
+    let error = tokio::time::timeout(Duration::from_secs(10), waiting)
+        .await
+        .expect("cancelled send_sync finished")
+        .unwrap()
+        .unwrap_err();
+    assert!(error.to_string().contains("cancelled"), "{error}");
+
+    fixture
+        .service
+        .abort(json!({ "sessionKey": SESSION }))
+        .await
+        .unwrap();
+    assert!(fixture.runtime.outbound.replies.read().await.is_empty());
+}

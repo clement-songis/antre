@@ -6,6 +6,7 @@ mod public_context;
 mod queue_drain;
 mod send;
 mod send_params;
+pub(crate) mod sync_waiters;
 mod tool_policy;
 
 use std::{path::Path, sync::Arc};
@@ -13,7 +14,6 @@ use std::{path::Path, sync::Arc};
 use {
     async_trait::async_trait,
     serde_json::Value,
-    tokio::sync::oneshot,
     tracing::{debug, info, warn},
 };
 
@@ -56,7 +56,12 @@ use super::{
 #[async_trait]
 impl ChatService for LiveChatService {
     async fn send(&self, params: Value) -> ServiceResult {
-        self.send_impl(params, None, true).await
+        let waiter = sync_waiters::waiter_id(&params);
+        let result = self.send_impl(params, None, true).await;
+        if let Some(id) = waiter {
+            self.sync_waiters.settle_unstarted(&id, &result);
+        }
+        result
     }
 
     async fn send_sync(&self, params: Value) -> ServiceResult {
@@ -72,13 +77,17 @@ impl ChatService for LiveChatService {
                 .await
                 .map_err(ServiceError::message)?;
         }
-        let (completion_tx, completion_rx) = oneshot::channel();
-        let started = self.send_impl(params, Some(completion_tx), false).await?;
-        if started.get("queued").and_then(Value::as_bool) == Some(true) {
-            return Err("session already has an active turn".into());
-        }
+        // A busy session queues this turn like any other; the caller waits
+        // for its own answer instead of failing or running beside the active
+        // turn.
+        let mut params = params;
+        let completion_rx = self.sync_waiters.register(&mut params);
+        let started = self.send(params).await?;
         if started.get("rejected").and_then(Value::as_bool) == Some(true) {
             return Ok(started);
+        }
+        if started.get("queued").and_then(Value::as_bool) == Some(true) {
+            info!("chat.send_sync: waiting for the session's active turn");
         }
         completion_rx
             .await
@@ -241,6 +250,8 @@ impl ChatService for LiveChatService {
         };
         let count = removed.len();
         info!(session = %session_key, count, "cancel_queued: cleared message queue");
+        self.sync_waiters
+            .cancel(removed.iter().map(|message| &message.params));
 
         // These messages will never be answered, so clear their channel
         // acknowledgment markers rather than leaving them to expire.
@@ -295,6 +306,36 @@ impl ChatService for LiveChatService {
         self.abort(serde_json::json!({ "sessionKey": session_key }))
             .await?;
         Ok(serde_json::json!({ "steered": true, "seq": seq }))
+    }
+
+    async fn cancel_quota_wait(&self, params: Value) -> ServiceResult {
+        let session_key = params
+            .get("sessionKey")
+            .and_then(Value::as_str)
+            .ok_or_else(|| "missing 'sessionKey'".to_string())?;
+        let cancelled = crate::quota_wait::cancel(session_key);
+        if cancelled {
+            info!(session = %session_key, "chat.cancel_quota_wait: parked run cancelled");
+            broadcast(
+                &self.state,
+                "chat",
+                serde_json::json!({
+                    "sessionKey": session_key,
+                    "state": "quota_wait_cancelled",
+                }),
+                BroadcastOpts::default(),
+            )
+            .await;
+            // The parked run held the lane; what queued behind it runs now.
+            queue_drain::drain_and_replay(
+                &self.message_queue,
+                session_key,
+                self.config.chat.message_queue_mode,
+                &self.state,
+            )
+            .await;
+        }
+        Ok(serde_json::json!({ "cancelled": cancelled }))
     }
 
     async fn history(&self, params: Value) -> ServiceResult {

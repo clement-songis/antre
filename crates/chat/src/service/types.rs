@@ -355,6 +355,7 @@ pub struct LiveChatService {
     pub(in crate::service) session_locks: Arc<RwLock<HashMap<String, Arc<Semaphore>>>>,
     /// Per-session message queue for messages arriving during an active run.
     pub(in crate::service) message_queue: Arc<RwLock<HashMap<String, SessionMessageQueue>>>,
+    pub(in crate::service) sync_waiters: Arc<super::chat_impl::sync_waiters::SyncWaiters>,
     /// Per-session last-seen client sequence number for ordering diagnostics.
     pub(in crate::service) last_client_seq: Arc<RwLock<HashMap<String, u64>>>,
     /// Per-session accumulated thinking text for active runs, so it can be
@@ -433,6 +434,7 @@ impl LiveChatService {
             hook_registry: None,
             session_locks: Arc::new(RwLock::new(HashMap::new())),
             message_queue: Arc::new(RwLock::new(HashMap::new())),
+            sync_waiters: super::chat_impl::sync_waiters::SyncWaiters::new(),
             last_client_seq: Arc::new(RwLock::new(HashMap::new())),
             active_thinking_text: Arc::new(RwLock::new(HashMap::new())),
             active_tool_calls: Arc::new(RwLock::new(HashMap::new())),
@@ -543,14 +545,17 @@ impl LiveChatService {
         session_key: &str,
         params: Value,
         queued_replay: bool,
+        quota_resume: bool,
     ) -> TurnAdmission {
         let session_sem = self.session_semaphore(session_key).await;
-        admit_queued_turn(
+        let lane = super::admission::LaneState::of(session_key, quota_resume);
+        super::admission::admit_queued_turn(
             &self.message_queue,
             session_sem,
             session_key,
             params,
             queued_replay,
+            lane,
         )
         .await
     }
@@ -899,36 +904,6 @@ impl LiveChatService {
     }
 }
 
-async fn admit_queued_turn(
-    queues: &Arc<RwLock<HashMap<String, SessionMessageQueue>>>,
-    session_sem: Arc<Semaphore>,
-    session_key: &str,
-    params: Value,
-    queued_replay: bool,
-) -> TurnAdmission {
-    let mut queues = queues.write().await;
-    let queue = queues.entry(session_key.to_string()).or_default();
-    let reserved_replay = queued_replay && queue.draining;
-
-    if !reserved_replay && (queue.draining || !queue.messages.is_empty()) {
-        queue.messages.push_back(QueuedMessage { params });
-        return TurnAdmission::Queued(queue.messages.len());
-    }
-
-    match session_sem.try_acquire_owned() {
-        Ok(permit) => TurnAdmission::Acquired(permit),
-        Err(_) => {
-            let message = QueuedMessage { params };
-            if reserved_replay {
-                queue.messages.push_front(message);
-            } else {
-                queue.messages.push_back(message);
-            }
-            TurnAdmission::Queued(queue.messages.len())
-        },
-    }
-}
-
 pub(in crate::service) fn merge_context_sections(
     project_context: Option<String>,
     command_context: Option<String>,
@@ -946,14 +921,12 @@ pub(in crate::service) fn merge_context_sections(
 mod tests {
     use {
         super::{
-            ActiveAssistantDraft, EventForwarder, LiveChatService, QueuedMessage,
-            RunHandleDisposition, SessionMessageQueue, TurnAdmission, admit_queued_turn,
+            ActiveAssistantDraft, EventForwarder, LiveChatService, RunHandleDisposition,
             build_persisted_assistant_message, build_tool_call_assistant_message,
             commit_successful_turn, merge_context_sections,
         },
         crate::types::AssistantTurnOutput,
         moltis_sessions::PersistedMessage,
-        serde_json::json,
         std::{
             collections::{HashMap, HashSet},
             future::Future,
@@ -1019,45 +992,6 @@ mod tests {
             Some("dynamic")
         );
         assert_eq!(merge_context_sections(None, None), None);
-    }
-
-    #[tokio::test]
-    async fn replay_reservation_prevents_new_arrival_overtaking_fifo() {
-        let queues = Arc::new(RwLock::new(HashMap::from([(
-            "s".to_string(),
-            SessionMessageQueue {
-                messages: [QueuedMessage {
-                    params: json!({"text": "second"}),
-                }]
-                .into_iter()
-                .collect(),
-                draining: true,
-            },
-        )])));
-        let semaphore = Arc::new(Semaphore::new(1));
-        let replay = admit_queued_turn(
-            &queues,
-            Arc::clone(&semaphore),
-            "s",
-            json!({"text": "first"}),
-            true,
-        )
-        .await;
-        let TurnAdmission::Acquired(permit) = replay else {
-            panic!("reserved replay should acquire");
-        };
-
-        let arrival =
-            admit_queued_turn(&queues, semaphore, "s", json!({"text": "third"}), false).await;
-        assert!(matches!(arrival, TurnAdmission::Queued(2)));
-        let queue = queues.read().await;
-        let texts: Vec<_> = queue["s"]
-            .messages
-            .iter()
-            .filter_map(|message| message.params["text"].as_str())
-            .collect();
-        assert_eq!(texts, ["second", "third"]);
-        drop(permit);
     }
 
     #[tokio::test]

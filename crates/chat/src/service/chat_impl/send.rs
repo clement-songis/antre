@@ -69,6 +69,7 @@ impl LiveChatService {
             stream_only,
         } = parse(&params, self.has_tools_sync())?;
         let (quota_resume, resume_params) = (crate::quota_wait::is_resume(&params), params.clone());
+        let sync_waiter = sync_waiters::waiter_id(&params);
 
         // Resolve session key from explicit overrides, public request params, or connection context.
         let session_key = self.resolve_session_key_from_params(&params).await;
@@ -183,14 +184,16 @@ impl LiveChatService {
             if tool_policy::downgrade_queued_channel_request(&mut queued_params, private_context) {
                 public_context::mark_public_channel(&mut queued_params);
             }
-            self.admit_turn(&session_key, queued_params, queued_replay)
+            self.admit_turn(&session_key, queued_params, queued_replay, quota_resume)
                 .await
         } else {
             let session_sem = self.session_semaphore(&session_key).await;
             let queues = self.message_queue.write().await;
-            if queues
-                .get(&session_key)
-                .is_some_and(|queue| queue.draining || !queue.messages.is_empty())
+            let parked = !quota_resume && crate::quota_wait::pending(&session_key).is_some();
+            if parked
+                || queues
+                    .get(&session_key)
+                    .is_some_and(|queue| queue.draining || !queue.messages.is_empty())
             {
                 return Err(if explicit_shell_command.is_some() {
                     "shell commands cannot be queued; retry when the active run finishes".into()
@@ -377,7 +380,9 @@ impl LiveChatService {
                 .await;
             let working_dir = working_dir.map(|directory| directory.display().to_string());
 
-            let (start_run, run_registered) = tokio::sync::oneshot::channel();
+            let completion =
+                completion.or_else(|| sync_waiter.and_then(|id| self.sync_waiters.take(&id)));
+            let (start_run, run_registered) = oneshot::channel();
             let handle = tokio::spawn(async move {
                 if run_registered.await.is_err() {
                     return;
@@ -1092,7 +1097,9 @@ impl LiveChatService {
         let terminal_runs = Arc::clone(&self.terminal_runs);
         let deferred_channel_target = deferred_channel_target.clone();
 
-        let (start_run, run_registered) = tokio::sync::oneshot::channel();
+        let completion =
+            completion.or_else(|| sync_waiter.and_then(|id| self.sync_waiters.take(&id)));
+        let (start_run, run_registered) = oneshot::channel();
         let handle = tokio::spawn(async move {
             if run_registered.await.is_err() {
                 return;
@@ -1250,14 +1257,15 @@ impl LiveChatService {
                 agent_fut.await
             };
 
-            if assistant_text.is_none() {
-                crate::quota_wait::park_noted_run(
+            // A parked run keeps the session's lane: what queued behind it
+            // waits for the resume (or a cancel) instead of draining now.
+            let parked = assistant_text.is_none()
+                && crate::quota_wait::park_noted_run(
                     &state,
                     &run_id_clone,
                     &session_key_clone,
                     &resume_params,
                 );
-            }
             let completion_result = match assistant_text.as_ref() {
                 Some(output) => Ok(turn_result(output)),
                 None => Err(state
@@ -1446,13 +1454,15 @@ impl LiveChatService {
             if let Some(completion) = completion {
                 let _ = completion.send(completion_result);
             }
-            queue_drain::drain_and_replay(
-                &message_queue,
-                &session_key_clone,
-                message_queue_mode,
-                &state_for_drain,
-            )
-            .await;
+            if !parked {
+                queue_drain::drain_and_replay(
+                    &message_queue,
+                    &session_key_clone,
+                    message_queue_mode,
+                    &state_for_drain,
+                )
+                .await;
+            }
         });
 
         Self::register_run_handle(

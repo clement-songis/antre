@@ -64,6 +64,10 @@ impl ChatService for GraphqlChatServiceProxy {
         self.state.chat().steer(params).await
     }
 
+    async fn cancel_quota_wait(&self, params: Value) -> ServiceResult {
+        self.state.chat().cancel_quota_wait(params).await
+    }
+
     async fn history(&self, params: Value) -> ServiceResult {
         self.state.chat().history(params).await
     }

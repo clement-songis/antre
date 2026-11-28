@@ -146,15 +146,22 @@ fn request_security_context(
 pub(crate) fn split_by_request_security_context(
     mut queued: Vec<QueuedMessage>,
 ) -> (Vec<QueuedMessage>, Vec<QueuedMessage>) {
-    let Some(head_context) = queued
-        .first()
-        .map(|message| request_security_context(&message.params))
-    else {
+    let Some(head) = queued.first() else {
         return (queued, Vec::new());
     };
+    // A `send_sync` caller waits for its own answer, so its turn is never
+    // merged with neighbours.
+    if super::sync_waiters::is_sync(&head.params) {
+        let rest = queued.split_off(1);
+        return (queued, rest);
+    }
+    let head_context = request_security_context(&head.params);
     let split = queued
         .iter()
-        .position(|message| request_security_context(&message.params) != head_context)
+        .position(|message| {
+            request_security_context(&message.params) != head_context
+                || super::sync_waiters::is_sync(&message.params)
+        })
         .unwrap_or(queued.len());
     let rest = queued.split_off(split);
     (queued, rest)
@@ -313,8 +320,10 @@ mod tests {
         const SEND_IMPL: &str = include_str!("send.rs");
         const CHAT_IMPL: &str = include_str!("../chat_impl.rs");
 
+        // `send_sync` goes through `send`, which calls `send_impl`.
         assert!(
-            CHAT_IMPL.matches("self.send_impl(").count() >= 2,
+            CHAT_IMPL.matches("self.send_impl(").count() >= 1
+                && CHAT_IMPL.contains("let started = self.send(params).await?;"),
             "both ChatService send methods must delegate to send_impl"
         );
         assert!(
