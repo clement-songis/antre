@@ -247,4 +247,10 @@ export default {
 		debugContext: "调试上下文",
 		fullContext: "完整 LLM 上下文",
 	},
+	// ── Channel delivery ─────────────────────────────────────
+	delivery: {
+		failed: "无法将回复发送到 {{channel}}：{{error}}。对方再次发消息时会重新发送。",
+		unknownChannel: "该频道",
+		unknownError: "未知错误",
+	},
 };

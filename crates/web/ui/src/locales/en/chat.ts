@@ -249,4 +249,10 @@ export default {
 		debugContext: "Debug context",
 		fullContext: "Full LLM context",
 	},
+	// ── Channel delivery ─────────────────────────────────────
+	delivery: {
+		failed: "Could not deliver a reply to {{channel}}: {{error}}. It will be resent when they write again.",
+		unknownChannel: "the channel",
+		unknownError: "unknown error",
+	},
 };

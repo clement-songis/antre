@@ -32,6 +32,7 @@ export enum WsEventName {
 	NodePairResolved = "node.pair.resolved",
 	DevicePairResolved = "device.pair.resolved",
 	NodeTelemetry = "node.telemetry",
+	Delivery = "delivery",
 }
 
 // ── Payload interfaces ───────────────────────────────────────
@@ -282,4 +283,19 @@ export interface WsEventPayloadMap {
 	[WsEventName.NodePairResolved]: Record<string, unknown>;
 	[WsEventName.DevicePairResolved]: Record<string, unknown>;
 	[WsEventName.NodeTelemetry]: Record<string, unknown>;
+	[WsEventName.Delivery]: DeliveryPayload;
+}
+
+/** Outcome of one channel delivery attempt (mirrors `delivery_event` in moltis-chat). */
+export interface DeliveryPayload {
+	id: number;
+	sessionKey: string;
+	runId?: string | null;
+	kind: "reply" | "error" | "logbook" | "notice";
+	state: "queued" | "sending" | "delivered" | "failed";
+	attempts: number;
+	error?: string | null;
+	channelType: string;
+	preview: string;
+	redelivered: boolean;
 }

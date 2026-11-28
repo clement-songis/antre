@@ -128,6 +128,7 @@ const connectOpts: ConnectOptions = {
 				"metrics.update",
 				"skills.install.progress",
 				"mcp.status",
+				"delivery",
 			]),
 		);
 		S.setSubscribed(true);

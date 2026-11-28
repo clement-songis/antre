@@ -10,6 +10,7 @@ import { initHighlighter } from "./code-highlight";
 import { mountContextMenuHost } from "./components/ContextMenu";
 import { SessionList } from "./components/SessionList";
 import { mountSidebarAccount } from "./components/SidebarAccount";
+import * as _deliveryEvents from "./delivery-events";
 import * as _events from "./events";
 import { onEvent } from "./events";
 import * as gon from "./gon";
@@ -50,6 +51,7 @@ import * as _sessionStoreModule from "./stores/session-store";
 import { insertSessionInOrder, sessionStore } from "./stores/session-store";
 import { initTheme, injectMarkdownStyles } from "./theme";
 import type { VaultStatus } from "./types/gon";
+import type { DeliveryPayload } from "./types/ws-events";
 import { GlobalDialogs, Toasts } from "./ui";
 import { connect } from "./websocket";
 import * as _wsConnect from "./ws-connect";
@@ -75,6 +77,7 @@ window.__moltis_modules = {
 	"stores/session-store": _sessionStoreModule,
 	"stores/node-store": _nodeStore,
 	"stores/session-history-cache": _sessionHistoryCache,
+	"delivery-events": _deliveryEvents,
 };
 
 // Import page modules to register their routes
@@ -204,6 +207,9 @@ try {
 }
 gon.onChange("update", showUpdateBanner as (v: unknown) => void);
 onEvent("update.available", showUpdateBanner as (payload: unknown) => void);
+onEvent("delivery", (payload: unknown) => {
+	_deliveryEvents.handleDeliveryEvent(payload as DeliveryPayload);
+});
 initUpdateBannerDismiss();
 initUpdateNowButton();
 showVaultBanner(gon.get("vault_status") ?? null);

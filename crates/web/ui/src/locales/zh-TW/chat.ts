@@ -247,4 +247,10 @@ export default {
 		debugContext: "除錯內容",
 		fullContext: "完整 LLM 內容",
 	},
+	// ── Channel delivery ─────────────────────────────────────
+	delivery: {
+		failed: "無法將回覆傳送到 {{channel}}：{{error}}。對方再次傳訊息時會重新傳送。",
+		unknownChannel: "該頻道",
+		unknownError: "未知錯誤",
+	},
 };

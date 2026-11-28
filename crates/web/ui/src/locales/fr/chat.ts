@@ -250,4 +250,10 @@ export default {
 		debugContext: "Contexte de débogage",
 		fullContext: "Contexte LLM complet",
 	},
+	// ── Channel delivery ─────────────────────────────────────
+	delivery: {
+		failed: "Impossible de livrer une réponse sur {{channel}} : {{error}}. Elle sera renvoyée au prochain message.",
+		unknownChannel: "le canal",
+		unknownError: "erreur inconnue",
+	},
 };
