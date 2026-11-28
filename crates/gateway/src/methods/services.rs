@@ -531,6 +531,7 @@ fn list_agent_workspace_files_recursively(
 mod admin;
 mod admin_imports;
 mod agents;
+mod automation;
 #[cfg(feature = "canvas")]
 mod canvas;
 mod channels;
